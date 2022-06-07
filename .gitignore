@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Testing
+/test/run*
+
 # C extensions
 *.so
 
@@ -127,3 +130,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# development environments
+/.idea
+/.vscode

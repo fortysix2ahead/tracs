@@ -4,24 +4,16 @@ from datetime import time
 from dateutil.tz import UTC
 from dateutil.tz import tzlocal
 
-from gtrac.activity import Activity
 from gtrac.activity import ActivityRef
 from gtrac.activity_types import ActivityTypes
-from gtrac.base import Resource
-from gtrac.config import KEY_CLASSIFER
 from gtrac.plugins.groups import ActivityGroup
 from gtrac.plugins.polar import PolarActivity
-
-# noinspection PyUnresolvedReferences
 from gtrac.plugins.strava import StravaActivity
-from .fixtures import default_inmemory_db
-# noinspection PyUnresolvedReferences
-from .fixtures import json_default_db
-# noinspection PyUnresolvedReferences
-from .fixtures import readonly_default_db
 
-def test_init( default_inmemory_db ):
-	db, json = default_inmemory_db
+from .fixtures import db_default_inmemory
+
+def test_init( db_default_inmemory ):
+	db, json = db_default_inmemory
 
 	# empty init
 	a = ActivityGroup( doc_id = 0 )

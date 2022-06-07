@@ -5,6 +5,7 @@ beautifulsoup4>=4.0.0
 click>=8.0.0
 click-shell>=2.1.0
 confuse>=1.4.0
+geojson>=2.5.0
 gpxpy>=1.4.0
 lxml>=4.0.0
 orjson>=3.5.0

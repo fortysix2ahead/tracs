@@ -1,0 +1,57 @@
+
+# main keys, values can be overwritten via command line argument
+
+debug: no # enables debug mode
+fetch_from: 2000 # year to start from when attempting to fetch all activities
+force: no # enable force mode, which does not ask any questions
+library: # absolute path to the activity library
+pretend: no # pretend mode, simulates all commands, but does not persist changes
+verbose: no # verbose mode, displays more log information
+
+# database configuration
+
+db:
+  cache: yes
+  cache_size: 100
+
+# configuration for printing activity information
+
+formats:
+  locale: 'en'
+  date: medium # allowed values: short, medium, long, full
+  datetime: medium # allowed values: short, medium, long, full
+  time: medium # allowed values: short, medium, long, full
+  timedelta: short  # allowed values: narrow, short, long
+  list:
+    default: id name time type service raw_id uid
+
+# experimental: allow predefined filters
+
+filters:
+  default:
+
+# gpx parser configuration
+
+gpx:
+  parser: gpxpy # allowed values: internal, gpxpy
+
+# plugin configuration
+
+plugins:
+
+  bikecitizens:
+    username:
+    password:
+
+  polar:
+    username:
+    password:
+
+  strava:
+    username:
+    password:
+    client_id:
+    client_secret:
+
+  waze:
+    field_size_limit: 131072

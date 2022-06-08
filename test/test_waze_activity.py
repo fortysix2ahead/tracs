@@ -12,6 +12,7 @@ from tracs.plugins.waze import read_takeout
 from tracs.plugins.waze import Waze
 from tracs.plugins.waze import WazeActivity
 
+from .fixtures import db_default_inmemory
 from .helpers import get_file_path
 
 def test_read_drive():
@@ -40,8 +41,9 @@ def test_activity_from_raw():
 	assert a['localtime'] == datetime( 2020, 7, 12, 9, 47, 43, tzinfo=gettz() )
 	assert a['type'] == ActivityTypes.drive
 
-def test_activity_from_db( json_default_db ):
-	a = WazeActivity( json_default_db['activities']['30'], 30 )
+def test_activity_from_db( db_default_inmemory ):
+	db, json = db_default_inmemory
+	a = WazeActivity( json['activities']['30'], 30 )
 
 	# test id
 	assert a['id'] == 30

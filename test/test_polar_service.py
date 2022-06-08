@@ -35,5 +35,12 @@ def test_login( polar_server ):
 	cfg[KEY_PLUGINS]['polar']['password'] = 'sample password'
 
 	polar.login()
-
 	assert polar.logged_in
+
+def test_fetch( polar_server ):
+	polar = Polar()
+	polar.base_url = TEST_BASE_URL
+	polar.login()
+
+	fetched = polar._fetch( 2020 )
+	assert len( list( fetched ) ) == 1

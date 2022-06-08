@@ -2,6 +2,7 @@
 from threading import Thread
 
 from bottle import Bottle
+from bottle import request
 from bottle import static_file
 
 from pytest import fixture
@@ -31,6 +32,15 @@ def ajax_login():
 @server.post('/login')
 def login():
     return static_file( 'login.html', root=get_file_path( 'templates/polar' ), mimetype='text/html' )
+
+@server.get('/login')
+def login():
+    return static_file( 'login.html', root=get_file_path( 'templates/polar' ), mimetype='text/html' )
+
+@server.get( '/training/getCalendarEvents' )
+def events():
+    start, end = request.params.get( 'start' ), request.params.get( 'end' )
+    return static_file( f"{start.rsplit( '.', 1 )[1]}.json", root=get_file_path( 'templates/polar' ), mimetype='text/json' )
 
 # fixture starting a background server
 

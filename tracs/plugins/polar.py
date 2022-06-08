@@ -178,6 +178,9 @@ class Polar( Service, Plugin ):
 	def events_url( self ) -> str:
 		return f'{self.base_url}/training/getCalendarEvents'
 
+	def events_url_for(self, year) -> str:
+		return f'{self.events_url}?start=1.1.{year}&end=31.12.{year}'
+
 	@property
 	def export_url( self ) -> str:
 		return f'{self.base_url}/api/export/training'
@@ -197,9 +200,6 @@ class Polar( Service, Plugin ):
 			return f'{self._url_export}/rr/csv/{id}'
 		else:
 			return ''
-
-	def url_events_year( self, year ) -> str:
-		return f'{self._url_events}?start=1.1.{year}&end=31.12.{year}'
 
 	def url_activity( self, id: int ) -> str:
 		return f'{self._url_base}/training/analysis/{id}'
@@ -241,7 +241,7 @@ class Polar( Service, Plugin ):
 		return self._logged_in
 
 	def _fetch( self, year: int ) -> Iterable[Activity]:
-		json = self._session.get( self.url_events_year( year ), headers=HEADERS_API ).json()
+		json = self._session.get(self.events_url_for(year), headers=HEADERS_API).json()
 		return [ Activity( self._prototype( j ), 0, self.name ) for j in json ]
 
 	def _prototype( self, json ) -> Mapping:

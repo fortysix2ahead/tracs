@@ -45,13 +45,13 @@ def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: st
 	return cfg_path, lib_path
 
 def get_config_path( name: str, writable: bool = False ) -> Path:
-	with path( 'test.configurations', name ) as p:
-		if not writable:
-			return p
-		else:
-			dst_cfg = Path( _run_path(), f'cfg_{name}-{datetime.now().strftime( "%H%M%S_%f" )}' )
-			copytree( p, dst_cfg )
-			return dst_cfg
+	with path( 'test', '__init__.py' ) as test_path:
+		config_path = Path( test_path.parent, 'configurations', name )
+		if writable:
+			writable_config_path = Path( _run_path(), f'cfg_{name}-{datetime.now().strftime( "%H%M%S_%f" )}' )
+			copytree( config_path, writable_config_path )
+			config_path = writable_config_path
+		return config_path
 
 def get_lib_path( name: str, writable: bool = False ) -> Path:
 	with path( 'test.libraries', name ) as p:

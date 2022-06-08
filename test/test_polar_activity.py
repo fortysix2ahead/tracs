@@ -31,23 +31,26 @@ def test_init_from_db( db_default_inmemory ):
 	assert pa.duration == time( 0, 25, 35 )
 	assert pa.calories == 456
 
-def test_fitnessdata( json_default_db ):
-	json = json_default_db['activities']['12']
+def test_fitnessdata( db_default_inmemory ):
+	db, json = db_default_inmemory
+	json = json['activities']['12']
 	pa = PolarActivity( json, 12 )
 
 	assert pa.id == 12
 	assert pa.raw_id == 2002
 
-def test_orthostatic( json_default_db ):
-	json = json_default_db['activities']['13']
+def test_orthostatic( db_default_inmemory ):
+	db, json = db_default_inmemory
+	json = json['activities']['13']
 	pa = PolarActivity( json, 13 )
 
 	assert pa['id'] == 13
 	assert pa.id == 13
 	assert pa.raw_id == 3003
 
-def test_rrrecording( json_default_db ):
-	json = json_default_db['activities']['14']
+def test_rrrecording( db_default_inmemory ):
+	db, json = db_default_inmemory
+	json = json['activities']['14']
 	pa = PolarActivity( json, 14 )
 
 	# test id

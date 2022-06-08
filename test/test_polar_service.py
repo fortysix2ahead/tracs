@@ -1,7 +1,9 @@
+from typing import List
 
+from tracs.activity import Activity
 from tracs.config import ApplicationConfig as cfg
 from tracs.config import KEY_PLUGINS
-from tracs.plugins.polar import Polar
+from tracs.plugins.polar import Polar, PolarActivity
 
 from .polar_server import polar_server
 
@@ -40,7 +42,15 @@ def test_login( polar_server ):
 def test_fetch( polar_server ):
 	polar = Polar()
 	polar.base_url = TEST_BASE_URL
+	cfg[KEY_PLUGINS]['polar']['username'] = 'sample user'
+	cfg[KEY_PLUGINS]['polar']['password'] = 'sample password'
 	polar.login()
 
-	fetched = polar._fetch( 2020 )
-	assert len( list( fetched ) ) == 1
+	fetched: List[Activity] = list( polar._fetch( 2020 ) )
+	assert len( fetched ) == 1
+	assert type( fetched[0] ) is PolarActivity
+	assert fetched[0].raw is not None
+	assert fetched[0].raw_id == 300003
+	assert fetched[0].raw_name == '300003.json'
+
+	assert len( fetched[0].resources ) == 4

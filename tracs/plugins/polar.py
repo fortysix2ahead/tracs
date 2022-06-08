@@ -167,6 +167,22 @@ class Polar( Service, Plugin ):
 		self._url_export = f'{self._url_base}/api/export/training'
 
 	@property
+	def login_url( self ) -> str:
+		return f'{self.base_url}/login'
+
+	@property
+	def login_ajax_url( self ) -> str:
+		return  f'{self.base_url}/ajaxLogin?_={str( int( current_time() ) )}'
+
+	@property
+	def events_url( self ) -> str:
+		return f'{self.base_url}/training/getCalendarEvents'
+
+	@property
+	def export_url( self ) -> str:
+		return f'{self.base_url}/api/export/training'
+
+	@property
 	def url_export( self ) -> str:
 		return self._url_export
 

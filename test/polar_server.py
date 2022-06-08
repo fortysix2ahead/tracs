@@ -22,7 +22,7 @@ server_thread = Thread(target=server_function, kwargs=server_args, daemon=True)
 
 @server.get('/')
 def root():
-    return '<p>Hello</p>'
+    return static_file( 'index.html', root=get_file_path( 'templates/polar' ), mimetype='text/html' )
 
 @server.get('/ajaxLogin')
 def ajax_login():

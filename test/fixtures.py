@@ -16,6 +16,14 @@ def db_default_file() -> Tuple[ActivityDb, Mapping]:
 	return get_db_json( 'default', False )
 
 @fixture
+def db_empty_inmemory() -> Tuple[ActivityDb, Mapping]:
+	return get_db_json( 'empty', True )
+
+@fixture
+def db_empty_file() -> Tuple[ActivityDb, Mapping]:
+	return get_db_json( 'empty', False )
+
+@fixture
 def clean_registry():
 	Registry.accessors.clear()
 	Registry.transformers.clear()

@@ -30,7 +30,7 @@ def ajax_login():
 
 @server.post('/login')
 def login():
-    return '<p>Success</p>'
+    return static_file( 'login.html', root=get_file_path( 'templates/polar' ), mimetype='text/html' )
 
 # fixture starting a background server
 

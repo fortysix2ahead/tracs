@@ -5,9 +5,6 @@ from tracs.application import Application
 from tracs.config import ApplicationConfig as cfg
 from .helpers import get_config_path
 
-from .helpers import get_env
-from .helpers import get_db
-
 def test_app_constructor():
 	app =  Application.__new__( Application, db=None, config_dir=None, lib_dir=None, verbose=False, debug=False, force=False )
 	home = Path.home()

@@ -10,7 +10,7 @@ from confuse import Configuration
 from confuse import Subview
 from rich.console import Console
 
-APPNAME = 'gtrac'
+APPNAME = 'tracs'
 
 BACKUP_DIRNAME = '.backup'
 CACHE_DIRNAME = 'cache'

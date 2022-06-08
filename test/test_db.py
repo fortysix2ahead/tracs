@@ -6,16 +6,16 @@ from typing import Tuple
 from tinydb.table import Document
 from tinydb.table import Table
 
-from gtrac.activity import Activity
-from gtrac.activity_types import ActivityTypes
-from gtrac.plugins.groups import ActivityGroup
-from gtrac.db import ActivityDb
-from gtrac.db import DB_VERSION
-from gtrac.db import document_factory
+from tracs.activity import Activity
+from tracs.activity_types import ActivityTypes
+from tracs.plugins.groups import ActivityGroup
+from tracs.db import ActivityDb
+from tracs.db import DB_VERSION
+from tracs.db import document_factory
 
-from gtrac.plugins.polar import PolarActivity
-from gtrac.plugins.strava import StravaActivity
-from gtrac.plugins.waze import WazeActivity
+from tracs.plugins.polar import PolarActivity
+from tracs.plugins.strava import StravaActivity
+from tracs.plugins.waze import WazeActivity
 
 from .fixtures import db_default_inmemory
 from .helpers import ids

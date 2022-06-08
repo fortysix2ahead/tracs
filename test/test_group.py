@@ -1,6 +1,6 @@
 
-from gtrac.group import group_activities
-from gtrac.group import ungroup_activities
+from tracs.group import group_activities
+from tracs.group import ungroup_activities
 
 def test_grouping( db ):
 	_all = db.all( True, True, True )

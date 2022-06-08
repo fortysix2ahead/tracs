@@ -3,7 +3,7 @@
 ## Configuration
 
 The configuration file with its default values looks like this. See below to learn where to place this file. A valid 
-configuration file can be created by running `gtrac setup`. The meaning of the configuration keys are placed into
+configuration file can be created by running `tracs setup`. The meaning of the configuration keys are placed into
 each comment.
 
 ```yaml
@@ -68,37 +68,37 @@ plugins:
 
 ## Directory Layout
 
-GTrac stores all of its files in two directories: the configuration directory and the library directory. By default,
-both reside in one and the same directory. On Windows this is `~/AppData/Roaming/gtrac/`, on Linux/Mac OS X it's
-`~/.config/gtrac/`. Inside you will find downloaded files from external services, configuration, logs and cache data.
+Tracs stores all of its files in two directories: the configuration directory and the library directory. By default,
+both reside in one and the same directory. On Windows this is `~/AppData/Roaming/tracs/`, on Linux/Mac OS X it's
+`~/.config/tracs/`. Inside you will find downloaded files from external services, configuration, logs and cache data.
 Both directories can be separated by providing locations via the **-c** and the **-l** parameters.
 
 ### Configuration Directory
 
-All configuration data is stored in the gtrac configuration directory. This is located in `~/.config/gtrac/` in
-Linux/Mac OS X and in `~/AppData/Roaming/gtrac/` in Windows as configuration root folder. The content of the
+All configuration data is stored in the tracs configuration directory. This is located in `~/.config/tracs/` in
+Linux/Mac OS X and in `~/AppData/Roaming/tracs/` in Windows as configuration root folder. The content of the
 directory is the following:
 
 ```dirtree
 [configuration root]/
 ├── backup/
-│   └── db.<backup-timestamp>.json    # backup of the gtrac database, including timestamp
+│   └── db.<backup-timestamp>.json    # backup of the tracs database, including timestamp
 ├── config.yaml                       # configuration file
 ├── db.json                           # database containing all information about activities
 ├── logs/                             # log directory
-│   └── gtrac.log                  # log file
+│   └── tracs.log                  # log file
 └── state.yaml                        # application state file containing transitive data
 ```
 
 It's possible to point to a different configuration directory by using the **-c** switch. An example looks like this:
 
 ```bash
-gtrac -c [CONFIG_FOLDER]
+tracs -c [CONFIG_FOLDER]
 ```
 
 When providing a different configuration directory, the configuration files are not searched for in the directory
-itself, but in a subdirectory `.gtrac`. So, when using `gtrac -c /home/user/mydir`, the configuration file
-must be present at `/home/user/mydir/.gtrac/config.yaml`.
+itself, but in a subdirectory `.tracs`. So, when using `tracs -c /home/user/mydir`, the configuration file
+must be present at `/home/user/mydir/.tracs/config.yaml`.
 
 ### Activity Library
 
@@ -106,7 +106,7 @@ The activity library is the second directory where files are stored. By default,
 folder, but can be moved to a different folder by using the **-l** parameter. An example is this:
 
 ```bash
-gtrac -l [LIBRARY_ROOT_FOLDER]
+tracs -l [LIBRARY_ROOT_FOLDER]
 ```
 
 Instead of providing path to the library via the command line, the path can also be defined in the configuration file
@@ -158,7 +158,7 @@ subfolders can be removed safely and recreated on request. A sample library with
 
 ## Open Issues
 
-Issues can be reported via GitHub: [issues](https://github.com/fortysixandtwoahead/gtrac/issues).
+Issues can be reported via GitHub: [issues](https://github.com/fortysixandtwoahead/tracs/issues).
 
 ### Testing
 
@@ -169,17 +169,17 @@ complete yet.
 
 ## Planned Features
 
-See [issues](https://github.com/fortysixandtwoahead/gtrac/issues) for planned future features.
+See [issues](https://github.com/fortysixandtwoahead/tracs/issues) for planned future features.
 
 ## Hidden Commands
 
 There are a couple of commands that are hidden by default and are not going to be displayed when running
-`gtrac --help`. However, they are not so incredibly secret that a documentation for needs also to be hidden.
+`tracs --help`. However, they are not so incredibly secret that a documentation for needs also to be hidden.
 
 ### db
 
 ```bash
-gtrac db [OPTIONS]
+tracs db [OPTIONS]
 
 Options:
   -b, --backup
@@ -188,7 +188,7 @@ Options:
   -s, --status
 ```
 
-GTrac will keep all information fetched from remote services in an internal JSON-based db. This command carries out
+Tracs will keep all information fetched from remote services in an internal JSON-based db. This command carries out
 some database operations. The option **-b** creates a backup of the internal database. Mainly used during development,
 but might be useful to save certain states of the db. See technical information in [internals.md](internals.md) to learn
 where the backups are stored.
@@ -215,7 +215,7 @@ necessary from time to time, when new database fields are added (and will be aut
 ### validate
 
 ```bash
-gtrac validate
+tracs validate
 ```
 
 This is work in progress and runs several checks in order to ensure database integrity (or at least list things that

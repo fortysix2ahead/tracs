@@ -1,8 +1,8 @@
 from pathlib import Path
 from platform import system
 
-from gtrac.application import Application
-from gtrac.config import ApplicationConfig as cfg
+from tracs.application import Application
+from tracs.config import ApplicationConfig as cfg
 from .helpers import get_config_path
 
 from .helpers import get_env
@@ -19,15 +19,15 @@ def test_app_constructor():
 	else:
 		return
 
-	assert app.cfg_dir == Path( system_cfg_dir, 'gtrac' )
-	assert app.cfg_file == Path( system_cfg_dir, 'gtrac/config.yaml' )
-	assert app.state_file == Path( system_cfg_dir, 'gtrac/state.yaml' )
+	assert app.cfg_dir == Path( system_cfg_dir, 'tracs' )
+	assert app.cfg_file == Path( system_cfg_dir, 'tracs/config.yaml' )
+	assert app.state_file == Path( system_cfg_dir, 'tracs/state.yaml' )
 
-	assert app.lib_dir == Path( system_cfg_dir, 'gtrac' )
-	assert app.db_dir == Path( system_cfg_dir, 'gtrac/db' )
-	assert app.db_file == Path( system_cfg_dir, 'gtrac/db/db.json' )
+	assert app.lib_dir == Path( system_cfg_dir, 'tracs' )
+	assert app.db_dir == Path( system_cfg_dir, 'tracs/db' )
+	assert app.db_file == Path( system_cfg_dir, 'tracs/db/db.json' )
 
-	assert app.backup_dir == Path( system_cfg_dir, 'gtrac/db/.backup' )
+	assert app.backup_dir == Path( system_cfg_dir, 'tracs/db/.backup' )
 
 def test_app_constructor_cfg_dir():
 	env_path = get_config_path( 'debug', False )
@@ -55,9 +55,9 @@ def test_app_constructor_lib_dir():
 	else:
 		return
 
-	assert app.cfg_dir == Path( system_cfg_dir, 'gtrac' )
-	assert app.cfg_file == Path( system_cfg_dir, 'gtrac/config.yaml' )
-	assert app.state_file == Path( system_cfg_dir, 'gtrac/state.yaml' )
+	assert app.cfg_dir == Path( system_cfg_dir, 'tracs' )
+	assert app.cfg_file == Path( system_cfg_dir, 'tracs/config.yaml' )
+	assert app.state_file == Path( system_cfg_dir, 'tracs/state.yaml' )
 
 	assert app.lib_dir == Path( env_path )
 	assert app.db_dir == Path( env_path, 'db' )

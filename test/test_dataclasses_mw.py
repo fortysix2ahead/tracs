@@ -5,10 +5,10 @@ from tinydb import JSONStorage
 from tinydb import TinyDB
 from tinydb.storages import MemoryStorage
 
-from gtrac.db_middleware import DataClassMiddleware
-from gtrac.db import document_cls
-from gtrac.db import document_factory
-from gtrac.plugins.polar import PolarActivity
+from tracs.db_middleware import DataClassMiddleware
+from tracs.db import document_cls
+from tracs.db import document_factory
+from tracs.plugins.polar import PolarActivity
 
 from .helpers import get_db_path
 

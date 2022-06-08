@@ -8,9 +8,9 @@ from tinydb import TinyDB
 from tinydb.operations import set
 from tinydb.storages import MemoryStorage
 
-from gtrac.activity_types import ActivityTypes
-from gtrac.db import DB_VERSION
-from gtrac.db_storage import OrJSONStorage
+from tracs.activity_types import ActivityTypes
+from tracs.db import DB_VERSION
+from tracs.db_storage import OrJSONStorage
 
 from .helpers import get_db_path
 

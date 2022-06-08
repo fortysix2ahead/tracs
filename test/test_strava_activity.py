@@ -3,12 +3,12 @@ from datetime import datetime
 from datetime import time
 from datetime import timezone
 
-from gtrac.activity import ActivityRef
+from tracs.activity import ActivityRef
 
 from .fixtures import db_default_inmemory
 
-from gtrac.activity_types import ActivityTypes
-from gtrac.plugins.strava import StravaActivity
+from tracs.activity_types import ActivityTypes
+from tracs.plugins.strava import StravaActivity
 
 def test_init_from_db( db_default_inmemory ):
 	db, json = db_default_inmemory

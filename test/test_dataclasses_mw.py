@@ -10,16 +10,19 @@ from tracs.db import document_cls
 from tracs.db import document_factory
 from tracs.plugins.polar import PolarActivity
 
+from .fixtures import db_default_inmemory
 from .helpers import get_db_path
 
-def test_read_data( json_default_db ):
+def test_read_data( db_default_inmemory ):
+	db, json = db_default_inmemory
+
 	storage_cls = DataClassMiddleware( MemoryStorage )
 	db = TinyDB( storage=storage_cls )
 
 	# db setup, populate memory
 	mw = cast( DataClassMiddleware, db.storage )
 	ms = cast( MemoryStorage, mw.storage )
-	ms.memory = json_default_db
+	ms.memory = json
 
 	# setup transmap
 	mw.transmap['activities'] = document_cls
@@ -38,8 +41,9 @@ def test_read_data_from_disk():
 
 	assert type( db.table( 'activities' ).get( doc_id = 2 ) ) is PolarActivity
 
-def test_write_data( json_default_db ):
-	polar_raw = json_default_db['activities']['2']['_raw']
+def test_write_data( db_default_inmemory ):
+	db, json = db_default_inmemory
+	polar_raw = json['activities']['2']['_raw']
 	polar = PolarActivity( raw=polar_raw )
 
 	# set up db

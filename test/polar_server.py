@@ -1,4 +1,4 @@
-
+from pathlib import Path
 from threading import Thread
 
 from bottle import Bottle
@@ -33,14 +33,16 @@ def ajax_login():
 def login():
     return static_file( 'login.html', root=get_file_path( 'templates/polar' ), mimetype='text/html' )
 
-@server.get('/login')
-def login():
-    return static_file( 'login.html', root=get_file_path( 'templates/polar' ), mimetype='text/html' )
-
 @server.get( '/training/getCalendarEvents' )
 def events():
     start, end = request.params.get( 'start' ), request.params.get( 'end' )
-    return static_file( f"{start.rsplit( '.', 1 )[1]}.json", root=get_file_path( 'templates/polar' ), mimetype='text/json' )
+    root_path = get_file_path( 'templates/polar' )
+    filename = f"{start.rsplit( '.', 1 )[1]}.json"
+    path = Path( root_path, filename )
+    if path.exists():
+        return static_file( filename=filename, root=root_path, mimetype='text/json' )
+    else:
+        return '[]'
 
 @server.get( '/api/export/training/csv/<id:int>' )
 def download_csv( id ):

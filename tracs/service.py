@@ -121,7 +121,7 @@ class Service( AbstractServiceClass ):
 			fetched = self._fetch( year )
 			for na in fetched: # na = new activity
 				# create/update external activity in service table
-				oa = gc.db.get( activity_id=na['raw_id'], service_name=self.name )
+				oa = gc.db.get( raw_id=na['raw_id'], service_name=self.name )
 				if oa is None:
 					gc.db.insert( na )
 					new_activities.append( na )

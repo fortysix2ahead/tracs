@@ -1,0 +1,30 @@
+plugins:
+    waze:
+        fetch:
+            takeouts: [minimal/account_activity_3.csv]
+    bikecitizens:
+        last_fetch:
+        last_download:
+    polar:
+        last_fetch:
+        last_download:
+    strava:
+        access_token:
+        refresh_token:
+        expires_at:
+        last_fetch:
+        last_download:
+waze:
+    fetch:
+        takeouts: [minimal/account_activity_3.csv]
+strava:
+    last_fetch: '2021-01-01T10:00:00.000000'
+    expires_at: 1600000000
+    refresh_token: 1000000000000000000000000000000000000000
+    access_token: 1000000000000000000000000000000000000000
+    expires_in: 10000
+    token_type: Bearer
+    last_download:
+polar:
+    last_fetch: '2021-01-01T10:00:00.000000'
+    last_download:

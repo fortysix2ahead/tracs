@@ -18,51 +18,58 @@ from tracs.plugins.strava import StravaActivity
 from tracs.plugins.waze import WazeActivity
 
 from .fixtures import db_default_inmemory
+from .fixtures import db_empty_inmemory
+from .fixtures import db_empty_file
 from .helpers import ids
 
 # test cases
 
-def test_open_db( ddb: ActivityDb ):
-	assert isinstance( ddb.default, Table )
-	assert isinstance( ddb.activities, Table )
+def test_open_db( db_default_inmemory ):
+	db, json = db_default_inmemory
+	assert isinstance( db.default, Table )
+	assert isinstance( db.activities, Table )
 
-	assert len( ddb.default.all() ) == 1
-	assert ddb.default.all()[0]['version'] == DB_VERSION
+	assert len( db.default.all() ) == 1
+	assert db.default.all()[0]['version'] == DB_VERSION
 
-	assert ddb.default.document_class is Document
-	assert ddb.activities.document_class is document_factory
+	assert db.default.document_class is Document
+	assert db.activities.document_class is document_factory
 
-def test_middleware( ddb: ActivityDb ):
-	for a in ddb.db.table( 'activities' ).all():
+def test_middleware( db_default_inmemory ):
+	db, json = db_default_inmemory
+	for a in db.db.table( 'activities' ).all():
 		assert a['id'] is not None
 
-def test_write_middleware( empty_inmemory_db: ActivityDb ):
+def test_write_middleware( db_empty_inmemory ):
+	db, json = db_empty_inmemory
 	a = StravaActivity( raw = { 'start_date': datetime.utcnow().isoformat() } )
 	assert type( a['time'] ) is datetime
 	assert type( a.get( 'time' ) ) is datetime
 
-	empty_inmemory_db.insert( a )
-	a = empty_inmemory_db.get( doc_id = 1 )
+	db.insert( a )
+	a = db.get( doc_id = 1 )
 	assert type( a['time'] ) is datetime
 	assert type( a.get( 'time' ) ) is datetime
 
-def test_write_to_file( empty_file_db: ActivityDb ):
+def test_write_to_file( db_empty_file ):
+	db, json = db_empty_file
 	a = StravaActivity( raw = { 'start_date': datetime.utcnow().isoformat() } )
-	empty_file_db.insert( a )
+	db.insert( a )
 
-	a = empty_file_db.get( doc_id = 1 )
+	a = db.get( doc_id = 1 )
 	assert type( a['time'] ) is datetime
 	assert type( a.get( 'time' ) ) is datetime
 
-def test_insert( empty_inmemory_db: ActivityDb ):
-	counter = len( empty_inmemory_db.activities.all() )
-	doc_id = empty_inmemory_db.insert( { '_raw': {'listItemId': 1212} } )
-	assert len( empty_inmemory_db.activities.all() ) == counter + 1
-	empty_inmemory_db.activities.remove( doc_ids=[doc_id] )
-	assert len( empty_inmemory_db.activities.all() ) == counter
+def test_insert( db_empty_inmemory ):
+	db, json = db_empty_inmemory
+	counter = len( db.activities.all() )
+	doc_id = db.insert( { '_raw': {'listItemId': 1212} } )
+	assert len( db.activities.all() ) == counter + 1
+	db.activities.remove( doc_ids=[doc_id] )
+	assert len( db.activities.all() ) == counter
 
-def test_contains( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
-	db, json = default_inmemory_db
+def test_contains( db_default_inmemory ):
+	db, json = db_default_inmemory
 
 	# check activity table
 	assert db.contains( 1 ) == True
@@ -74,8 +81,8 @@ def test_contains( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
 	assert db.contains( raw_id=1234567890, service_name='polar' ) == True
 	assert db.contains( raw_id=9999, service_name='polar' ) == False
 
-def test_all( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
-	db, json = default_inmemory_db
+def test_all( db_default_inmemory ):
+	db, json = db_default_inmemory
 
 	# parameters are: include_groups, include_grouped, include_ungrouped
 	# all
@@ -112,8 +119,8 @@ def test_all( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
 	result = ids( db.all( False, False, False ) )
 	assert result == []
 
-def test_get( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
-	db, json = default_inmemory_db
+def test_get( db_default_inmemory ):
+	db, json = db_default_inmemory
 
 	# existing activity -> 1 is considered the doc_id
 	a = db.get( 1 )
@@ -153,8 +160,8 @@ def test_get( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
 	assert db.get( 0, service_name='polar' ) is None
 	assert db.get( doc_id=0, service_name='polar' ) is None
 
-def test_update( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
-	db, json = default_inmemory_db
+def test_update( db_default_inmemory ):
+	db, json = db_default_inmemory
 
 	a = db.get( 1 )
 	assert a.name == 'Unknown Location'
@@ -183,20 +190,21 @@ def test_update( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
 	# assert a2['_groups'].get( 'uids' ) is None
 	assert a2['_metadata'] == {}
 
-def test_remove( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
-	db, json = default_inmemory_db
+def test_remove( db_default_inmemory ):
+	db, json = db_default_inmemory
 	a = db.get( 30 )
 	assert a is not None
 
 	db.remove( a )
 	assert db.get( 30 ) is None
 
-def test_find_last( ddb: ActivityDb ):
-	assert ddb.find_last( None ).doc_id == 30
-	assert ddb.find_last( 'polar' ).doc_id == 41
+def test_find_last( db_default_inmemory ):
+	db, json = db_default_inmemory
+	assert db.find_last( None ).doc_id == 30
+	assert db.find_last( 'polar' ).doc_id == 41
 
-def test_find( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
-	db, json = default_inmemory_db
+def test_find( db_default_inmemory ):
+	db, json = db_default_inmemory
 
 	# id
 	assert db.find_ids( '1' ) == [1]
@@ -229,8 +237,8 @@ def test_find( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
 	assert db.find_ids( 'type:run' ) == [11]
 	assert db.find_ids( '^type:run' ) == [1, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
 
-def test_find_multiple_filters( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
-	db, json = default_inmemory_db
+def test_find_multiple_filters( db_default_inmemory ):
+	db, json = db_default_inmemory
 
 	assert ids( db.find( ['service:polar', 'name:afternoon'] ) ) == [11]
 	assert ids( db.find( ['service:polar', 'name:location', 'type:xcski'] ) ) == [1]
@@ -238,8 +246,8 @@ def test_find_multiple_filters( default_inmemory_db: Tuple[ActivityDb, Mapping] 
 	# test special case involving id
 	assert ids( db.find( ['service:polar', 'id:1', 'name:location', 'type:xcski'] ) ) == [1]
 
-def test_find_by_id( default_inmemory_db: Tuple[ActivityDb, Mapping] ):
-	db, json = default_inmemory_db
+def test_find_by_id( db_default_inmemory ):
+	db, json = db_default_inmemory
 
 	a = db.find_by_id( 2 )
 	assert isinstance( a, PolarActivity )

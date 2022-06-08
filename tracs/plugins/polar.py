@@ -250,12 +250,7 @@ class Polar( Service, Plugin ):
 		p = PolarActivity( raw=json )
 		p.resources = []
 		for key in ['csv', 'gpx', 'hrv', 'tcx']:
-			resource = {
-				'name': None,
-				'type': key,
-				'path': f'{id}.{key}.csv' if key == 'hrv' else f'{id}.{key}',
-				'status': 100
-			}
+			resource = Resource( type=key, path=f'{id}.{key}.csv' if key == 'hrv' else f'{id}.{key}', status= 100 )
 			p.resources.append( resource )
 		return p
 

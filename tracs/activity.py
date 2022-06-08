@@ -35,6 +35,9 @@ def str2activitytype( v: Union[ActivityTypes, str] ) -> ActivityTypes:
 class Resource:
 
 	name: str = field( init=True, default=None )
+	type: str = field( init=True, default=None )
+	path: str = field( init=True, default=None )
+	status: int = field( init=True, default=None )
 
 @define
 class ActivityRef:

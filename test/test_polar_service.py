@@ -27,30 +27,33 @@ def test_constructor():
 	assert polar.events_url == f'{TEST_BASE_URL}/training/getCalendarEvents'
 	assert polar.export_url == f'{TEST_BASE_URL}/api/export/training'
 
-def test_login( polar_server ):
-	# create service
-	polar = Polar()
-	polar.base_url = TEST_BASE_URL
-
-	# configure credentials
-	cfg[KEY_PLUGINS]['polar']['username'] = 'sample user'
-	cfg[KEY_PLUGINS]['polar']['password'] = 'sample password'
-
+def test_workflow( polar_server ):
+	# login
+	polar = _service()
 	polar.login()
+
 	assert polar.logged_in
 
-def test_fetch( polar_server ):
+	# fetch
+	fetched: List[Activity] = list( polar._fetch( 2020 ) )
+
+	assert len( fetched ) == 1
+	a = fetched[0]
+	assert type( a ) is PolarActivity
+	assert a.raw is not None
+	assert a.raw_id == 300003
+	assert a.raw_name == '300003.json'
+
+	assert len( a.resources ) == 4
+
+	# download
+	for r in a.resources:
+		content, status = polar._download_file( a, r )
+		assert content is not None and status == 200
+
+def _service() -> Polar:
 	polar = Polar()
 	polar.base_url = TEST_BASE_URL
 	cfg[KEY_PLUGINS]['polar']['username'] = 'sample user'
 	cfg[KEY_PLUGINS]['polar']['password'] = 'sample password'
-	polar.login()
-
-	fetched: List[Activity] = list( polar._fetch( 2020 ) )
-	assert len( fetched ) == 1
-	assert type( fetched[0] ) is PolarActivity
-	assert fetched[0].raw is not None
-	assert fetched[0].raw_id == 300003
-	assert fetched[0].raw_name == '300003.json'
-
-	assert len( fetched[0].resources ) == 4
+	return polar

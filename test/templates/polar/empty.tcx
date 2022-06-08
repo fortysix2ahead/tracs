@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+	<Activities>
+		<Activity Sport="Other">
+		</Activity>
+	</Activities>
+	<Author xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="Application_t">
+		<Name>PPT 2008</Name>
+		<Build>
+			<Version>
+				<VersionMajor>0</VersionMajor>
+				<VersionMinor>0</VersionMinor>
+			</Version>
+		</Build>
+		<LangID>EN</LangID>
+		<PartNumber>XXX-XXXXX-XX</PartNumber>
+	</Author>
+</TrainingCenterDatabase>

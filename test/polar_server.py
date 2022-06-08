@@ -42,6 +42,22 @@ def events():
     start, end = request.params.get( 'start' ), request.params.get( 'end' )
     return static_file( f"{start.rsplit( '.', 1 )[1]}.json", root=get_file_path( 'templates/polar' ), mimetype='text/json' )
 
+@server.get( '/api/export/training/csv/<id:int>' )
+def download_csv( id ):
+    return static_file( 'empty.csv', root=get_file_path( 'templates/polar' ) )
+
+@server.get( '/api/export/training/rr/csv/<id:int>' )
+def download_csv( id ):
+    return static_file( 'empty.hrv', root=get_file_path( 'templates/polar' ) )
+
+@server.get( '/api/export/training/gpx/<id:int>' )
+def download_gpx( id ):
+    return static_file( 'empty.gpx', root=get_file_path( 'templates/polar' ) )
+
+@server.get( '/api/export/training/tcx/<id:int>' )
+def download_gpx( id ):
+    return static_file( 'empty.tcx', root=get_file_path( 'templates/polar' ) )
+
 # fixture starting a background server
 
 @fixture

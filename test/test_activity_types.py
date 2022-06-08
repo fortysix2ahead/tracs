@@ -1,5 +1,5 @@
 
-from gtrac.activity_types import ActivityTypes
+from tracs.activity_types import ActivityTypes
 
 def test_types():
 	assert ActivityTypes.get( 'run' ) == ActivityTypes.run

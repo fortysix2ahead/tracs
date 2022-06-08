@@ -19,7 +19,7 @@ issues when it comes to time processing in Polar Flow ...
 
 ## Example for 2012
 
-- command: gtrac list date:2012-01-31
+- command: tracs list date:2012-01-31
 
 ### Polar
 
@@ -68,7 +68,7 @@ carries .38. Strava seems to derive the start time from the first track point, n
 
 ## Example for 2016
 
-- command: gtrac list time:2016-11-15
+- command: tracs list time:2016-11-15
 
 ### Polar
 

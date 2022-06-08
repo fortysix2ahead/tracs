@@ -11,19 +11,19 @@ from typing import Tuple
 
 from tinydb.table import Document
 
-from gtrac.config import ApplicationConfig as cfg
-from gtrac.config import GlobalConfig
-from gtrac.db import ActivityDb
-from gtrac.service import Service
-from gtrac.plugins.polar import Polar
-from gtrac.plugins.strava import Strava
-from gtrac.plugins.waze import Waze
+from tracs.config import ApplicationConfig as cfg
+from tracs.config import GlobalConfig
+from tracs.db import ActivityDb
+from tracs.service import Service
+from tracs.plugins.polar import Polar
+from tracs.plugins.strava import Strava
+from tracs.plugins.waze import Waze
 
 def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: str = None ) -> Tuple[Path, Path]:
 	run_dir = _run_path()
 	run_dir = Path( run_dir, f'{datetime.now().strftime( "%y%m%d_%H%M%S_%f" )}' )
 	run_dir.mkdir()
-	dot_dir = Path( run_dir, '.gtrac' )
+	dot_dir = Path( run_dir, '.tracs' )
 	dot_dir.mkdir()
 
 	if cfg_name:

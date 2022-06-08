@@ -8,8 +8,8 @@ from click import secho
 from click.testing import CliRunner
 from click.testing import Result
 
-from gtrac.cli import cli
-from gtrac.config import GlobalConfig as gc
+from tracs.cli import cli
+from tracs.config import GlobalConfig as gc
 
 from .helpers import prepare_environment
 

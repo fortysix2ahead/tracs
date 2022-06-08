@@ -5,12 +5,12 @@ from dateutil.tz import gettz
 
 from pytest import raises
 
-from gtrac.activity_types import ActivityTypes
-from gtrac.config import KEY_CLASSIFER
-from gtrac.plugins.waze import read_drive
-from gtrac.plugins.waze import read_takeout
-from gtrac.plugins.waze import Waze
-from gtrac.plugins.waze import WazeActivity
+from tracs.activity_types import ActivityTypes
+from tracs.config import KEY_CLASSIFER
+from tracs.plugins.waze import read_drive
+from tracs.plugins.waze import read_takeout
+from tracs.plugins.waze import Waze
+from tracs.plugins.waze import WazeActivity
 
 from .helpers import get_file_path
 

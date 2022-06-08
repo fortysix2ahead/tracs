@@ -1,21 +1,21 @@
-# GTrac
+# Tracs
 
-GTrac is a command line application for managing GNSS tracks (data recorded from GPS/Galileo and the like)
+Tracs is a command line application for managing GNSS tracks (data recorded from GPS/Galileo and the like)
 and simultaneously a command line client for sports online services which allow creation/recording/uploading etc.
 of such tracks. Currently, Polar Flow, Strava, Bikecitizens and Waze are supported.
 
-GTrac downloads tracks activities, manages them, displays information and, well, does also a bit more than that.
-The role model for GTrac is the command line music organizer beets (https://github.com/beetbox/beets).
-Many ideas are borrowed from beets. GTrac is written in Python and served as my playground for learning the language,
+Tracs downloads tracks activities, manages them, displays information and, well, does also a bit more than that.
+The role model for Tracs is the command line music organizer beets (https://github.com/beetbox/beets).
+Many ideas are borrowed from beets. Tracs is written in Python and served as my playground for learning the language,
 but has evolved heavily since then.
 
-Why GTrac? First, because it's your data. You can create takeouts out of services like Polar or Strava, but you get
+Why Tracs? First, because it's your data. You can create takeouts out of services like Polar or Strava, but you get
 a large chunk of machine-only readable data. You need to do the sorting/postprocessing by yourself. Second, because
 I am a geo data junkie who likes to keep stuff locally/self-hosted. And third, I would like to add functionality to
-GTrac that is not available anywhere else (just copying functionality does not provide any benefits as my time is
+Tracs that is not available anywhere else (just copying functionality does not provide any benefits as my time is
 limited).
 
-**Important:** GTrac is not yet ready, several things are still broken. There's still some way to go before doing a
+**Important:** Tracs is not yet ready, several things are still broken. There's still some way to go before doing a
 first release, so use it at your own risk.
 
 ## Features
@@ -35,13 +35,13 @@ first release, so use it at your own risk.
 First clone git repository (installation via pip is not yet supported):
 
 ```bash
-git clone https://github.com/fortysix2ahead/gtrac.git
+git clone https://github.com/fortysix2ahead/tracs.git
 ```
 
 Navigate to cloned repository and create a new virtual environment:
 
 ```bash
-cd gtrac
+cd tracs
 python3 -m venv venv
 ```
 
@@ -55,7 +55,7 @@ source venv/bin/activate
 .\venv\Scripts\activate.bat
 ```
 
-Make gtrac module executable and install dependencies:
+Make tracs module executable and install dependencies:
 
 ```bash
 pip3 install -e .
@@ -64,18 +64,18 @@ pip3 install -e .
 Check that everything works by running the version command. This should display the current version and exit:
 
 ```bash
-gtrac version
+tracs version
 ```
 
-Run gtrac setup and follow instructions:
+Run tracs setup and follow instructions:
 
 ```bash
-gtrac setup
+tracs setup
 ```
 
 ## Usage
 
-GTrac is a command line client. It provides various commands to interact with remote services as well as with the
+Tracs is a command line client. It provides various commands to interact with remote services as well as with the
 downloaded files. The following commands/options are currently supported. Please note that the CLI is not yet stable and
 names/parameters might change.
 
@@ -118,7 +118,7 @@ up in the help, but are documented below as well.
 The usual workflow is the following:
 
 ```bash
-gtrac fetch
+tracs fetch
 ```
 
 This will fetch activity information from one or more remote services (currently Polar Flow and Strava, and Waze, but
@@ -126,14 +126,14 @@ the latter one is special). This command basically checks what activities are av
 information in the internal database. Only metadata is downloaded.
 
 ```bash
-gtrac download
+tracs download
 ```
 
 This will download the actual activities from the remote services. After this step .gpx and .tcx files will be created,
 in case of Polar Flow also .csv and .hrv files.
 
 ```bash
-gtrac link
+tracs link
 ```
 
 This step is optional. The download command creates files in a directory structure based on activity identifiers, which
@@ -143,13 +143,13 @@ links to the original files. It's easier to traverse from a user perspective and
 The three steps from above can be done in a combined way by running:
 
 ```bash
-gtrac sync
+tracs sync
 ```
 
 This will execute fetch, download and link in one go. Afterwards you can examine what ended up on your hard disk:
 
 ```bash
-gtrac list time:lastmonth
+tracs list time:lastmonth
 ```
 
 This command lists activities based on certain filters. In this example it will list activities from the last month.
@@ -168,7 +168,7 @@ A typical output would look like this:
 Finally, it's possible to show details for an activity:
 
 ```bash
-gtrac show 1409
+tracs show 1409
 ```
 
 The show command displays information about a certain activity. A typical output will look like this:
@@ -196,7 +196,7 @@ Below all commands are documented in alphabetical order.
 ### config
 
 ```bash
-gtrac config
+tracs config
 ```
 
 This prints the current configuration to the console. Please note that stored passwords are included.
@@ -204,7 +204,7 @@ This prints the current configuration to the console. Please note that stored pa
 ### download
 
 ```bash
-gtrac download [OPTIONS] FILTERS
+tracs download [OPTIONS] FILTERS
 
 Options:
   -a, --all fetches all activities (instead of current year only)
@@ -217,14 +217,14 @@ learn about existing filters.
 ### fetch
 
 ```bash
-gtrac fetch [OPTIONS]
+tracs fetch [OPTIONS]
 
 Options:
   -a, --all                            fetches all activities (instead of current year only)
   -r, --restrict [polar|strava|waze]   restricts fetching to only one source
 ```
 
-Fetches activity metadata. Note that GTrac only checks what activities exist by downloading their metadata, but does
+Fetches activity metadata. Note that Tracs only checks what activities exist by downloading their metadata, but does
 not yet download any gpx or tcx file. The downloaded metadata is stored in the internal database. By default, only
 activities from the current year are checked. If all existing activities shall be checked, use the switch **-a**. The
 sources to be checked can be restricted by using the **-r** switch with one of the three parameters **polar**,
@@ -237,8 +237,8 @@ library folder (see section below about library layout), named preferably ```Tak
 ### help
 
 ```bash
-gtrac --help
-gtrac COMMAND --help
+tracs --help
+tracs COMMAND --help
 ```
 
 The first command shows all available general options and commands. The second displays help on a specific command.
@@ -246,7 +246,7 @@ The first command shows all available general options and commands. The second d
 ### group
 
 ```bash
-gtrac group [OPTIONS] [FILTERS]...
+tracs group [OPTIONS] [FILTERS]...
 
 Options:
   -r, --revert  reverts groups and creates separate activities (again)
@@ -260,7 +260,7 @@ so-called activities can be grouped and marked as *being the same*. Why support 
 provided by different service might be different. So you can fetch the duration and distance from Polar
 and the ascent/descent from Strava.
 
-Grouping activities is interactive, GTrac will ask for necessary information. Before grouping, you might have
+Grouping activities is interactive, Tracs will ask for necessary information. Before grouping, you might have
 something like this:
 
 ```generic
@@ -283,7 +283,7 @@ Grouped activities can be broken up again by using the **-r** parameter.
 ### link
 
 ```bash
-gtrac link [OPTIONS] [FILTERS]...
+tracs link [OPTIONS] [FILTERS]...
 
 Options:
   -a, --all                          creates links for all activities (instead of recent ones only), overriding provided filters
@@ -297,7 +297,7 @@ file system. Note that symbolic linking works both on Windows and Unix-like syst
 ### list
 
 ```bash
-gtrac list [OPTIONS] [FILTERS]...
+tracs list [OPTIONS] [FILTERS]...
 
 Options:
   -s, --sort [id|name|date|type]  sorts the output according to an attribute
@@ -309,7 +309,7 @@ order of items. The default is to sort by id.
 ### rename
 
 ```bash
-gtrac rename [OPTIONS] IDENTIFIER
+tracs rename [OPTIONS] IDENTIFIER
 
 Options:
   --help  Show this message and exit.
@@ -321,7 +321,7 @@ is created out of activity names of either Polar and/or Strava exercises.
 ### setup
 
 ```bash
-gtrac setup
+tracs setup
 ```
 
 Performs a guided setup of the application. Credentials for Polar and Strava can be entered and a proper configuration
@@ -330,7 +330,7 @@ file is created. See [internals.md](internals.md) to learn where configuration d
 ### show
 
 ```bash
-gtrac show [OPTIONS] IDENTIFIER
+tracs show [OPTIONS] IDENTIFIER
 ```
 
 The show command displays information about a certain activity. A typical output will look like this:
@@ -355,14 +355,14 @@ URLs               https://flow.polar.com/training/analysis/1000000003
 ### version
 
 ```bash
-gtrac version
+tracs version
 ```
 
 Prints version information and exits.
 
 ## Filtering Activities
 
-Filtering activities is most likely the most important concept of GTrac. Always all commands (apart from a few
+Filtering activities is most likely the most important concept of Tracs. Always all commands (apart from a few
 exceptions) work based on filters, like for instance listing activities. A filter takes the form of
 
 ```generic
@@ -373,17 +373,17 @@ or
 
 There is one exception to this form for convenience, which is explained below. Multiple filters can be combined
 and are treated with a logical **AND**. Filters can be negated by preceding a **^**. However, this might not work
-depending on the shell that is used. See this issue: <https://github.com/fortysix2ahead/gtrac/issues/15>
+depending on the shell that is used. See this issue: <https://github.com/fortysix2ahead/tracs/issues/15>
 
 | Filter Name      | Filter Value         | Explanation                                                                                                                                                                                                                                                                                                                                   | Example                               |
 |------------------|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|
-| \[id\]           | number               | The number is treated as an identifier. This number can be an activity id (usually in the range of 1 to 9999) or as id for an external service like 60001234. Depending on what is found as a result either an activity or an external activity is returned. This filter is purely for convenience, and id as the filter name can be omitted. | gtrac list 100                     |
-| name             | string               | Matches activities that have the provided string in their name (case-insensitive).                                                                                                                                                                                                                                                            | gtrac list name:Marathon           |
-| service          | string               | Matches activities which have references to recording from the provided external service.                                                                                                                                                                                                                                                     | gtrac list service:polar           |
-| \[service name\] | number               | Matches activities having the provided external id. Service name needs to be one of the supported services                                                                                                                                                                                                                                    | gtrac list polar:10001234          |
-| time             | \[date\]\.\.\[date\] | Matches activities that started in the provided time range. The date must be in the form of year-month-day. Month and day are optional, as well as the start and end range.                                                                                                                                                                   | gtrac list time:2020\.\.2021-07-01 |
-| time             | string               | In addition to the form above taking fixed dates as values there are predefined time ranges: *latest, lastweek, lastmonth, lastquarter, lastyear*. This matches the last activity, the last 7 days, last 31 days, last 3 months and the last 12 months respectively.                                                                          | gtrac list time:lastweek           |
-| type             | string               | Matches activities having the provided type (case-insensitive).                                                                                                                                                                                                                                                                               | gtrac list type:run                |
+| \[id\]           | number               | The number is treated as an identifier. This number can be an activity id (usually in the range of 1 to 9999) or as id for an external service like 60001234. Depending on what is found as a result either an activity or an external activity is returned. This filter is purely for convenience, and id as the filter name can be omitted. | tracs list 100                     |
+| name             | string               | Matches activities that have the provided string in their name (case-insensitive).                                                                                                                                                                                                                                                            | tracs list name:Marathon           |
+| service          | string               | Matches activities which have references to recording from the provided external service.                                                                                                                                                                                                                                                     | tracs list service:polar           |
+| \[service name\] | number               | Matches activities having the provided external id. Service name needs to be one of the supported services                                                                                                                                                                                                                                    | tracs list polar:10001234          |
+| time             | \[date\]\.\.\[date\] | Matches activities that started in the provided time range. The date must be in the form of year-month-day. Month and day are optional, as well as the start and end range.                                                                                                                                                                   | tracs list time:2020\.\.2021-07-01 |
+| time             | string               | In addition to the form above taking fixed dates as values there are predefined time ranges: *latest, lastweek, lastmonth, lastquarter, lastyear*. This matches the last activity, the last 7 days, last 31 days, last 3 months and the last 12 months respectively.                                                                          | tracs list time:lastweek           |
+| type             | string               | Matches activities having the provided type (case-insensitive).                                                                                                                                                                                                                                                                               | tracs list type:run                |
 
 ## Technical Details
 

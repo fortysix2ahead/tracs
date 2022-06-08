@@ -7,13 +7,13 @@ from datetime import timezone
 from dateutil.tz import gettz
 from dateutil.tz import tzlocal
 
-from gtrac.activity_types import ActivityTypes
-from gtrac.utils import as_datetime
-from gtrac.utils import fmt
-from gtrac.utils import seconds_to_time
-from gtrac.utils import fromisoformat
-from gtrac.utils import fromtimezone
-from gtrac.utils import toisoformat
+from tracs.activity_types import ActivityTypes
+from tracs.utils import as_datetime
+from tracs.utils import fmt
+from tracs.utils import seconds_to_time
+from tracs.utils import fromisoformat
+from tracs.utils import fromtimezone
+from tracs.utils import toisoformat
 
 def test_fmt():
 	assert fmt( None ) == ''

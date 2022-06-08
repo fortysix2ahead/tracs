@@ -4,11 +4,11 @@ from datetime import time
 from dateutil.tz import UTC
 from dateutil.tz import tzlocal
 
-from gtrac.activity import ActivityRef
-from gtrac.activity_types import ActivityTypes
-from gtrac.plugins.groups import ActivityGroup
-from gtrac.plugins.polar import PolarActivity
-from gtrac.plugins.strava import StravaActivity
+from tracs.activity import ActivityRef
+from tracs.activity_types import ActivityTypes
+from tracs.plugins.groups import ActivityGroup
+from tracs.plugins.polar import PolarActivity
+from tracs.plugins.strava import StravaActivity
 
 from .fixtures import db_default_inmemory
 

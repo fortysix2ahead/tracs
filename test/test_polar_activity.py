@@ -4,12 +4,12 @@ from datetime import time
 from datetime import timezone
 from dateutil.tz import tzlocal
 
-from gtrac.activity import ActivityRef
-from gtrac.plugins.polar import PolarActivity
+from tracs.activity import ActivityRef
+from tracs.plugins.polar import PolarActivity
 
 from .fixtures import db_default_inmemory
 
-from gtrac.activity_types import ActivityTypes
+from tracs.activity_types import ActivityTypes
 
 def test_init_from_db( db_default_inmemory ):
 	db, json = db_default_inmemory

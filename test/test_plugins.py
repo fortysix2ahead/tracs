@@ -1,6 +1,6 @@
 
-from gtrac.plugins import load
-from gtrac.plugins import Registry
+from tracs.plugins import load
+from tracs.plugins import Registry
 
 from .fixtures import clean_registry
 from .fixtures import setup_registry
@@ -8,12 +8,12 @@ from .fixtures import setup_registry
 def test_load_default( clean_registry, setup_registry ):
 	load()
 
-	import gtrac.plugins.base as base
-	import gtrac.plugins.bikecitizens as bikecitizens
-	import gtrac.plugins.empty as empty
-	import gtrac.plugins.polar as polar
-	import gtrac.plugins.strava as strava
-	import gtrac.plugins.waze as waze
+	import tracs.plugins.base as base
+	import tracs.plugins.bikecitizens as bikecitizens
+	import tracs.plugins.empty as empty
+	import tracs.plugins.polar as polar
+	import tracs.plugins.strava as strava
+	import tracs.plugins.waze as waze
 
 	accessor_count = len( base.accessors() )
 	accessor_count += len( bikecitizens.accessors() )
@@ -34,8 +34,8 @@ def test_load_default( clean_registry, setup_registry ):
 def _test_load_base( clean_registry ):
 	load( disabled=[ 'bikecitizens', 'polar', 'strava', 'waze' ] )
 
-	import gtrac.plugins.base as base
-	import gtrac.plugins.empty as empty
+	import tracs.plugins.base as base
+	import tracs.plugins.empty as empty
 
 	accessor_count = len( base.accessors() )
 	accessor_count += len( empty.accessors() )

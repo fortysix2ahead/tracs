@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pytest import raises
 
-from gtrac.dataclasses import BaseDocument
+from tracs.dataclasses import BaseDocument
 
 # test BaseDocument as the DataClass class is not of much use as it does not contain any fields
 def test_dataclass_document():

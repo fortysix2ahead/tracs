@@ -7,13 +7,13 @@ from datetime import datetime
 from datetime import time
 from tinydb.queries import QueryLike
 
-from gtrac.activity_types import ActivityTypes
-from gtrac.filters import false
-from gtrac.filters import invalid
-from gtrac.filters import parse
-from gtrac.filters import prepare
-from gtrac.filters import true
-from gtrac.filters import Filter
+from tracs.activity_types import ActivityTypes
+from tracs.filters import false
+from tracs.filters import invalid
+from tracs.filters import parse
+from tracs.filters import prepare
+from tracs.filters import true
+from tracs.filters import Filter
 
 from .helpers import ids
 

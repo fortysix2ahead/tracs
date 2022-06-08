@@ -2,10 +2,13 @@ from typing import List
 
 from tracs.activity import Activity
 from tracs.config import ApplicationConfig as cfg
+from tracs.config import GlobalConfig as gc
 from tracs.config import KEY_PLUGINS
 from tracs.plugins.polar import Polar, PolarActivity
 
 from .polar_server import polar_server
+
+from .fixtures import db_empty_inmemory
 
 LIVE_BASE_URL = 'https://flow.polar.com'
 TEST_BASE_URL = 'http://localhost:40080'
@@ -27,7 +30,7 @@ def test_constructor():
 	assert polar.events_url == f'{TEST_BASE_URL}/training/getCalendarEvents'
 	assert polar.export_url == f'{TEST_BASE_URL}/api/export/training'
 
-def test_workflow( polar_server ):
+def test_service( polar_server ):
 	# login
 	polar = _service()
 	polar.login()
@@ -50,6 +53,16 @@ def test_workflow( polar_server ):
 	for r in a.resources:
 		content, status = polar._download_file( a, r )
 		assert content is not None and status == 200
+
+def test_workflow( polar_server, db_empty_inmemory ):
+	gc.db, json = db_empty_inmemory
+	polar = _service()
+
+	polar.login()
+
+	fetched = polar.fetch( True )
+
+	assert len( fetched ) == 1
 
 def _service() -> Polar:
 	polar = Polar()

@@ -115,6 +115,7 @@ class PolarActivity( Activity ):
 
 		if self.raw:
 			self.raw_id = _raw_id( self.raw )
+			self.raw_name = f'{self.raw_id}.json'
 			self.name = self.raw.get( 'title' )
 			self.type = _type_of( self.raw )
 			# self.event_type = self.raw.get( 'eventType' )
@@ -242,11 +243,12 @@ class Polar( Service, Plugin ):
 
 	def _fetch( self, year: int ) -> Iterable[Activity]:
 		json = self._session.get(self.events_url_for(year), headers=HEADERS_API).json()
-		return [ Activity( self._prototype( j ), 0, self.name ) for j in json ]
+		return [ self._prototype( j ) for j in json ]
 
-	def _prototype( self, json ) -> Mapping:
-		resources = []
-		id = _raw_id( json )
+	# noinspection PyMethodMayBeStatic
+	def _prototype( self, json ) -> PolarActivity:
+		p = PolarActivity( raw=json )
+		p.resources = []
 		for key in ['csv', 'gpx', 'hrv', 'tcx']:
 			resource = {
 				'name': None,
@@ -254,14 +256,8 @@ class Polar( Service, Plugin ):
 				'path': f'{id}.{key}.csv' if key == 'hrv' else f'{id}.{key}',
 				'status': 100
 			}
-			resources.append( resource )
-		mapping = {
-			KEY_CLASSIFER: self.name,
-			KEY_METADATA: {},
-			KEY_RESOURCES: resources,
-			KEY_RAW: { **json }
-		}
-		return mapping
+			p.resources.append( resource )
+		return p
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
 		url = self.url_export_for( activity.raw_id, resource.type )

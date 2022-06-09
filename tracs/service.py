@@ -90,7 +90,7 @@ class Service( AbstractServiceClass ):
 			path = Path( path, f'{ts[8:]}.{self.name}.{ext}' )
 		return path
 
-	def fetch( self, fetch_all: bool ) -> List[Activity]:
+	def fetch( self, fetch_all: bool = False, force: bool = False ) -> List[Activity]:
 		if not self.logged_in:
 			self._logged_in = self.login()
 
@@ -128,7 +128,7 @@ class Service( AbstractServiceClass ):
 					new_activities.append( a )
 					log.debug( f'created new {self.name} activity {a.id}')
 				# update if forced
-				elif old and cfg['force'].get( bool ):
+				elif old and force:
 					a.doc_id = old.doc_id
 					gc.db.update( a )
 					updated_activities.append( a )
@@ -136,7 +136,7 @@ class Service( AbstractServiceClass ):
 
 				if a.raw_data and a.raw_name:
 					path = Path( self.path_for( a ), a.raw_name )
-					if not path.exists() or cfg['force'].get( bool ):
+					if not path.exists() or force:
 						path.parent.mkdir( parents=True, exist_ok=True )
 						if type( a.raw_data ) is bytes:
 							path.write_bytes( a.raw_data )

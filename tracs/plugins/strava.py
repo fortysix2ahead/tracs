@@ -14,6 +14,7 @@ from datetime import datetime
 from dateutil.tz import UTC
 from logging import getLogger
 from oauthlib.oauth2 import InvalidGrantError # package name is not oauthlib
+from orjson import dumps as dump_json, OPT_INDENT_2, OPT_APPEND_NEWLINE
 from pathlib import Path
 from requests import Session
 from requests_oauthlib import OAuth2Session
@@ -47,6 +48,7 @@ log = getLogger( __name__ )
 
 SERVICE_NAME = 'strava'
 DISPLAY_NAME = 'Strava'
+ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
 
 HEADERS_LOGIN = {
 	'Accept': '*/*',
@@ -139,15 +141,22 @@ class Strava( Service, Plugin ):
 	def __init__( self, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 
-		self._base_url = 'https://www.strava.com'
-		self._login_url = f'{self._base_url}/login'
-		self._session_url = f'{self._base_url}/session'
-		self._activities_url = f'{self._base_url}/activities'
-		self._auth_url = f'{self._base_url}/oauth/authorize'
-		self._token_url = f'{self._base_url}/oauth/token'
+		self.base_url = 'https://www.strava.com'
+
+	@property
+	def base_url( self ) -> str:
+		return self._base_url
+
+	@base_url.setter
+	def base_url( self, url: str ) -> None:
+		self._base_url = url
+		self._login_url = f'{self.base_url}/login'
+		self._session_url = f'{self.base_url}/session'
+		self._activities_url = f'{self.base_url}/activities'
+		self._auth_url = f'{self.base_url}/oauth/authorize'
+		self._token_url = f'{self.base_url}/oauth/token'
 		self._scope = 'activity:read_all'
 		self._redirect_url = 'http://localhost:40004'
-
 		self._session = None
 		self._oauth_session = None
 
@@ -243,33 +252,26 @@ class Strava( Service, Plugin ):
 		fetched = []  # to be inserted
 		page = 1
 		while True:
-			json = self._oauth_session.get( self.url_events_year( year, page ) ).json()
-			if len( json ) > 0:
-				#fetched.extend( Activity( { '_raw': { **j } }, 0, self.name ) for j in json )
-				fetched.extend( Activity( self._prototype( j ), 0, self.name ) for j in json )
+			response = self._oauth_session.get( self.url_events_year( year, page ) )
+			for json in response.json():
+				json_str = dump_json(json, option=ORJSON_OPTIONS)
+				fetched.append(self._prototype(json, json_str))
+
+			if len( response.json() ) > 0:
 				page += 1
 			else:
 				break
 
 		return fetched
 
-	def _prototype( self, json ) -> Mapping:
-		resources = []
+	# noinspection PyMethodMayBeStatic
+	def _prototype( self, json, raw_data ) -> StravaActivity:
+		p = StravaActivity( raw=json, raw_data=raw_data, raw_name=f"{json['id']}.json" )
+		p.resources = []
 		for key in ['gpx', 'tcx']:
-			resource = {
-				'name': None,
-				'type': key,
-				'path': f"{json['id']}.{key}",
-				'status': 100
-			}
-			resources.append( resource )
-		mapping = {
-			KEY_CLASSIFER: self.name,
-			KEY_METADATA: {},
-			KEY_RESOURCES: resources,
-			KEY_RAW: { **json }
-		}
-		return mapping
+			resource = Resource( type=key, path=f"{json['id']}.{key}", status=100 )
+			p.resources.append( resource )
+		return p
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
 		if not self._session:

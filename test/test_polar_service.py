@@ -1,17 +1,16 @@
 from typing import List
 
 from tracs.activity import Activity
-from tracs.config import ApplicationConfig as cfg
 from tracs.config import GlobalConfig as gc
-from tracs.config import KEY_PLUGINS
 from tracs.plugins.polar import Polar, PolarActivity
 
-from .polar_server import polar_server
-
 from .fixtures import db_empty_inmemory
+from .fixtures import var_dir
+from .polar_server import polar_server
+from .polar_server import polar_test_service
+from .polar_server import TEST_BASE_URL
 
 LIVE_BASE_URL = 'https://flow.polar.com'
-TEST_BASE_URL = 'http://localhost:40080'
 
 def test_constructor():
 	polar = Polar()
@@ -30,17 +29,15 @@ def test_constructor():
 	assert polar.events_url == f'{TEST_BASE_URL}/training/getCalendarEvents'
 	assert polar.export_url == f'{TEST_BASE_URL}/api/export/training'
 
-def test_service( polar_server ):
+def test_service( polar_server, polar_test_service ):
 	# login
-	polar = _service()
-	polar.login()
-
-	assert polar.logged_in
+	polar_test_service.login()
+	assert polar_test_service.logged_in
 
 	# fetch
-	fetched: List[Activity] = list( polar._fetch( 2020 ) )
+	fetched: List[Activity] = list( polar_test_service._fetch( 2020 ) )
 
-	assert len( fetched ) == 1
+	assert len( fetched ) == 3
 	a = fetched[0]
 	assert type( a ) is PolarActivity
 	assert a.raw is not None
@@ -51,22 +48,13 @@ def test_service( polar_server ):
 
 	# download
 	for r in a.resources:
-		content, status = polar._download_file( a, r )
+		content, status = polar_test_service._download_file( a, r )
 		assert content is not None and status == 200
 
-def test_workflow( polar_server, db_empty_inmemory ):
+def test_workflow( polar_server, polar_test_service, db_empty_inmemory, var_dir ):
 	gc.db, json = db_empty_inmemory
-	polar = _service()
+	gc.db_dir = var_dir
+	polar_test_service.login()
+	fetched = polar_test_service.fetch( True )
 
-	polar.login()
-
-	fetched = polar.fetch( True )
-
-	assert len( fetched ) == 1
-
-def _service() -> Polar:
-	polar = Polar()
-	polar.base_url = TEST_BASE_URL
-	cfg[KEY_PLUGINS]['polar']['username'] = 'sample user'
-	cfg[KEY_PLUGINS]['polar']['password'] = 'sample password'
-	return polar
+	assert len( fetched ) == 3

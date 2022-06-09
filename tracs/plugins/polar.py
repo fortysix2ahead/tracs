@@ -17,6 +17,7 @@ from click import echo
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
 from dateutil.tz import UTC
+from orjson import dumps as dump_json, OPT_INDENT_2, OPT_APPEND_NEWLINE
 from rich.prompt import Prompt
 
 from . import document
@@ -43,6 +44,7 @@ log = getLogger( __name__ )
 
 SERVICE_NAME = 'polar'
 DISPLAY_NAME = 'Polar Flow'
+ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
 
 HEADERS_LOGIN = {
 	'Accept': '*/*',
@@ -242,12 +244,16 @@ class Polar( Service, Plugin ):
 		return self._logged_in
 
 	def _fetch( self, year: int ) -> Iterable[Activity]:
-		json = self._session.get(self.events_url_for(year), headers=HEADERS_API).json()
-		return [ self._prototype( j ) for j in json ]
+		rval = []
+		response = self._session.get(self.events_url_for(year), headers=HEADERS_API)
+		for json in response.json():
+			json_str = dump_json( json, option=ORJSON_OPTIONS )
+			rval.append( self._prototype( json, json_str ) )
+		return rval
 
 	# noinspection PyMethodMayBeStatic
-	def _prototype( self, json ) -> PolarActivity:
-		p = PolarActivity( raw=json )
+	def _prototype( self, json, raw_data ) -> PolarActivity:
+		p = PolarActivity( raw=json, raw_data=raw_data )
 		p.resources = []
 		for key in ['csv', 'gpx', 'hrv', 'tcx']:
 			resource = Resource( type=key, path=f'{id}.{key}.csv' if key == 'hrv' else f'{id}.{key}', status= 100 )

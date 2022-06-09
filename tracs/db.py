@@ -48,7 +48,7 @@ from .queries import is_ungrouped
 
 log = getLogger( __name__ )
 
-DB_VERSION = 11
+DB_VERSION = 12
 
 class ActivityDb:
 

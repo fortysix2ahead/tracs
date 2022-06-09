@@ -119,19 +119,31 @@ class Service( AbstractServiceClass ):
 		for year in fetch_range:
 			log.info( f"fetching activities from {self.display_name} for {year} ..." )
 			fetched = self._fetch( year )
-			for na in fetched: # na = new activity
-				# create/update external activity in service table
-				oa = gc.db.get( raw_id=na['raw_id'], service_name=self.name )
-				if oa is None:
-					gc.db.insert( na )
-					new_activities.append( na )
-					log.debug( f'created new {self.name} activity {na.id}' )
-				else:
-					if cfg['force'].get( bool ): # update in case it was forced
-						na.doc_id = oa.doc_id
-						gc.db.update( na )
-						updated_activities.append( na )
-						log.debug( f'updated {self.name} activity {na.id}' )
+			for a in fetched: # a = new activity
+				old = gc.db.get( raw_id=a.raw_id, service_name=self.name )
+
+				# insert if no old activity exists
+				if not old:
+					gc.db.insert( a )
+					new_activities.append( a )
+					log.debug( f'created new {self.name} activity {a.id}')
+				# update if forced
+				elif old and cfg['force'].get( bool ):
+					a.doc_id = old.doc_id
+					gc.db.update( a )
+					updated_activities.append( a )
+					log.debug( f'updated {self.name} activity {a.id}')
+
+				if a.raw_data and a.raw_name:
+					path = Path( self.path_for( a ), a.raw_name )
+					if not path.exists() or cfg['force'].get( bool ):
+						path.parent.mkdir( parents=True, exist_ok=True )
+						if type( a.raw_data ) is bytes:
+							path.write_bytes( a.raw_data )
+						elif type( a.raw_data ) is str:
+							path.write_text( data=a.raw_data, encoding='UTF-8' )
+						else:
+							log.error( f'error writing raw data for activity {a.id}, type of data is neither str or bytes' )
 
 		log.info( f"fetched activities from {self.display_name}: {len( new_activities )} new, {len( updated_activities )} updated" )
 

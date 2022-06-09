@@ -10,6 +10,8 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
+
 
 @dataclass
 class Resource:
@@ -43,7 +45,22 @@ class Activity( ABC, dict ):
 
 	@property
 	@abstractmethod
+	def raw( self ) -> Any:
+		pass
+
+	@property
+	@abstractmethod
 	def raw_id( self ) -> int:
+		pass
+
+	@property
+	@abstractmethod
+	def raw_data( self ) -> Union[str, bytes]:
+		pass
+
+	@property
+	@abstractmethod
+	def raw_name( self ) -> str:
 		pass
 
 	@property

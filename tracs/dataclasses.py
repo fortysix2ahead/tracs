@@ -6,7 +6,7 @@ from collections import MutableMapping
 from datetime import datetime
 from datetime import time
 from enum import Enum
-from typing import Any
+from typing import Any, Union
 from typing import Dict
 from typing import Iterator
 from typing import List
@@ -217,6 +217,7 @@ class BaseDocument( DataClass ):
 	raw: Any = field( init=True, default=None, metadata={ PERSIST: False, PERSIST_AS: '_raw', PROTECTED: True } )  # raw data used for initialization from external data sources
 	raw_id: int = field( init=True, default=0, metadata= { PROTECTED: True } )  # raw id as raw data might not contain all data necessary
 	raw_name: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # same as raw id
+	raw_data: Union[str, bytes] = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # serialized version of raw, can be i.e. str or bytes
 
 	def __attrs_post_init__( self ):
 		if self.data:

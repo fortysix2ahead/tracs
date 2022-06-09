@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Mapping
 from typing import Tuple
 
@@ -6,6 +7,8 @@ from pytest import fixture
 from tracs.db import ActivityDb
 from tracs.plugins import Registry
 from .helpers import get_db_json
+from .helpers import var_run_path
+
 
 @fixture
 def db_default_inmemory() -> Tuple[ActivityDb, Mapping]:
@@ -22,6 +25,10 @@ def db_empty_inmemory() -> Tuple[ActivityDb, Mapping]:
 @fixture
 def db_empty_file() -> Tuple[ActivityDb, Mapping]:
 	return get_db_json( 'empty', False )
+
+@fixture
+def var_dir() -> Path:
+	return var_run_path()
 
 @fixture
 def clean_registry():

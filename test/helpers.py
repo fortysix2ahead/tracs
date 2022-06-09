@@ -110,5 +110,12 @@ def _run_path() -> Path:
 			run_path.mkdir( parents = True )
 			return run_path
 
+def var_run_path() -> Path:
+	with path( 'test', '__init__.py' ) as test_pkg_path:
+		run_path = Path( test_pkg_path.parent.parent, 'var', 'run', f'{datetime.now().strftime( "%H%M%S_%f" )}' )
+		run_path.unlink( missing_ok=True )
+		run_path.mkdir( parents=True )
+		return run_path
+
 def ids( doc_list: [Document] ) -> []:
 	return [a.doc_id for a in doc_list]

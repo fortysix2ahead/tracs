@@ -1,14 +1,18 @@
+from importlib.resources import path
 from pathlib import Path
 from typing import Mapping
+from typing import Optional
 from typing import Tuple
 
 from pytest import fixture
+from yaml import SafeLoader
+from yaml import load as load_yaml
 
+from tracs.config import ApplicationConfig as cfg
 from tracs.db import ActivityDb
 from tracs.plugins import Registry
 from .helpers import get_db_json
 from .helpers import var_run_path
-
 
 @fixture
 def db_default_inmemory() -> Tuple[ActivityDb, Mapping]:
@@ -25,6 +29,28 @@ def db_empty_inmemory() -> Tuple[ActivityDb, Mapping]:
 @fixture
 def db_empty_file() -> Tuple[ActivityDb, Mapping]:
 	return get_db_json( 'empty', False )
+
+@fixture
+def var_config_path( request ) -> Optional[Path]:
+	marker = request.node.get_closest_marker( 'config_file' )
+	if marker:
+		with path( 'test', '__init__.py' ) as test_pkg_path:
+			config_path = Path( test_pkg_path.parent.parent, 'var', marker.args[0] )
+			return config_path if config_path.exists() else None
+	else:
+		return None
+
+@fixture
+def var_config( request ) -> bool:
+	marker = request.node.get_closest_marker( 'config_file' )
+	if marker:
+		with path( 'test', '__init__.py' ) as test_pkg_path:
+			config_path = Path( test_pkg_path.parent.parent, 'var', marker.args[0] )
+			if config_path.exists():
+				cfg.set_file( config_path )
+				return True
+
+	return False
 
 @fixture
 def var_dir() -> Path:

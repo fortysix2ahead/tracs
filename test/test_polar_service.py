@@ -1,12 +1,19 @@
+
 from typing import List
 
+from pytest import mark
+from pytest import skip
+
 from tracs.activity import Activity
+from tracs.config import ApplicationConfig as cfg
 from tracs.config import GlobalConfig as gc
 from tracs.plugins.polar import Polar, PolarActivity
 
 from .fixtures import db_empty_inmemory
+from .fixtures import var_config
 from .fixtures import var_dir
 from .polar_server import polar_server
+from .polar_server import polar_live_service
 from .polar_server import polar_test_service
 from .polar_server import TEST_BASE_URL
 
@@ -58,3 +65,13 @@ def test_workflow( polar_server, polar_test_service, db_empty_inmemory, var_dir 
 	fetched = polar_test_service.fetch( True )
 
 	assert len( fetched ) == 3
+
+@mark.config_file( 'config_live.yaml' )
+def test_live_workflow( polar_live_service, db_empty_inmemory, var_dir, var_config ):
+	if not var_config:
+		skip( 'configuration for live testing is missing, consider creating $PROJECT/var/config_live.yaml' )
+
+	gc.db, json = db_empty_inmemory
+	gc.db_dir = var_dir
+	polar_live_service.login()
+	assert polar_live_service.logged_in

@@ -18,6 +18,8 @@ TEST_HOST = 'localhost'
 TEST_PORT = 40080
 TEST_BASE_URL = f'http://{TEST_HOST}:{TEST_PORT}'
 
+LIVE_BASE_URL = 'https://flow.polar.com'
+
 server = Bottle()
 server_function = server.run
 server_args = {
@@ -90,4 +92,10 @@ def polar_test_service() -> Polar:
 	cfg[KEY_PLUGINS]['polar']['username'] = 'sample user'
 	cfg[KEY_PLUGINS]['polar']['password'] = 'sample password'
 
+	return polar
+
+@fixture
+def polar_live_service() -> Polar:
+	polar = Polar()
+	polar.base_url = LIVE_BASE_URL
 	return polar

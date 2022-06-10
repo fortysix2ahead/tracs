@@ -37,6 +37,9 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'bikecitizens'
 DISPLAY_NAME = 'Bike Citizens'
 
+BASE_URL = 'https://my.bikecitizens.net'
+API_URL = 'https://api.bikecitizens.net'
+
 HEADERS_TEMPLATE = {
 	'Accept-Encoding': 'gzip, deflate, br',
 	'Accept-Language': 'en-US,en;q=0.5',
@@ -97,15 +100,9 @@ class Bikecitizens( Service, Plugin ):
 	def __init__( self, base_url=None, api_url=None, user_id=None, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 
-		self._base_url = base_url if base_url else 'https://my.bikecitizens.net'
-		self._api_url = api_url if api_url else 'https://api.bikecitizens.net'
 		self._user_id = user_id
-
-		self._signin_url = f'{self._base_url}/users/sign_in'
-		self._user_url = f'{self.api_url}/api/v1/users/{self._user_id}'
-
-		self._session = None
-		self._api_key = None
+		self.api_url = api_url
+		self.base_url = base_url
 
 		#self.api_url = 'https://api.bikecitizens.net/api/v1/users'
 		#self.stats_url = 'https://api.bikecitizens.net/api/v1/users/{user}/stats?start={year}-01-01&end={year}-12-31'
@@ -119,9 +116,12 @@ class Bikecitizens( Service, Plugin ):
 
 	@base_url.setter
 	def base_url( self, url: str ) -> None:
+		url = url if url else BASE_URL
 		self._base_url = url
-		self._signin_url = f'{self.base_url}/users/sign_in'
-		self._user_url = f'{self.api_url}/api/v1/users/{self._user_id}'
+		self._signin_url = f'{self._base_url}/users/sign_in'
+		self._user_url = f'{self._api_url}/api/v1/users/{self._user_id}'
+		self._session = None
+		self._api_key = None
 
 	@property
 	def api_url( self ) -> str:
@@ -129,7 +129,7 @@ class Bikecitizens( Service, Plugin ):
 
 	@api_url.setter
 	def api_url( self, url: str ) -> None:
-		self._api_url = url
+		self._api_url = url if url else API_URL
 
 	# sample:
 	# f'https://api.bikecitizens.net/api/v1/users/{user_id}/stats?start=2010-01-01&end=2022-12-31'

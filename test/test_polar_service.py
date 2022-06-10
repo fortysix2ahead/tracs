@@ -5,7 +5,6 @@ from pytest import mark
 from pytest import skip
 
 from tracs.activity import Activity
-from tracs.config import ApplicationConfig as cfg
 from tracs.config import GlobalConfig as gc
 from tracs.plugins.polar import Polar, PolarActivity
 
@@ -13,9 +12,6 @@ from .fixtures import db_empty_inmemory
 from .fixtures import empty_file_db
 from .fixtures import var_config
 from .fixtures import var_dir
-from .polar_server import polar_server
-from .polar_server import polar_live_service
-from .polar_server import polar_test_service
 from .polar_server import TEST_BASE_URL
 
 LIVE_BASE_URL = 'https://flow.polar.com'

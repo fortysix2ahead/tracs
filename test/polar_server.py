@@ -74,28 +74,3 @@ def download_gpx(id):
 @server.get('/api/export/training/tcx/<id:int>')
 def download_gpx(id):
 	return static_file('empty.tcx', root=get_file_path('templates/polar'))
-
-
-# fixture starting a background server
-
-@fixture
-def polar_server() -> Bottle:
-	if not server_thread.is_alive():
-		server_thread.start()
-	return server
-
-@fixture
-def polar_test_service() -> Polar:
-	polar = Polar()
-	polar.base_url = TEST_BASE_URL
-
-	cfg[KEY_PLUGINS]['polar']['username'] = 'sample user'
-	cfg[KEY_PLUGINS]['polar']['password'] = 'sample password'
-
-	return polar
-
-@fixture
-def polar_live_service() -> Polar:
-	polar = Polar()
-	polar.base_url = LIVE_BASE_URL
-	return polar

@@ -203,7 +203,8 @@ class Bikecitizens( Service, Plugin ):
 			log.error( f'Unable to find user id for {self.name}' )
 			return False
 
-		return True
+		self._logged_in = True
+		return self._logged_in
 
 	def _fetch( self, year: int ) -> Iterable[Activity]:
 		url = f'https://api.bikecitizens.net/api/v1/tracks/user/{self._user_id}'

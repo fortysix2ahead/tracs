@@ -18,7 +18,8 @@ from tracs.db import ActivityDb
 from tracs.plugins.bikecitizens import Bikecitizens
 from tracs.plugins.polar import Polar
 from tracs.plugins.strava import Strava
-from tracs.plugins.strava import BASE_URL as STRAVA_BASE_URL
+from tracs.plugins.waze import Waze
+from tracs.service import Service
 
 from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
@@ -60,6 +61,39 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 				state_dict = load_yaml( state_path.read_bytes(), SafeLoader )
 
 	return config_dict, state_dict
+
+@fixture
+def service( request ) -> Service:
+	service_name = marker.args[0] if (marker := request.node.get_closest_marker( 'service_name' )) else None
+	base_url = marker.args[0] if (marker := request.node.get_closest_marker( 'base_url' )) else None
+	config_file = marker.args[0] if (marker := request.node.get_closest_marker( 'config_file' )) else None
+	state_file = marker.args[0] if (marker := request.node.get_closest_marker( 'state_file' )) else None
+
+	config, state = None, None
+	with path('test', '__init__.py') as test_pkg_path:
+		config_path = Path(test_pkg_path.parent.parent, 'var', config_file )
+		if config_path.exists():
+			config = Configuration( 'test.strava', __name__, read=False )
+			config.set_file(config_path)
+
+		state_path = Path(test_pkg_path.parent.parent, 'var', state_file )
+		if state_path.exists():
+			state = Configuration( 'test.strava', __name__, read=False )
+			state.set_file(state_path)
+
+	# don't know why classes cannot be passed via request, this is a workaround
+	if service_name == 'bikecitizens':
+		service_class = Bikecitizens
+	elif service_name == 'polar':
+		service_class = Polar
+	elif service_name == 'strava':
+		service_class = Strava
+	elif service_name == 'waze':
+		service_class = Waze
+	else:
+		service_class = None
+
+	return service_class( base_url=base_url, config=config, state=state )
 
 # bikecitizens specific fixtures
 
@@ -116,23 +150,3 @@ def strava_server() -> Bottle:
 	if not strava_server_thread.is_alive():
 		strava_server_thread.start()
 	return strava_server
-
-@fixture
-def strava_service( request ) -> Strava:
-	base_url = marker.args[0] if (marker := request.node.get_closest_marker( 'base_url' )) else STRAVA_BASE_URL
-	config_file = marker.args[0] if (marker := request.node.get_closest_marker( 'config_file' )) else None
-	state_file = marker.args[0] if (marker := request.node.get_closest_marker( 'state_file' )) else None
-
-	config, state = None, None
-	with path('test', '__init__.py') as test_pkg_path:
-		config_path = Path(test_pkg_path.parent.parent, 'var', config_file )
-		if config_path.exists():
-			config = Configuration( 'test.strava', __name__, read=False )
-			config.set_file(config_path)
-
-		state_path = Path(test_pkg_path.parent.parent, 'var', state_file )
-		if state_path.exists():
-			state = Configuration( 'test.strava', __name__, read=False )
-			state.set_file(state_path)
-
-	return Strava( base_url=base_url, config=config, state=state )

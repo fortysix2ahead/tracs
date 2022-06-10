@@ -76,11 +76,12 @@ def test_workflow( strava_server, strava_service, db_empty_inmemory, var_dir ):
 
 	assert len( fetched ) == 3
 
+@mark.service_name( 'strava' )
 @mark.base_url( LIVE_BASE_URL )
 @mark.config_file( 'config_live.yaml' )
 @mark.state_file( 'state_live.yaml' )
 @mark.db_writable( True )
-def test_live_workflow( strava_service, db, config_state ):
+def test_live_workflow( service, db, config_state ):
 	cfg, state = config_state
 	if not cfg:
 		skip( 'configuration for live testing is missing, consider creating $PROJECT/var/config_live.yaml' )
@@ -89,10 +90,10 @@ def test_live_workflow( strava_service, db, config_state ):
 	gc.db_dir = db.db_path.parent
 	gc.db_file = db.db_path
 
-	strava_service.login()
-	assert strava_service.logged_in
+	service.login()
+	assert service.logged_in
 
-	fetched = strava_service.fetch( False )
+	fetched = service.fetch( False )
 	assert len( fetched ) > 0
 
 # helper

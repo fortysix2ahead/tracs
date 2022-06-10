@@ -32,28 +32,26 @@ from .strava_server import strava_server_thread
 
 @fixture
 def db( request ) -> ActivityDb:
-	if writable_marker := request.node.get_closest_marker( 'writable' ):
-		writable = writable_marker.args[0]
-	else:
-		writable = False
+	writable = marker.args[0] if (marker := request.node.get_closest_marker( 'db_writable' )) else False
+	name = marker.args[0] if (marker := request.node.get_closest_marker('db_name')) else 'db.json'
 
 	var_dir = var_run_path()
 
-	return ActivityDb( db_path=Path( var_dir, 'db.json', writable=writable ) )
+	return ActivityDb( db_path=Path( var_dir, name, writable=writable ) )
 
 @fixture
 def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 	config_dict, state_dict = None, None
-	config_marker = request.node.get_closest_marker( 'config_file' )
-	state_marker = request.node.get_closest_marker( 'state_file' )
-	if config_marker and state_marker:
+
+	if config_marker := request.node.get_closest_marker( 'config_file' ):
 		with path( 'test', '__init__.py' ) as test_pkg_path:
 			config_path = Path( test_pkg_path.parent.parent, 'var', config_marker.args[0] )
-			config = None
 			if config_path.exists():
 				cfg.set_file( config_path )
 				config_dict = load_yaml( config_path.read_bytes(), SafeLoader )
 
+	if state_marker := request.node.get_closest_marker( 'state_file' ):
+		with path( 'test', '__init__.py' ) as test_pkg_path:
 			state_path = Path( test_pkg_path.parent.parent, 'var', state_marker.args[0] )
 			if state_path.exists():
 				state.set_file( state_path )

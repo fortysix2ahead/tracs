@@ -9,8 +9,6 @@ from tracs.config import GlobalConfig as gc
 from tracs.plugins.polar import Polar, PolarActivity
 
 from .fixtures import db_empty_inmemory
-from .fixtures import empty_file_db
-from .fixtures import var_config
 from .fixtures import var_dir
 from .polar_server import TEST_BASE_URL
 
@@ -64,13 +62,15 @@ def test_workflow( polar_server, polar_test_service, db_empty_inmemory, var_dir 
 	assert len( fetched ) == 3
 
 @mark.config_file( 'config_live.yaml' )
-def test_live_workflow( polar_live_service, empty_file_db, var_config ):
-	if not var_config:
+@mark.db_writable( True )
+def test_live_workflow( polar_live_service, db, config_state ):
+	cfg, state = config_state
+	if not cfg:
 		skip( 'configuration for live testing is missing, consider creating $PROJECT/var/config_live.yaml' )
 
-	gc.db = empty_file_db
-	gc.db_dir = empty_file_db.db_path.parent
-	gc.db_file = empty_file_db.db_path
+	gc.db = db
+	gc.db_dir = db.db_path.parent
+	gc.db_file = db.db_path
 
 	polar_live_service.login()
 	assert polar_live_service.logged_in

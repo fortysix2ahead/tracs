@@ -6,6 +6,7 @@ from typing import Optional
 from typing import Tuple
 
 from bottle import Bottle
+from confuse import Configuration
 from pytest import fixture
 from yaml import SafeLoader
 from yaml import load as load_yaml
@@ -17,6 +18,7 @@ from tracs.db import ActivityDb
 from tracs.plugins.bikecitizens import Bikecitizens
 from tracs.plugins.polar import Polar
 from tracs.plugins.strava import Strava
+from tracs.plugins.strava import BASE_URL as STRAVA_BASE_URL
 
 from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
@@ -116,9 +118,21 @@ def strava_server() -> Bottle:
 	return strava_server
 
 @fixture
-def strava_service( request ) -> Optional[Strava]:
-	if marker := request.node.get_closest_marker( 'base_url' ):
-		service = Strava()
-		service.base_url = marker.args[0]
-		return service
-	return None
+def strava_service( request ) -> Strava:
+	base_url = marker.args[0] if (marker := request.node.get_closest_marker( 'base_url' )) else STRAVA_BASE_URL
+	config_file = marker.args[0] if (marker := request.node.get_closest_marker( 'config_file' )) else None
+	state_file = marker.args[0] if (marker := request.node.get_closest_marker( 'state_file' )) else None
+
+	config, state = None, None
+	with path('test', '__init__.py') as test_pkg_path:
+		config_path = Path(test_pkg_path.parent.parent, 'var', config_file )
+		if config_path.exists():
+			config = Configuration( 'test.strava', __name__, read=False )
+			config.set_file(config_path)
+
+		state_path = Path(test_pkg_path.parent.parent, 'var', state_file )
+		if state_path.exists():
+			state = Configuration( 'test.strava', __name__, read=False )
+			state.set_file(state_path)
+
+	return Strava( base_url=base_url, config=config, state=state )

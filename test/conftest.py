@@ -64,8 +64,7 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 
 @fixture
 def service( request ) -> Service:
-	service_name = marker.args[0] if (marker := request.node.get_closest_marker( 'service_name' )) else None
-	base_url = marker.args[0] if (marker := request.node.get_closest_marker( 'base_url' )) else None
+	service_class, base_url = marker.args[0] if (marker := request.node.get_closest_marker( 'service' )) else (None, None)
 	config_file = marker.args[0] if (marker := request.node.get_closest_marker( 'config_file' )) else None
 	state_file = marker.args[0] if (marker := request.node.get_closest_marker( 'state_file' )) else None
 
@@ -81,18 +80,7 @@ def service( request ) -> Service:
 			state = Configuration( 'test.strava', __name__, read=False )
 			state.set_file(state_path)
 
-	# don't know why classes cannot be passed via request, this is a workaround
-	if service_name == 'bikecitizens':
-		service_class = Bikecitizens
-	elif service_name == 'polar':
-		service_class = Polar
-	elif service_name == 'strava':
-		service_class = Strava
-	elif service_name == 'waze':
-		service_class = Waze
-	else:
-		service_class = None
-
+	# noinspection PyCallingNonCallable
 	return service_class( base_url=base_url, config=config, state=state )
 
 # bikecitizens specific fixtures

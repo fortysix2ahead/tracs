@@ -76,8 +76,7 @@ def test_workflow( strava_server, strava_service, db_empty_inmemory, var_dir ):
 
 	assert len( fetched ) == 3
 
-@mark.service_name( 'strava' )
-@mark.base_url( LIVE_BASE_URL )
+@mark.service( (Strava, LIVE_BASE_URL) )
 @mark.config_file( 'config_live.yaml' )
 @mark.state_file( 'state_live.yaml' )
 @mark.db_writable( True )

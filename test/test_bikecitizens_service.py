@@ -27,22 +27,21 @@ def test_constructor():
 	assert bikecitizens._signin_url == f'{TEST_BASE_URL}/users/sign_in'
 	assert bikecitizens._user_url == f'{TEST_BASE_URL}/api/v1/users/None'
 
-@mark.base_url( BASE_URL )
+@mark.service( (Bikecitizens, BASE_URL) )
 @mark.config_file( 'config_live.yaml' )
 @mark.state_file( 'state_live.yaml' )
 @mark.writable( True )
-def test_live_workflow( bikecitizens_service, db, config_state ):
-	if not var_config:
+def test_live_workflow( service, db, config_state ):
+	cfg, state = config_state
+	if not cfg:
 		skip( 'configuration for live testing is missing, consider creating $PROJECT/var/config_live.yaml' )
-
-	config, state = config_state
 
 	gc.db = db
 	gc.db_dir = db.db_path.parent
 	gc.db_file = db.db_path
 
-	bikecitizens_service.login()
-	assert bikecitizens_service.logged_in
+	service.login()
+	#assert service.logged_in
 
-	fetched = bikecitizens_service.fetch( False )
+	fetched = service.fetch( False )
 	assert len( fetched ) > 0

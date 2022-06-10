@@ -15,8 +15,6 @@ from typing import Tuple
 from .base import Activity
 from .base import Resource
 from .base import Service as AbstractServiceClass
-from .config import ApplicationConfig as cfg
-from .config import ApplicationState as state
 from .config import GlobalConfig as gc
 from .config import KEY_PLUGINS
 
@@ -29,15 +27,25 @@ class Service( AbstractServiceClass ):
 	def __init__( self, **kwargs ):
 		self._name = kwargs.pop( 'name' ) if 'name' in kwargs else None
 		self._display_name = kwargs.pop( 'display_name' ) if 'display_name' in kwargs else None
-		#self._cfg = kwargs.pop( 'config' ) if 'config' in kwargs else cfg[KEY_PLUGINS][self._name]
-		#self._state = kwargs.pop( 'state' ) if 'state' in kwargs else state[KEY_PLUGINS][self._name]
+		self._cfg = kwargs.pop( 'config' ) if 'config' in kwargs else gc.cfg
+		self._state = kwargs.pop( 'state' ) if 'state' in kwargs else gc.state
 		self._logged_in = False
 
+	# helpers for setting/getting plugin configuration/state values
+
 	def cfg_value( self, key: str ) -> Any:
-		return cfg[KEY_PLUGINS][self._name][key].get()
+		return self._cfg[KEY_PLUGINS][self._name][key].get()
 
 	def state_value( self, key: str ) -> Any:
-		return state[KEY_PLUGINS][self._name][key].get()
+		return self._state[KEY_PLUGINS][self._name][key].get()
+
+	def set_cfg_value( self, key: str, value: Any ) -> None:
+		self._cfg[KEY_PLUGINS][self._name][key] = value
+
+	def set_state_value( self, key: str, value: Any ) -> None:
+		self._state[KEY_PLUGINS][self._name][key] = value
+
+	# properties
 
 	@property
 	def name( self ) -> str:
@@ -57,7 +65,7 @@ class Service( AbstractServiceClass ):
 
 	@property
 	def db_dir( self ) -> Path:
-		return cfg['db_dir'].get()
+		return self._cfg['db_dir'].get()
 
 	def path_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:
 		"""
@@ -99,7 +107,7 @@ class Service( AbstractServiceClass ):
 			sysexit( -1 )
 
 		if fetch_all:
-			if not (fetch_from := cfg['fetch_from'].get( int )):
+			if not (fetch_from := self._cfg['fetch_from'].get( int )):
 				fetch_from = datetime.utcnow().year - 10
 			fetch_to = datetime.utcnow().year + 1
 			fetch_range = range( fetch_from, fetch_to )
@@ -249,8 +257,8 @@ def link_activities( activities: [Activity] ):
 	_process_activities( activities, False, True )
 
 def _process_activities( activities: [Activity], download: bool, link: bool ):
-	force = cfg['force'].get( bool )
-	pretend = cfg['pretend'].get( bool )
+	force = gc.cfg['force'].get( bool )
+	pretend = gc.cfg['pretend'].get( bool )
 	for activity in activities:
 		if activity.is_group:
 			_queue = [gc.db.get( doc_id=doc_id ) for doc_id in activity.group_for]

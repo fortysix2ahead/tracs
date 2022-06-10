@@ -2,7 +2,6 @@
 from re import match
 from typing import Any
 from typing import Iterable
-from typing import Mapping
 from typing import Optional
 from typing import Tuple
 from http.server import BaseHTTPRequestHandler
@@ -30,16 +29,10 @@ from ..activity import Activity
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types
 from ..base import Resource
-from ..config import ApplicationConfig as cfg
-from ..config import ApplicationState as state
 from ..config import console
 from ..config import GlobalConfig as gc
 from ..config import APPNAME
-from ..config import KEY_CLASSIFER
-from ..config import KEY_METADATA
 from ..config import KEY_PLUGINS
-from ..config import KEY_RAW
-from ..config import KEY_RESOURCES
 from ..service import Service
 from ..utils import seconds_to_time as stt
 from ..utils import to_isotime
@@ -49,6 +42,8 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'strava'
 DISPLAY_NAME = 'Strava'
 ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
+
+BASE_URL = 'https://www.strava.com'
 
 HEADERS_LOGIN = {
 	'Accept': '*/*',
@@ -138,10 +133,9 @@ class StravaActivity( Activity ):
 @service
 class Strava( Service, Plugin ):
 
-	def __init__( self, **kwargs ):
+	def __init__( self, base_url=None, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
-
-		self.base_url = 'https://www.strava.com'
+		self.base_url = base_url
 
 	@property
 	def base_url( self ) -> str:
@@ -149,7 +143,7 @@ class Strava( Service, Plugin ):
 
 	@base_url.setter
 	def base_url( self, url: str ) -> None:
-		self._base_url = url
+		self._base_url = url if url else BASE_URL
 		self._login_url = f'{self.base_url}/login'
 		self._session_url = f'{self.base_url}/session'
 		self._activities_url = f'{self.base_url}/activities'
@@ -297,11 +291,12 @@ class Strava( Service, Plugin ):
 		}
 
 	def _save_oauth_token( self, token: dict ) -> None:
-		state[KEY_PLUGINS][self.name]['access_token'] = token['access_token']
-		state[KEY_PLUGINS][self.name]['refresh_token'] = token['refresh_token']
-		state[KEY_PLUGINS][self.name]['token_type'] = token['token_type']
-		state[KEY_PLUGINS][self.name]['expires_at'] = int( token['expires_at'] )
-		state[KEY_PLUGINS][self.name]['expires_in'] = token['expires_in']
+
+		self.set_state_value( 'access_token', token['access_token'] )
+		self.set_state_value( 'refresh_token', token['refresh_token'] )
+		self.set_state_value( 'token_type', token['token_type'] )
+		self.set_state_value( 'expires_at', int( token['expires_at'] ) )
+		self.set_state_value( 'expires_in', token['expires_in'] )
 
 	def setup( self ) -> None:
 		console.print( f'GPX and TCX files from Strava will be downloaded via Strava\'s Web API, that\'s why your credentials are needed.' )
@@ -348,10 +343,10 @@ class Strava( Service, Plugin ):
 
 		try:
 			# save user/password
-			cfg[KEY_PLUGINS][SERVICE_NAME]['username'] = user
-			cfg[KEY_PLUGINS][SERVICE_NAME]['password'] = pwd
-			cfg[KEY_PLUGINS][SERVICE_NAME]['client_code'] = client_code
-			cfg[KEY_PLUGINS][SERVICE_NAME]['client_secret'] = client_secret
+			self.set_cfg_value( 'username', user )
+			self.set_cfg_value( 'password', pwd )
+			self.set_cfg_value( 'client_code', client_code )
+			self.set_cfg_value( 'client_secret', client_secret )
 
 			# save oauth tokens
 			token = oauth.fetch_token( self._token_url, code=client_code, client_secret=client_secret, include_client_id=True )

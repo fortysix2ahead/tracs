@@ -46,6 +46,9 @@ NAMESPACE_SERVICES = f'{NAMESPACE_BASE}.services'
 ApplicationConfig = Configuration( APPNAME, __name__, read=False )
 ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )
 
+APP_CFG = ApplicationConfig
+APP_STATE = ApplicationState
+
 console = Console()
 
 # load defaults from internal package
@@ -61,6 +64,8 @@ class GlobalConfig:
 
 	app = None
 	db = None
+	cfg: Configuration = APP_CFG
+	state: Configuration = APP_STATE
 
 	cfg_dir: Path = None
 	db_dir: Path = None

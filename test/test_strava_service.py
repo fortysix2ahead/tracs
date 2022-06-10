@@ -8,17 +8,10 @@ from tracs.activity import Activity
 from tracs.config import ApplicationConfig as cfg
 from tracs.config import ApplicationState as state
 from tracs.config import GlobalConfig as gc
-from tracs.plugins.polar import Polar, PolarActivity
 from tracs.plugins.strava import Strava
 from tracs.plugins.strava import StravaActivity
 
-from .fixtures import db_empty_inmemory
-from .fixtures import empty_file_db
-from .fixtures import config_state
 from .fixtures import var_config
-from .fixtures import var_dir
-from .strava_server import strava_server
-from .strava_server import strava_service
 from .strava_server import TEST_BASE_URL
 from .strava_server import LIVE_BASE_URL
 

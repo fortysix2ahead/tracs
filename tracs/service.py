@@ -98,7 +98,7 @@ class Service( AbstractServiceClass ):
 			path = Path( path, f'{ts[8:]}.{self.name}.{ext}' )
 		return path
 
-	def fetch( self, fetch_all: bool = False, force: bool = False ) -> List[Activity]:
+	def fetch( self, force: bool = False ) -> List[Activity]:
 		if not self.logged_in:
 			self._logged_in = self.login()
 
@@ -106,65 +106,48 @@ class Service( AbstractServiceClass ):
 			log.error( f"unable to login to service {self.display_name}, exiting ..." )
 			sysexit( -1 )
 
-		if fetch_all:
-			if not (fetch_from := self._cfg['fetch_from'].get( int )):
-				fetch_from = datetime.utcnow().year - 10
-			fetch_to = datetime.utcnow().year + 1
-			fetch_range = range( fetch_from, fetch_to )
-		else:
-			latest = gc.db.find_last( self.name )
-			if latest:
-				fetch_range = range( latest.utctime.year, datetime.utcnow().year + 1 )
-			else:
-				fetch_range = [datetime.utcnow().year]
-
-		log.debug( f"fetch range for {self.display_name} is {fetch_range}" )
-
 		new_activities = []
 		updated_activities = []
 		#fetched_activities = []
 
-		for year in fetch_range:
-			log.info( f"fetching activities from {self.display_name} for {year} ..." )
-			fetched = self._fetch( year )
-			for a in fetched: # a = new activity
-				old = gc.db.get( raw_id=a.raw_id, service_name=self.name )
+		fetched = self._fetch()
+		for a in fetched: # a = new activity
+			old = gc.db.get( raw_id=a.raw_id, service_name=self.name )
 
-				# insert if no old activity exists
-				if not old:
-					gc.db.insert( a )
-					new_activities.append( a )
-					log.debug( f'created new {self.name} activity {a.id}')
-				# update if forced
-				elif old and force:
-					a.doc_id = old.doc_id
-					gc.db.update( a )
-					updated_activities.append( a )
-					log.debug( f'updated {self.name} activity {a.id}')
+			# insert if no old activity exists
+			if not old:
+				gc.db.insert( a )
+				new_activities.append( a )
+				log.debug( f'created new {self.name} activity {a.id}')
+			# update if forced
+			elif old and force:
+				a.doc_id = old.doc_id
+				gc.db.update( a )
+				updated_activities.append( a )
+				log.debug( f'updated {self.name} activity {a.id}')
 
-				if a.raw_data and a.raw_name:
-					path = Path( self.path_for( a ), a.raw_name )
-					if not path.exists() or force:
-						path.parent.mkdir( parents=True, exist_ok=True )
-						if type( a.raw_data ) is bytes:
-							path.write_bytes( a.raw_data )
-						elif type( a.raw_data ) is str:
-							path.write_text( data=a.raw_data, encoding='UTF-8' )
-						else:
-							log.error( f'error writing raw data for activity {a.id}, type of data is neither str or bytes' )
+			if a.raw_data and a.raw_name:
+				path = Path( self.path_for( a ), a.raw_name )
+				if not path.exists() or force:
+					path.parent.mkdir( parents=True, exist_ok=True )
+					if type( a.raw_data ) is bytes:
+						path.write_bytes( a.raw_data )
+					elif type( a.raw_data ) is str:
+						path.write_text( data=a.raw_data, encoding='UTF-8' )
+					else:
+						log.error( f'error writing raw data for activity {a.id}, type of data is neither str or bytes' )
 
 		log.info( f"fetched activities from {self.display_name}: {len( new_activities )} new, {len( updated_activities )} updated" )
 
 		return new_activities
 
 	@abstractmethod
-	def _fetch( self, year: int ) -> Iterable[Activity]:
+	def _fetch( self ) -> Iterable[Activity]:
 		"""
 		Called by fetch(). This method has to be implemented by a service class. It shall fetch information concerning
 		activities from external service and create activities out of it. The newly created activities will be matched
 		against the internal database and inserted if necessary.
 
-		:param year: year for which to fetch activities
 		:return: list of fetched activities
 		"""
 		pass

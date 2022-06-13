@@ -45,6 +45,8 @@ ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
 
 BASE_URL = 'https://www.strava.com'
 
+FETCH_PAGE_SIZE = 200 # maximum possible size?
+
 HEADERS_LOGIN = {
 	'Accept': '*/*',
 	'Accept-Encoding': 'gzip, deflate, br',
@@ -157,7 +159,13 @@ class Strava( Service, Plugin ):
 	def url_events_year( self, year, page: int ) -> str:
 		after = int( datetime( year, 1, 1, tzinfo=UTC ).timestamp() )
 		before = int( datetime( year + 1, 1, 1, tzinfo=UTC ).timestamp() )
-		per_page = 100 # we might make this configurable later ...
+		per_page = FETCH_PAGE_SIZE # we might make this configurable later ...
+		return f'{self._base_url}/api/v3/athlete/activities?before={before}&after={after}&page={page}&per_page={per_page}'
+
+	def all_events_url( self, page: int ) -> str:
+		after = int( datetime( 1970, 1, 1, tzinfo=UTC ).timestamp() )
+		before = int( datetime( datetime.utcnow().year + 1, 1, 1, tzinfo=UTC ).timestamp() )
+		per_page = FETCH_PAGE_SIZE  # we might make this configurable later ...
 		return f'{self._base_url}/api/v3/athlete/activities?before={before}&after={after}&page={page}&per_page={per_page}'
 
 	def url_export_for( self, id: int, ext: str ) -> str:
@@ -242,19 +250,14 @@ class Strava( Service, Plugin ):
 		if self._oauth_session and self._session:
 			return True
 
-	def _fetch( self, year: int ) -> Iterable[Activity]:
+	def _fetch( self ) -> Iterable[Activity]:
 		fetched = []  # to be inserted
-		page = 1
-		while True:
-			response = self._oauth_session.get( self.url_events_year( year, page ) )
+		for page in range( 1, 999999 ):
+			response = self._oauth_session.get( self.all_events_url( page) )
 			for json in response.json():
-				fetched.append(self._prototype( json ))
-
-			if len( response.json() ) > 0:
-				page += 1
-			else:
+				fetched.append( self._prototype( json ) )
+			if len( response.json() ) == 0:
 				break
-
 		return fetched
 
 	# noinspection PyMethodMayBeStatic

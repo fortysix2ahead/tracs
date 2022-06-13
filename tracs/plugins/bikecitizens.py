@@ -5,12 +5,14 @@ from re import DOTALL
 from sys import exit as sysexit
 from typing import Any
 from typing import Iterable
-from typing import Mapping
 from typing import Tuple
 
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
+from orjson import dumps as dump_json
+from orjson import OPT_INDENT_2
+from orjson import OPT_APPEND_NEWLINE
 from requests import options
 from requests import Session
 from rich.prompt import Prompt
@@ -25,14 +27,12 @@ from ..config import ApplicationConfig as cfg
 from ..config import ApplicationConfig as state
 from ..config import console
 from ..config import APPNAME
-from ..config import KEY_CLASSIFER
-from ..config import KEY_METADATA
 from ..config import KEY_PLUGINS
-from ..config import KEY_RAW
-from ..config import KEY_RESOURCES
 from ..service import Service
 
 log = getLogger( __name__ )
+
+ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
 
 SERVICE_NAME = 'bikecitizens'
 DISPLAY_NAME = 'Bike Citizens'
@@ -101,12 +101,8 @@ class Bikecitizens( Service, Plugin ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 
 		self._user_id = user_id
-		self.api_url = api_url
-		self.base_url = base_url
-
-		#self.api_url = 'https://api.bikecitizens.net/api/v1/users'
-		#self.stats_url = 'https://api.bikecitizens.net/api/v1/users/{user}/stats?start={year}-01-01&end={year}-12-31'
-		#self._stats_url = self._api_url + '/api/v1/users/{user}/stats?start={year}-01-01&end={year}-12-31'
+		self.api_url = api_url if api_url else API_URL
+		self.base_url = base_url if base_url else BASE_URL
 
 	# service urls
 
@@ -120,9 +116,11 @@ class Bikecitizens( Service, Plugin ):
 		self._base_url = url
 		self._signin_url = f'{self._base_url}/users/sign_in'
 		self._user_url = f'{self._api_url}/api/v1/users/{self._user_id}'
+		self._stats_url = f'{self._user_url}/stats'
 		self._session = None
 		self._api_key = None
 
+	# sample: 'https://api.bikecitizens.net/api/v1/users'
 	@property
 	def api_url( self ) -> str:
 		return self._api_url
@@ -131,10 +129,18 @@ class Bikecitizens( Service, Plugin ):
 	def api_url( self, url: str ) -> None:
 		self._api_url = url if url else API_URL
 
+	@property
+	def user_url( self ) -> str:
+		return f'{self._api_url}/api/v1/users/{self._user_id}'
+
+	@property
+	def user_tracks_url( self ) -> str:
+		return f'{self._api_url}/api/v1/tracks/user/{self._user_id}'
+
 	# sample:
 	# f'https://api.bikecitizens.net/api/v1/users/{user_id}/stats?start=2010-01-01&end=2022-12-31'
 	def stats_url( self, year: int ) -> str:
-		return f'{self._user_url}/stats?start={year}-01-01&end={year}-12-31'
+		return f'{self._stats_url}?start={year}-01-01&end={year}-12-31'
 
 	# service methods
 
@@ -207,29 +213,21 @@ class Bikecitizens( Service, Plugin ):
 		return self._logged_in
 
 	def _fetch( self, year: int ) -> Iterable[Activity]:
-		url = f'https://api.bikecitizens.net/api/v1/tracks/user/{self._user_id}'
 		# noinspection PyUnusedLocal
-		response = options( url, headers=HEADERS_OPTIONS )
-		response = self._session.get( url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } } )
-		return [ Activity( self._prototype( j ), 0, self.name ) for j in response.json() ]
+		response = options( url=self.user_tracks_url, headers=HEADERS_OPTIONS )
+		response = self._session.get( self.user_tracks_url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } } )
+		if response.status_code == 200:
+			return [ self._prototype( json ) for json in response.json() ]
+		else:
+			log.error( f'service {self.name} responded with status code {response.status_code}' )
+			return []
 
-	def _prototype( self, json ) -> Mapping:
-		resources = []
-		for key in ['json', 'gpx']:
-			resource = {
-				'name': None,
-				'type': key,
-				'path': f"{json['id']}.{key}",
-				'status': 100
-			}
-			resources.append( resource )
-		mapping = {
-			KEY_CLASSIFER: self.name,
-			KEY_METADATA: {},
-			KEY_RESOURCES: resources,
-			KEY_RAW: { **json }
-		}
-		return mapping
+	# noinspection PyMethodMayBeStatic
+	def _prototype( self, json ) -> BikecitizensActivity:
+		json_str = dump_json( json, option=ORJSON_OPTIONS )
+		json_name = f'{json["id"]}.raw.json'
+		resources = [ Resource( type=key, path=f"{json['id']}.{key}", status=100 ) for key in ['json', 'gpx'] ]
+		return BikecitizensActivity( raw=json, raw_data=json_str, raw_name=json_name, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
 		url = self.export_url( activity.raw_id, resource.type )

@@ -1,22 +1,24 @@
+from os import getenv
 from pathlib import Path
-from shutil import rmtree
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 from click import echo
 from click import secho
 from click.testing import CliRunner
 from click.testing import Result
+from pytest import mark
 
 from tracs.cli import cli
-from tracs.config import GlobalConfig as gc
+from .conftest import ENABLE_LIVE_TESTS
 
 from .helpers import prepare_environment
 
-cfg_path: Path = None
-lib_path: Path = None
-live_cfg_path: Path = None
-live_lib_path: Path = None
+cfg_path: Optional[Path] = None
+lib_path: Optional[Path] = None
+live_cfg_path: Optional[Path] = None
+live_lib_path: Optional[Path] = None
 
 main_options = []
 main_debug_options = []
@@ -55,25 +57,31 @@ def setup_function( function ):
 def teardown_function( function ):
 	secho( f'teardown_function {function.__name__}' )
 
+@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
 def test_fetch():
 	runner, result, stdout = invoke( cmd_fetch_polar, log=True )
 	runner, result, stdout = invoke( cmd_fetch_strava, log=True )
 
+@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
 def test_list():
 	runner, result, stdout = invoke( cmd_list_thisyear, live_options, True )
 
+@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
 def test_inspect():
 	invoke( cmd_inspect_1, live_options, True )
 
+@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
 def test_list_show():
 	runner, result, stdout = invoke( cmd_list_thisyear, live_options, True )
 	runner, result, stdout = invoke( cmd_show_1, live_options, True )
 	runner, result, stdout = invoke( cmd_show_86, live_options, True )
 
+@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
 def test_config():
 	runner, result, stdout = invoke( cmd_config )
 	assert result.exit_code == 0
 
+@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
 def test_version():
 	runner, result, stdout = invoke( cmd_version )
 

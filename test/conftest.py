@@ -31,6 +31,8 @@ from .polar_server import LIVE_BASE_URL as POLAR_LIVE_BASE_URL
 from .strava_server import strava_server
 from .strava_server import strava_server_thread
 
+ENABLE_LIVE_TESTS = 'ENABLE_LIVE_TESTS'
+
 # shared fixtures
 
 @fixture

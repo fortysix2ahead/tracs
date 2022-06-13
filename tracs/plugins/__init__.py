@@ -238,8 +238,9 @@ def service( cls: Type ):
 	if isclass( cls ):
 		module, name = _spec( cls )
 		Registry.service_classes[module] = cls
-		config, state = plugin_config_state( module ) # todo: this does not work as expected, but we'll leave it in for now
-		Registry.services[module] = cls( config=config, state=state )
+		# config, state = plugin_config_state( module ) # todo: this does not work as expected, but we'll leave it in for now
+		# Registry.services[module] = cls( config=config, state=state )
+		Registry.services[module] = cls()
 		log.debug( f'registered service class {cls}' )
 		return cls
 	else:

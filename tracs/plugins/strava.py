@@ -248,8 +248,7 @@ class Strava( Service, Plugin ):
 		while True:
 			response = self._oauth_session.get( self.url_events_year( year, page ) )
 			for json in response.json():
-				json_str = dump_json(json, option=ORJSON_OPTIONS)
-				fetched.append(self._prototype(json, json_str))
+				fetched.append(self._prototype( json ))
 
 			if len( response.json() ) > 0:
 				page += 1
@@ -259,13 +258,11 @@ class Strava( Service, Plugin ):
 		return fetched
 
 	# noinspection PyMethodMayBeStatic
-	def _prototype( self, json, raw_data ) -> StravaActivity:
-		p = StravaActivity( raw=json, raw_data=raw_data, raw_name=f"{json['id']}.json" )
-		p.resources = []
-		for key in ['gpx', 'tcx']:
-			resource = Resource( type=key, path=f"{json['id']}.{key}", status=100 )
-			p.resources.append( resource )
-		return p
+	def _prototype( self, json ) -> StravaActivity:
+		json_str = dump_json( json, option=ORJSON_OPTIONS )
+		json_name = f"{json['id']}.json"
+		resources = [ Resource( type=key, path=f"{json['id']}.{key}", status=100 ) for key in ['gpx', 'tcx'] ]
+		return StravaActivity( raw=json, raw_data=json_str, raw_name=json_name, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
 		if not self._session:

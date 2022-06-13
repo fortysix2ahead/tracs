@@ -111,12 +111,11 @@ def sync( all_: bool = False, restrict: str = None ):
 			s.link( activities )
 
 @cli.command( help='fetches activity ids' )
-@option( '-a', '--all', 'all_', is_flag=True, required=False, help='fetches all activities (instead of activities from last known onwards)' )
 @option( '-r', '--restrict', is_flag=False, required=False, help='restricts fetching to only one source', metavar='SERVICE' )
-def fetch( all_: bool = False, restrict: str = None ):
+def fetch( restrict: str = None ):
 	for name, service in Registry.services.items():
 		if restrict is None or restrict == name:
-			service.fetch( all_, cfg['force'].get( bool ) )
+			service.fetch( cfg['force'].get( bool ) )
 
 @cli.command( help='downloads activities' )
 @option( '-a', '--all', 'all_', is_flag=True, required=False, help='downloads all activities (instead of recent ones only), overriding provided filters' )

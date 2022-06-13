@@ -1,4 +1,5 @@
 
+from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from re import match
@@ -181,8 +182,11 @@ class Polar( Service, Plugin ):
 	def events_url( self ) -> str:
 		return f'{self.base_url}/training/getCalendarEvents'
 
-	def events_url_for(self, year) -> str:
+	def events_url_for( self, year ) -> str:
 		return f'{self.events_url}?start=1.1.{year}&end=31.12.{year}'
+
+	def all_events_url( self ):
+		return f'{self.events_url}?start=1.1.1970&end=1.1.{datetime.utcnow().year + 1}'
 
 	@property
 	def export_url( self ) -> str:
@@ -243,8 +247,9 @@ class Polar( Service, Plugin ):
 		self._logged_in = True
 		return self._logged_in
 
-	def _fetch( self, year: int ) -> Iterable[Activity]:
-		response = self._session.get(self.events_url_for(year), headers=HEADERS_API)
+	def _fetch( self ) -> Iterable[Activity]:
+		events_url = self.all_events_url()
+		response = self._session.get( events_url, headers=HEADERS_API)
 		return [ self._prototype( json ) for json in response.json() ]
 
 	# noinspection PyMethodMayBeStatic

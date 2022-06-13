@@ -244,21 +244,16 @@ class Polar( Service, Plugin ):
 		return self._logged_in
 
 	def _fetch( self, year: int ) -> Iterable[Activity]:
-		rval = []
 		response = self._session.get(self.events_url_for(year), headers=HEADERS_API)
-		for json in response.json():
-			json_str = dump_json( json, option=ORJSON_OPTIONS )
-			rval.append( self._prototype( json, json_str ) )
-		return rval
+		return [ self._prototype( json ) for json in response.json() ]
 
 	# noinspection PyMethodMayBeStatic
-	def _prototype( self, json, raw_data ) -> PolarActivity:
-		p = PolarActivity( raw=json, raw_data=raw_data )
-		p.resources = []
-		for key in ['csv', 'gpx', 'hrv', 'tcx']:
-			resource = Resource( type=key, path=f'{id}.{key}.csv' if key == 'hrv' else f'{id}.{key}', status= 100 )
-			p.resources.append( resource )
-		return p
+	def _prototype( self, json ) -> PolarActivity:
+		raw_id = _raw_id(json)
+		json_str = dump_json(json, option=ORJSON_OPTIONS)
+		json_name = f'{raw_id}.json'
+		resources = [ Resource( type=key, path=f'{raw_id}.{key}.csv' if key == 'hrv' else f'{raw_id}.{key}', status= 100 ) for key in ['csv', 'gpx', 'hrv', 'tcx'] ]
+		return PolarActivity( raw=json, raw_data=json_str, raw_name=json_name, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
 		url = self.url_export_for( activity.raw_id, resource.type )

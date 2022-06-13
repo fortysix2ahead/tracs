@@ -11,10 +11,8 @@ from typing import Tuple
 
 from tinydb.table import Document
 
-from tracs.config import ApplicationConfig as cfg
 from tracs.config import GlobalConfig
 from tracs.db import ActivityDb
-from tracs.service import Service
 from tracs.plugins.polar import Polar
 from tracs.plugins.strava import Strava
 from tracs.plugins.waze import Waze
@@ -70,6 +68,11 @@ def get_db_path( name: str, writable: bool = False ) -> Path:
 			dst_db = Path( _run_path(), f'{name}-{datetime.now().strftime( "%y%m%d_%H%M%S_%f" )}.db.json' )
 			copy( p, dst_db )
 			return dst_db
+
+def get_immemory_db( db_template: str ) -> ActivityDb:
+	db_path = get_db_path( db_template, False ) if db_template else get_db_path( 'empty', False )
+	db = ActivityDb( db_path=db_path, writable=False )
+	return db
 
 def get_db_json( db_name: str, inmemory_db: bool = False ) -> Tuple[ActivityDb, Mapping]:
 	writable = not inmemory_db

@@ -1,15 +1,13 @@
 
 from datetime import datetime
-from typing import Mapping
-from typing import Tuple
 
+from pytest import mark
 from tinydb.table import Document
 from tinydb.table import Table
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.groups import ActivityGroup
-from tracs.db import ActivityDb
 from tracs.db import DB_VERSION
 from tracs.db import document_factory
 
@@ -17,15 +15,14 @@ from tracs.plugins.polar import PolarActivity
 from tracs.plugins.strava import StravaActivity
 from tracs.plugins.waze import WazeActivity
 
-from .fixtures import db_default_inmemory
-from .fixtures import db_empty_inmemory
 from .fixtures import db_empty_file
 from .helpers import ids
 
 # test cases
 
-def test_open_db( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_open_db( db ):
 	assert isinstance( db.default, Table )
 	assert isinstance( db.activities, Table )
 
@@ -35,13 +32,15 @@ def test_open_db( db_default_inmemory ):
 	assert db.default.document_class is Document
 	assert db.activities.document_class is document_factory
 
-def test_middleware( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_middleware( db ):
 	for a in db.db.table( 'activities' ).all():
 		assert a['id'] is not None
 
-def test_write_middleware( db_empty_inmemory ):
-	db, json = db_empty_inmemory
+@mark.db_inmemory( True )
+@mark.db_template( 'empty' )
+def test_write_middleware( db ):
 	a = StravaActivity( raw = { 'start_date': datetime.utcnow().isoformat() } )
 	assert type( a['time'] ) is datetime
 	assert type( a.get( 'time' ) ) is datetime
@@ -60,17 +59,18 @@ def test_write_to_file( db_empty_file ):
 	assert type( a['time'] ) is datetime
 	assert type( a.get( 'time' ) ) is datetime
 
-def test_insert( db_empty_inmemory ):
-	db, json = db_empty_inmemory
+@mark.db_inmemory( True )
+@mark.db_template( 'empty' )
+def test_insert( db ):
 	counter = len( db.activities.all() )
 	doc_id = db.insert( { '_raw': {'listItemId': 1212} } )
 	assert len( db.activities.all() ) == counter + 1
 	db.activities.remove( doc_ids=[doc_id] )
 	assert len( db.activities.all() ) == counter
 
-def test_contains( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_contains( db ):
 	# check activity table
 	assert db.contains( 1 ) == True
 	assert db.contains( 111 ) == False
@@ -81,9 +81,9 @@ def test_contains( db_default_inmemory ):
 	assert db.contains( raw_id=1234567890, service_name='polar' ) == True
 	assert db.contains( raw_id=9999, service_name='polar' ) == False
 
-def test_all( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_all( db ):
 	# parameters are: include_groups, include_grouped, include_ungrouped
 	# all
 	result = ids( db.all( True, True, True ) )
@@ -119,9 +119,9 @@ def test_all( db_default_inmemory ):
 	result = ids( db.all( False, False, False ) )
 	assert result == []
 
-def test_get( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_get( db ):
 	# existing activity -> 1 is considered the doc_id
 	a = db.get( 1 )
 	assert a.id == 1 and isinstance( a, ActivityGroup )
@@ -160,9 +160,9 @@ def test_get( db_default_inmemory ):
 	assert db.get( 0, service_name='polar' ) is None
 	assert db.get( doc_id=0, service_name='polar' ) is None
 
-def test_update( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_update( db ):
 	a = db.get( 1 )
 	assert a.name == 'Unknown Location'
 	assert a.type == ActivityTypes.xcski
@@ -190,22 +190,24 @@ def test_update( db_default_inmemory ):
 	# assert a2['_groups'].get( 'uids' ) is None
 	assert a2['_metadata'] == {}
 
-def test_remove( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_remove( db ):
 	a = db.get( 30 )
 	assert a is not None
 
 	db.remove( a )
 	assert db.get( 30 ) is None
 
-def test_find_last( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_find_last( db ):
 	assert db.find_last( None ).doc_id == 30
 	assert db.find_last( 'polar' ).doc_id == 41
 
-def test_find( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_find( db ):
 	# id
 	assert db.find_ids( '1' ) == [1]
 	assert db.find_ids( '2' ) == [] # exists, but is grouped activity
@@ -237,18 +239,17 @@ def test_find( db_default_inmemory ):
 	assert db.find_ids( 'type:run' ) == [11]
 	assert db.find_ids( '^type:run' ) == [1, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
 
-def test_find_multiple_filters( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_find_multiple_filters( db ):
 	assert ids( db.find( ['service:polar', 'name:afternoon'] ) ) == [11]
 	assert ids( db.find( ['service:polar', 'name:location', 'type:xcski'] ) ) == [1]
-
 	# test special case involving id
 	assert ids( db.find( ['service:polar', 'id:1', 'name:location', 'type:xcski'] ) ) == [1]
 
-def test_find_by_id( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_inmemory( True )
+@mark.db_template( 'default' )
+def test_find_by_id( db ):
 	a = db.find_by_id( 2 )
 	assert isinstance( a, PolarActivity )
 	assert a.doc_id == 2

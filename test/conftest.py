@@ -23,6 +23,7 @@ from tracs.service import Service
 
 from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
+from .helpers import get_immemory_db
 from .helpers import var_run_path
 from .polar_server import polar_server
 from .polar_server import polar_server_thread
@@ -37,8 +38,16 @@ ENABLE_LIVE_TESTS = 'ENABLE_LIVE_TESTS'
 
 @fixture
 def db( request ) -> ActivityDb:
+
 	writable = marker.args[0] if (marker := request.node.get_closest_marker( 'db_writable' )) else False
 	name = marker.args[0] if (marker := request.node.get_closest_marker('db_name')) else 'db.json'
+	inmemory = marker.args[0] if (marker := request.node.get_closest_marker( 'db_inmemory' )) else False
+	template = marker.args[0] if (marker := request.node.get_closest_marker( 'db_template' )) else None
+
+	if inmemory:
+		return get_immemory_db( db_template=template )
+	else:
+		pass
 
 	var_dir = var_run_path()
 

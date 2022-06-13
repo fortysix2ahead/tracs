@@ -45,3 +45,7 @@ def test_live_workflow( service, db, config_state ):
 
 	fetched = service.fetch( False )
 	assert len( fetched ) > 0
+
+	limit = 1 # don't download everything
+	for i in range( limit ):
+		service.download( fetched[i], force=True, pretend=False )

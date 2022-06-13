@@ -215,7 +215,11 @@ class Service( AbstractServiceClass ):
 					log.error( f"failed to download {r.type} for {self.name} activity {activity.raw_id}, service responded with HTTP {r.status}" )
 
 				r.status = status
-				gc.db.update( activity )
+
+				if activity.id != 0:
+					gc.db.update( activity )
+				else:
+					log.warning( f'unable to update resource status for activity {activity.uid}: db id is 0' )
 
 	@abstractmethod
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:

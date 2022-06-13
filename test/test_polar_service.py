@@ -77,3 +77,7 @@ def test_live_workflow( polar_live_service, db, config_state ):
 
 	fetched = polar_live_service.fetch( False )
 	assert len( fetched ) > 0
+
+	limit = 1 # don't download everything
+	for i in range( limit ):
+		polar_live_service.download( fetched[i], force=True, pretend=False )

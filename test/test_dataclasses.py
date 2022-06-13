@@ -89,27 +89,18 @@ def test_testdataclass():
 
 def test_testdataclass_asdict():
 	tcd = BaseDocument()
-	assert tcd.asdict() == {'doc_id': 0, 'id': 0, 'name': None, 'time': None}
+	assert tcd.asdict() == {'classifier': None, 'raw_id': 0}
 
 	tcd.id = 20
-	assert tcd.asdict() == {'doc_id': 0, 'id': 20, 'name': None, 'time': None}
+	assert tcd.asdict() == {'classifier': None, 'raw_id': 0}
 
 	tcd['id'] = 30
-	assert tcd.asdict() == {'doc_id': 0, 'id': 20, 'name': None, 'time': None}
+	assert tcd.asdict() == {'classifier': None, 'raw_id': 0}
 
 	tcd = BaseDocument( id=30 )
-	assert tcd.asdict() == {'doc_id': 0, 'id': 30, 'name': None, 'time': None}
+	assert tcd.asdict() == {'classifier': None, 'raw_id': 0}
 	tcd = BaseDocument( { 'id': 20 } )
-	assert tcd.asdict() == {'doc_id': 0, 'id': 20, 'name': None, 'time': None}
+	assert tcd.asdict() == {'classifier': None, 'raw_id': 0}
 
 	tcd = BaseDocument( { 'undeclared': 10 } )
-	assert tcd.asdict() == {'doc_id': 0, 'id': 0, 'name': None, 'time': None, 'undeclared': 10 }
-
-	# surprisingly this works!
-	tcd = BaseDocument( { 'undeclared': 10 } )
-	assert dict( tcd ) == { 'doc_id': 0, 'id': 0, 'name': None, 'time': None, 'undeclared': 10 }
-
-	dt = datetime.utcnow()
-	tcd = BaseDocument( { 'undeclared': 10 }, time=dt )
-	assert tcd.asdict() == { 'doc_id': 0, 'id': 0, 'name': None, 'time': dt.isoformat(), 'undeclared': 10 }
-	#assert dict( tcd ) == { 'doc_id': 0, 'id': 0, 'name': None, 'time': dtiso, 'undeclared': 10 }
+	assert tcd.asdict() == {'classifier': None, 'raw_id': 0}

@@ -1,4 +1,4 @@
-
+from os import getenv
 from typing import List
 
 from pytest import mark
@@ -7,6 +7,7 @@ from pytest import skip
 from tracs.activity import Activity
 from tracs.config import GlobalConfig as gc
 from tracs.plugins.polar import Polar, PolarActivity
+from .conftest import ENABLE_LIVE_TESTS
 
 from .fixtures import db_empty_inmemory
 from .fixtures import var_dir
@@ -61,6 +62,7 @@ def test_workflow( polar_server, polar_test_service, db_empty_inmemory, var_dir 
 
 	assert len( fetched ) == 3
 
+@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
 @mark.config_file( 'config_live.yaml' )
 @mark.db_writable( True )
 def test_live_workflow( polar_live_service, db, config_state ):

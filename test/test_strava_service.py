@@ -1,4 +1,5 @@
 from datetime import datetime
+from os import getenv
 from typing import List
 
 from pytest import mark
@@ -8,6 +9,7 @@ from tracs.activity import Activity
 from tracs.config import GlobalConfig as gc
 from tracs.plugins.strava import Strava
 from tracs.plugins.strava import StravaActivity
+from .conftest import ENABLE_LIVE_TESTS
 
 from .strava_server import TEST_BASE_URL
 from .strava_server import LIVE_BASE_URL
@@ -76,6 +78,7 @@ def test_workflow( strava_server, strava_service, db_empty_inmemory, var_dir ):
 
 	assert len( fetched ) == 3
 
+@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
 @mark.service( (Strava, LIVE_BASE_URL) )
 @mark.config_file( 'config_live.yaml' )
 @mark.state_file( 'state_live.yaml' )

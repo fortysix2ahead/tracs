@@ -34,14 +34,15 @@ class DataClassMiddleware( Middleware ):
 	def read_table( self, table_name: str, table_data: Dict ) -> None:
 		cls = self._transmap.get( table_name ) # find document class for the table
 
-		print( f'item class for table {table_name} = {cls}' )
+		# print( f'item class for table {table_name} = {cls}' )
 
 		if table_name in self._transmap.keys():
 			for item_id, item_data in dict( table_data ).items():
 				if replacement := self.read_item( item_id, item_data, cls ):
 					table_data[item_id] = replacement
 		else:
-			print( f'table {table_name} not found in transmap, skipping process items' )
+			pass
+			# print( f'table {table_name} not found in transmap, skipping process items' )
 
 	# noinspection PyMethodMayBeStatic
 	def read_item( self, item_id: str, item_data: Any, item_cls: Type ) -> Optional:
@@ -49,10 +50,10 @@ class DataClassMiddleware( Middleware ):
 			item_cls = item_cls( item_data, item_id )
 
 		if item_cls:
-			print( f'using {item_cls} as document class' )
+			# print( f'using {item_cls} as document class' )
 			return item_cls( item_data, int( item_id ) )
 		else:
-			print( f'no item_cls found' )
+			# print( f'no item_cls found' )
 			return None
 
 	def write( self, data ):
@@ -65,14 +66,15 @@ class DataClassMiddleware( Middleware ):
 	def write_table( self, table_name: str, table_data: Dict ):
 		cls = self._transmap.get( table_name ) # find document class for the table
 
-		print( f'item class for table {table_name} = {cls}' )
+		# print( f'item class for table {table_name} = {cls}' )
 
 		if table_name in self._transmap.keys():
 			for item_id, item_data in dict( table_data ).items():
 				if replacement := self.write_item( item_id, item_data, cls ):
 					table_data[item_id] = replacement
 		else:
-			print( f'table {table_name} not found in transmap, skipping process items' )
+			pass
+			# print( f'table {table_name} not found in transmap, skipping process items' )
 
 	# noinspection PyMethodMayBeStatic
 	def write_item( self, item_id: str, item: Any, item_cls: Type ) -> Optional:

@@ -26,7 +26,7 @@ from . import service
 from .plugin import Plugin
 from ..activity_types import ActivityTypes
 from ..activity import Activity
-from ..base import Resource
+from ..activity import Resource
 from ..config import ApplicationState as state
 from ..config import GlobalConfig as gc
 from ..config import KEY_CLASSIFER

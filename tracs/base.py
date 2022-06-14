@@ -3,30 +3,40 @@ from __future__ import annotations
 
 from abc import ABC
 from abc import abstractmethod
-from dataclasses import dataclass
-from dataclasses import field
+from enum import Enum
 from pathlib import Path
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
 
+class ResourceStatus( Enum ):
+	UNKNOWN = 100
+	EXISTS = 200
+	NO_CONTENT = 204
+	NOT_FOUND = 404
 
-@dataclass
-class Resource:
+class Resource( ABC ):
 
-	parent: Dict = field( default=None )
-	name: str = field( default=None )
-	type: str = field( default=None )
-	status: int = field( default=100 )
-	path: str = field( default=None )
-	#path: Path = field( default=None )
+	@property
+	@abstractmethod
+	def name( self ) -> str:
+		pass
 
-	def __setattr__( self, name: str, value: Any ) -> None:
-		super().__setattr__( name, value )
-		if name != 'parent' and self.parent is not None:
-			self.parent[name] = value
+	@property
+	@abstractmethod
+	def type( self ) -> str:
+		pass
+
+	@property
+	@abstractmethod
+	def status( self ) -> int:
+		pass
+
+	@property
+	@abstractmethod
+	def path( self ) -> str:
+		pass
 
 class Activity( ABC, dict ):
 	"""

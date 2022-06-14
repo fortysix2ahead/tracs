@@ -6,8 +6,10 @@ from dateutil.tz import tzlocal
 
 from pytest import mark
 
+from tracs.activity import Activity
 from tracs.activity import ActivityRef
 from tracs.activity_types import ActivityTypes
+from tracs.dataclasses import as_dict
 from tracs.plugins.groups import ActivityGroup
 from tracs.plugins.polar import PolarActivity
 from tracs.plugins.strava import StravaActivity
@@ -101,3 +103,44 @@ def test_init( json ):
 	assert a.calories == 2904
 	assert a.heartrate == 150
 	assert a.duration_moving == time( 1, 40, 0)
+
+def test_asdict():
+	a = Activity()
+	assert a.asdict() == {
+		'ascent'          : None,
+		'calories'        : None,
+		'classifier'      : None,
+		'descent'         : None,
+		'description'     : None,
+		'distance'        : None,
+		'duration'        : None,
+		'duration_moving' : None,
+		'elevation_max'   : None,
+		'elevation_min'   : None,
+		'groups'          : {},
+		'heartrate'       : None,
+		'heartrate_max'   : None,
+		'heartrate_min'   : None,
+		'localtime'       : None,
+		'location_city'   : None,
+		'location_country': None,
+		'location_place'  : None,
+		'location_state'  : None,
+		'metadata'        : {},
+		'name'            : None,
+		'parent_id'       : None,
+		'parent_uid'      : None,
+		'raw_id'          : 0,
+		'resources'       : [],
+		'route'           : None,
+		'speed'           : None,
+		'speed_max'       : None,
+		'tags'            : [],
+		'time'            : None,
+		'timezone'        : None,
+		'type'            : None
+	}
+
+	assert as_dict( a ) == {
+		'groups': {}, 'metadata': {}, 'raw_id': 0, 'resources': [], 'tags': []
+	}

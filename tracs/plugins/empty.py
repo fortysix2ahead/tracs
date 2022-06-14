@@ -8,7 +8,7 @@ from . import document
 from . import service
 from .plugin import Plugin
 from ..activity import Activity
-from ..base import Resource
+from ..activity import Resource
 from ..service import Service
 
 log = getLogger( __name__ )

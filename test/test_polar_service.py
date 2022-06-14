@@ -71,8 +71,8 @@ def test_live_workflow( polar_live_service, db, config_state ):
 		skip( 'configuration for live testing is missing, consider creating $PROJECT/var/config_live.yaml' )
 
 	gc.db = db
-	gc.db_dir = db.db_path.parent
-	gc.db_file = db.db_path
+	gc.db_dir = db.path.parent
+	gc.db_file = db.path
 
 	polar_live_service.login()
 	assert polar_live_service.logged_in

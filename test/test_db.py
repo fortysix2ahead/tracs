@@ -1,13 +1,21 @@
 
 from datetime import datetime
+from typing import cast
 
 from pytest import mark
+from tinydb import TinyDB
+from tinydb.middlewares import CachingMiddleware
+from tinydb.storages import MemoryStorage
 from tinydb.table import Document
 from tinydb.table import Table
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
+from tracs.db import ActivityDb
+from tracs.db_middleware import DataClassMiddleware
+from tracs.db_storage import OrJSONStorage
 from tracs.plugins.groups import ActivityGroup
+from tracs.db import create_db
 from tracs.db import DB_VERSION
 from tracs.db import document_factory
 
@@ -17,8 +25,56 @@ from tracs.plugins.waze import WazeActivity
 
 from .fixtures import db_empty_file
 from .helpers import ids
+from .helpers import get_db_path
 
 # test cases
+from .helpers import var_run_path
+
+# noinspection PyUnresolvedReferences
+def test_create_db():
+	tdb = TinyDB( storage=MemoryStorage )
+	db = create_db( tdb )
+	assert db is tdb
+
+	# creation without path
+
+	tdb = create_db( path=None )
+	assert type( tdb.storage ) is DataClassMiddleware
+	assert type( cast( DataClassMiddleware, tdb.storage ).storage ) is MemoryStorage
+
+	# creation with path
+	tdb = create_db( path=get_db_path( 'empty', True ), pretend=True, cache=False )
+	assert type( tdb.storage ) is DataClassMiddleware
+	assert type( tdb.storage.storage ) is OrJSONStorage
+	assert tdb.storage.storage.use_memory_storage is True
+
+	# cache is on
+	tdb = create_db( path=get_db_path( 'empty', True ), pretend=True, cache=True )
+	assert type( tdb.storage ) is CachingMiddleware
+	assert type( tdb.storage.storage ) is DataClassMiddleware
+	assert type( tdb.storage.storage.storage ) is OrJSONStorage
+	assert tdb.storage.storage.storage.use_memory_storage is True
+
+	tdb = create_db( path=get_db_path( 'empty', True ), pretend=False, cache=False )
+	assert type( tdb.storage ) is DataClassMiddleware
+	assert type( tdb.storage.storage ) is OrJSONStorage
+	assert tdb.storage.storage.use_memory_storage is False
+
+	tdb = create_db( path=get_db_path( 'empty', True ), pretend=False, cache=True )
+	assert type( tdb.storage ) is CachingMiddleware
+	assert type( tdb.storage.storage ) is DataClassMiddleware
+	assert type( tdb.storage.storage.storage ) is OrJSONStorage
+	assert tdb.storage.storage.storage.use_memory_storage is False
+
+def test_new_db():
+	db = ActivityDb( path=None )
+	assert type( db.middleware ) is DataClassMiddleware and type( db.storage ) is MemoryStorage
+
+	db = ActivityDb( path=get_db_path( 'empty', True ), pretend=True, cache=True )
+	assert type( db.middleware ) is DataClassMiddleware and type( db.storage ) is OrJSONStorage
+
+	db = ActivityDb( path=get_db_path( 'empty', True ), pretend=False, cache=False )
+	assert type( db.middleware ) is DataClassMiddleware and type( db.storage ) is OrJSONStorage
 
 @mark.db_inmemory( True )
 @mark.db_template( 'default' )
@@ -50,8 +106,9 @@ def test_write_middleware( db ):
 	assert type( a['time'] ) is datetime
 	assert type( a.get( 'time' ) ) is datetime
 
-def test_write_to_file( db_empty_file ):
-	db, json = db_empty_file
+@mark.db_inmemory( False )
+@mark.db_template( 'empty' )
+def test_write_to_file( db ):
 	a = StravaActivity( raw = { 'start_date': datetime.utcnow().isoformat() } )
 	db.insert( a )
 

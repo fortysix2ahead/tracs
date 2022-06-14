@@ -17,6 +17,8 @@ from tinydb.storages import Storage
 
 log = getLogger( __name__ )
 
+EMPTY_JSON = '{}'
+
 class OrJSONStorage( Storage ):
 
 	#options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS| OPT_PASSTHROUGH_SUBCLASS
@@ -35,7 +37,7 @@ class OrJSONStorage( Storage ):
 
 		if path:
 			data = path.read_bytes()
-			data = data if len( data ) > 0 else '{}'
+			data = data if len( data ) > 0 else EMPTY_JSON
 			json_data = load_json( data )
 		else:
 			json_data = {}
@@ -48,7 +50,7 @@ class OrJSONStorage( Storage ):
 			data = self._memory_storage.read()
 		else:
 			data = self._path.read_bytes()
-			data = data if len( data ) > 0 else '{}'
+			data = data if len( data ) > 0 else EMPTY_JSON
 			data = load_json( data )
 
 		return data
@@ -62,3 +64,7 @@ class OrJSONStorage( Storage ):
 	@property
 	def memory_storage( self ) -> MemoryStorage:
 		return self._memory_storage
+
+	@property
+	def use_memory_storage( self ) -> bool:
+		return self._use_memory_storage

@@ -18,16 +18,17 @@ from rich.pretty import pretty_repr as pp
 from rich.table import Table
 from typing import Mapping
 
+from tinydb import Storage
 from tinydb import TinyDB
 from tinydb import Query
 from tinydb.middlewares import CachingMiddleware
 from tinydb.operations import delete
 from tinydb.operations import set
+from tinydb.storages import MemoryStorage
 from tinydb.table import Document
 from tinydb.table import Table
 
 from .activity import Activity
-from .config import ApplicationConfig as cfg
 from .config import console
 from .config import APPNAME
 from .config import TABLE_NAME_ACTIVITIES
@@ -52,15 +53,12 @@ DB_VERSION = 12
 
 class ActivityDb:
 
-	def __init__( self, db: TinyDB = None, db_path: Path = None, writable: bool = True ):
-
-		pretend = cfg['pretend'].get() or not writable
-		cache = cfg['db']['cache'].get() or False
+	def __init__( self, db: TinyDB=None, path: Path=None, pretend: bool=False, cache: bool=False ):
 
 		# use provided db instead of creating a new one -> mainly for test purposes
-		self.db = db if db else create_db( db_path, pretend=pretend, cache=cache )
-		self.db_path = db_path # save db path for later use
-		self.db_storage = self.db.storage
+		self._db: TinyDB = create_db( db, path, pretend=pretend, cache=cache )
+		self._path: Path = path # save db path for later use
+		self._storage: Storage = self._db.storage
 
 		# configure default table, only contains db version number
 		self._default = self.db.table( TABLE_NAME_DEFAULT )
@@ -72,7 +70,32 @@ class ActivityDb:
 		self._activities = self.db.table( TABLE_NAME_ACTIVITIES )
 		self._activities.document_class = document_factory
 
+		if self.middleware:
+			self.middleware.transmap[TABLE_NAME_ACTIVITIES] = document_cls
+
 	# ---- DB Properties --------------------------------------------------------
+
+	@property
+	def db( self ) -> TinyDB:
+		return self._db
+
+	@property
+	def path( self ) -> Path:
+		return self._path
+
+	@property
+	def middleware( self ) -> Optional[DataClassMiddleware]:
+		if type( self._storage ) is CachingMiddleware:
+			return cast( CachingMiddleware, self._storage ).storage
+		elif type( self._storage ) is DataClassMiddleware:
+			return cast( DataClassMiddleware, self._storage )
+		else:
+			return None
+
+	@property
+	def storage( self ) -> Union[MemoryStorage, OrJSONStorage]:
+		return self.middleware.storage if self.middleware else None
+
 	@property
 	def default( self ) -> Table:
 		return self._default
@@ -227,25 +250,20 @@ def document_cls( doc: Union[Dict, Document], doc_id: int ) -> Type:
 def document_factory( doc: Union[Dict, Document], doc_id: int ) -> Document:
 	return document_cls( doc, doc_id )( doc, doc_id )
 
-def create_db( db_path: Path = None, pretend: bool = False, cache: bool = False ) -> TinyDB:
-	# todo: improve later
-	if cache:
-		storage = CachingMiddleware( OrJSONStorage )
+def create_db( db: TinyDB = None, path: Path = None, pretend: bool = False, cache: bool = False ) -> TinyDB:
+	if db is not None:
+		log.debug( 'create db: using provided database, ignoring arguments' )
+		return db
+
+	use_memory_storage = pretend # pretend results in inmemory db created
+
+	if path:
+		if cache:
+			db = TinyDB( storage=CachingMiddleware( DataClassMiddleware( OrJSONStorage ) ), path=path, use_memory_storage=use_memory_storage )
+		else:
+			db = TinyDB( storage=DataClassMiddleware( OrJSONStorage ), path=path, use_memory_storage=use_memory_storage )
 	else:
-		storage = OrJSONStorage
-
-#	if pretend:
-#		db = TinyDB( storage=DataClassMiddleware( MemoryStorage ) )
-#	else:
-#		db = TinyDB( storage=DataClassMiddleware( JSONStorage ), path=db_path )
-
-	if pretend:
-		db = TinyDB( storage=DataClassMiddleware( OrJSONStorage ), path=db_path, use_memory_storage=True )
-	else:
-		db = TinyDB( storage=DataClassMiddleware( OrJSONStorage ), path=db_path )
-
-	cast( DataClassMiddleware, db.storage ).transmap['activities'] = document_cls
-	db.table( 'activities' ).document_class = document_factory
+		db = TinyDB( storage=DataClassMiddleware( MemoryStorage ) ) # if path is not provided, memory storage is implicit
 
 	return db
 

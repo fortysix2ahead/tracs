@@ -26,9 +26,9 @@ from . import document
 from . import service
 from .plugin import Plugin
 from ..activity import Activity
+from ..activity import Resource
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types
-from ..base import Resource
 from ..config import console
 from ..config import GlobalConfig as gc
 from ..config import APPNAME

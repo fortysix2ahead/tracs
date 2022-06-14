@@ -21,8 +21,8 @@ from . import document
 from . import service
 from .plugin import Plugin
 from ..activity import Activity
+from ..activity import Resource
 from ..activity_types import ActivityTypes
-from ..base import Resource
 from ..config import ApplicationConfig as cfg
 from ..config import ApplicationConfig as state
 from ..config import console

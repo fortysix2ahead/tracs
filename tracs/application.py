@@ -132,7 +132,7 @@ class Application( object ):
 		self._setup_file_logging()
 
 		# ---- open db from config_dir -------------------------------------------
-		self._db = db if db else ActivityDb( db_path=self.db_file )
+		self._db = db if db else ActivityDb( path=self.db_file )
 		gc.db = self._db
 
 		# ---- announce fields to global config

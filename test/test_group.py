@@ -1,11 +1,11 @@
 
+from pytest import mark
+
 from tracs.group import group_activities
 from tracs.group import ungroup_activities
 
-from .fixtures import db_default_inmemory
-
-def test_grouping( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_template( 'default' )
+def test_grouping( db ):
 	_all = db.all( True, True, True )
 	a51 = db.get( doc_id=51 )
 	a52 = db.get( doc_id=52 )
@@ -25,8 +25,8 @@ def test_grouping( db_default_inmemory ):
 	assert ag.is_group
 	assert ag.group_for == [54, 55]
 
-def test_ungroup( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_template( 'default' )
+def test_ungroup( db ):
 	assert db.get( doc_id=1 ).is_group
 	assert db.get( doc_id=2 ).grouped_by == 1
 	assert db.get( doc_id=3 ).grouped_by == 1

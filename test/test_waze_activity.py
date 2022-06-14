@@ -3,6 +3,7 @@ from datetime import datetime
 from datetime import timezone
 from dateutil.tz import gettz
 
+from pytest import mark
 from pytest import raises
 
 from tracs.activity_types import ActivityTypes
@@ -41,8 +42,8 @@ def test_activity_from_raw():
 	assert a['localtime'] == datetime( 2020, 7, 12, 9, 47, 43, tzinfo=gettz() )
 	assert a['type'] == ActivityTypes.drive
 
-def test_activity_from_db( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_template( 'default' )
+def test_activity_from_db( db, json ):
 	a = WazeActivity( json['activities']['30'], 30 )
 
 	# test id

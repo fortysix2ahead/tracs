@@ -71,8 +71,11 @@ def get_db_path( name: str, writable: bool = False ) -> Path:
 
 def get_immemory_db( db_template: str ) -> ActivityDb:
 	db_path = get_db_path( db_template, False ) if db_template else get_db_path( 'empty', False )
-	db = ActivityDb( db_path=db_path, writable=False )
-	return db
+	return ActivityDb( path=db_path, pretend=True, cache=False )
+
+def get_file_db( db_template: str ) -> ActivityDb:
+	db_path = get_db_path( db_template, True ) if db_template else get_db_path( 'empty', True )
+	return ActivityDb( path=db_path, pretend=False, cache=False )
 
 def get_db_json( db_name: str, inmemory_db: bool = False ) -> Tuple[ActivityDb, Mapping]:
 	writable = not inmemory_db
@@ -87,10 +90,6 @@ def get_db_as_json( db_name: str ):
 	GlobalConfig.db = ActivityDb( db_path=db_path, writable=False )
 	# return the json only
 	return load( open( get_db_path( db_name ), 'r', encoding='utf8' ) )
-
-def get_file_db() -> ActivityDb:
-	db_path = Path( _run_path(), f'{datetime.now().strftime( "%y%m%d_%H%M%S_%f" )}.db.json' )
-	return ActivityDb( db_path=db_path, services=[Polar, Strava, Waze] )
 
 def get_env( env_name: str ) -> Path:
 	with path( 'test.environments', env_name ) as src_env:

@@ -6,6 +6,7 @@ from shutil import copy
 from shutil import copytree
 
 from importlib.resources import path
+from typing import Dict
 from typing import Mapping
 from typing import Tuple
 
@@ -77,6 +78,10 @@ def get_file_db( db_template: str ) -> ActivityDb:
 	db_path = get_db_path( db_template, True ) if db_template else get_db_path( 'empty', True )
 	return ActivityDb( path=db_path, pretend=False, cache=False )
 
+def get_dbjson( db_name: str ) -> Dict:
+	db_path = get_db_path( db_name, False )
+	return load( open( db_path, 'r', encoding='utf8' ) )
+
 def get_db_json( db_name: str, inmemory_db: bool = False ) -> Tuple[ActivityDb, Mapping]:
 	writable = not inmemory_db
 	db_path = get_db_path( db_name, writable )
@@ -85,7 +90,6 @@ def get_db_json( db_name: str, inmemory_db: bool = False ) -> Tuple[ActivityDb, 
 	return GlobalConfig.db, json
 
 def get_db_as_json( db_name: str ):
-	# we need to load the db anyway as accessors are regsitered in there
 	db_path = get_db_path( db_name, False )
 	GlobalConfig.db = ActivityDb( db_path=db_path, writable=False )
 	# return the json only

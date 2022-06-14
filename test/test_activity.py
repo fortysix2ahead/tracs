@@ -4,17 +4,16 @@ from datetime import time
 from dateutil.tz import UTC
 from dateutil.tz import tzlocal
 
+from pytest import mark
+
 from tracs.activity import ActivityRef
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.groups import ActivityGroup
 from tracs.plugins.polar import PolarActivity
 from tracs.plugins.strava import StravaActivity
 
-from .fixtures import db_default_inmemory
-
-def test_init( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_template( 'default' )
+def test_init( json ):
 	# empty init
 	a = ActivityGroup( doc_id = 0 )
 	assert a['groups'] == {} and a.groups == {}

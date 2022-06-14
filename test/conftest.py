@@ -23,6 +23,7 @@ from tracs.service import Service
 
 from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
+from .helpers import get_dbjson
 from .helpers import get_file_db
 from .helpers import get_immemory_db
 from .helpers import var_run_path
@@ -48,6 +49,11 @@ def db( request ) -> ActivityDb:
 		return get_immemory_db( db_template=template )
 	else:
 		return get_file_db( db_template=template )
+
+@fixture
+def json( request ) -> Optional[Dict]:
+	template = marker.args[0] if (marker := request.node.get_closest_marker( 'db_template' )) else None
+	return get_dbjson( template ) if template else None
 
 @fixture
 def config_state( request ) -> Optional[Tuple[Dict, Dict]]:

@@ -4,6 +4,8 @@ from datetime import time
 from datetime import timezone
 from dateutil.tz import tzlocal
 
+from pytest import mark
+
 from tracs.activity import ActivityRef
 from tracs.plugins.polar import PolarActivity
 
@@ -11,9 +13,8 @@ from .fixtures import db_default_inmemory
 
 from tracs.activity_types import ActivityTypes
 
-def test_init_from_db( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_template( 'default' )
+def test_init_from_db( json ):
 	pa = PolarActivity( json['activities']['2'], 2 )
 	assert pa.groups == { "parent": 1 }
 	assert pa.parent_id == 1
@@ -31,16 +32,16 @@ def test_init_from_db( db_default_inmemory ):
 	assert pa.duration == time( 0, 25, 35 )
 	assert pa.calories == 456
 
-def test_fitnessdata( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_template( 'default' )
+def test_fitnessdata( json ):
 	json = json['activities']['12']
 	pa = PolarActivity( json, 12 )
 
 	assert pa.id == 12
 	assert pa.raw_id == 2002
 
-def test_orthostatic( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_template( 'default' )
+def test_orthostatic( json ):
 	json = json['activities']['13']
 	pa = PolarActivity( json, 13 )
 
@@ -48,8 +49,8 @@ def test_orthostatic( db_default_inmemory ):
 	assert pa.id == 13
 	assert pa.raw_id == 3003
 
-def test_rrrecording( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_template( 'default' )
+def test_rrrecording( json ):
 	json = json['activities']['14']
 	pa = PolarActivity( json, 14 )
 

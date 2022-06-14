@@ -3,16 +3,14 @@ from datetime import datetime
 from datetime import time
 from datetime import timezone
 
+from pytest import mark
+
 from tracs.activity import ActivityRef
-
-from .fixtures import db_default_inmemory
-
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.strava import StravaActivity
 
-def test_init_from_db( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_template( 'default' )
+def test_init_from_db( json ):
 	sa = StravaActivity( json['activities']['3'], 3 )
 	assert sa.groups == { "parent": 1 }
 	assert sa.parent_id == 1

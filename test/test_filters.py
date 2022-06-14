@@ -5,6 +5,7 @@ from arrow import Arrow as dt
 from arrow import now
 from datetime import datetime
 from datetime import time
+from pytest import mark
 from tinydb.queries import QueryLike
 
 from tracs.activity_types import ActivityTypes
@@ -15,7 +16,6 @@ from tracs.filters import prepare
 from tracs.filters import true
 from tracs.filters import Filter
 
-from .fixtures import db_default_inmemory
 from .helpers import ids
 
 def test_predefined_filters():
@@ -135,8 +135,8 @@ def test_parse():
 	assert parse( 'time:15:00..17:00' ) == Filter( 'time', range_from=time( 15 ), range_to=time( 17 ) )
 	assert parse( 'time:15:00:05..17:00:07' ) == Filter( 'time', range_from=time( 15, 0, 5 ), range_to=time( 17, 0, 7 ) )
 
-def test_filters_on_activities( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_template( 'default' )
+def test_filters_on_activities( db ):
 	m = {} # map with all doc_id -> activities
 	for a in db.activities.all():
 		m[a.doc_id] = a
@@ -221,8 +221,8 @@ def test_filters_on_activities( db_default_inmemory ):
 	assert not Filter( 'location_city' )( m[1] )
 	assert not Filter( 'tags' )( m[1] )
 
-def test_filters_on_list( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_template( 'default' )
+def test_filters_on_list( db ):
 	_all = db.activities.all()
 
 	def flt( f: QueryLike ) -> List[int]:
@@ -286,8 +286,8 @@ def test_filters_on_list( db_default_inmemory ):
 
 	#assert flt( is_group() ) == [1]
 
-def test_prepared_filters( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_template( 'default' )
+def test_prepared_filters( db ):
 	_all = db.activities.all()
 
 	def flt( *args, **kwargs ) -> List[int]:

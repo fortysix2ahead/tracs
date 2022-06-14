@@ -1,6 +1,7 @@
 
 from typing import cast
 
+from pytest import mark
 from tinydb import JSONStorage
 from tinydb import TinyDB
 from tinydb.storages import MemoryStorage
@@ -10,12 +11,10 @@ from tracs.db import document_cls
 from tracs.db import document_factory
 from tracs.plugins.polar import PolarActivity
 
-from .fixtures import db_default_inmemory
 from .helpers import get_db_path
 
-def test_read_data( db_default_inmemory ):
-	db, json = db_default_inmemory
-
+@mark.db_template( 'default' )
+def test_read_data( json ):
 	storage_cls = DataClassMiddleware( MemoryStorage )
 	db = TinyDB( storage=storage_cls )
 
@@ -41,8 +40,8 @@ def test_read_data_from_disk():
 
 	assert type( db.table( 'activities' ).get( doc_id = 2 ) ) is PolarActivity
 
-def test_write_data( db_default_inmemory ):
-	db, json = db_default_inmemory
+@mark.db_template( 'default' )
+def test_write_data( db, json ):
 	polar_raw = json['activities']['2']['_raw']
 	polar = PolarActivity( raw=polar_raw )
 

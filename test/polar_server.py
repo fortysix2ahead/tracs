@@ -26,42 +26,29 @@ polar_server_thread = Thread(target=polar_server_function, kwargs=polar_server_a
 def root():
 	return static_file('index.html', root=get_file_path('templates/polar'), mimetype='text/html')
 
-
 @polar_server.get('/ajaxLogin')
 def ajax_login():
 	return static_file('ajaxlogin.html', root=get_file_path('templates/polar'), mimetype='text/html')
-
 
 @polar_server.post('/login')
 def login():
 	return static_file('login.html', root=get_file_path('templates/polar'), mimetype='text/html')
 
-
 @polar_server.get('/training/getCalendarEvents')
 def events():
-	start, end = request.params.get('start'), request.params.get('end')
-	root_path = get_file_path('templates/polar')
-	filename = f"{start.rsplit('.', 1)[1]}.json"
-	path = Path(root_path, filename)
-	if path.exists():
-		return static_file(filename=filename, root=root_path, mimetype='text/json')
-	else:
-		return '[]'
+	return static_file('all.json', root=get_file_path('templates/polar'), mimetype='text/html')
 
 @polar_server.get('/api/export/training/csv/<id:int>')
 def download_csv(id):
 	return static_file('empty.csv', root=get_file_path('templates/polar'))
 
-
 @polar_server.get('/api/export/training/rr/csv/<id:int>')
 def download_csv(id):
 	return static_file('empty.hrv', root=get_file_path('templates/polar'))
 
-
 @polar_server.get('/api/export/training/gpx/<id:int>')
 def download_gpx(id):
 	return static_file('empty.gpx', root=get_file_path('templates/polar'))
-
 
 @polar_server.get('/api/export/training/tcx/<id:int>')
 def download_gpx(id):

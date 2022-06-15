@@ -13,7 +13,7 @@ from .fixtures import db_default_inmemory
 
 from tracs.activity_types import ActivityTypes
 
-@mark.db_template( 'default' )
+@mark.db_template( 'polar' )
 def test_init_from_db( json ):
 	pa = PolarActivity( json['activities']['2'], 2 )
 	assert pa.groups == { "parent": 1 }
@@ -32,7 +32,7 @@ def test_init_from_db( json ):
 	assert pa.duration == time( 0, 25, 35 )
 	assert pa.calories == 456
 
-@mark.db_template( 'default' )
+@mark.db_template( 'polar' )
 def test_fitnessdata( json ):
 	json = json['activities']['12']
 	pa = PolarActivity( json, 12 )
@@ -40,7 +40,7 @@ def test_fitnessdata( json ):
 	assert pa.id == 12
 	assert pa.raw_id == 2002
 
-@mark.db_template( 'default' )
+@mark.db_template( 'polar' )
 def test_orthostatic( json ):
 	json = json['activities']['13']
 	pa = PolarActivity( json, 13 )
@@ -49,7 +49,7 @@ def test_orthostatic( json ):
 	assert pa.id == 13
 	assert pa.raw_id == 3003
 
-@mark.db_template( 'default' )
+@mark.db_template( 'polar' )
 def test_rrrecording( json ):
 	json = json['activities']['14']
 	pa = PolarActivity( json, 14 )

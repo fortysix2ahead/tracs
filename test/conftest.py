@@ -78,19 +78,19 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 @fixture
 def service( request ) -> Service:
 	service_class, base_url = marker.args[0] if (marker := request.node.get_closest_marker( 'service' )) else (None, None)
-	config_file = marker.args[0] if (marker := request.node.get_closest_marker( 'config_file' )) else None
-	state_file = marker.args[0] if (marker := request.node.get_closest_marker( 'state_file' )) else None
+	config_file, state_file = marker.args[0] if (marker := request.node.get_closest_marker( 'service_config' )) else (None, None)
+	service_class_name = service_class.__name__.lower()
 
 	config, state = None, None
 	with path('test', '__init__.py') as test_pkg_path:
 		config_path = Path(test_pkg_path.parent.parent, config_file )
 		if config_path.exists():
-			config = Configuration( 'test.strava', __name__, read=False )
+			config = Configuration( f'test.{service_class_name}', __name__, read=False )
 			config.set_file(config_path)
 
-		state_path = Path(test_pkg_path.parent.parent, 'var', state_file )
+		state_path = Path(test_pkg_path.parent.parent, state_file )
 		if state_path.exists():
-			state = Configuration( 'test.strava', __name__, read=False )
+			state = Configuration( f'test.{service_class_name}', __name__, read=False )
 			state.set_file(state_path)
 
 	# noinspection PyCallingNonCallable

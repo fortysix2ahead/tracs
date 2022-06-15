@@ -47,6 +47,8 @@ SERVICE_NAME = 'polar'
 DISPLAY_NAME = 'Polar Flow'
 ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
 
+BASE_URL = 'https://flow.polar.com'
+
 HEADERS_LOGIN = {
 	'Accept': '*/*',
 	'Accept-Encoding': 'gzip, deflate, br',
@@ -134,9 +136,9 @@ class PolarActivity( Activity ):
 @service
 class Polar( Service, Plugin ):
 
-	def __init__( self, **kwargs ):
+	def __init__( self, base_url=None, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
-		self.base_url = 'https://flow.polar.com'
+		self.base_url = base_url
 		self._session = None
 
 	def path_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:
@@ -160,64 +162,40 @@ class Polar( Service, Plugin ):
 
 	@property
 	def base_url( self ) -> str:
-		return self._url_base
+		return self._base_url
 
 	@base_url.setter
 	def base_url( self, url: str ) -> None:
-		self._url_base = url
-		self._url_login = f'{self._url_base}/login'
-		self._url_ajax_login = f'{self._url_base}/ajaxLogin?_={str( int( current_time() ) )}'
-		self._url_events = f'{self._url_base}/training/getCalendarEvents'
-		self._url_export = f'{self._url_base}/api/export/training'
+		self._base_url = url if url else BASE_URL
+		self._login_url = f'{self._base_url}/login'
+		self._ajax_login_url = f'{self._base_url}/ajaxLogin?_={str( int( current_time() ) )}'
+		self._events_url = f'{self._base_url}/training/getCalendarEvents'
+		self._activity_url = f'{self._base_url}/training/analysis'
+		self._export_url = f'{self._base_url}/api/export/training'
 
 	@property
-	def login_url( self ) -> str:
-		return f'{self.base_url}/login'
-
-	@property
-	def login_ajax_url( self ) -> str:
+	def ajax_login_url( self ) -> str:
 		return  f'{self.base_url}/ajaxLogin?_={str( int( current_time() ) )}'
 
-	@property
-	def events_url( self ) -> str:
-		return f'{self.base_url}/training/getCalendarEvents'
-
 	def events_url_for( self, year ) -> str:
-		return f'{self.events_url}?start=1.1.{year}&end=31.12.{year}'
+		return f'{self._events_url}?start=1.1.{year}&end=31.12.{year}'
 
 	def all_events_url( self ):
-		return f'{self.events_url}?start=1.1.1970&end=1.1.{datetime.utcnow().year + 1}'
+		return f'{self._events_url}?start=1.1.1970&end=1.1.{datetime.utcnow().year + 1}'
 
-	@property
-	def export_url( self ) -> str:
-		return f'{self.base_url}/api/export/training'
+	def export_url_for( self, id: int, ext: str ) -> str:
+		return f'{self._export_url}/rr/csv/{id}' if ext == 'hrv' else f'{self._export_url}/{ext}/{id}'
 
-	@property
-	def url_export( self ) -> str:
-		return self._url_export
-
-	def url_export_for( self, id: int, ext: str ) -> str:
-		if ext == 'gpx':
-			return f'{self._url_export}/gpx/{id}'
-		elif ext == 'tcx':
-			return f'{self._url_export}/tcx/{id}'
-		elif ext == 'csv':
-			return f'{self._url_export}/csv/{id}'
-		elif ext == 'hrv':
-			return f'{self._url_export}/rr/csv/{id}'
-		else:
-			return ''
-
-	def url_activity( self, id: int ) -> str:
-		return f'{self._url_base}/training/analysis/{id}'
+	def activity_url( self, id: int ) -> str:
+		return f'{self._activity_url}/{id}'
 
 	def login( self ) -> bool:
 		if not self._session:
 			self._session = Session()
 
 		# noinspection PyUnusedLocal
-		response = self._session.get( self._url_base )
-		response = self._session.get( self._url_ajax_login )
+		response = self._session.get( self.base_url )
+		response = self._session.get( self.ajax_login_url )
 
 		try:
 			token = BeautifulSoup( response.text, 'html.parser' ).find( 'input', attrs={ 'name': 'csrfToken' } )['value']
@@ -242,7 +220,7 @@ class Polar( Service, Plugin ):
 		}
 
 		# noinspection PyUnusedLocal
-		response = self._session.post( self._url_login, headers=HEADERS_LOGIN, data=data )
+		response = self._session.post( self._login_url, headers=HEADERS_LOGIN, data=data )
 
 		self._logged_in = True
 		return self._logged_in
@@ -261,7 +239,7 @@ class Polar( Service, Plugin ):
 		return PolarActivity( raw=json, raw_data=json_str, raw_name=json_name, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
-		url = self.url_export_for( activity.raw_id, resource.type )
+		url = self.export_url_for( activity.raw_id, resource.type )
 		log.debug( f'attempting download from {url}' )
 
 		response = self._session.get( url, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )

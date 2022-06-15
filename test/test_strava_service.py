@@ -3,7 +3,6 @@ from os import getenv
 from typing import List
 
 from pytest import mark
-from pytest import skip
 
 from tracs.activity import Activity
 from tracs.config import GlobalConfig as gc
@@ -42,19 +41,20 @@ def test_constructor():
 	assert strava._auth_url == f'{TEST_BASE_URL}/oauth/authorize'
 	assert strava._token_url == f'{TEST_BASE_URL}/oauth/token'
 
-@mark.base_url( TEST_BASE_URL )
-def test_service( strava_server, strava_service ):
+@mark.service( (Strava, TEST_BASE_URL) )
+@mark.service_config( ('test/configurations/default/config.yaml', 'test/configurations/default/state_test.yaml' ) )
+def test_service( strava_server, service ):
 	from tracs.config import ApplicationConfig
 	from tracs.config import ApplicationState
 	setup_config_state( ApplicationConfig, ApplicationState )
 
 	# login
 	# strava_service.login() # login does not work yet, as oauth requires https
-	strava_service.weblogin()
+	service.weblogin()
 	# assert strava_service.logged_in
 
 	# fetch
-	fetched: List[Activity] = list( strava_service._fetch( 2020 ) )
+	fetched: List[Activity] = list( service._fetch() )
 
 	assert len( fetched ) == 3
 	a = fetched[0]
@@ -67,30 +67,27 @@ def test_service( strava_server, strava_service ):
 
 	# download
 	for r in a.resources:
-		content, status = strava_service._download_file( a, r )
+		content, status = service._download_file( a, r )
 		assert content is not None and status == 200
 
-def test_workflow( strava_server, strava_service, db_empty_inmemory, var_dir ):
+@mark.service( (Strava, TEST_BASE_URL) )
+@mark.service_config( ('test/configurations/default/config.yaml', 'test/configurations/default/state_test.yaml' ) )
+def test_workflow( strava_server, service, db_empty_inmemory, var_dir ):
 	gc.db, json = db_empty_inmemory
 	gc.db_dir = var_dir
-	strava_service.login()
-	fetched = strava_service.fetch( True )
+	service.login()
+	fetched = service.fetch( True )
 
 	assert len( fetched ) == 3
 
 @mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
 @mark.service( (Strava, LIVE_BASE_URL) )
-@mark.config_file( 'config_live.yaml' )
-@mark.state_file( 'state_live.yaml' )
-@mark.db_writable( True )
+@mark.service_config( ('var/config_live.yaml', 'var/state_live.yaml' ) )
+@mark.db_inmemory( True )
 def test_live_workflow( service, db, config_state ):
-	cfg, state = config_state
-	if not cfg:
-		skip( 'configuration for live testing is missing, consider creating $PROJECT/var/config_live.yaml' )
-
 	gc.db = db
-	gc.db_dir = db.db_path.parent
-	gc.db_file = db.db_path
+	gc.db_dir = db.path.parent
+	gc.db_file = db.path
 
 	service.login()
 	assert service.logged_in

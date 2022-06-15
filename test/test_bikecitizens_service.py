@@ -10,7 +10,6 @@ from tracs.plugins.bikecitizens import BASE_URL
 from tracs.plugins.bikecitizens import API_URL
 
 from .conftest import ENABLE_LIVE_TESTS
-from .fixtures import var_config
 from .bikecitizens_server import TEST_API_URL
 from .bikecitizens_server import TEST_BASE_URL
 
@@ -35,20 +34,15 @@ def test_constructor():
 
 @mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
 @mark.service( (Bikecitizens, BASE_URL) )
-@mark.config_file( 'config_live.yaml' )
-@mark.state_file( 'state_live.yaml' )
-@mark.writable( True )
+@mark.service_config( ('var/config_live.yaml', 'var/state_live.yaml' ) )
+@mark.db_inmemory( True )
 def test_live_workflow( service, db, config_state ):
-	cfg, state = config_state
-	if not cfg:
-		skip( 'configuration for live testing is missing, consider creating $PROJECT/var/config_live.yaml' )
-
 	gc.db = db
-	gc.db_dir = db.db_path.parent
-	gc.db_file = db.db_path
+	gc.db_dir = db.path.parent
+	gc.db_file = db.path
 
 	service.login()
-	#assert service.logged_in
+	assert service.logged_in
 
 	fetched = service.fetch( False )
 	assert len( fetched ) > 0

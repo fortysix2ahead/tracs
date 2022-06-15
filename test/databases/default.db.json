@@ -16,22 +16,22 @@
       "empty_field": "",
       "nonempty_field": "value",
       "null_field": null,
-      "_groups": {
+      "groups": {
         "ids": [ 2, 3, 4 ],
         "uids": [ "polar:1234567890", "strava:12345678", "waze:20210101010101" ]
       },
-      "_metadata": {
+      "metadata": {
       }
     },
     "2": {
       "name": "Unknown Location",
-      "_classifier": "polar",
-      "_groups": {
+      "classifier": "polar",
+      "groups": {
         "parent": 1
       },
-      "_metadata": {
+      "metadata": {
       },
-      "_raw": {
+      "raw": {
         "listItemId": 1234567890,
         "isTest": false,
         "title": "03:23:53;0.0 km",
@@ -54,11 +54,11 @@
     },
     "3": {
       "name": "Unknown Location",
-      "_classifier": "strava",
-      "_groups": {
+      "classifier": "strava",
+      "groups": {
         "parent": 1
       },
-      "_resources": [
+      "resources": [
         {
           "name": null,
           "path": "12345678.gpx",
@@ -72,9 +72,9 @@
           "status": 100
         }
       ],
-      "_metadata": {
+      "metadata": {
       },
-      "_raw": {
+      "raw": {
         "id": 12345678,
         "name": "Run at Noon",
         "type": "NordicSki",
@@ -89,14 +89,14 @@
     },
     "4": {
       "name": "Unknown Location",
-      "_classifier": "waze",
-      "_groups": {
+      "classifier": "waze",
+      "groups": {
         "parent": 1
       },
-      "_metadata": {
+      "metadata": {
         "path": "Takeout 2021-01-01/account_activity_3.csv"
       },
-      "_resources": [
+      "resources": [
         {
           "name": null,
           "path": "20210101010101.gpx",
@@ -104,15 +104,15 @@
           "status": 100
         }
       ],
-      "_raw": {
+      "raw": {
         "id": 20210101010101,
         "time": "2021-01-11T12:00:00+00:00"
       }
     },
     "11": {
       "name": "Afternoon Run in Berlin",
-      "_classifier": "polar",
-      "_raw": {
+      "classifier": "polar",
+      "raw": {
         "isTest": false,
         "title": "00:25:34;0.0 km",
         "type": "EXERCISE",
@@ -132,7 +132,7 @@
         "distance": 12000.3,
         "calories": 456
       },
-      "_resources": [
+      "resources": [
         {
           "name": null,
           "path": "1001.gpx",
@@ -158,13 +158,13 @@
           "status": 100
         }
       ],
-      "_metadata": {
+      "metadata": {
       }
     },
     "12": {
       "name": "Fitness Test",
-      "_classifier": "polar",
-      "_raw": {
+      "classifier": "polar",
+      "raw": {
         "type": "FITNESSDATA",
         "listItemId": 2002,
         "title": "Fitness Test",
@@ -183,8 +183,8 @@
     },
     "13": {
       "name": "Orthostatic Test",
-      "_classifier": "polar",
-      "_raw": {
+      "classifier": "polar",
+      "raw": {
         "type": "ORTHOSTATICTEST",
         "eventType": "orthostaticTest",
         "title": "Orthostatic test",
@@ -195,8 +195,8 @@
     },
     "14": {
       "name": "RR Recording",
-      "_classifier": "polar",
-      "_raw": {
+      "classifier": "polar",
+      "raw": {
         "title": "RR recording result",
         "url": "/training/test/rr/4004",
         "eventType": "rrTest",
@@ -207,10 +207,10 @@
     },
     "20": {
       "name": "Ungrouped Strava Run",
-      "_classifier": "strava",
-      "_metadata": {
+      "classifier": "strava",
+      "metadata": {
       },
-      "_raw": {
+      "raw": {
         "id": 12345600,
         "name": "Run at Noon",
         "type": "NordicSki",
@@ -225,11 +225,11 @@
     "30": {
       "name": "Ungrouped Waze Drive",
       "raw_id": 20200101010101,
-      "_classifier": "waze",
-      "_metadata": {
+      "classifier": "waze",
+      "metadata": {
         "path": "Takeout 2020-01-01/account_activity_3.csv"
       },
-      "_resources": [
+      "resources": [
         {
           "name": null,
           "path": "20200101010101.gpx",
@@ -237,17 +237,17 @@
           "status": 100
         }
       ],
-      "_raw": {
+      "raw": {
         "id": 20200101010101,
         "time": "2020-01-11T12:00:00+00:00"
       }
     },
     "40": {
       "name": "Some Hike",
-      "_classifier": "strava",
-      "_metadata": {
+      "classifier": "strava",
+      "metadata": {
       },
-      "_raw": {
+      "raw": {
         "achievement_count": 0,
         "athlete": {
           "id": 1000000,
@@ -311,7 +311,7 @@
         "utc_offset": 7200.0,
         "visibility": "everyone"
       },
-      "_resources": [
+      "resources": [
         {
           "name": null,
           "path": "20000000.gpx",
@@ -327,11 +327,11 @@
       ]
     },
     "41": {
-      "_classifier": "polar",
+      "classifier": "polar",
       "heartrate": 120,
-      "_metadata": {
+      "metadata": {
       },
-      "_raw": {
+      "raw": {
         "allDay": false,
         "borderColor": "#A9D0F5",
         "calories": 868,
@@ -356,10 +356,10 @@
     },
     "51": {
       "name": "Polar Hike for Grouping One",
-      "_classifier": "polar",
-      "_metadata": {
+      "classifier": "polar",
+      "metadata": {
       },
-      "_raw": {
+      "raw": {
         "datetime": "2016-02-02T14:04:00.000Z",
         "distance": 5123.0,
         "eventType": "exercise",
@@ -370,10 +370,10 @@
     },
     "52": {
       "name": "Polar Hike for Grouping Two",
-      "_classifier": "polar",
-      "_metadata": {
+      "classifier": "polar",
+      "metadata": {
       },
-      "_raw": {
+      "raw": {
         "datetime": "2016-02-02T14:04:23.000Z",
         "distance": 5124.0,
         "eventType": "exercise",
@@ -384,10 +384,10 @@
     },
     "53": {
       "name": "Strava Hike for Grouping",
-      "_classifier": "strava",
-      "_metadata": {
+      "classifier": "strava",
+      "metadata": {
       },
-      "_raw": {
+      "raw": {
         "id": 5000003,
         "name": "Strava Hike for Grouping",
         "type": "Hiking",
@@ -397,10 +397,10 @@
     },
     "54": {
       "name": "Strava Run 1 for Grouping",
-      "_classifier": "strava",
-      "_metadata": {
+      "classifier": "strava",
+      "metadata": {
       },
-      "_raw": {
+      "raw": {
         "id": 5000003,
         "name": "Strava Hike for Grouping",
         "type": "Hiking",
@@ -410,10 +410,10 @@
     },
     "55": {
       "name": "Strava Run 2 for Grouping",
-      "_classifier": "strava",
-      "_metadata": {
+      "classifier": "strava",
+      "metadata": {
       },
-      "_raw": {
+      "raw": {
         "id": 5000003,
         "name": "Strava Hike for Grouping",
         "type": "Hiking",

@@ -83,7 +83,7 @@ def service( request ) -> Service:
 
 	config, state = None, None
 	with path('test', '__init__.py') as test_pkg_path:
-		config_path = Path(test_pkg_path.parent.parent, 'var', config_file )
+		config_path = Path(test_pkg_path.parent.parent, config_file )
 		if config_path.exists():
 			config = Configuration( 'test.strava', __name__, read=False )
 			config.set_file(config_path)

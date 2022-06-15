@@ -217,17 +217,17 @@ def test_update( db ):
 	a = db.get( 1 )
 	assert a.name == 'Unknown Location'
 	assert a.type == ActivityTypes.xcski
-	assert a['_groups']['ids'] == [2, 3, 4]
-	assert a['_groups']['uids'] == [ 'polar:1234567890', 'strava:12345678', 'waze:20210101010101' ]
-	assert a['_metadata'] == {}
+	assert a['groups']['ids'] == [2, 3, 4]
+	assert a['groups']['uids'] == [ 'polar:1234567890', 'strava:12345678', 'waze:20210101010101' ]
+	assert a['metadata'] == {}
 
 	a.name = 'Known Location'
 	a['additional_field'] = 'additional field value'
-	a['_groups']['ids'] = [20, 30, 40]
+	a['groups']['ids'] = [20, 30, 40]
 
 	del( a['type'] )
 	# del ( a['_groups']['uids'] ) # this break __post_init__
-	del ( a['_metadata'] )
+	del ( a['metadata'] )
 	db.update( a )
 
 	# manipulate 'a' to check that objects are decoupled
@@ -237,9 +237,9 @@ def test_update( db ):
 	assert a2.name == 'Known Location'
 	assert a2.type is None
 	assert a2['additional_field'] is None
-	assert a2['_groups']['ids'] == [20, 30, 40]
+	assert a2['groups']['ids'] == [20, 30, 40]
 	# assert a2['_groups'].get( 'uids' ) is None
-	assert a2['_metadata'] == {}
+	assert a2['metadata'] == {}
 
 @mark.db_inmemory( True )
 @mark.db_template( 'default' )

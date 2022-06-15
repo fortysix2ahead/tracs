@@ -49,12 +49,12 @@ def serialize_filter( field: Attribute, value: Any ) -> bool:
 def deserialize( inst: type, field: Attribute, value: Any ) -> Any:
 	return value
 
-def as_dict( instance: MutableMapping, instance_type: type = None, attributes: List[Attribute] = None, modify_arg: bool = False, remove_persist_fields: bool = True, remove_null_fields: bool = True, remove_data_field = True ) -> Dict:
-	_value_serializer = serialize
-	_filter = serialize_filter if remove_persist_fields else None
+def as_dict( instance: Any, instance_type: type = None, attributes: List[Attribute] = None, modify_arg: bool = False, remove_persist_fields: bool = True, remove_null_fields: bool = True, remove_data_field = True ) -> Dict:
+	_serialize = serialize # use serializer from above
+	_filter = serialize_filter if remove_persist_fields else None # apply filter when arg is True
 
 	if hasattr( instance.__class__, '__attrs_attrs__' ):
-		_dict = asdict( instance, value_serializer=serialize, filter=_filter )
+		_dict = asdict( instance, value_serializer=_serialize, filter=_filter )
 		if hasattr( instance, 'data' ):
 			_dict = _dict | instance.data if instance.data else _dict # todo: who takes precedence?
 	else:
@@ -69,14 +69,14 @@ def as_dict( instance: MutableMapping, instance_type: type = None, attributes: L
 			att = attr_for( atts, f )
 			if att:
 				if _filter and _filter( att, v ):
-					_dict[f] = serialize( instance_type, att, v )
+					_dict[f] = _serialize( instance_type, att, v )
 					if 'persist_as' in att.metadata:
 						_dict[att.metadata['persist_as']] = _dict[f]
 						del _dict[f]
 				else:
 					del _dict[f]
 			else:
-				_dict[f] = serialize( instance_type, None, v )
+				_dict[f] = _serialize( instance_type, None, v )
 
 	if remove_null_fields:
 		for f, v in dict( _dict ).items():
@@ -207,13 +207,27 @@ class DataClass( MutableMapping ):
 @define( init=True )
 class BaseDocument( DataClass ):
 
-	data: Any = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # data that makes up this dataclass
-	doc_id: int = field( init=True, default=0, metadata={ PERSIST: False, PROTECTED: True } )  # doc_id for tinydb compatibility
+	data: Any = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )
+	"""Data that makes up this dataclass, only used for initializing, set to None when init is done"""
 
-	id: int = field( init=True, default=0, metadata={ PERSIST: False, PROTECTED: True } )  # an id is always required
-	classifier: str = field( init=True, default=None, metadata={ PERSIST_AS: '_classifier', PROTECTED: True } )  # an id is always required
-	service: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # todo: remove, for backward compatibility
-	uid: str = field( init=False, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # unique id
+	doc_id: int = field( init=True, default=0, metadata={ PERSIST: False, PROTECTED: True } )
+	"""doc_id for tinydb compatibility"""
+
+	id: int = field( init=True, default=0, metadata={ PERSIST: False, PROTECTED: True } )
+	"""id of the document, will not be persisted as it is calculated from raw_id/doc_id"""
+
+	uid: str = field( init=False, default=None, metadata={ PERSIST: False, PROTECTED: True } )
+	"""unique id of this document in the form of <classfifier>:<id or raw_id>"""
+
+	classifier: str = field( init=True, default=None, metadata={ PERSIST_AS: '_classifier', PROTECTED: True } )
+	"""classifier of this document, used to mark documents as belonging to a certain service"""
+
+	dataclass: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )
+	"""indicator for which class is to be used when deserializing, not yet used"""
+
+	service: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )
+	"""virtual field for backward compatibility, to be removed"""
+
 	raw: Any = field( init=True, default=None, metadata={ PERSIST: False, PERSIST_AS: '_raw', PROTECTED: True } )  # raw data used for initialization from external data sources
 	raw_id: int = field( init=True, default=0, metadata= { PROTECTED: True } )  # raw id as raw data might not contain all data necessary
 	raw_name: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # same as raw id
@@ -230,8 +244,7 @@ class BaseDocument( DataClass ):
 			self.data = None # delete data after content has been imported
 
 		self.id = self.doc_id if self.id == self._attr_for( 'id' ).default else self.id
-		self.uid = f':{self.id}'
-
+		self.uid = f'base:{self.id}'
 		self.service = self.classifier # todo: for backward compatibility
 
 # syntactic sugar for field

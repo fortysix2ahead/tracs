@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from datetime import time
 from dateutil.tz import UTC
@@ -8,16 +7,18 @@ from pytest import mark
 
 from tracs.activity import Activity
 from tracs.activity import ActivityRef
+from tracs.activity import Resource
 from tracs.activity_types import ActivityTypes
 from tracs.dataclasses import as_dict
 from tracs.plugins.groups import ActivityGroup
 from tracs.plugins.polar import PolarActivity
 from tracs.plugins.strava import StravaActivity
 
+
 @mark.db_template( 'default' )
 def test_init( json ):
 	# empty init
-	a = ActivityGroup( doc_id = 0 )
+	a = ActivityGroup( doc_id=0 )
 	assert a['groups'] == {} and a.groups == {}
 	assert a['group_refs'] == [] and a.group_refs == []
 	assert a['group_ids'] == [] and a.group_ids == []
@@ -44,7 +45,7 @@ def test_init( json ):
 
 	# grouping
 	assert a.groups == {
-		'ids': [2, 3, 4],
+		'ids' : [2, 3, 4],
 		'uids': ['polar:1234567890', 'strava:12345678', 'waze:20210101010101'],
 	}
 	assert a.group_refs == [
@@ -60,10 +61,10 @@ def test_init( json ):
 	assert a.time == datetime( 2012, 1, 7, 10, 40, 56, tzinfo=UTC )
 	assert a.localtime == datetime( 2012, 1, 7, 11, 40, 56, tzinfo=tzlocal() )
 
-#	assert a.resources == [
-#		Resource( parent=a['_resources'][0], type='gpx', status=100, path='12345678.gpx' ),
-#		Resource( parent=a['_resources'][1], type='tcx', status=100, path='12345678.tcx' )
-#	]
+	#	assert a.resources == [
+	#		Resource( parent=a['_resources'][0], type='gpx', status=100, path='12345678.gpx' ),
+	#		Resource( parent=a['_resources'][1], type='tcx', status=100, path='12345678.tcx' )
+	#	]
 
 	# init with child
 	polar_json = json['activities']['2']
@@ -102,7 +103,8 @@ def test_init( json ):
 	assert a.name == '03:23:53;0.0 km'
 	assert a.calories == 2904
 	assert a.heartrate == 150
-	assert a.duration_moving == time( 1, 40, 0)
+	assert a.duration_moving == time( 1, 40, 0 )
+
 
 def test_asdict():
 	a = Activity()
@@ -142,5 +144,52 @@ def test_asdict():
 	}
 
 	assert as_dict( a ) == {
-		'groups': {}, 'metadata': {}, 'raw_id': 0, 'resources': [], 'tags': []
+		'groups'   : {},
+		'metadata' : {},
+		'raw_id'   : 0,
+		'resources': [],
+		'tags'     : []
+	}
+
+	assert as_dict( a, remove_persist_fields=False ) == {
+		'doc_id'      : 0,
+		'groups'      : {},
+		'id'          : 0,
+		'is_group'    : False,
+		'is_multipart': False,
+		'metadata'    : {},
+		'raw_id'      : 0,
+		'resources'   : [],
+		'tags'        : [],
+		'uid'         : 'base:0'
+	}
+
+	activity_dict = {
+		'classifier': 'polar',
+		'doc_id'    : 1,
+		'groups'    : {},
+		'id'        : 1,
+		'metadata'  : {},
+		'name'      : 'name',
+		'raw_id'    : 1,
+		'resources' : [Resource( name='one', path='one.gpx', status=100, type='gpx' )],
+		'time'      : datetime( 2020, 1, 1, 10, 0, 0, tzinfo=UTC ),
+		'type'      : ActivityTypes.run,
+		'uid'       : 'polar:1'
+	}
+
+	assert as_dict( activity_dict, Activity ) == {
+		'_classifier': 'polar',
+		'_groups'    : {},
+		'_metadata'  : {},
+		'_resources' : [{
+			'name'  : 'one',
+			'path'  : 'one.gpx',
+			'status': 100,
+			'type'  : 'gpx'
+		}],
+		'name'       : 'name',
+		'raw_id'     : 1,
+		'time'       : '2020-01-01T10:00:00+00:00',
+		'type'       : 'run'
 	}

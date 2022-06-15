@@ -109,8 +109,8 @@ def test_testdataclass_asdict():
 
 def test_attr_for():
 	attrs = BaseDocument().__attrs_attrs__
-	assert attr_for( attrs, 'uid' ) is not None
-	assert attr_for( attrs, 'uuid' ) is None
+	assert attr_for( attributes=attrs, key='uid' ) is not None
+	assert attr_for( attributes=attrs, key='uuid' ) is None
 
 def test_as_dict():
 	bd = BaseDocument()

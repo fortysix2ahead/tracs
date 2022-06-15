@@ -12,6 +12,7 @@ from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Type
 
 from attrs import Attribute
 from attrs import asdict
@@ -22,68 +23,76 @@ from attrs import define
 PERSIST = 'persist'
 PERSIST_AS = 'persist_as'
 PROTECTED = 'protected'
+ATTRS = '__attrs_attrs__'
 
 # value serialization/deserialization
 
-def attr_for( attributes: List[Attribute], key: Any ):
+def attr_for( cls: Type = None, attributes: List[Attribute] = None, key: Any = None ):
+	if cls and hasattr( cls, '__attrs_attrs__' ):
+		attributes = cls.__attrs_attrs__
+
 	for att in attributes or []:
 		if att.name == key:
 			return att
 	return None
 
 # noinspection PyShadowingNames,PyUnusedLocal
-def serialize( inst: type, field: Optional[Attribute], value: Any ) -> Any:
+# todo: this serializer is far from complete and needs to be improved for recursion when there's a use case
+def serialize( inst: Optional[Type], field: Optional[Attribute], value: Any ) -> Any:
 	if isinstance( value, datetime ):
 		return value.isoformat()
 	elif isinstance( value, time ):
 		return value.isoformat()
 	elif isinstance( value, Enum ):
 		return value.value
+	elif isinstance( value, list ):
+		return [ serialize( None, None, l ) for l in value ]
+	elif hasattr( value, ATTRS ):
+		return asdict( value )
 	return value
 
 # noinspection PyShadowingNames,PyUnusedLocal
 def serialize_filter( field: Attribute, value: Any ) -> bool:
-	return field.metadata.get( 'persist', True )
+	return field.metadata.get( PERSIST, True )
 
 # noinspection PyShadowingNames,PyUnusedLocal
 def deserialize( inst: type, field: Attribute, value: Any ) -> Any:
 	return value
 
-def as_dict( instance: Any, instance_type: type = None, attributes: List[Attribute] = None, modify_arg: bool = False, remove_persist_fields: bool = True, remove_null_fields: bool = True, remove_data_field = True ) -> Dict:
+def as_dict( instance: Any, instance_type: Type = None, attributes: List[Attribute] = None, modify_arg: bool = False, remove_persist_fields: bool = True, remove_null_fields: bool = True, remove_data_field = True ) -> Optional[Dict]:
 	_serialize = serialize # use serializer from above
 	_filter = serialize_filter if remove_persist_fields else None # apply filter when arg is True
 
-	if hasattr( instance.__class__, '__attrs_attrs__' ):
+	_dict = None
+	if instance and hasattr( instance.__class__, '__attrs_attrs__' ):
 		_dict = asdict( instance, value_serializer=_serialize, filter=_filter )
-		if hasattr( instance, 'data' ):
-			_dict = _dict | instance.data if instance.data else _dict # todo: who takes precedence?
-	else:
-		atts: List[Attribute] = attributes or []
-		# currently instance_type takes precedence
-		if instance_type and hasattr( instance_type, '__attrs_attrs__' ):
-			atts: List[Attribute] = instance_type.__attrs_attrs__
+		# deactivated serialization of additional content in data as data is always null as of now
+		# if hasattr( instance, 'data' ):
+		#	_dict = _dict | instance.data if instance.data else _dict # who takes precedence?
 
-		_dict = instance if modify_arg else dict( instance )
+	elif instance and instance_type and hasattr( instance_type, '__attrs_attrs__' ):
+		_attrs: List[Attribute] = instance_type.__attrs_attrs__ or attributes or [] # currently instance_type takes precedence
+		_dict = instance if modify_arg else dict( instance ) # modify prodived dict directly?
 
 		for f, v in dict( _dict ).items():
-			att = attr_for( atts, f )
-			if att:
+			if att := attr_for( attributes=_attrs, key=f ):
 				if _filter and _filter( att, v ):
 					_dict[f] = _serialize( instance_type, att, v )
-					if 'persist_as' in att.metadata:
-						_dict[att.metadata['persist_as']] = _dict[f]
+					if PERSIST_AS in att.metadata:
+						_dict[att.metadata[PERSIST_AS]] = _dict[f]
 						del _dict[f]
 				else:
 					del _dict[f]
-			else:
-				_dict[f] = _serialize( instance_type, None, v )
+			# do we want to serialize dict item where no attr exists for? -> turned off at the moment
+			# else:
+			#	_dict[f] = _serialize( instance_type, None, v )
 
-	if remove_null_fields:
+	if _dict and remove_null_fields:
 		for f, v in dict( _dict ).items():
 			if v is None:
 				del _dict[f]
 
-	if remove_data_field and 'data' in _dict:
+	if _dict and remove_data_field and 'data' in _dict:
 		del _dict['data']
 
 	return _dict
@@ -107,10 +116,10 @@ def transform( cls: type, fields: List[Attribute]) -> List[Attribute]:
 
 	return results
 
-# converters
+# field converters
 
 # noinspection PyTypeChecker
-def str2datetime( s: str ) -> datetime:
+def str2datetime( s: Union[datetime, str] ) -> datetime:
 	if type( s ) is datetime:
 		return s
 	elif type( s ) is str:
@@ -119,7 +128,7 @@ def str2datetime( s: str ) -> datetime:
 		return None
 
 # noinspection PyTypeChecker
-def str2time( s: str ) -> time:
+def str2time( s: Union[time, str] ) -> time:
 	if type( s ) is time:
 		return s
 	elif type( s ) is str:
@@ -183,7 +192,7 @@ class DataClass( MutableMapping ):
 		return self.__getitem__( k )
 
 	def _attr_for( self, k: Any ) -> Optional[Attribute]:
-		return attr_for( self.__class__.__attrs_attrs__, k )
+		return attr_for( attributes=self.__class__.__attrs_attrs__, key=k )
 
 	def _value_for( self, k: Any ) -> Any:
 		return getattr( self, k )

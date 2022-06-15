@@ -12,10 +12,8 @@ from typing import List
 from typing import Optional
 
 from .activity_types import ActivityTypes
-from .config import KEY_GROUPS
 from .dataclasses import BaseDocument
 from .dataclasses import PERSIST
-from .dataclasses import PERSIST_AS
 from .dataclasses import PROTECTED
 from .dataclasses import str2datetime
 from .dataclasses import str2time
@@ -83,17 +81,17 @@ class Activity( BaseDocument ):
 	heartrate_min: float = field( init=True, default=None ) #
 	calories: float = field( init=True, default=None ) #
 
-	groups: Dict = field( init=True, default={}, metadata={ PERSIST_AS: KEY_GROUPS, PROTECTED: True } ) # todo: for backward compatibility
-	metadata: Dict = field( init=True, default={}, metadata={ PERSIST_AS: '_metadata', PROTECTED: True } )
-	resources: List[Resource] = field( init=True, default=[], metadata={ PERSIST_AS: '_resources', PROTECTED: True } )
+	groups: Dict = field( init=True, default={}, metadata={ PROTECTED: True } ) # todo: for backward compatibility
+	metadata: Dict = field( init=True, default={}, metadata={ PROTECTED: True } )
+	resources: List[Resource] = field( init=True, default=[], metadata={ PROTECTED: True } )
 
 	parent: Activity = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )
 	parent_ref: ActivityRef = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )
-	parent_id: int = field( init=True, default=None, metadata={ PERSIST_AS: '_parent_id', PROTECTED: True } )
-	parent_uid: str = field( init=True, default=None, metadata={ PERSIST_AS: '_parent_uid', PROTECTED: True } )
+	parent_id: int = field( init=True, default=None, metadata={ PROTECTED: True } )
+	parent_uid: str = field( init=True, default=None, metadata={ PROTECTED: True } )
 
-	is_group: bool = field( init=False, default=False, metadata={ 'persist': False } ) # todo: for backward compatibility
-	is_multipart: bool = field( init=False, default=False, metadata={ 'persist': False } ) # todo: for backward compatibility
+	is_group: bool = field( init=False, default=False, metadata={ PERSIST: False } ) # todo: for backward compatibility
+	is_multipart: bool = field( init=False, default=False, metadata={ PERSIST: False } ) # todo: for backward compatibility
 
 	def __attrs_post_init__( self ):
 		super().__attrs_post_init__()

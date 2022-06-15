@@ -28,14 +28,14 @@ TABLE_NAME_ACTIVITIES = 'activities'
 CLASSIFIER = 'classifier'
 CLASSIFIERS = 'classifiers'
 
-KEY_CLASSIFER = '_classifier'
-KEY_GROUPS = '_groups'
-KEY_METADATA = '_metadata'
-KEY_PARTS = '_parts'
+KEY_CLASSIFER = 'classifier'
+KEY_GROUPS = 'groups'
+KEY_METADATA = 'metadata'
+KEY_PARTS = 'parts'
 KEY_PLUGINS = 'plugins'
 KEY_SERVICE = KEY_CLASSIFER
-KEY_RAW = '_raw'
-KEY_RESOURCES = '_resources'
+KEY_RAW = 'raw'
+KEY_RESOURCES = 'resources'
 KEY_VERSION = 'version'
 
 NAMESPACE_BASE = APPNAME

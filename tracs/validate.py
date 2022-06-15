@@ -41,7 +41,7 @@ def _check_missing_type( a: Activity, data: List[List] ) -> None:
 def _check_files( a: Activity, data: List[List] ) -> None:
 	if not a.is_group:
 		s: Service = gc.app.services.get( a.service )
-		for ext, status in a.get( '_metadata', {} ).items():
+		for ext, status in a.get( 'metadata', {} ).items():
 			if ext not in [ 'groups' ]:
 				if status == 200 and not s.path_for( a, ext ).exists():
 					data.append( [WARN, f'file for type {ext} marked with status {status}, but does not exist'] )

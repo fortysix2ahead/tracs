@@ -11,6 +11,7 @@ from yaml import load as load_yaml
 
 from tracs.config import ApplicationConfig as cfg
 from tracs.config import ApplicationState as state
+from tracs.config import CLASSIFIER
 from tracs.config import GlobalConfig
 from tracs.db import ActivityDb
 from tracs.plugins import Registry
@@ -101,7 +102,7 @@ def setup_registry():
 	import tracs.plugins.base as base
 	Registry.register_accessors( None, base.accessors() )
 	Registry.register_transformers( None, base.transformers() )
-	Registry.register_function( '_classifier', base._classifier, Registry.accessors )
+	Registry.register_function( CLASSIFIER, base.classifier, Registry.accessors )
 
 	import tracs.plugins.bikecitizens as bikecitizens
 	Registry.register_accessors( 'bikecitizens', bikecitizens.accessors() )

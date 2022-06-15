@@ -24,7 +24,7 @@ def test_load_default( clean_registry, setup_registry ):
 
 	assert len( Registry.accessors ) == accessor_count + 1 # +1 because one accessor is defined with @accessor ...
 
-	assert sorted( list( Registry.accessors_for( None ).keys() ) ) == sorted( ['_classifier', 'id', 'uid'] )
+	assert sorted( list( Registry.accessors_for( None ).keys() ) ) == sorted( ['classifier', 'id', 'uid'] )
 	assert list( Registry.transformers_for( None ).keys() ) == ['time', 'localtime', 'type']
 
 	assert list( Registry.accessors_for( 'empty' ).keys() ) == ['id', 'uid', 'raw_id', 'type']

@@ -14,6 +14,7 @@ from rich.table import Table
 
 from .activity import Activity
 from .config import ApplicationConfig as cfg
+from .config import CLASSIFIER
 from .config import GlobalConfig as gc
 from .config import console
 from .config import KEY_CLASSIFER as SERVICE
@@ -82,16 +83,16 @@ def show_activity( activities: [Activity], frmt: str = None, display_raw: bool =
 				table.add_column( '[blue]raw value' )
 				for field, value in a.raw.items():
 					table.add_row( field, pp( value ) )
-				if '_classifier' in a:
-					table.add_row( 'classifier', pp( a['_classifier'] ) )
-				if '_metadata' in a:
-					table.add_row( 'metadata', pp( a['_metadata'] ) )
-				if '_groups' in a:
-					table.add_row( 'groups', pp( a['_groups'] ) )
-				if '_parts' in a:
-					table.add_row( 'parts', pp( a['_parts'] ) )
-				if '_resources' in a:
-					table.add_row( 'resources', pp( a['_resources'] ) )
+				if CLASSIFIER in a:
+					table.add_row( 'classifier', pp( a['classifier'] ) )
+				if 'metadata' in a:
+					table.add_row( 'metadata', pp( a['metadata'] ) )
+				if 'groups' in a:
+					table.add_row( 'groups', pp( a['groups'] ) )
+				if 'parts' in a:
+					table.add_row( 'parts', pp( a['parts'] ) )
+				if 'resources' in a:
+					table.add_row( 'resources', pp( a['resources'] ) )
 
 			else:
 				table.add_column( '[blue]field' )
@@ -119,7 +120,7 @@ def show_activity( activities: [Activity], frmt: str = None, display_raw: bool =
 					[ 'Calories', a['calories'] ],
 					[ 'Raw Id', a['raw_id'] ],
 					[ 'Uid', a['uid'] ],
-					[ 'Service', a['_classifier'] ],
+					[ 'Service', a['classifier'] ],
 				]
 
 				for row in rows:

@@ -29,6 +29,8 @@ from tinydb.table import Document
 from tinydb.table import Table
 
 from .activity import Activity
+from .config import CLASSIFIER
+from .config import KEY_GROUPS
 from .config import console
 from .config import APPNAME
 from .config import TABLE_NAME_ACTIVITIES
@@ -236,14 +238,14 @@ class ActivityDb:
 # ---- DB Factory ---
 
 def document_cls( doc: Union[Dict, Document], doc_id: int ) -> Type:
-	if classifier := doc.get( '_classifier' ) or doc.get( 'classifier' ):
+	if classifier := doc.get( CLASSIFIER ):
 		if classifier == 'group': # ActvityGroup is registered with 'groups' todo: improve!
-			classifier = 'groups'
+			classifier = KEY_GROUPS
 		if classifier in Registry.document_classes:
 			return Registry.document_classes.get( classifier )
-	elif groups := doc.get( 'groups' ) or doc.get( '_groups' ):
+	elif groups := doc.get( KEY_GROUPS ):
 		if 'ids' in groups.keys() or 'uids' in groups.keys():
-			return Registry.document_classes.get( 'groups' )
+			return Registry.document_classes.get( KEY_GROUPS )
 
 	return Document
 

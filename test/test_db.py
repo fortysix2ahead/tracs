@@ -89,12 +89,6 @@ def test_open_db( db ):
 	assert db.activities.document_class is document_factory
 
 @mark.db_inmemory( True )
-@mark.db_template( 'default' )
-def test_middleware( db ):
-	for a in db.db.table( 'activities' ).all():
-		assert a['id'] is not None
-
-@mark.db_inmemory( True )
 @mark.db_template( 'empty' )
 def test_write_middleware( db ):
 	a = StravaActivity( raw = { 'start_date': datetime.utcnow().isoformat() } )

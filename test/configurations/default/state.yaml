@@ -1,11 +1,12 @@
-strava:
-    last_fetch: '2021-01-01T10:00:00.000000'
-    expires_at: 1600000000
-    refresh_token: 1000000000000000000000000000000000000000
-    access_token: 1000000000000000000000000000000000000000
-    expires_in: 10000
-    token_type: Bearer
-    last_download:
-polar:
-    last_fetch: '2021-01-01T10:00:00.000000'
-    last_download:
+plugins:
+  strava:
+      last_fetch: '2021-01-01T10:00:00.000000'
+      expires_at: 1600000000
+      refresh_token: 1000000000000000000000000000000000000000
+      access_token: 1000000000000000000000000000000000000000
+      expires_in: 10000
+      token_type: Bearer
+      last_download:
+  polar:
+      last_fetch: '2021-01-01T10:00:00.000000'
+      last_download:

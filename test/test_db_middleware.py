@@ -18,6 +18,7 @@ from tracs.db import document_cls
 from tracs.db_middleware import DataClassMiddleware
 from tracs.plugins.polar import PolarActivity
 
+
 @mark.db_template( 'default' )
 def test_read( json ):
 	storage_cls = DataClassMiddleware( MemoryStorage )
@@ -37,6 +38,7 @@ def test_read( json ):
 	assert 'activities' in data
 	assert '2' in data['activities']
 	assert type( data['activities']['2'] ) is PolarActivity
+
 
 def test_write():
 	data = {
@@ -87,24 +89,24 @@ def test_write():
 	serialized_file_data = {
 		'activities': {
 			'1': {
-				'_classifier': 'polar',
-				'_groups'    : {},
-				'_metadata'  : {},
-				'_resources' : [{
+				'classifier': 'polar',
+				'groups'    : {},
+				'metadata'  : {},
+				'resources' : [{
 					'name'  : 'one',
 					'path'  : 'one.gpx',
 					'status': 100,
 					'type'  : 'gpx'
 				}],
-				'calories'   : 2904,
-				'distance'   : 30000.1,
-				'duration'   : '03:23:53',
-				'localtime'  : '2012-01-07T10:40:51+01:00',
-				'name'       : '03:23:53;0.0 km',
-				'raw_id'     : 1234567890,
-				'tags'       : [],
-				'time'       : '2012-01-07T09:40:51+00:00',
-				'type'       : 'xcski_classic'
+				'calories'  : 2904,
+				'distance'  : 30000.1,
+				'duration'  : '03:23:53',
+				'localtime' : '2012-01-07T10:40:51+01:00',
+				'name'      : '03:23:53;0.0 km',
+				'raw_id'    : 1234567890,
+				'tags'      : [],
+				'time'      : '2012-01-07T09:40:51+00:00',
+				'type'      : 'xcski_classic'
 			}
 		}
 	}

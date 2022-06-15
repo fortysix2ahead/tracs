@@ -145,19 +145,16 @@ class DataClass( MutableMapping ):
 	# implementation of methods for mutable mapping
 
 	def __getitem__( self, k: Any ) -> Any:
-		k = k.lstrip( '_' ) if type( k ) is str else k # todo: remove later, for backward compatibility
 		if hasattr( self, k ): # todo: throw exception here?
 			return getattr( self, k )
 		else:
 			return None
 
 	def __setitem__( self, k: Any, v: Any ) -> None:
-		k = k.lstrip( '_' ) if type( k ) is str else k # todo: remove later, for backward compatibility
 		if hasattr( self, k ): # todo: throw exception here?
 			setattr( self, k, v )
 
 	def __delitem__( self, k: Any ) -> None:
-		k = k.lstrip( '_' ) if type( k ) is str else k # todo: remove later, for backward compatibility
 		if hasattr( self, k ): # todo: throw exception here?
 			setattr( self, k, None )
 
@@ -228,7 +225,7 @@ class BaseDocument( DataClass ):
 	uid: str = field( init=False, default=None, metadata={ PERSIST: False, PROTECTED: True } )
 	"""unique id of this document in the form of <classfifier>:<id or raw_id>"""
 
-	classifier: str = field( init=True, default=None, metadata={ PERSIST_AS: '_classifier', PROTECTED: True } )
+	classifier: str = field( init=True, default=None, metadata={ PROTECTED: True } )
 	"""classifier of this document, used to mark documents as belonging to a certain service"""
 
 	dataclass: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )
@@ -237,7 +234,7 @@ class BaseDocument( DataClass ):
 	service: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )
 	"""virtual field for backward compatibility, to be removed"""
 
-	raw: Any = field( init=True, default=None, metadata={ PERSIST: False, PERSIST_AS: '_raw', PROTECTED: True } )  # raw data used for initialization from external data sources
+	raw: Any = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # raw data used for initialization from external data sources
 	raw_id: int = field( init=True, default=0, metadata= { PROTECTED: True } )  # raw id as raw data might not contain all data necessary
 	raw_name: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # same as raw id
 	raw_data: Union[str, bytes] = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # serialized version of raw, can be i.e. str or bytes
@@ -245,8 +242,6 @@ class BaseDocument( DataClass ):
 	def __attrs_post_init__( self ):
 		if self.data:
 			for name, value in self.data.items():
-				name = name.lstrip( '_' ) # todo: for backward compatibility
-
 				# overwrite att if its value is the default
 				if self.hasattr( name ) and getattr( self, name ) == self._attr_for( name ).default:
 					setattr( self, name, value )

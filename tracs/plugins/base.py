@@ -18,7 +18,7 @@ log = getLogger( __name__ )
 @accessors( classifier=None )
 def accessors():
 	return {
-#		'_classifier': lambda doc, doc_id: _classifier( doc, doc_id ),
+#		'classifier': lambda doc, doc_id: _classifier( doc, doc_id ),
 		'id': lambda doc, doc_id: int( doc_id ),
 		'raw_id': lambda doc, doc_id: int( doc_id ),
 		'uid': lambda doc, doc_id: _uid( doc, doc_id ),

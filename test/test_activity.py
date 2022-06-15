@@ -179,10 +179,10 @@ def test_asdict():
 	}
 
 	assert as_dict( activity_dict, Activity ) == {
-		'_classifier': 'polar',
-		'_groups'    : {},
-		'_metadata'  : {},
-		'_resources' : [{
+		'classifier': 'polar',
+		'groups'    : {},
+		'metadata'  : {},
+		'resources' : [{
 			'name'  : 'one',
 			'path'  : 'one.gpx',
 			'status': 100,

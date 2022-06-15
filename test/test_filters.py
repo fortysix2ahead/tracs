@@ -40,10 +40,10 @@ def test_parse():
 
 	assert parse( 'id:1000,1001,1002' ) == Filter( 'id', sequence=[1000, 1001, 1002] )
 
-	# service/source are special fields and shall be translated to _classifier
-	assert parse( 'classifier:polar' ) == Filter( '_classifier', 'polar' )
-	assert parse( 'service:polar' ) == Filter( '_classifier', 'polar' )
-	assert parse( 'source:polar' ) == Filter( '_classifier', 'polar' )
+	# service/source are special fields and shall be translated to classifier
+	assert parse( 'classifier:polar' ) == Filter( 'classifier', 'polar' )
+	assert parse( 'service:polar' ) == Filter( 'classifier', 'polar' )
+	assert parse( 'source:polar' ) == Filter( 'classifier', 'polar' )
 
 	# again, this is special: this is an uid and should be treated as raw_id:<number>
 	assert parse( 'polar:123456' ) == Filter( 'raw_id', 123456, 'polar' )

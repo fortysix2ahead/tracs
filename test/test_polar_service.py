@@ -58,13 +58,10 @@ def test_service( polar_server, service ):
 
 @mark.service( cls=Polar, url=TEST_BASE_URL )
 @mark.config( config='test/configurations/default/config.yaml', state='test/configurations/default/state.yaml' )
-@mark.db( template='empty', inmemory=True )
-def test_workflow( polar_server, service, db, var_dir ):
-	gc.db = db
-	gc.db_dir = var_dir
+@mark.db( template='empty', inmemory=True, update_gc=True )
+def test_workflow( polar_server, service, db ):
 	service.login()
 	fetched = service.fetch( True )
-
 	assert len( fetched ) == 3
 
 @mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )

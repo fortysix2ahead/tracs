@@ -281,13 +281,12 @@ def parse( filter: str ) -> Optional[Filter]:
 	if not len( filter ) > 0:
 		return Filter.true()
 
-	if filter[0] == '^':
-		negate = True
-		filter = filter[1:]
-	else:
-		negate = False
+	# create empty filter
+	f = Filter()
 
-	f = Filter( negate=negate )
+	# filter is negated?
+	filter, f.negate = (filter[1:], True) if filter[0] == '^' else (filter, False)
+
 	expr = ''
 
 	# integer number -> treated as id

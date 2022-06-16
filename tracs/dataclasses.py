@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from datetime import datetime
 from datetime import time
 from enum import Enum

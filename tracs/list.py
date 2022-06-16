@@ -17,7 +17,6 @@ from .config import ApplicationConfig as cfg
 from .config import CLASSIFIER
 from .config import GlobalConfig as gc
 from .config import console
-from .config import KEY_CLASSIFER as SERVICE
 from .utils import fmt
 from .utils import red
 
@@ -59,11 +58,10 @@ def list_activities( activities: [Activity], sort: str, format_name: str ) -> No
 	table.add_column( '[blue]name' )
 	table.add_column( '[blue]type' )
 	table.add_column( '[blue]local time' )
-	table.add_column( '[blue]raw id' )
-	table.add_column( '[blue]service' )
+	table.add_column( '[blue]uid' )
 
 	for a in activities:
-		table.add_row( pp( a['id'] ), a['name'], fmt( a['type'] ), fmt( a['localtime'] ), pp( a['raw_id'] ), pp( a[SERVICE] ) )
+		table.add_row( pp( a.doc_id ), a.name, fmt( a.type ), fmt( a.localtime ), pp( a.uid ) )
 
 	console.print( table )
 

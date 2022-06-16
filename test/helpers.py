@@ -141,11 +141,21 @@ def _run_path() -> Path:
 			run_path.mkdir( parents = True )
 			return run_path
 
-def var_run_path() -> Path:
+def var_run_path( file_name = None ) -> Path:
+	"""
+	Creates a new directory/file in var/run directory. If the file_name is missing, the directory will be created and
+	returned, otherwise only the file path will be returned and the parent dir will be created.
+
+	:param file_name: file name
+	:return: path
+	"""
 	with path( 'test', '__init__.py' ) as test_pkg_path:
-		run_path = Path( test_pkg_path.parent.parent, 'var', 'run', f'{datetime.now().strftime( "%H%M%S_%f" )}' )
-		run_path.unlink( missing_ok=True )
-		run_path.mkdir( parents=True )
+		if file_name:
+			run_path = Path( test_pkg_path.parent.parent, 'var', 'run', f'{datetime.now().strftime( "%H%M%S_%f" )}', file_name )
+			run_path.parent.mkdir( parents=True, exist_ok=True )
+		else:
+			run_path = Path( test_pkg_path.parent.parent, 'var', 'run', f'{datetime.now().strftime( "%H%M%S_%f" )}' )
+			run_path.mkdir( parents=True, exist_ok=True )
 		return run_path
 
 def clean( db_dir: Path = None, db_path: Path = None ) -> None:

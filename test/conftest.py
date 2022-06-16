@@ -13,6 +13,7 @@ from yaml import load as load_yaml
 
 from tracs.config import ApplicationConfig as cfg
 from tracs.config import ApplicationConfig as state
+from tracs.config import GlobalConfig
 from tracs.config import KEY_PLUGINS
 from tracs.db import ActivityDb
 from tracs.plugins.bikecitizens import Bikecitizens
@@ -23,6 +24,7 @@ from tracs.service import Service
 
 from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
+from .helpers import clean
 from .helpers import get_dbjson
 from .helpers import get_file_db
 from .helpers import get_inmemory_db
@@ -38,6 +40,7 @@ ENABLE_LIVE_TESTS = 'ENABLE_LIVE_TESTS'
 
 # shared fixtures
 
+# noinspection PyUnboundLocalVariable
 @fixture
 def db( request ) -> ActivityDb:
 	# old way
@@ -52,11 +55,26 @@ def db( request ) -> ActivityDb:
 		name = marker.kwargs.pop( 'name' ) if 'name' in marker.kwargs else name
 		inmemory = marker.kwargs.pop( 'inmemory' ) if 'inmemory' in marker.kwargs else inmemory
 		writable = marker.kwargs.pop( 'writable' ) if 'writable' in marker.kwargs else writable
+		update_gc = marker.kwargs.pop( 'update_gc' ) if 'update_gc' in marker.kwargs else False
+		cleanup = marker.kwargs.pop( 'cleanup' ) if 'cleanup' in marker.kwargs else True
 
 	if inmemory:
-		return get_inmemory_db( db_template=template )
+		db = get_inmemory_db( db_template=template )
 	else:
-		return get_file_db( db_template=template, db_name=name, writable=writable )
+		db = get_file_db( db_template=template, db_name=name, writable=writable )
+
+	if update_gc:
+		GlobalConfig.db = db
+		GlobalConfig.db_dir = var_run_path() if inmemory else db.path.parent
+		GlobalConfig.db_file = Path( GlobalConfig.db_dir, 'db.json' ) if inmemory else db.path
+
+	yield db
+
+	if cleanup:
+		if inmemory and update_gc:
+			clean( db_dir=GlobalConfig.db_dir )
+		elif not inmemory:
+			clean( db_dir=db.path.parent )
 
 @fixture
 def json( request ) -> Optional[Dict]:

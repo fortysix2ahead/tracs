@@ -6,6 +6,7 @@ from shutil import copy
 from shutil import copytree
 
 from importlib.resources import path
+from shutil import rmtree
 from typing import Dict
 from typing import Mapping
 from typing import Tuple
@@ -14,9 +15,6 @@ from tinydb.table import Document
 
 from tracs.config import GlobalConfig
 from tracs.db import ActivityDb
-from tracs.plugins.polar import Polar
-from tracs.plugins.strava import Strava
-from tracs.plugins.waze import Waze
 
 def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: str = None ) -> Tuple[Path, Path]:
 	run_dir = _run_path()
@@ -149,6 +147,12 @@ def var_run_path() -> Path:
 		run_path.unlink( missing_ok=True )
 		run_path.mkdir( parents=True )
 		return run_path
+
+def clean( db_dir: Path = None, db_path: Path = None ) -> None:
+	if db_dir:
+		rmtree( db_dir, ignore_errors=True )
+	if db_path:
+		db_path.unlink( missing_ok=True )
 
 def ids( doc_list: [Document] ) -> []:
 	return [a.doc_id for a in doc_list]

@@ -5,6 +5,7 @@ from datetime import time
 from datetime import timedelta
 from datetime import timezone
 from datetime import tzinfo
+from difflib import SequenceMatcher
 from enum import Enum
 from re import match
 from time import gmtime
@@ -161,6 +162,33 @@ def serialize( value ) -> Optional[str]:
 		return value.name
 	else:
 		return value
+
+def colored_diff( left: str, right: str ) -> Tuple[str, str]:
+	def rred( _s: str ) -> str:
+		return f'[red]{_s}[/red]'
+
+	def rblue( _s: str ) -> str:
+		return f'[blue]{_s}[/blue]'
+
+	def rgreen( _s: str ) -> str:
+		return f'[green]{_s}[/green]'
+
+	matcher = SequenceMatcher( None, left, right )
+	left_colored, right_colored = '', ''
+	for tag, left_from, left_to, right_from, right_to in matcher.get_opcodes():
+		if tag == 'replace':
+			left_colored += rred( left[left_from:left_to] )
+			right_colored += rred( right[right_from:right_to] )
+		elif tag == 'delete':
+			left_colored += rblue( left[left_from:left_to] )
+			right_colored += rblue( right[right_from:right_to] )
+		elif tag == 'insert':
+			left_colored += rgreen( left[left_from:left_to] )
+			right_colored += rgreen( right[right_from:right_to] )
+		elif tag == 'equal':
+			left_colored += left[left_from:left_to]
+			right_colored += right[right_from:right_to]
+	return  left_colored, right_colored
 
 # styling helpers
 

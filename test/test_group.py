@@ -4,7 +4,7 @@ from pytest import mark
 from tracs.group import group_activities
 from tracs.group import ungroup_activities
 
-@mark.db_template( 'default' )
+@mark.db( template='default', inmemory=True, update_gc=True )
 def test_grouping( db ):
 	_all = db.all( True, True, True )
 	a51 = db.get( doc_id=51 )
@@ -25,7 +25,7 @@ def test_grouping( db ):
 	assert ag.is_group
 	assert ag.group_for == [54, 55]
 
-@mark.db_template( 'default' )
+@mark.db( template='default', inmemory=True, update_gc=True )
 def test_ungroup( db ):
 	assert db.get( doc_id=1 ).is_group
 	assert db.get( doc_id=2 ).grouped_by == 1

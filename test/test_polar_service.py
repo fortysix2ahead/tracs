@@ -56,9 +56,9 @@ def test_service( polar_server, service ):
 		content, status = service._download_file( a, r )
 		assert content is not None and status == 200
 
-@mark.service( (Polar, TEST_BASE_URL) )
-@mark.service_config( ('test/configurations/default/config.yaml', 'test/configurations/default/state.yaml') )
-@mark.db_inmemory( True )
+@mark.service( cls=Polar, url=TEST_BASE_URL )
+@mark.config( config='test/configurations/default/config.yaml', state='test/configurations/default/state.yaml' )
+@mark.db( template='empty', inmemory=True )
 def test_workflow( polar_server, service, db, var_dir ):
 	gc.db = db
 	gc.db_dir = var_dir

@@ -25,7 +25,7 @@ from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
 from .helpers import get_dbjson
 from .helpers import get_file_db
-from .helpers import get_immemory_db
+from .helpers import get_inmemory_db
 from .helpers import var_run_path
 from .polar_server import polar_server
 from .polar_server import polar_server_thread
@@ -40,19 +40,32 @@ ENABLE_LIVE_TESTS = 'ENABLE_LIVE_TESTS'
 
 @fixture
 def db( request ) -> ActivityDb:
+	# old way
 	writable = marker.args[0] if (marker := request.node.get_closest_marker( 'db_writable' )) else False
 	name = marker.args[0] if (marker := request.node.get_closest_marker('db_name')) else 'db.json'
 	inmemory = marker.args[0] if (marker := request.node.get_closest_marker( 'db_inmemory' )) else False
 	template = marker.args[0] if (marker := request.node.get_closest_marker( 'db_template' )) else None
 
+	# kwargs processing -> this will be the preferred way
+	if marker := request.node.get_closest_marker( 'db' ):
+		template = marker.kwargs.pop( 'template' ) if 'template' in marker.kwargs else template
+		name = marker.kwargs.pop( 'name' ) if 'name' in marker.kwargs else name
+		inmemory = marker.kwargs.pop( 'inmemory' ) if 'inmemory' in marker.kwargs else inmemory
+		writable = marker.kwargs.pop( 'writable' ) if 'writable' in marker.kwargs else writable
+
 	if inmemory:
-		return get_immemory_db( db_template=template )
+		return get_inmemory_db( db_template=template )
 	else:
-		return get_file_db( db_template=template )
+		return get_file_db( db_template=template, db_name=name, writable=writable )
 
 @fixture
 def json( request ) -> Optional[Dict]:
 	template = marker.args[0] if (marker := request.node.get_closest_marker( 'db_template' )) else None
+
+	# kwargs processing -> this will be the preferred way
+	kwargs = marker.kwargs if (marker := request.node.get_closest_marker( 'db' )) else {}
+	template = kwargs.pop( 'template' ) if 'template' in kwargs else template
+
 	return get_dbjson( template ) if template else None
 
 @fixture
@@ -75,10 +88,24 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 
 	return config_dict, state_dict
 
+
+# noinspection PyUnboundLocalVariable
 @fixture
 def service( request ) -> Service:
-	service_class, base_url = marker.args[0] if (marker := request.node.get_closest_marker( 'service' )) else (None, None)
-	config_file, state_file = marker.args[0] if (marker := request.node.get_closest_marker( 'service_config' )) else (None, None)
+	# marker processing
+	if marker := request.node.get_closest_marker( 'service' ):
+		service_class, base_url = marker.args[0] if marker.args else (None, None)
+		service_class = marker.kwargs.pop( 'cls' ) if 'cls' in marker.kwargs else service_class
+		base_url = marker.kwargs.pop( 'url' ) if 'url' in marker.kwargs else base_url
+
+	# old way
+	if marker := request.node.get_closest_marker( 'service_config' ):
+		config_file, state_file = marker.args[0] if marker.args else (None, None)
+	# new way
+	if marker := request.node.get_closest_marker( 'config' ):
+		config_file = marker.kwargs.pop( 'config' ) if 'config' in marker.kwargs else config_file
+		state_file = marker.kwargs.pop( 'state' ) if 'state' in marker.kwargs else state_file
+
 	service_class_name = service_class.__name__.lower()
 
 	config, state = None, None
@@ -93,7 +120,6 @@ def service( request ) -> Service:
 			state = Configuration( f'test.{service_class_name}', __name__, read=False )
 			state.set_file(state_path)
 
-	# noinspection PyCallingNonCallable
 	return service_class( base_url=base_url, config=config, state=state )
 
 # bikecitizens specific fixtures

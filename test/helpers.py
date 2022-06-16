@@ -70,12 +70,39 @@ def get_db_path( name: str, writable: bool = False ) -> Path:
 			copy( p, dst_db )
 			return dst_db
 
-def get_immemory_db( db_template: str ) -> ActivityDb:
+def get_dbpath( template: str, name: str, writable: bool ) -> Tuple[Path, Path]:
+	with path( 'test', '__init__.py' ) as p:
+		template_path = Path( p.parent, 'databases', f'{template}.db.json' )
+		if writable:
+			db_path = Path( p.parent.parent, 'var', 'run', f'{datetime.now().strftime( "%H%M%S_%f" )}', name )
+		else:
+			db_path = template_path
+	return template_path, db_path
+
+def get_inmemory_db( db_template: str ) -> ActivityDb:
+	"""
+	Returns an in-memory db initialized from the provided template db.
+
+	:param db_template: template db or None
+	:return: in-memory db
+	"""
 	db_path = get_db_path( db_template, False ) if db_template else get_db_path( 'empty', False )
 	return ActivityDb( path=db_path, pretend=True, cache=False )
 
-def get_file_db( db_template: str ) -> ActivityDb:
-	db_path = get_db_path( db_template, True ) if db_template else get_db_path( 'empty', True )
+def get_file_db( db_template: str='empty', db_name: str='db.json', writable=False ) -> ActivityDb:
+	"""
+	Returns a file-based db, based on the provided template.
+
+	:param db_template:
+	:param db_name: name of the db, defaults to db.json
+	:param writable: if the db shall be writable or not
+	:return: file-based db
+	"""
+	template_path, db_path = get_dbpath( db_template, db_name, writable )
+	if template_path != db_path:
+		db_path.parent.mkdir( parents=True, exist_ok=True )
+		copy( template_path, db_path )
+
 	return ActivityDb( path=db_path, pretend=False, cache=False )
 
 def get_dbjson( db_name: str ) -> Dict:

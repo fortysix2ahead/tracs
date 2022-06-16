@@ -135,7 +135,7 @@ def test_parse():
 	assert parse( 'time:15:00..17:00' ) == Filter( 'time', range_from=time( 15 ), range_to=time( 17 ) )
 	assert parse( 'time:15:00:05..17:00:07' ) == Filter( 'time', range_from=time( 15, 0, 5 ), range_to=time( 17, 0, 7 ) )
 
-@mark.db_template( 'default' )
+@mark.db( template='default', inmemory=True )
 def test_filters_on_activities( db ):
 	m = {} # map with all doc_id -> activities
 	for a in db.activities.all():
@@ -221,7 +221,7 @@ def test_filters_on_activities( db ):
 	assert not Filter( 'location_city' )( m[1] )
 	assert not Filter( 'tags' )( m[1] )
 
-@mark.db_template( 'default' )
+@mark.db( template='default', inmemory=True )
 def test_filters_on_list( db ):
 	_all = db.activities.all()
 
@@ -286,7 +286,7 @@ def test_filters_on_list( db ):
 
 	#assert flt( is_group() ) == [1]
 
-@mark.db_template( 'default' )
+@mark.db( template='default', inmemory=True )
 def test_prepared_filters( db ):
 	_all = db.activities.all()
 

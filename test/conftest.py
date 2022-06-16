@@ -48,6 +48,8 @@ def db( request ) -> ActivityDb:
 	name = marker.args[0] if (marker := request.node.get_closest_marker('db_name')) else 'db.json'
 	inmemory = marker.args[0] if (marker := request.node.get_closest_marker( 'db_inmemory' )) else False
 	template = marker.args[0] if (marker := request.node.get_closest_marker( 'db_template' )) else None
+	update_gc = False
+	cleanup = False
 
 	# kwargs processing -> this will be the preferred way
 	if marker := request.node.get_closest_marker( 'db' ):

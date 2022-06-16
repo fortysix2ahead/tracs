@@ -96,29 +96,29 @@ def show_activity( activities: [Activity], frmt: str = None, display_raw: bool =
 				table.add_column( '[blue]field' )
 				table.add_column( '[blue]value' )
 				rows = [
-					[ 'Id', a['id'] ],
-					[ 'Name', a['name'] ],
-					[ 'Type', fmt( a['type'] ) ],
-					[ 'Time (local)', fmt( a['localtime'] ) ],
-					[ 'Time (UTC)', fmt( a['time'] ) ],
+					[ 'ID', a.id ],
+					[ 'Name', a.name ],
+					[ 'Type', fmt( a.type ) ],
+					[ 'Time (local)', fmt( a.localtime ) ],
+					[ 'Time (UTC)', fmt( a.time ) ],
 					[ 'Timezone\u00b9', datetime.now( tzlocal()).tzname() ],
-					[ 'Location', a['location_country'] ],
-					[ 'Duration (elapsed)', fmt( a['duration'] ) ],
-					[ 'Duration (moving)', a['duration_moving'] ],
-					[ 'Distance', a['distance'] ],
-					[ 'Ascent', a['ascent'] ],
-					[ 'Descent', a['descent'] ],
-					[ 'Elevation (highest)', a['elevation_max'] ],
-					[ 'Elevation (lowest)', a['elevation_min'] ],
-					[ 'Speed (average)', a['speed'] ],
-					[ 'Speed (max)', a['speed_max'] ],
-					[ 'Heart Rate (average)', a['heartrate'] ],
-					[ 'Heart Rate (max)', a['heartrate_max'] ],
-					[ 'Heart Rate (min)', a['heartrate_min'] ],
-					[ 'Calories', a['calories'] ],
-					[ 'Raw Id', a['raw_id'] ],
-					[ 'Uid', a['uid'] ],
-					[ 'Service', a['classifier'] ],
+					[ 'Location', a.location_country ],
+					[ 'Duration (elapsed)', fmt( a.duration ) ],
+					[ 'Duration (moving)', a.duration_moving ],
+					[ 'Distance', a.distance ],
+					[ 'Ascent', a.ascent ],
+					[ 'Descent', a.descent ],
+					[ 'Elevation (highest)', a.elevation_max ],
+					[ 'Elevation (lowest)', a.elevation_min ],
+					[ 'Speed (average)', a.speed ],
+					[ 'Speed (max)', a.speed_max ],
+					[ 'Heart Rate (average)', a.heartrate ],
+					[ 'Heart Rate (max)', a.heartrate_max ],
+					[ 'Heart Rate (min)', a.heartrate_min ],
+					[ 'Calories', a.calories ],
+					[ 'Raw ID', a.raw_id ],
+					[ 'UID', a.uid ],
+					[ 'Service', a.classifier ],
 				]
 
 				for row in rows:
@@ -126,14 +126,6 @@ def show_activity( activities: [Activity], frmt: str = None, display_raw: bool =
 						continue
 					else:
 						table.add_row( row[0], pp( row[1] ) )
-
-				for id in a.group_for:
-					ga = gc.db.get( doc_id=id )
-					table.add_row( f'URL ({ga.service})', gc.app.services[ga.service].url_activity( ga.raw_id ) )
-				for id in a.group_for:
-					ga = gc.db.get( doc_id=id )
-					table.add_row( f'Path ({ga.service})', gc.app.services[ga.service].path_for( ga ).as_uri() )
-
 
 			console.print( table )
 			console.print( '\u00b9 Proper timezone support is currently missing, local timezone is displayed' )

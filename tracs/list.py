@@ -63,7 +63,8 @@ def list_activities( activities: [Activity], sort: str, format_name: str ) -> No
 	for a in activities:
 		table.add_row( pp( a.doc_id ), a.name, fmt( a.type ), fmt( a.localtime ), pp( a.uid ) )
 
-	console.print( table )
+	if len( table.rows ) > 0:
+		console.print( table )
 
 def show_activity( activities: [Activity], frmt: str = None, display_raw: bool = False ) -> None:
 	for a in activities:

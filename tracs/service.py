@@ -12,10 +12,14 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+from dateutil.tz import UTC
+
 from .base import Activity
 from .base import Resource
 from .base import Service as AbstractServiceClass
 from .config import GlobalConfig as gc
+from .config import KEY_LAST_DOWNLOAD
+from .config import KEY_LAST_FETCH
 from .config import KEY_PLUGINS
 from .utils import fmt
 
@@ -140,6 +144,9 @@ class Service( AbstractServiceClass ):
 
 		log.info( f"fetched activities from {self.display_name}: {len( new_activities )} new, {len( updated_activities )} updated" )
 
+		# update last_fetch in state
+		gc.state[KEY_PLUGINS][self.name][KEY_LAST_FETCH] = datetime.utcnow().astimezone( UTC ).isoformat()
+
 		return new_activities
 
 	@abstractmethod
@@ -204,6 +211,9 @@ class Service( AbstractServiceClass ):
 					gc.db.update( activity )
 				else:
 					log.warning( f'unable to update resource status for activity {activity.uid}: db id is 0' )
+
+		# update last_download in state
+		gc.state[KEY_PLUGINS][self.name][KEY_LAST_DOWNLOAD] = datetime.utcnow().astimezone( UTC ).isoformat()
 
 	@abstractmethod
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:

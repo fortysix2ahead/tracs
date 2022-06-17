@@ -30,6 +30,8 @@ CLASSIFIERS = 'classifiers'
 
 KEY_CLASSIFER = 'classifier'
 KEY_GROUPS = 'groups'
+KEY_LAST_DOWNLOAD = 'last_download'
+KEY_LAST_FETCH = 'last_fetch'
 KEY_METADATA = 'metadata'
 KEY_PARTS = 'parts'
 KEY_PLUGINS = 'plugins'

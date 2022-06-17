@@ -17,5 +17,7 @@ plugins:
     last_download:
 
   waze:
-    fetch:
+    fetch:         # we can probably remove this field once support of last_fetch is implemented
       takeouts:
+    last_fetch:
+    last_download:

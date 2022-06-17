@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from logging import getLogger
 from pathlib import Path
 from typing import Any
@@ -25,12 +26,16 @@ class OrJSONStorage( Storage ):
 	options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
 	# noinspection PyUnusedLocal
-	def __init__( self, path: Path=None, use_memory_storage=False, *args, **kwargs ):
+	def __init__( self, path: Path=None, use_memory_storage: bool=False, cache: bool=False, *args, **kwargs ):
 		super().__init__()
 
 		self._path = path
 		self._memory_storage = MemoryStorage()
 		self._use_memory_storage = use_memory_storage
+		self._use_cache = cache
+		self._cache = None
+		self._cache_size = 1000
+		self._cache_hits = 0
 
 		if path and not path.exists():
 			path.touch( exist_ok=True )
@@ -59,7 +64,22 @@ class OrJSONStorage( Storage ):
 		if self._use_memory_storage:
 			self._memory_storage.write( data )
 		else:
-			self._path.write_bytes( dump_as_json( data, option=self.options ) )
+			do_write = True
+			# deactivate cache handling for the moment ...
+			# self._cache = deepcopy( data )
+			# if self._use_cache:
+			# 	if self._cache_hits == self._cache_size:
+			# 		self._cache_hits = 0
+			# 		do_write = True
+			# 	else:
+			# 		self._cache_hits += 1
+			# 		do_write = False
+			# else:
+			# 	do_write = True
+
+			if do_write:
+				self._path.write_bytes( dump_as_json( data, option=self.options ) )
+				#self._path.write_bytes( dump_as_json( self._cache, option=self.options ) )
 
 	@property
 	def memory_storage( self ) -> MemoryStorage:

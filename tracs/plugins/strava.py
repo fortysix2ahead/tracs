@@ -250,7 +250,7 @@ class Strava( Service, Plugin ):
 		if self._oauth_session and self._session:
 			return True
 
-	def _fetch( self ) -> Iterable[Activity]:
+	def _fetch( self, force: bool = False ) -> Iterable[Activity]:
 		fetched = []  # to be inserted
 		for page in range( 1, 999999 ):
 			response = self._oauth_session.get( self.all_events_url( page) )

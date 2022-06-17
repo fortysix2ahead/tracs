@@ -1,4 +1,8 @@
 
+from csv import field_size_limit
+from csv import reader as csv_reader
+from datetime import datetime
+from os.path import getmtime
 from re import match
 from typing import Any
 from typing import Iterable
@@ -8,9 +12,6 @@ from typing import Optional
 from typing import Tuple
 
 from click import echo
-from csv import field_size_limit
-from csv import reader as csv_reader
-from datetime import datetime
 from dateutil.tz import UTC
 from dateutil.tz import gettz
 from gpxpy.gpx import GPX
@@ -30,6 +31,7 @@ from ..activity import Resource
 from ..config import ApplicationState as state
 from ..config import GlobalConfig as gc
 from ..config import KEY_CLASSIFER
+from ..config import KEY_LAST_FETCH
 from ..config import KEY_METADATA
 from ..config import KEY_PLUGINS
 from ..config import KEY_RAW
@@ -52,14 +54,9 @@ class WazeActivity( Activity ):
 		super().__attrs_post_init__()
 
 		if self.raw and len( self.raw ) > 0:
-			if type( self.raw ) is dict: # todo: for backward compatibility
-				self.raw_id = self.raw.get( 'id' )
-				self.time = to_isotime( self.raw.get( 'time' ) )
-				self.localtime = as_datetime( self.time, tz=gettz() )
-			else:
-				self.raw_id = int( self.raw[0][0].strftime( '%Y%m%d%H%M%S' ) )
-				self.time = self.raw[0][0]
-				self.localtime = as_datetime( self.time, tz=gettz() )
+			self.raw_id = int( self.raw[0][1].strftime( '%Y%m%d%H%M%S' ) )
+			self.time = self.raw[0][1]
+			self.localtime = as_datetime( self.time, tz=gettz() )
 
 		self.type = ActivityTypes.drive
 		self.classifier = SERVICE_NAME
@@ -93,33 +90,42 @@ class Waze( Service, Plugin ):
 	def login( self ) -> bool:
 		return self._logged_in
 
-	def _fetch( self, year: int, takeouts_dir: Path = None ) -> Iterable[Activity]:
-		path = takeouts_dir if takeouts_dir else Path( self._takeouts_dir )
-		log.debug( f"Fetching Waze activities from {path}" )
+	def _fetch( self, takeouts_dir: Path = None, force: bool = False ) -> Iterable[Activity]:
+		_field_size_limit = self.cfg_value( 'field_size_limit' )
+		log.debug( f"Using {_field_size_limit} as field size limit for CSV parser in Waze service" )
 
-		log.debug( f"Using {field_size_limit()} as field size limit for CSV parser in Waze service" )
+		takeouts_dir = takeouts_dir if takeouts_dir else Path( self._takeouts_dir )
+		log.debug( f"Fetching Waze activities from {takeouts_dir}" )
+
+		last_fetch = self.state_value( KEY_LAST_FETCH )
 
 		fetched = []
-		for file in sorted( path.rglob( ACTIVITY_FILE ) ):
+
+		for file in sorted( takeouts_dir.rglob( ACTIVITY_FILE ) ):
 			log.info( f'Fetching activities from Waze takeout in {file}' )
-			
-			rel_path = file.relative_to( path )
-			fetched_takeouts = state[KEY_PLUGINS][self.name]['fetch']['takeouts'].get() or []
 
-			if str( rel_path.as_posix() ) not in fetched_takeouts:
-				activities = read_takeout( file )
-				for a in activities:
-					waze_id = int( a[0][0].strftime( '%Y%m%d%H%M%S' ) )
-					fetched.append( Activity( self._prototype( waze_id, a[0][0], rel_path ), 0, classifier=self.name ) )
+			# rel_path = file.relative_to( takeouts_dir )
+			mtime = datetime.fromtimestamp( getmtime( file ), UTC )
 
-				fetched_takeouts.append( str( rel_path.as_posix() ) )
-				state[KEY_PLUGINS][self.name]['fetch']['takeouts'] = fetched_takeouts
-			else:
-				log.debug( f'skipping reading activities from {str( rel_path.as_posix() )}' )
+			if last_fetch and datetime.fromisoformat( last_fetch ) >= mtime and not force:
+				log.info( f"Skipping Waze takeout in {file} as it is older than the last_fetch timestamp, consider --force to ignore timestamps"  )
+				continue
+
+			for tokens, raw_data in read_takeout( file, _field_size_limit ):
+				if len( tokens ) > 0:
+					fetched.append( self._prototype( tokens, raw_data ) )
 
 		log.debug( f'Fetched {len( fetched )} Waze activities' )
 
 		return fetched
+
+	# noinspection PyMethodMayBeStatic
+	def _prototype( self, tokens: List[Tuple[int, datetime, float, float]], raw_data: str ) -> WazeActivity:
+		raw = tokens
+		raw_id = int( tokens[0][1].strftime( '%Y%m%d%H%M%S' ) )
+		raw_name = f'{raw_id}.raw.txt'
+		resources = [ Resource( type='gpx', path=f'{raw_id}.gpx', status= 100 ) ]
+		return WazeActivity( raw=raw, raw_data=raw_data, raw_name=raw_name, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
 		log.debug( f"Using {field_size_limit()} as field size limit for CSV parser in Waze service" )
@@ -134,27 +140,6 @@ class Waze( Service, Plugin ):
 				content = to_gpx( t )
 		return content, 200 # return always 200
 
-	def _prototype( self, id: int, time: datetime, relative_path: Path ) -> Mapping:
-		mapping = {
-			KEY_CLASSIFER: self.name,
-			KEY_METADATA: {
-				'source_path': str( relative_path.as_posix() )
-			},
-			KEY_RESOURCES: [
-				{
-					'name': None,
-					'type': 'gpx',
-					'path': f'{id}.gpx',
-					'status': 100
-				}
-			],
-			KEY_RAW: {
-				'id': id,
-				'time': time
-			}
-		}
-		return mapping
-
 	# nothing to do for now ...
 	def setup( self ):
 		echo( 'Skipping setup for Waze ... nothing to configure at the moment' )
@@ -165,10 +150,8 @@ class Waze( Service, Plugin ):
 
 # helper functions
 
-def read_takeout( path: Path, field_limit: int = 131072 ) -> []:
-	#field_size_limit( cfg[KEY_PLUGINS][SERVICE_NAME]['field_size_limit'].get( int ) )
+def read_takeout( path: Path, field_limit: int = 131072 ) -> List[Tuple[List[Tuple[int, datetime, float, float]], str]]:
 	field_size_limit( field_limit )
-
 	activities = []
 
 	with path.open( 'r', encoding='utf-8' ) as f:
@@ -179,27 +162,35 @@ def read_takeout( path: Path, field_limit: int = 131072 ) -> []:
 				parse_mode = True
 			elif parse_mode and row:
 				try:
-					activities.append( read_drive( row[0] ) )
+					activities.append( (read_drive( row[0] ), row[0] ) )
 				except RuntimeError:
 					log.error( 'Error parsing row' )
 			elif parse_mode and not row:
 				parse_mode = False
 
-		return activities
+	return activities
 
-def read_drive( s: str ) -> List[Tuple[datetime, float, float]]:
+def read_drive( s: str ) -> List[Tuple[int, datetime, float, float]]:
 	if not s:
 		return []
 
 	points = []
-	for item in load_json( s ):
-		for key, value in item.items():
-			for token in value.split( " => " ):
-				if m := match( '(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\((\d+\.\d+); (\d+\.\d+)\)', token ):
-					timestamp, lat, lon = m.groups()
-					points.append( (datetime.strptime( timestamp, '%Y-%m-%d %H:%M:%S' ).replace( tzinfo=UTC ), float( lat ), float( lon )) )
-				else:
-					raise RuntimeError( 'Error parsing Waze drive' )
+	s = s.strip( '[]' )
+	for segment in s.split( '};{' ):
+		# segment = '{' + segment if segment[0] != '{' else segment
+		# segment = segment + '}' if segment[-1] != '}' else segment
+		segment = segment.strip( '{}' )
+		key, value = segment.split( sep=':', maxsplit=1 ) # todo: what exactly is meant by the key being a number starting with 0
+		key, value = key.strip( '"' ), value.strip( '"' )
+		for token in value.split( " => " ):
+			# need to match two versions:
+			# version 1 (2020): 2020-01-01 12:34:56(50.000000; 10.000000)
+			# version 2 (2022): 2022-01-01 12:34:56 GMT(50.000000; 10.000000)
+			if m := match( '(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d).*\((\d+\.\d+); (\d+\.\d+)\)', token ):
+				timestamp, lat, lon = m.groups()
+				points.append( (int( key ), datetime.strptime( timestamp, '%Y-%m-%d %H:%M:%S' ).replace( tzinfo=UTC ), float( lat ), float( lon )) )
+			else:
+				raise RuntimeError( f'Error parsing Waze drive while processing token {token}' )
 
 	return points
 

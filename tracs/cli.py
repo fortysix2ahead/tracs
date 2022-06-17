@@ -77,6 +77,8 @@ def cli( configuration, debug, force, library, verbose, pretend ):
 		pretend=pretend
 	)
 
+	migrate_application( None ) # check if migration is necessary
+
 @cli.command( hidden=True )
 @option( '-b', '--backup', is_flag=True, required=False, help='creates a backup of the internal database' )
 @option( '-f', '--fields', is_flag=True, required=False, hidden=True, help='shows available fields, which can be used for queries (EXPERIMENTAL!)' )

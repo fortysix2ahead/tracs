@@ -261,9 +261,9 @@ def create_db( db: TinyDB = None, path: Path = None, pretend: bool = False, cach
 
 	if path:
 		if cache:
-			db = TinyDB( storage=CachingMiddleware( DataClassMiddleware( OrJSONStorage ) ), path=path, use_memory_storage=use_memory_storage )
+			db = TinyDB( storage=CachingMiddleware( DataClassMiddleware( OrJSONStorage ) ), path=path, use_memory_storage=use_memory_storage, cache=cache )
 		else:
-			db = TinyDB( storage=DataClassMiddleware( OrJSONStorage ), path=path, use_memory_storage=use_memory_storage )
+			db = TinyDB( storage=DataClassMiddleware( OrJSONStorage ), path=path, use_memory_storage=use_memory_storage, cache=cache )
 	else:
 		db = TinyDB( storage=DataClassMiddleware( MemoryStorage ) ) # if path is not provided, memory storage is implicit
 

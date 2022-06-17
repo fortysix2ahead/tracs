@@ -184,9 +184,7 @@ class Filter( QueryLike ):
 
 			elif isinstance( self.range_from, datetime ) or isinstance( self.range_to, datetime ):
 				def fn( value: datetime, _from: datetime, _to: datetime ) -> bool:
-					if _from <= value <= _to:
-						return True
-					return False
+					return True if value and _from <= value <= _to else False
 				from_time = self.range_from.astimezone( UTC ) if self.range_from else datetime( 1900, 1, 1, tzinfo=UTC )
 				to_time = self.range_to.astimezone( UTC ) if self.range_to else datetime( 2100, 1, 1, tzinfo=UTC )
 				self.callable = Query()[self.field].test( fn, from_time, to_time )
@@ -429,6 +427,7 @@ def prepare( f: Filter ) -> None:
 			f.range_to = _ceil( f.range_to )
 		if isinstance( f.value, str ):
 			f.range_from, f.range_to = _range_of_keyword( keyword=f.value )
+		f.field = 'time' # adjustment: we are not querying the date field, but the time field
 		f.value = None
 
 	if f.field == 'time':
@@ -458,58 +457,61 @@ def prepare( f: Filter ) -> None:
 
 # helper functions
 
-def _floor( year = None, month = None, day = None ) -> Optional[Arrow]:
+def _floor( year = None, month = None, day = None ) -> Optional[datetime]:
 	if day:
-		return Arrow( year, month, day ).floor( 'day' )
+		return Arrow( year, month, day ).floor( 'day' ).datetime
 	elif month:
-		return Arrow( year, month, 15 ).floor( 'month' )
+		return Arrow( year, month, 15 ).floor( 'month' ).datetime
 	elif year:
-		return Arrow( year, 7, 15 ).floor( 'year' )
+		return Arrow( year, 7, 15 ).floor( 'year' ).datetime
 	else:
 		return None
 
-def _ceil( year = None, month = None, day = None ) -> Optional[Arrow]:
+def _ceil( year = None, month = None, day = None ) -> Optional[datetime]:
 	if day:
-		return Arrow( year, month, day ).ceil( 'day' )
+		return Arrow( year, month, day ).ceil( 'day' ).datetime
 	elif month:
-		return Arrow( year, month, 15 ).ceil( 'month' )
+		return Arrow( year, month, 15 ).ceil( 'month' ).datetime
 	elif year:
-		return Arrow( year, 7, 15 ).ceil( 'year' )
+		return Arrow( year, 7, 15 ).ceil( 'year' ).datetime
 	else:
 		return None
 
 def _range_of_keyword( keyword ) -> (Optional[date], Optional[date]):
 	_now = now()
+	range_from, range_to = (None, None)
 	if keyword == 'today':
-		return _now.floor( 'day' ), _now.ceil( 'day' )
+		range_from, range_to = _now.floor( 'day' ), _now.ceil( 'day' )
 	elif keyword == 'thisweek':
-		return _now.floor( 'week' ), _now.ceil( 'week' )
+		range_from, range_to = _now.floor( 'week' ), _now.ceil( 'week' )
 	elif keyword == 'thismonth':
-		return _now.floor( 'month' ), _now.ceil( 'month' )
+		range_from, range_to = _now.floor( 'month' ), _now.ceil( 'month' )
 	elif keyword == 'thisquarter':
-		return _now.floor( 'quarter' ), _now.ceil( 'quarter' )
+		range_from, range_to = _now.floor( 'quarter' ), _now.ceil( 'quarter' )
 	elif keyword == 'thisyear':
-		return _now.floor( 'year' ), _now.ceil( 'year' )
+		range_from, range_to = _now.floor( 'year' ), _now.ceil( 'year' )
 	elif keyword == 'yesterday':
 		_now = _now.shift( days=-1 )
-		return _now.floor( 'day' ), _now.ceil( 'day' )
+		range_from, range_to = _now.floor( 'day' ), _now.ceil( 'day' )
 	elif keyword == 'last7days':
-		return _now.shift( days=-6 ).floor( 'day' ), _now.ceil( 'day' )
+		range_from, range_to = _now.shift( days=-6 ).floor( 'day' ), _now.ceil( 'day' )
 	elif keyword == 'last30days':
-		return _now.shift( days=-29 ).floor( 'day' ), _now.ceil( 'day' )
+		range_from, range_to = _now.shift( days=-29 ).floor( 'day' ), _now.ceil( 'day' )
 	elif keyword == 'last60days':
-		return _now.shift( days=-59 ).floor( 'day' ), _now.ceil( 'day' )
+		range_from, range_to = _now.shift( days=-59 ).floor( 'day' ), _now.ceil( 'day' )
 	elif keyword == 'last90days':
-		return _now.shift( days=-89 ).floor( 'day' ), _now.ceil( 'day' )
+		range_from, range_to = _now.shift( days=-89 ).floor( 'day' ), _now.ceil( 'day' )
 	elif keyword == 'lastweek':
 		_now = _now.shift( weeks=-1 )
-		return _now.floor( 'week' ), _now.ceil( 'week' )
+		range_from, range_to = _now.floor( 'week' ), _now.ceil( 'week' )
 	elif keyword == 'lastmonth':
 		_now = _now.shift( months=-1 )
-		return _now.floor( 'month' ), _now.ceil( 'month' )
+		range_from, range_to = _now.floor( 'month' ), _now.ceil( 'month' )
 	elif keyword == 'lastquarter':
 		_now = _now.shift( months=-3 )
-		return _now.floor( 'quarter' ), _now.ceil( 'quarter' )
+		range_from, range_to = _now.floor( 'quarter' ), _now.ceil( 'quarter' )
 	elif keyword == 'lastyear':
 		_now = _now.shift( years=-1 )
-		return _now.floor( 'year' ), _now.ceil( 'year' )
+		range_from, range_to = _now.floor( 'year' ), _now.ceil( 'year' )
+
+	return range_from.datetime, range_to.datetime

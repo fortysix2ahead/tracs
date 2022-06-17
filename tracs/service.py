@@ -115,7 +115,7 @@ class Service( AbstractServiceClass ):
 		updated_activities = []
 		#fetched_activities = []
 
-		fetched = self._fetch()
+		fetched = self._fetch( force=force )
 		for a in fetched: # a = new activity
 			old = gc.db.get( raw_id=a.raw_id, service_name=self.name )
 
@@ -150,7 +150,7 @@ class Service( AbstractServiceClass ):
 		return new_activities
 
 	@abstractmethod
-	def _fetch( self ) -> Iterable[Activity]:
+	def _fetch( self, force: bool = False ) -> Iterable[Activity]:
 		"""
 		Called by fetch(). This method has to be implemented by a service class. It shall fetch information concerning
 		activities from external service and create activities out of it. The newly created activities will be matched

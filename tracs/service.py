@@ -171,19 +171,20 @@ class Service( AbstractServiceClass ):
 			sysexit( -1 )
 
 		for r in activity.resources:
-			if r.status in [204, 404]:  # file does not exist on server -> do nothing
+			# todo: r is currently a dict -> need to change that later to Resource
+			if r['status'] in [204, 404]:  # file does not exist on server -> do nothing
 				log.debug( f"skipped download of {r.type} for {self.name} activity {activity.raw_id}: file does not exist on server" )
 				continue
 
-			if not (path := self.path_for( activity, r.type )):
-				log.error( f'unable to determine path for {r.type} for {self.name} activity {activity.raw_id}' )
+			if not (path := self.path_for( activity, r['type'] )):
+				log.error( f'unable to determine path for {r["type"]} for {self.name} activity {activity.raw_id}' )
 				continue
 
 			if path.exists() and not force:  # file exists already and no force to re-download -> do nothing
-				if r.status != 200:  # mark file as 'exists on server' if not already done
-					r.status = 200
+				if r['status'] != 200:  # mark file as 'exists on server' if not already done
+					r['status'] = 200
 					gc.db.update( activity )
-				log.debug( f"skipped download of {r.type} for {self.name} activity {activity.raw_id}: file already exists" )
+				log.debug( f"skipped download of {r['type']} for {self.name} activity {activity.raw_id}: file already exists' )" )
 				continue
 
 			if not path.exists() or force:  # either file does not exist or it's a forced download, todo: multipart support
@@ -194,18 +195,18 @@ class Service( AbstractServiceClass ):
 				if status == 200:
 					path.parent.mkdir( parents=True, exist_ok=True )
 					path.write_bytes( content )
-					log.info( f"downloaded {r.type} for {self.name} activity {activity.raw_id} to {path}" )
+					log.info( f"downloaded {r['type']} for {self.name} activity {activity.raw_id} to {path}" )
 
 				elif status == 204:
-					log.error( f"failed to download {r.type} for {self.name} activity {activity.raw_id}, service responded with HTTP 200, but without content" )
+					log.error( f"failed to download {r['type']} for {self.name} activity {activity.raw_id}, service responded with HTTP 200, but without content" )
 
 				elif status == 404:
-					log.error( f"failed to download {r.type} for {self.name} activity {activity.raw_id}, service responded with HTTP 404 - not found" )
+					log.error( f"failed to download {r['type']} for {self.name} activity {activity.raw_id}, service responded with HTTP 404 - not found" )
 
 				else:
-					log.error( f"failed to download {r.type} for {self.name} activity {activity.raw_id}, service responded with HTTP {r.status}" )
+					log.error( f"failed to download {r['type']} for {self.name} activity {activity.raw_id}, service responded with HTTP {r['status']}" )
 
-				r.status = status
+				r['status'] = status
 
 				if activity.id != 0:
 					gc.db.update( activity )

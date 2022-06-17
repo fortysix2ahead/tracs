@@ -1,9 +1,11 @@
 
 from pathlib import Path
-from click import confirm
 from logging import getLogger
 from shutil import copy
+from sys import exit
 from sys import modules
+
+from rich.prompt import Confirm
 from tinydb import TinyDB
 from tinydb.operations import delete
 from tinydb.operations import set
@@ -11,18 +13,30 @@ from tinydb.middlewares import CachingMiddleware
 from tinydb import JSONStorage
 
 from .config import GlobalConfig as gc
+from .db import DB_VERSION
 from .plugins.polar import _raw_id as polar_id
 
 log = getLogger( __name__ )
 
-def migrate_application( function_name: str ):
-	if f'_{function_name}' in dir( modules[ __name__ ] ):
-		log.info( '*** DANGEROUS - KNOW WHAT YOU\'RE DOING! ***' )
-		if confirm( f'migration function \'{function_name}\' found, would you like to execute the migration?' ):
-			fn = getattr( modules[ __name__ ], f'_{function_name}' )
-			fn()
+def migrate_application( function_name: str = None ):
+	if not function_name:
+		db_schema = gc.db.default.all()[0].get( 'version' )
+		current_schema = DB_VERSION
+		if db_schema != current_schema:
+			function_name = f'_migrate_{db_schema}_{current_schema}'
+		else:
+			return
+
+	if function_name and function_name in dir( modules[ __name__ ] ):
+		if Confirm.ask( f'migration function {function_name} found, would you like to execute the migration?' ):
+			getattr( modules[ __name__ ], function_name )()
 	else:
-		log.error( f'no migration function \'{function_name}\' found in module \'migrate\'' )
+		log.error( f'migration function "{function_name}" not found in module {__name__}' )
+
+	exit( 0 )
+
+def _migrate_11_12():
+	pass
 
 # migrate db structure from 10 to 11
 def _db_11() -> None:

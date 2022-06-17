@@ -7,7 +7,6 @@ from re import match
 from typing import Any
 from typing import Iterable
 from typing import List
-from typing import Mapping
 from typing import Optional
 from typing import Tuple
 
@@ -19,7 +18,6 @@ from gpxpy.gpx import GPXTrack
 from gpxpy.gpx import GPXTrackPoint
 from gpxpy.gpx import GPXTrackSegment
 from logging import getLogger
-from orjson import loads as load_json
 from pathlib import Path
 
 from . import document
@@ -28,17 +26,10 @@ from .plugin import Plugin
 from ..activity_types import ActivityTypes
 from ..activity import Activity
 from ..activity import Resource
-from ..config import ApplicationState as state
 from ..config import GlobalConfig as gc
-from ..config import KEY_CLASSIFER
 from ..config import KEY_LAST_FETCH
-from ..config import KEY_METADATA
-from ..config import KEY_PLUGINS
-from ..config import KEY_RAW
-from ..config import KEY_RESOURCES
 from ..service import Service
 from ..utils import as_datetime
-from ..utils import to_isotime
 
 log = getLogger( __name__ )
 
@@ -128,17 +119,12 @@ class Waze( Service, Plugin ):
 		return WazeActivity( raw=raw, raw_data=raw_data, raw_name=raw_name, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
-		log.debug( f"Using {field_size_limit()} as field size limit for CSV parser in Waze service" )
-		takeouts_dir = Path( self._takeouts_dir )
-		takeout_path = Path( takeouts_dir, activity.metadata['source_path'] )
-		#takeout = read_takeout( Path( self._takeouts_dir, a.raw['path'] ) )
-		takeout = read_takeout( takeout_path )
-		ts = datetime.strptime( str( activity.raw_id ), '%Y%m%d%H%M%S' ).replace( tzinfo=UTC )
-		content = None
-		for t in takeout:
-			if ts == t[0][0]:
-				content = to_gpx( t )
-		return content, 200 # return always 200
+		raw_path = Path( self.path_for( activity ), f'{activity.raw_id}.raw.txt' )
+		with open( raw_path, mode='r', encoding='UTF-8' ) as p:
+			content = p.read()
+			drive = read_drive( content )
+			gpx = to_gpx( drive )
+			return gpx, 200 # return always 200
 
 	# nothing to do for now ...
 	def setup( self ):
@@ -194,7 +180,7 @@ def read_drive( s: str ) -> List[Tuple[int, datetime, float, float]]:
 
 	return points
 
-def to_gpx( tokens: List ):
+def to_gpx( tokens: List[Tuple[int, datetime, float, float]] ):
 	# create GPX object for track
 	gpx = GPX()
 	track = GPXTrack()
@@ -204,7 +190,8 @@ def to_gpx( tokens: List ):
 
 	# parse tokens and store information in GPX
 	for token in tokens:
-		point = GPXTrackPoint( latitude=token[1], longitude=token[2], time=token[0] )
+		index, time, latitude, longitude = token 	# todo: token[0] is a segment?
+		point = GPXTrackPoint( time=time, latitude=latitude, longitude=longitude )
 		segment.points.append( point )
 
 	return bytes( gpx.to_xml(), 'UTF-8' )

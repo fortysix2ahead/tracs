@@ -231,6 +231,9 @@ def invalid() -> Filter:
 		raise RuntimeError( f'unable to execute a query marked as invalid' )
 	return Filter( field=None, value=False, callable=fn, valid=False )
 
+def classifier( c: str ) -> Filter:
+	return Filter( 'classifier', callable=Query()[FIELD_CLASSIFIER] == c )
+
 def groups() -> Filter:
 	return Filter( 'group', callable=Query()[FIELD_CLASSIFIER] == 'group' )
 
@@ -259,16 +262,23 @@ def is_number( field: str ) -> Filter:
 
 # parse functions
 
-def parse_filters( filters: [str] ) -> [Filter]:
+def parse_filters( filters: Union[List[Filter, str], Filter, str] ) -> [Filter]:
 	"""
 	Parses a list of strings into a list of filters.
 
 	:param filters: list of string to be parsed.
 	:return: list of parsed filters
 	"""
-	return [ parse( f ) for f in filters or [] ]
+	if not filters:
+		return []
+	elif type( filters ) is str:
+		return [ parse( filters ) ]
+	elif type( filters ) is Filter:
+		return [ filters ]
+	else:
+		return [ parse( f ) for f in filters ]
 
-def parse( filter: str ) -> Optional[Filter]:
+def parse( filter: Union[Filter, str] ) -> Optional[Filter]:
 	"""
 	Parses a string into a valid filter. The filter might already be usable, but there's no guarantee. In order to make
 	the filter usable, call prepare( f ).
@@ -278,6 +288,9 @@ def parse( filter: str ) -> Optional[Filter]:
 	"""
 	if not len( filter ) > 0:
 		return Filter.true()
+
+	if type( filter ) is Filter:
+		return filter
 
 	# create empty filter
 	f = Filter()

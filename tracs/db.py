@@ -15,7 +15,7 @@ from logging import getLogger
 from pathlib import Path
 from rich import box
 from rich.pretty import pretty_repr as pp
-from rich.table import Table
+from rich.table import Table as RichTable
 from typing import Mapping
 
 from tinydb import Storage
@@ -296,10 +296,14 @@ def restore_db( db: TinyDB, db_file: Path, backup_dir: Path, force: bool ) -> No
 		log.info( f"no backups found in {backup_dir}" )
 
 def status_db( db: ActivityDb, services: Mapping ) -> None:
-	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
+	table = RichTable( box=box.MINIMAL, show_header=False, show_footer=False )
 	table.add_row( 'activities in database:', pp( len( db.all() ) ) )
+	table.add_row( 'activity groups:', pp( len( db.all( True, False, False ) ) ) )
+	table.add_row( 'activities being part of a group:', pp( len( db.all( False, True, False ) ) ) )
+	table.add_row( 'ungrouped activities:', pp( len( db.all( False, False, True ) ) ) )
 	for s in services.values():
-		table.add_row( f'activities from {s.display_name}:', pp( len( db.all( True, True, True ) ) ) )
+		activities = list( db.find( f'service:{s.name}', False, True, True ) )
+		table.add_row( f'activities from {s.display_name}:', pp( len( activities ) ) )
 
 	table.add_row( 'activities without name:', pp( db.activities.count( Query().name == '' ) ) )
 

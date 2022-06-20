@@ -11,6 +11,7 @@ from datetime import datetime
 from click import argument
 from click import echo
 from click import option
+from click import pass_context
 from click import prompt
 from click import Choice
 from click import Path as ClickPath
@@ -19,6 +20,7 @@ from click_shell import shell
 from .activity import Activity
 from .application import Application
 from .config import ApplicationConfig as cfg
+from .config import ApplicationContext
 from .config import GlobalConfig as gc
 from .config import APPNAME
 from .db import backup_db
@@ -51,7 +53,6 @@ from .service import link_activities
 log = getLogger( __name__ )
 
 #@group()
-#@pass_context
 @shell( prompt=f'{APPNAME} > ', intro=f'Starting interactive shell mode, enter <exit> to leave this mode again, use <{APPNAME} --help> for help ...' )
 @option( '-c', '--configuration', is_flag=False, required=False, help='configuration area location', metavar='PATH' )
 @option( '-l', '--library', is_flag=False, required=False, help='library location', metavar='PATH' )
@@ -59,7 +60,10 @@ log = getLogger( __name__ )
 @option( '-d', '--debug', is_flag=True, default=None, required=False, help='enable output of debug messages' )
 @option( '-f', '--force', is_flag=True, default=None, required=False, help='forces operations to be carried out' )
 @option( '-p', '--pretend', is_flag=True, default=None, required=False, help='pretends to work, only simulates everything and does not persist any changes' )
-def cli( configuration, debug, force, library, verbose, pretend ):
+@pass_context
+def cli( ctx, configuration, debug, force, library, verbose, pretend ):
+	ctx.obj = ApplicationContext()
+
 	_init_logging( debug )
 
 	if debug:
@@ -123,10 +127,8 @@ def fetch( restrict: str = None ):
 @option( '-a', '--all', 'all_', is_flag=True, required=False, help='downloads all activities (instead of recent ones only), overriding provided filters' )
 @argument( 'filters', nargs=-1 )
 def download( filters, all_ ):
-	if all_:
-		download_activities( gc.db.find( [], False, True, True ) )
-	else:
-		download_activities( gc.db.find( filters, False, True, True ) )
+	filters = [] if all_ else filters
+	download_activities( gc.db.find( filters, False, True, True ) )
 
 @cli.command( help='creates links for downloaded resources of activities' )
 @option( '-a', '--all', 'all_', is_flag=True, required=False, help='creates links for all activities (instead of recent ones only), overriding provided filters' )

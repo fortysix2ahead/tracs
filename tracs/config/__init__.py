@@ -6,6 +6,8 @@ from importlib.resources import path as pkg_path
 from pathlib import Path
 from typing import Tuple
 
+from attr import define
+from attr import field
 from confuse import Configuration
 from confuse import Subview
 from rich.console import Console
@@ -61,6 +63,13 @@ with pkg_path( import_module( NAMESPACE_CONFIG ), STATE_FILENAME ) as p:
 
 def plugin_config_state( plugin: str ) -> Tuple[Subview, Subview]:
 	return ApplicationConfig[KEY_PLUGINS][plugin], ApplicationState[KEY_PLUGINS][plugin]
+
+@define
+class ApplicationContext:
+
+	instance = field( init=True, default=None )
+	config = field( init=True, default=None )
+	state = field( init=True, default=None )
 
 class GlobalConfig:
 

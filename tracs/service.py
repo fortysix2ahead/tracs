@@ -116,31 +116,36 @@ class Service( AbstractServiceClass ):
 		#fetched_activities = []
 
 		fetched = self._fetch( force=force )
-		for a in fetched: # a = new activity
-			old = gc.db.get( raw_id=a.raw_id, service_name=self.name )
+		existing = list( gc.db.find( f'classifier:{self.name}', False, True, True ) )
+		old_new = [ ( next( (e for e in existing if e.uid == f.uid), None ), f ) for f in fetched ]
 
+		for _old, _new in old_new:
 			# insert if no old activity exists
-			if not old:
-				doc_id = gc.db.insert( a )
-				new_activities.append( a )
-				log.debug( f'created new activity {a.uid} (id {doc_id}), name = {a["name"]}, time = {fmt( a["localtime"] )}')
+			if not _old:
+				doc_id = gc.db.insert( _new )
+				new_activities.append( _new )
+				# todo: log statement might cause problem when certain unicode chars are contained in name
+				# log.debug( f'created new activity {_new.uid} (id {doc_id}), name = {_new["name"]}, time = {fmt( _new["localtime"] )}')
+				log.debug( f'created new activity {_new.uid} (id {doc_id}), time = {fmt( _new["localtime"] )}')
 			# update if forced
-			elif old and force:
-				a.doc_id = old.doc_id
-				gc.db.update( a )
-				updated_activities.append( a )
-				log.debug( f'updated activity {a.uid} (id {a.doc_id}), name = {a["name"]}, time = {fmt( a["localtime"] )}')
+			elif _old and force:
+				_new.doc_id = _old.doc_id
+				gc.db.update( _new )
+				updated_activities.append( _new )
+				# todo: log statement might cause problem when certain unicode chars are contained in name
+				#log.debug( f'updated activity {_new.uid} (id {_new.doc_id}), name = {_new["name"]}, time = {fmt( _new["localtime"] )}')
+				log.debug( f'updated activity {_new.uid} (id {_new.doc_id}), time = {fmt( _new["localtime"] )}')
 
-			if a.raw_data and a.raw_name:
-				path = Path( self.path_for( a ), a.raw_name )
+			if _new.raw_data and _new.raw_name:
+				path = Path( self.path_for( _new ), _new.raw_name )
 				if not path.exists() or force:
 					path.parent.mkdir( parents=True, exist_ok=True )
-					if type( a.raw_data ) is bytes:
-						path.write_bytes( a.raw_data )
-					elif type( a.raw_data ) is str:
-						path.write_text( data=a.raw_data, encoding='UTF-8' )
+					if type( _new.raw_data ) is bytes:
+						path.write_bytes( _new.raw_data )
+					elif type( _new.raw_data ) is str:
+						path.write_text( data=_new.raw_data, encoding='UTF-8' )
 					else:
-						log.error( f'error writing raw data for activity {a.uid}, type of data is neither str or bytes' )
+						log.error( f'error writing raw data for activity {_new.uid}, type of data is neither str or bytes' )
 
 		log.info( f"fetched activities from {self.display_name}: {len( new_activities )} new, {len( updated_activities )} updated" )
 

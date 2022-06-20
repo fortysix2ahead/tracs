@@ -191,8 +191,7 @@ class ActivityDb:
 		else:
 			return None
 
-	def find( self, filters: Union[List[str], str] = None, include_groups: bool = True, include_grouped: bool = False, include_ungrouped = True ) -> [Activity]:
-		filters = [filters] if type( filters ) is str else filters
+	def find( self, filters: Union[List[str], List[Filter], str, Filter] = None, include_groups: bool = True, include_grouped: bool = False, include_ungrouped = True ) -> [Activity]:
 		parsed_filters = parse_filters( filters or [] )
 		all_activities = self.all( include_groups, include_grouped, include_ungrouped )
 		for f in parsed_filters:

@@ -33,6 +33,11 @@ class Resource( ABC ):
 	def status( self ) -> int:
 		pass
 
+	@status.setter
+	@abstractmethod
+	def status( self, status: int ) -> None:
+		pass
+
 	@property
 	@abstractmethod
 	def path( self ) -> str:

@@ -105,7 +105,7 @@ def show_activity( activities: [Activity], frmt: str = None, display_raw: bool =
 					[ 'Timezone\u00b9', datetime.now( tzlocal()).tzname() ],
 					[ 'Location', a.location_country ],
 					[ 'Duration (elapsed)', fmt( a.duration ) ],
-					[ 'Duration (moving)', a.duration_moving ],
+					[ 'Duration (moving)', fmt( a.duration_moving ) ],
 					[ 'Distance', a.distance ],
 					[ 'Ascent', a.ascent ],
 					[ 'Descent', a.descent ],

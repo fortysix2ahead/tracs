@@ -13,7 +13,6 @@ from tinydb.middlewares import CachingMiddleware
 from tinydb import JSONStorage
 
 from .config import GlobalConfig as gc
-from .db import DB_VERSION
 from .plugins.polar import _raw_id as polar_id
 
 log = getLogger( __name__ )

@@ -26,6 +26,7 @@ from click import style
 from dateutil.parser import parse as parse_datetime
 from dateutil.parser import ParserError
 from dateutil.tz import gettz
+from dateutil.tz import tzlocal
 
 from .activity_types import ActivityTypes
 from .config import ApplicationConfig as cfg
@@ -102,6 +103,9 @@ def fmtl( activity_list: List ) -> str:
 
 def fmt_delta( dt1: datetime, dt2: datetime ) -> str:
 	return f'{fmt( dt1 )} (\u00B1{fmt( dt1 - dt2 )})'
+
+def timestring() -> str:
+	return datetime.now( tz=tzlocal() ).strftime( '%y%m%d_%H%M%S' )
 
 def as_datetime( dt: datetime = None, dtstr: str = None, ts: int = 0, tz: tzinfo = None, tzstr: str = None ) -> datetime:
 	tz = gettz( tzstr ) if tzstr else tz # construct tz from tzstr

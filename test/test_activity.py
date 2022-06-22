@@ -1,3 +1,4 @@
+
 from datetime import datetime
 from datetime import time
 from dateutil.tz import UTC
@@ -14,8 +15,7 @@ from tracs.plugins.groups import ActivityGroup
 from tracs.plugins.polar import PolarActivity
 from tracs.plugins.strava import StravaActivity
 
-
-@mark.db_template( 'default' )
+@mark.db( template='default' )
 def test_init( json ):
 	# empty init
 	a = ActivityGroup( doc_id=0 )
@@ -32,7 +32,7 @@ def test_init( json ):
 	assert a.classifier == 'group'
 
 	# init from db document
-	a = ActivityGroup( json['activities']['1'], doc_id=1 )
+	a = ActivityGroup( json['_default']['1'], doc_id=1 )
 
 	assert a.doc_id == 1 and a['doc_id'] == 1
 	assert a['id'] == 1 and a.id == 1
@@ -67,7 +67,7 @@ def test_init( json ):
 	#	]
 
 	# init with child
-	polar_json = json['activities']['2']
+	polar_json = json['_default']['2']
 	pa = PolarActivity( polar_json, 2 )
 	a = ActivityGroup( groups=[pa] )
 
@@ -88,8 +88,8 @@ def test_init( json ):
 	assert a.calories == 2904
 
 	# init with 2 children
-	polar_json = json['activities']['2']
-	strava_json = json['activities']['3']
+	polar_json = json['_default']['2']
+	strava_json = json['_default']['3']
 	pa = PolarActivity( polar_json, 2 )
 	sa = StravaActivity( strava_json, 3 )
 	a = ActivityGroup( groups=[pa, sa] )

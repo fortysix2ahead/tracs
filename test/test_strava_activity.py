@@ -9,7 +9,7 @@ from tracs.activity import ActivityRef
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.strava import StravaActivity
 
-@mark.db_template( 'strava' )
+@mark.db( template='strava' )
 def test_init_from_db( json ):
 	sa = StravaActivity( json['activities']['1'], 1 )
 	assert sa.groups == { "parent": 1 }

@@ -21,7 +21,6 @@ from typing import Mapping
 
 from tinydb import TinyDB
 from tinydb import Query
-from tinydb.middlewares import CachingMiddleware
 from tinydb.operations import delete
 from tinydb.operations import set
 from tinydb.table import Document
@@ -36,7 +35,6 @@ from .config import TABLE_NAME_ACTIVITIES
 from .config import TABLE_NAME_DEFAULT
 from .config import KEY_SERVICE
 from .config import KEY_VERSION
-from .db_middleware import DataClassMiddleware
 from .db_storage import DataClassStorage
 from .filters import Filter
 from .filters import groups

@@ -12,6 +12,8 @@ from confuse import Configuration
 from confuse import Subview
 from rich.console import Console
 
+# string constants
+
 APPNAME = 'tracs'
 
 BACKUP_DIRNAME = '.backup'
@@ -47,6 +49,24 @@ NAMESPACE_CONFIG = f'{NAMESPACE_BASE}.config'
 NAMESPACE_PLUGINS = f'{NAMESPACE_BASE}.plugins'
 NAMESPACE_SERVICES = f'{NAMESPACE_BASE}.services'
 
+# application context
+
+@define
+class ApplicationContext:
+
+	instance = field( init=True, default=None )
+
+	config = field( init=True, default=None )
+	state = field( init=True, default=None )
+
+	db = field( init=True, default=None )
+	db_dir = field( init=True, default=None )
+	db_file = field( init=True, default=None )
+
+	lib_dir = field( init=True, default=None )
+
+# configuration
+
 ApplicationConfig = Configuration( APPNAME, __name__, read=False )
 ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )
 
@@ -64,13 +84,7 @@ with pkg_path( import_module( NAMESPACE_CONFIG ), STATE_FILENAME ) as p:
 def plugin_config_state( plugin: str ) -> Tuple[Subview, Subview]:
 	return ApplicationConfig[KEY_PLUGINS][plugin], ApplicationState[KEY_PLUGINS][plugin]
 
-@define
-class ApplicationContext:
-
-	instance = field( init=True, default=None )
-	config = field( init=True, default=None )
-	state = field( init=True, default=None )
-
+# todo: to be replaced by application context
 class GlobalConfig:
 
 	app = None

@@ -52,7 +52,7 @@ class DataClassStorage( Storage ):
 
 		self._document_factory = document_factory
 		if not self._document_factory:
-			log.warning( 'data storage initialized without a document factory' )
+			log.debug( 'data storage initialized without a document factory' )
 		#self._transformation_map: Dict[str, Union[Type, Callable]] = {}
 		self._remove_null_fields: bool = True  # don't write fields which do not have a value
 		self._passthrough = passthrough
@@ -136,7 +136,7 @@ class DataClassStorage( Storage ):
 		if self._path and data:
 			self._path.write_bytes( dump_as_json( data, option=self.orjson_options ) )
 		else:
-			log.warning( 'db storage flush called without path and/or data' )
+			log.debug( 'db storage flush called without path and/or data' )
 
 	def close( self ) -> None:
 		self.flush()

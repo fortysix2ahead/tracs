@@ -84,9 +84,10 @@ class ActivityDb:
 			log.debug( f'Using {self._db_path} as database file and {self._meta_path} as database metadata' )
 
 		# init meta db
+		self._default_meta: TinyDB = TinyDB( storage=DataClassStorage, path=self._meta_resource_path, use_memory_storage=True, cache=cache, passthrough=True )
 		self._meta: TinyDB = TinyDB( storage=DataClassStorage, path=self._meta_path, use_memory_storage=True, cache=cache, passthrough=True )
-		self._default = self._meta.table( TABLE_NAME_DEFAULT )
-		self._schema_version = self._default.all()[0][KEY_VERSION]
+		self._schema = self._meta.all()[0][KEY_VERSION]
+		self._default_schema = self._default_meta.all()[0][KEY_VERSION]
 
 		# init activities db
 		pretend = pretend if path else True # auto-inmemory mode when path is not provided
@@ -105,6 +106,14 @@ class ActivityDb:
 		return self._db
 
 	@property
+	def default_meta( self ) -> TinyDB:
+		return self._default_meta
+
+	@property
+	def meta( self ) -> TinyDB:
+		return self._meta
+
+	@property
 	def path( self ) -> Path:
 		return self._db_path.parent
 
@@ -121,20 +130,20 @@ class ActivityDb:
 		return cast( DataClassStorage, self._db.storage )
 
 	@property
-	def default( self ) -> Table:
+	def default( self ) -> TinyDB:
 		return self.meta
-
-	@property
-	def meta( self ) -> Table:
-		return self._default
 
 	@property
 	def activities( self ) -> Table:
 		return self._activities
 
 	@property
-	def schema_version( self ) -> Table:
-		return self._schema_version
+	def schema( self ) -> int:
+		return self._schema
+
+	@property
+	def default_schema( self ) -> int:
+		return self._default_schema
 
 	# ---- DB Operations --------------------------------------------------------
 

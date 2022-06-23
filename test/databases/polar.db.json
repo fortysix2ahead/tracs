@@ -1,62 +1,44 @@
 {
   "_default": {
     "1": {
-      "version": 12
-    }
-  },
-  "activities": {
-    "2": {
-      "name": "Unknown Location",
       "classifier": "polar",
-      "groups": {
-        "parent": 1
-      },
-      "metadata": {
-      },
-      "raw": {
-        "listItemId": 1234567890,
-        "isTest": false,
-        "title": "03:23:53;0.0 km",
-        "type": "EXERCISE",
-        "hasTrainingTarget": false,
-        "timestamp": 1325932851000,
-        "start": 1325932851,
-        "end": 1325945084,
-        "allDay": false,
-        "iconUrl": "https://platform.cdn.polar.com/ecosystem/sport/icon/3c1103ccbeee33fa663a1dc8e0fd8a6d-2015-10-20_13_45_48",
-        "url": "/training/analysis/1234567890",
-        "borderColor": "#A9D0F5",
-        "textColor": "#000",
-        "datetime": "2012-01-07T10:40:51.000Z",
-        "eventType": "exercise",
-        "duration": 12233300,
-        "distance": 30000.1,
-        "calories": 2904
-      }
+      "metadata": {},
+      "name": "Some Location",
+      "raw_id": 1001,
+      "resources": [
+        {
+          "name": null,
+          "path": "1001.gpx",
+          "type": "gpx",
+          "status": 100
+        }
+      ],
+      "time": "2011-04-28T17:48:10+00:00",
+      "type": "run"
+    },
+    "2": {
+      "name": "03:23:53;0.0 km",
+      "calories": 2904,
+      "classifier": "polar",
+      "distance": 30000.1,
+      "duration_moving": "01:40:00",
+      "parent_id": 1,
+      "parent_uid": "group:1",
+      "heartrate": 150,
+      "metadata": {},
+      "raw_id": 1234567890,
+      "time": "2012-01-07T10:40:51.000+00:00"
     },
     "11": {
-      "name": "Afternoon Run in Berlin",
+      "name": "00:25:34;0.0 km",
       "classifier": "polar",
-      "raw": {
-        "isTest": false,
-        "title": "00:25:34;0.0 km",
-        "type": "EXERCISE",
-        "listItemId": 1001,
-        "hasTrainingTarget": false,
-        "timestamp": 1304012890000,
-        "start": 1304012890,
-        "end": 1304014424,
-        "allDay": false,
-        "iconUrl": "https://platform.cdn.polar.com/ecosystem/sport/icon/808d0882e97375e68844ec6c5417ea33-2015-10-20_13_46_22",
-        "url": "/training/analysis/1001",
-        "borderColor": "#A9D0F5",
-        "textColor": "#000",
-        "datetime": "2011-04-28T17:48:10.000Z",
-        "eventType": "exercise",
-        "duration": 1534900,
-        "distance": 12000.3,
-        "calories": 456
-      },
+      "distance": 12000.3,
+      "duration": "00:25:35",
+      "calories": 456,
+      "raw_id": 1001,
+      "time": "2011-04-28T15:48:10+00:00",
+      "localtime": "2011-04-28T17:48:10+02:00",
+      "type": "run",
       "resources": [
         {
           "name": null,
@@ -83,52 +65,22 @@
           "status": 100
         }
       ],
-      "metadata": {
-      }
+      "metadata": {}
     },
     "12": {
       "name": "Fitness Test",
       "classifier": "polar",
-      "raw": {
-        "type": "FITNESSDATA",
-        "listItemId": 2002,
-        "title": "Fitness Test",
-        "start": "2011-12-25T10:57:16.000Z",
-        "allDay": "false",
-        "url": "/progress/tests?type=fitness_test&id=2002",
-        "backgroundColor": "#E0F2F7",
-        "borderColor": "#A9D0F5",
-        "textColor": "#000",
-        "className": "calendar-item-fitnessData",
-        "eventType": "fitnessData",
-        "index": 46,
-        "timestamp": 1324810636000,
-        "datetime": "2011-12-25T10:57:16.000Z"
-      }
+      "raw_id": 2002
     },
     "13": {
       "name": "Orthostatic Test",
       "classifier": "polar",
-      "raw": {
-        "type": "ORTHOSTATICTEST",
-        "eventType": "orthostaticTest",
-        "title": "Orthostatic test",
-        "datetime": "2016-09-28T21:11:04.000",
-        "result": "60 (0)",
-        "url": "/progress/tests?type=orthostatic_test&id=3003"
-      }
+      "raw_id": 3003
     },
     "14": {
       "name": "RR Recording",
       "classifier": "polar",
-      "raw": {
-        "title": "RR recording result",
-        "url": "/training/test/rr/4004",
-        "eventType": "rrTest",
-        "datetime": "2017-01-16T21:34:58.000",
-        "type": "RRRECORDING",
-        "result": ""
-      }
+      "raw_id": 4004
     }
   }
 }

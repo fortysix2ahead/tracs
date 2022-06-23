@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from json import load
+from json import load as load_json
 from pathlib import Path
 from shutil import copy
 from shutil import copytree
@@ -8,12 +8,10 @@ from shutil import copytree
 from importlib.resources import path
 from shutil import rmtree
 from typing import Dict
-from typing import Mapping
 from typing import Tuple
 
 from tinydb.table import Document
 
-from tracs.config import GlobalConfig
 from tracs.db import ActivityDb
 
 def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: str = None ) -> Tuple[Path, Path]:
@@ -59,35 +57,42 @@ def get_lib_path( name: str, writable: bool = False ) -> Path:
 			copytree( p, dst_lib )
 			return dst_lib
 
-def get_db_path( name: str, writable: bool = False ) -> Path:
-	with path( 'test.databases', f'{name}.db.json' ) as p:
+def get_db_path( template_name: str, writable: bool = False ) -> Tuple[Path, Path, Path]:
+	"""
+	Creates/returns an existing db and returns a tuple consisting of [parent_path, db_path, meta_path]
+
+	:param template_name: template db name
+	:param writable: if True copies the template and creates new db in var/run, if False returns template directly
+	:return: Tuple of [parent_path, db_path, meta_path]
+	"""
+	with path( 'test.databases', f'{template_name}.db.json' ) as p:
 		if not writable:
-			return p
+			return p.parent, p, Path( p.parent, 'meta.json' )
 		else:
-			dst_db = Path( _run_path(), f'{name}-{datetime.now().strftime( "%y%m%d_%H%M%S_%f" )}.db.json' )
-			copy( p, dst_db )
-			return dst_db
+			dest_dir = var_run_path()
+			dest_db = Path( dest_dir, f'db.json' )
+			dest_meta = Path( dest_dir, f'meta.json' )
+			copy( p, dest_db )
+			copy( Path( p.parent, 'meta.json' ), dest_meta )
+			return dest_dir, dest_db, dest_meta
 
-def get_dbpath( template: str, name: str, writable: bool ) -> Tuple[Path, Path]:
-	with path( 'test', '__init__.py' ) as p:
-		template_path = Path( p.parent, 'databases', f'{template}.db.json' )
-		if writable:
-			db_path = Path( p.parent.parent, 'var', 'run', f'{datetime.now().strftime( "%H%M%S_%f" )}', name )
-		else:
-			db_path = template_path
-	return template_path, db_path
+def get_readonly_db_path( template_name: str ) -> Tuple[Path, Path, Path]:
+	return get_db_path( template_name, False )
 
-def get_inmemory_db( db_template: str ) -> ActivityDb:
+def get_writable_db_path( template_name: str ) -> Tuple[Path, Path, Path]:
+	return get_db_path( template_name, True )
+
+def get_inmemory_db( db_template: str = 'empty' ) -> ActivityDb:
 	"""
 	Returns an in-memory db initialized from the provided template db.
 
 	:param db_template: template db or None
 	:return: in-memory db
 	"""
-	db_path = get_db_path( db_template, False ) if db_template else get_db_path( 'empty', False )
-	return ActivityDb( path=db_path, pretend=True, cache=False )
+	parent_path, db_path, meta_path = get_db_path( db_template, False )
+	return ActivityDb( path=parent_path, db_name=db_path.name, pretend=True, cache=False )
 
-def get_file_db( db_template: str='empty', db_name: str='db.json', writable=False ) -> ActivityDb:
+def get_file_db( db_template: str = 'empty', writable = False ) -> ActivityDb:
 	"""
 	Returns a file-based db, based on the provided template.
 
@@ -96,50 +101,16 @@ def get_file_db( db_template: str='empty', db_name: str='db.json', writable=Fals
 	:param writable: if the db shall be writable or not
 	:return: file-based db
 	"""
-	template_path, db_path = get_dbpath( db_template, db_name, writable )
-	if template_path != db_path:
-		db_path.parent.mkdir( parents=True, exist_ok=True )
-		copy( template_path, db_path )
+	parent_path, db_path, meta_path = get_db_path( db_template, writable )
+	return ActivityDb( path=parent_path, db_name=db_path.name, pretend=not writable, cache=False )
 
-	return ActivityDb( path=db_path, pretend=False, cache=False )
-
-def get_dbjson( db_name: str ) -> Dict:
-	db_path = get_db_path( db_name, False )
-	return load( open( db_path, 'r', encoding='utf8' ) )
-
-def get_db_json( db_name: str, inmemory_db: bool = False ) -> Tuple[ActivityDb, Mapping]:
-	writable = not inmemory_db
-	db_path = get_db_path( db_name, writable )
-	GlobalConfig.db = ActivityDb( db_path=db_path, writable=writable )
-	json = load( open( get_db_path( db_name ), 'r', encoding='utf8' ) )
-	return GlobalConfig.db, json
-
-def get_db_as_json( db_name: str ):
-	db_path = get_db_path( db_name, False )
-	GlobalConfig.db = ActivityDb( db_path=db_path, writable=False )
-	# return the json only
-	return load( open( get_db_path( db_name ), 'r', encoding='utf8' ) )
-
-def get_env( env_name: str ) -> Path:
-	with path( 'test.environments', env_name ) as src_env:
-		run_path = _run_path()
-		dst_env = Path( run_path, f'run-{datetime.now().strftime( "%H%M%S_%f" )}' )
-		copytree( src_env, dst_env )
-		return dst_env
+def get_db_as_json( db_name: str ) -> Dict:
+	parent_path, db_path, meta_path = get_db_path( db_name, False )
+	return load_json( open( db_path, 'r', encoding='utf8' ) )
 
 def get_file_path( rel_path: str ) -> Path:
 	with path( 'test', '__init__.py' ) as test_path:
 		return Path( test_path.parent, rel_path )
-
-def _run_path() -> Path:
-	with path( 'test', '__init__.py' ) as test_path:
-		run_path = Path( test_path.parent, 'run', '_autorun' )
-		if run_path.exists() and run_path.is_dir():
-			return run_path
-		else:
-			run_path.unlink( missing_ok=True )
-			run_path.mkdir( parents = True )
-			return run_path
 
 def var_run_path( file_name = None ) -> Path:
 	"""
@@ -159,6 +130,8 @@ def var_run_path( file_name = None ) -> Path:
 		return run_path
 
 def clean( db_dir: Path = None, db_path: Path = None ) -> None:
+	return
+
 	if db_dir:
 		rmtree( db_dir, ignore_errors=True )
 	if db_path:

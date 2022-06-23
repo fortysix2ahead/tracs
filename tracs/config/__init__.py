@@ -62,6 +62,7 @@ class ApplicationContext:
 	db = field( init=True, default=None )
 	db_dir = field( init=True, default=None )
 	db_file = field( init=True, default=None )
+	meta = field( init=True, default=None )
 
 	lib_dir = field( init=True, default=None )
 

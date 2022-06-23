@@ -81,8 +81,6 @@ class ActivityDb:
 				self._db_path = self._db_resource_path
 				self._meta_path = self._meta_resource_path
 
-			log.debug( f'Using {self._db_path} as database file and {self._meta_path} as database metadata' )
-
 		# init meta db
 		self._default_meta: TinyDB = TinyDB( storage=DataClassStorage, path=self._meta_resource_path, use_memory_storage=True, cache=cache, passthrough=True )
 		self._meta: TinyDB = TinyDB( storage=DataClassStorage, path=self._meta_path, use_memory_storage=True, cache=cache, passthrough=True )

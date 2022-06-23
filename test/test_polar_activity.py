@@ -13,13 +13,12 @@ from tracs.activity_types import ActivityTypes
 
 @mark.db( template='polar' )
 def test_init_from_db( json ):
-	pa = PolarActivity( json['activities']['2'], 2 )
-	assert pa.groups == { "parent": 1 }
+	pa = PolarActivity( json['_default']['2'], 2 )
 	assert pa.parent_id == 1
 	assert pa.parent_uid == 'group:1'
-	assert pa.parent_ref == ActivityRef( 1, 'group:1' )
+	# assert pa.parent_ref == ActivityRef( 1, 'group:1' )
 
-	pa = PolarActivity( json['activities']['11'], 11 )
+	pa = PolarActivity( json['_default']['11'], 11 )
 
 	assert pa.raw_id == 1001
 	assert pa.name == '00:25:34;0.0 km'
@@ -32,7 +31,7 @@ def test_init_from_db( json ):
 
 @mark.db( template='polar' )
 def test_fitnessdata( json ):
-	json = json['activities']['12']
+	json = json['_default']['12']
 	pa = PolarActivity( json, 12 )
 
 	assert pa.id == 12
@@ -40,7 +39,7 @@ def test_fitnessdata( json ):
 
 @mark.db( template='polar' )
 def test_orthostatic( json ):
-	json = json['activities']['13']
+	json = json['_default']['13']
 	pa = PolarActivity( json, 13 )
 
 	assert pa['id'] == 13
@@ -49,7 +48,7 @@ def test_orthostatic( json ):
 
 @mark.db( template='polar' )
 def test_rrrecording( json ):
-	json = json['activities']['14']
+	json = json['_default']['14']
 	pa = PolarActivity( json, 14 )
 
 	# test id

@@ -88,11 +88,12 @@ class ActivityDb:
 		pretend = pretend if path else True # auto-inmemory mode when path is not provided
 		self._db: TinyDB = TinyDB( storage=DataClassStorage, path=self._db_path, use_memory_storage=pretend, cache=cache, passthrough=passthrough )
 		self._storage: DataClassStorage = cast( DataClassStorage, self._db.storage )
+		self._storage.document_factory = document_factory
 		self._activities = self.db.table( TABLE_NAME_DEFAULT )
 		self._activities.document_class = document_factory
 
 		# configure transformation map
-		self._storage.transformation_map[TABLE_NAME_ACTIVITIES] = document_cls
+		# self._storage.transformation_map[TABLE_NAME_ACTIVITIES] = document_cls
 
 	# ---- DB Properties --------------------------------------------------------
 

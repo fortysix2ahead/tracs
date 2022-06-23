@@ -113,7 +113,7 @@ def test_read( json ):
 	assert type( data['_default'].get( '2' ) ) is dict
 
 	# setup transformation map
-	storage.factory = document_cls
+	storage.document_factory = document_cls
 	data = storage.read()
 	assert type( data['_default'].get( '2' ) ) is PolarActivity
 	assert type( data['_default'].get( '3' ) ) is StravaActivity
@@ -129,13 +129,13 @@ def test_write( json ):
 	assert data is not None and len( data.items() ) == 1 and len( data['_default'].items() ) > 0
 
 	# setup transformation map
-	storage.factory = document_cls
+	storage.document_factory = document_cls
 	storage.write( deepcopy( unserialized_data ) )
 	written_data = storage.memory.memory
 	assert written_data == serialized_memory_data
 
 	path, db_path, meta_path = get_writable_db_path( 'empty' )
-	storage = DataClassStorage( path=db_path, use_memory_storage=False, factory=document_cls )
+	storage = DataClassStorage( path=db_path, use_memory_storage=False, document_factory=document_cls )
 	storage.write( deepcopy( unserialized_data ) )
 
 	with open( db_path, 'r' ) as f:
@@ -147,7 +147,7 @@ def test_cache( json ):
 	path, db_path, meta_path = get_db_path( 'polar', True )
 
 	# create storage and read
-	storage = DataClassStorage( path=db_path, use_memory_storage=False, cache=False, factory=document_cls )
+	storage = DataClassStorage( path=db_path, use_memory_storage=False, cache=False, document_factory=document_cls )
 	data = storage.read()
 	assert type( data['_default']['1'] ) is PolarActivity
 	assert data['_default']['1']['name'] == 'Some Location'
@@ -161,7 +161,7 @@ def test_cache( json ):
 	assert data['_default']['1']['name'] == 'Some Other Location'
 
 	# turn on cache
-	storage = DataClassStorage( path=db_path, use_memory_storage=False, cache=True, cache_size=1, factory=document_cls )
+	storage = DataClassStorage( path=db_path, use_memory_storage=False, cache=True, cache_size=1, document_factory=document_cls )
 	data = storage.read()
 	assert data['_default']['1']['name'] == 'Some Other Location'
 
@@ -172,7 +172,7 @@ def test_cache( json ):
 		assert data['_default']['1']['name'] == 'Some Other Location'
 
 	# turn off cache, read, change data, write and read again
-	storage = DataClassStorage( path=db_path, use_memory_storage=False, cache=False, factory=document_cls )
+	storage = DataClassStorage( path=db_path, use_memory_storage=False, cache=False, document_factory=document_cls )
 	data = storage.read()
 	assert data['_default']['1']['name'] == 'Very Distant Location'
 	data['_default']['1']['name'] = 'Very Close Location'
@@ -181,7 +181,7 @@ def test_cache( json ):
 	assert data['_default']['1']['name'] == 'Very Close Location'
 
 	# turn on cache
-	storage = DataClassStorage( path=db_path, use_memory_storage=False, cache=True, cache_size=1, factory=document_cls )
+	storage = DataClassStorage( path=db_path, use_memory_storage=False, cache=True, cache_size=1, document_factory=document_cls )
 	data = storage.read()
 	assert data['_default']['1']['name'] == 'Very Close Location'
 
@@ -198,7 +198,7 @@ def test_cache( json ):
 
 @mark.db( template='polar' )
 def test_passthrough( json ):
-	storage = DataClassStorage( path=None, use_memory_storage=True, cache=False, factory=document_cls )
+	storage = DataClassStorage( path=None, use_memory_storage=True, cache=False, document_factory=document_cls )
 	storage.write( deepcopy( unserialized_data ) )
 	assert type( storage.memory.memory['_default']['1'] ) is dict
 	# data is None as this read is considered the initial one, this should not happen in live operation (always read before first write)
@@ -207,7 +207,7 @@ def test_passthrough( json ):
 	data = storage.read()
 	assert type( data['_default']['1'] ) is PolarActivity
 
-	storage = DataClassStorage( path=None, use_memory_storage=True, cache=False, factory=document_cls, passthrough=True )
+	storage = DataClassStorage( path=None, use_memory_storage=True, cache=False, document_factory=document_cls, passthrough=True )
 	storage.write( deepcopy( unserialized_data ) )
 	assert type( storage.memory.memory['_default']['1'] ) is PolarActivity
 	# data is None as this read is considered the initial one, this should not happen in live operation (always read before first write)

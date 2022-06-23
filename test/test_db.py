@@ -25,21 +25,21 @@ def test_new_db():
 	assert db.storage._use_memory_storage is True
 
 	db = ActivityDb( path=None, pretend=True, cache=False )
-	assert db.storage._use_memory_storage is True and db.storage._cache_size == 0
+	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
 
 	db = ActivityDb( path=None, pretend=False, cache=True )
-	assert db.storage._use_memory_storage is True and db.storage._cache_size > 0
+	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
 
 	db = ActivityDb( path=None, pretend=True, cache=True )
-	assert db.storage._use_memory_storage is True and db.storage._cache_size > 0
+	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
 
 	parent_path, db_path, meta_path = get_db_path( 'empty', False )
 	db = ActivityDb( path=parent_path, pretend=True, cache=False )
-	assert db.storage._use_memory_storage is True and db.storage._cache_size == 0
+	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
 
 	parent_path, db_path, meta_path = get_db_path( 'empty', True )
 	db = ActivityDb( path=parent_path, pretend=False, cache=True )
-	assert db.storage._use_memory_storage is False and db.storage._cache_size > 0
+	assert db.storage._use_memory_storage is False and db.storage._use_cache is True
 
 @mark.db( template='default', inmemory=True )
 def test_open_db( db ):

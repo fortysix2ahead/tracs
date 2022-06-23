@@ -32,7 +32,7 @@ class DataClassStorage( Storage ):
 	#options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS| OPT_PASSTHROUGH_SUBCLASS
 	orjson_options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
-	def __init__( self, path: Path=None, use_memory_storage: bool=False, access_mode: bool = 'r+', cache: bool=False, cache_size: int=1000, passthrough=False, factory=None, *args, **kwargs ):
+	def __init__( self, path: Path=None, use_memory_storage: bool=False, access_mode: bool = 'r+', cache: bool=False, cache_size: int=1000, passthrough=False, document_factory=None, *args, **kwargs ):
 		super().__init__()
 
 		self._initial_read = True
@@ -50,9 +50,9 @@ class DataClassStorage( Storage ):
 		self._cache_hits = 0
 		self._cache_size = cache_size if self._use_cache else 0
 
-		self._factory = factory
-		if not self._factory:
-			log.warning( 'data storage initialized without a data transformation function' )
+		self._document_factory = document_factory
+		if not self._document_factory:
+			log.warning( 'data storage initialized without a document factory' )
 		#self._transformation_map: Dict[str, Union[Type, Callable]] = {}
 		self._remove_null_fields: bool = True  # don't write fields which do not have a value
 		self._passthrough = passthrough
@@ -86,7 +86,7 @@ class DataClassStorage( Storage ):
 				table_data[item_id] = replacement
 
 	def read_item( self, item_id: str, item_data: Any ) -> Optional:
-		item_cls = self._factory( item_data, item_id ) if isfunction( self._factory ) else self._factory
+		item_cls = self._document_factory( item_data, item_id ) if isfunction( self._document_factory ) else self._document_factory
 		return item_cls( item_data, int( item_id ) ) if item_cls else None
 
 	def read_data_from_path( self ) -> Any:
@@ -124,7 +124,7 @@ class DataClassStorage( Storage ):
 
 	# noinspection PyMethodMayBeStatic
 	def write_item( self, item_id: str, item: Any ) -> Optional:
-		item_cls = self._factory( item, item_id ) if isfunction( self._factory ) else self._factory
+		item_cls = self._document_factory( item, item_id ) if isfunction( self._document_factory ) else self._document_factory
 		# todo: item_cls might be None and Document needs to be used
 		return as_dict( item, item_cls, modify_arg=True, remove_null_fields=self._remove_null_fields )
 
@@ -133,23 +133,23 @@ class DataClassStorage( Storage ):
 		if self._path and data:
 			self._path.write_bytes( dump_as_json( data, option=self.orjson_options ) )
 		else:
-			log.warning( 'no path or data' ) # todo
+			log.warning( 'db storage flush called without path and/or data' )
 
 	def close( self ) -> None:
 		self.flush()
 
 	@property
-	def factory( self ) -> Callable:
-		return self._factory
+	def document_factory( self ) -> Callable:
+		return self._document_factory
 
-	@factory.setter
-	def factory( self, fn: Callable ) -> None:
-		self._factory = fn
+	@document_factory.setter
+	def document_factory( self, fn: Callable ) -> None:
+		self._document_factory = fn
 
 	@property
 	def memory( self ) -> MemoryStorage:
 		return self._memory
 
-	@property
-	def transformation_map( self ):
-		return self._transformation_map
+#	@property
+#	def transformation_map( self ):
+#		return self._transformation_map

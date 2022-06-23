@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="test_db_middleware" type="tests" factoryName="py.test" folderName="Modules">
+  <configuration default="false" name="test_db_storage" type="tests" factoryName="py.test" folderName="Modules">
     <module name="com.github.tracs" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -11,7 +11,7 @@
     <option name="_new_keywords" value="&quot;&quot;" />
     <option name="_new_parameters" value="&quot;&quot;" />
     <option name="_new_additionalArguments" value="&quot;&quot;" />
-    <option name="_new_target" value="&quot;test.test_db_middleware&quot;" />
+    <option name="_new_target" value="&quot;test.test_db_storage&quot;" />
     <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     <method v="2" />
   </configuration>

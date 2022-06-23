@@ -1,7 +1,6 @@
 from importlib.resources import path
 from pathlib import Path
 from typing import Dict
-from typing import Mapping
 from typing import Optional
 from typing import Tuple
 
@@ -12,31 +11,8 @@ from yaml import load as load_yaml
 from tracs.config import ApplicationConfig as cfg
 from tracs.config import ApplicationState as state
 from tracs.config import CLASSIFIER
-from tracs.config import GlobalConfig
-from tracs.db import ActivityDb
 from tracs.plugins import Registry
-from .helpers import get_db_json
 from .helpers import var_run_path
-
-@fixture
-def db_default_inmemory() -> Tuple[ActivityDb, Mapping]:
-	return get_db_json( 'default', True )
-
-@fixture
-def db_default_file() -> Tuple[ActivityDb, Mapping]:
-	return get_db_json( 'default', False )
-
-@fixture
-def db_empty_inmemory() -> Tuple[ActivityDb, Mapping]:
-	return get_db_json( 'empty', True )
-
-@fixture
-def db_empty_file() -> Tuple[ActivityDb, Mapping]:
-	return get_db_json( 'empty', False )
-
-@fixture
-def empty_file_db( var_dir ) -> ActivityDb:
-	return ActivityDb( db_path=Path( var_dir, 'db.json', writable=True ) )
 
 @fixture
 def var_config_path( request ) -> Optional[Path]:

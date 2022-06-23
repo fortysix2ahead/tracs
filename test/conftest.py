@@ -18,14 +18,12 @@ from tracs.config import KEY_PLUGINS
 from tracs.db import ActivityDb
 from tracs.plugins.bikecitizens import Bikecitizens
 from tracs.plugins.polar import Polar
-from tracs.plugins.strava import Strava
-from tracs.plugins.waze import Waze
 from tracs.service import Service
 
 from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
 from .helpers import clean
-from .helpers import get_dbjson
+from .helpers import get_db_as_json
 from .helpers import get_file_db
 from .helpers import get_inmemory_db
 from .helpers import var_run_path
@@ -63,7 +61,7 @@ def db( request ) -> ActivityDb:
 	if inmemory:
 		db = get_inmemory_db( db_template=template )
 	else:
-		db = get_file_db( db_template=template, db_name=name, writable=writable )
+		db = get_file_db( db_template=template, writable=writable )
 
 	if update_gc:
 		GlobalConfig.db = db
@@ -80,13 +78,9 @@ def db( request ) -> ActivityDb:
 
 @fixture
 def json( request ) -> Optional[Dict]:
-	template = marker.args[0] if (marker := request.node.get_closest_marker( 'db_template' )) else None
-
-	# kwargs processing -> this will be the preferred way
 	kwargs = marker.kwargs if (marker := request.node.get_closest_marker( 'db' )) else {}
-	template = kwargs.pop( 'template' ) if 'template' in kwargs else template
-
-	return get_dbjson( template ) if template else None
+	template = kwargs.get( 'template', 'empty' )
+	return get_db_as_json( template ) if template else None
 
 @fixture
 def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
@@ -107,7 +101,6 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 				state_dict = load_yaml( state_path.read_bytes(), SafeLoader )
 
 	return config_dict, state_dict
-
 
 # noinspection PyUnboundLocalVariable
 @fixture

@@ -27,6 +27,8 @@ from .config import LOG_DIRNAME
 from .config import LOG_FILENAME
 from .config import STATE_FILENAME
 from .db import ActivityDb
+from .db import DB_NAME
+from .db import META_NAME
 from .plugins import Registry
 from .service import Service
 
@@ -37,34 +39,25 @@ class Application( object ):
 	_instance = None # application singleton
 
 	@classmethod
-	def instance( cls, db: ActivityDb = None, config_dir: Path = None, lib_dir: Path = None, verbose: bool = None, debug: bool = None, force: bool = None, pretend: bool = None ):
+	def instance( cls, *args, **kwargs ):
 		if cls._instance is None:
-			#cls._instance = cls.__new__( cls, db=db, config_dir=config_dir, lib_dir=lib_dir, verbose=verbose, debug=debug, force=force )
-			cls._instance = Application.__new__( cls, db=db, config_dir=config_dir, lib_dir=lib_dir, verbose=verbose, debug=debug, force=force, pretend=pretend )
-			#cls._instance = cls.__new__( cls, args=None, kwargs={ 'db': db, 'config_dir': config_dir, 'lib_dir': lib_dir, 'verbose': verbose, 'debug': debug, 'force': force} )
-			gc.app = cls._instance
+			cls._instance = Application.__new__( cls, *args, **kwargs )
 		return cls._instance
 
 	# constructor
 	def __init__( self ):
-		raise RuntimeError( 'instance can only be created by using instance() method' )
+		raise RuntimeError( 'instance can only be created by using Application.instance( cls ) method' )
 
 	@classmethod
 	def __new__( cls, *args, **kwargs ):
 		instance = super( Application, cls ).__new__( cls )
-		instance.__setup__(
-			db=kwargs.get( 'db' ),
-			config_dir=kwargs.get( 'config_dir' ),
-			lib_dir=kwargs.get( 'lib_dir' ),
-			verbose=kwargs.get( 'verbose' ),
-			debug=kwargs.get( 'debug' ),
-			force=kwargs.get( 'force' ),
-			pretend=kwargs.get( 'pretend' )
-		)
+		instance.__setup__( **kwargs )
 		return instance
 
 	# 'None' as default value means value has not been provided from the outside (via command line switch)
-	def __setup__( self, db: ActivityDb = None, config_dir: Path = None, lib_dir: Path = None, verbose: bool = None, debug: bool = None, force: bool = None, pretend: bool = None ):
+	def __setup__( self, ctx = None, config_dir: Path = None, lib_dir: Path = None, verbose: bool = None, debug: bool = None, force: bool = None, pretend: bool = None ):
+		# save application context
+		self._ctx = ctx
 
 		# ---- configuration directory initialization/handling -----
 		# if config dir is provided, it needs to exist
@@ -133,7 +126,10 @@ class Application( object ):
 
 		# ---- open db from config_dir -------------------------------------------
 		cache = self._cfg['db']['cache'].get()
-		self._db = db if db else ActivityDb( path=self.db_file, cache=cache )
+		self._db_dir = Path( self._lib_dir, DB_DIRNAME )
+		self._db = ActivityDb( path=self._db_dir, cache=cache )
+		self._db_file = self._db.db_path
+		self._meta_file = self._db.meta_path
 		gc.db = self._db
 
 		# ---- announce fields to global config
@@ -145,7 +141,8 @@ class Application( object ):
 		# log some internal information
 		log.debug( f'using configuration directory at {self._config_dir}' )
 		log.debug( f'using library directory at {self._lib_dir}' )
-		log.debug( f'using database from {self.db_file}' )
+		log.debug( f'using database file at {self.db_file}' )
+		log.debug( f'using database metadata at {self._meta_file}' )
 
 		# ---- register cleanup functions ----
 		register_atexit( self._db.db.close )

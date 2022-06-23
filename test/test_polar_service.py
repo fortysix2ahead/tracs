@@ -2,7 +2,6 @@ from os import getenv
 from typing import List
 
 from pytest import mark
-from pytest import skip
 
 from tracs.activity import Activity
 from tracs.config import GlobalConfig as gc
@@ -11,8 +10,6 @@ from tracs.plugins.polar import Polar
 from tracs.plugins.polar import PolarActivity
 from .conftest import ENABLE_LIVE_TESTS
 
-from .fixtures import db_empty_inmemory
-from .fixtures import var_dir
 from .polar_server import TEST_BASE_URL
 
 def test_constructor():

@@ -11,13 +11,13 @@ from tracs.plugins.strava import StravaActivity
 
 @mark.db( template='strava' )
 def test_init_from_db( json ):
-	sa = StravaActivity( json['activities']['1'], 1 )
+	sa = StravaActivity( json['_default']['1'], 1 )
 	assert sa.groups == { "parent": 1 }
 	assert sa.parent_id == 1
 	assert sa.parent_uid == 'group:1'
 	assert sa.parent_ref == ActivityRef( 1, 'group:1' )
 
-	sa = StravaActivity( json['activities']['2'], 2 )
+	sa = StravaActivity( json['_default']['2'], 2 )
 
 	assert sa.id == 2
 	assert sa.uid == 'strava:20000000'

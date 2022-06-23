@@ -41,7 +41,7 @@ class Application( object ):
 	@classmethod
 	def instance( cls, *args, **kwargs ):
 		if cls._instance is None:
-			cls._instance = Application.__new__( cls, args, kwargs )
+			cls._instance = Application.__new__( cls, *args, **kwargs )
 		return cls._instance
 
 	# constructor
@@ -126,7 +126,7 @@ class Application( object ):
 
 		# ---- open db from config_dir -------------------------------------------
 		cache = self._cfg['db']['cache'].get()
-		self._db_dir = self._lib_dir
+		self._db_dir = Path( self._lib_dir, DB_DIRNAME )
 		self._db = ActivityDb( path=self._db_dir, cache=cache )
 		self._db_file = self._db.db_path
 		self._meta_file = self._db.meta_path
@@ -141,7 +141,8 @@ class Application( object ):
 		# log some internal information
 		log.debug( f'using configuration directory at {self._config_dir}' )
 		log.debug( f'using library directory at {self._lib_dir}' )
-		log.debug( f'using database from {self.db_file}' )
+		log.debug( f'using database file at {self.db_file}' )
+		log.debug( f'using database metadata at {self._meta_file}' )
 
 		# ---- register cleanup functions ----
 		register_atexit( self._db.db.close )

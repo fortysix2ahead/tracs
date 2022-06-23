@@ -36,7 +36,7 @@ class DataClassStorage( Storage ):
 		super().__init__()
 
 		self._initial_read = True
-		self._initial_write = True # not used ...
+		self._memory_changed = False
 
 		self._path = path
 		self._access_mode = 'r' if use_memory_storage else access_mode
@@ -105,6 +105,7 @@ class DataClassStorage( Storage ):
 
 		# save data to memory and increase cache counter
 		self._memory.write( data )
+		self._memory_changed = True
 
 		# persist data if not in memory mode and cache hits size
 		if not self._use_memory_storage and self._cache_hits >= self._cache_size:
@@ -134,7 +135,10 @@ class DataClassStorage( Storage ):
 	def flush( self ) -> None:
 		data = self._memory.read()
 		if self._path and data:
-			self._path.write_bytes( dump_as_json( data, option=self.orjson_options ) )
+			if self._memory_changed:
+				data = self.write_data( data ) # do final conversion to dict as memory might contain unconverted data
+				self._path.write_bytes( dump_as_json( data, option=self.orjson_options ) )
+				self._memory_changed = False # keep track of 'persist necessary' status
 		else:
 			log.debug( 'db storage flush called without path and/or data' )
 

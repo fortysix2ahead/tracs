@@ -1,12 +1,12 @@
 
-from sys import stderr
+from datetime import datetime
 from logging import DEBUG
 from logging import INFO
 from logging import Formatter
 from logging import StreamHandler
 from logging import getLogger
 from pathlib import Path
-from datetime import datetime
+from sys import stderr
 
 from click import argument
 from click import echo
@@ -81,7 +81,11 @@ def cli( ctx, configuration, debug, force, library, verbose, pretend ):
 		pretend=pretend
 	)
 
-	migrate_application( None ) # check if migration is necessary
+	ctx.obj.instance = gc.app
+	ctx.obj.db = gc.app.db
+	ctx.obj.meta = gc.app.db.meta
+
+	migrate_application( ctx.obj, None ) # check if migration is necessary
 
 @cli.command( hidden=True )
 @option( '-b', '--backup', is_flag=True, required=False, help='creates a backup of the internal database' )
@@ -89,14 +93,15 @@ def cli( ctx, configuration, debug, force, library, verbose, pretend ):
 @option( '-m', '--migrate', is_flag=False, required=False, type=str, help='performs a database migration', metavar='FUNCTION' )
 @option( '-r', '--restore', is_flag=True, required=False, help='restores the last version of the database from the backup' )
 @option( '-s', '--status', is_flag=True, required=False, help='prints some db status information' )
-def db( backup: bool, fields: bool, migrate: str, restore: bool, status: bool ):
+@pass_context
+def db( ctx, backup: bool, fields: bool, migrate: str, restore: bool, status: bool ):
 	app = Application.instance()
 	if backup:
 		backup_db( app.db_file, app.backup_dir )
 	elif fields:
 		show_fields()
 	elif migrate:
-		migrate_application( function_name=migrate )
+		migrate_application( ctx, function_name=migrate )
 	elif restore:
 		restore_db( app.db.db, app.db_file, app.backup_dir, app.cfg['force'].get() )
 	elif status:

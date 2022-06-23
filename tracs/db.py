@@ -67,16 +67,21 @@ class ActivityDb:
 		self._meta_name = meta_name if meta_name else META_NAME
 
 		with resource_path( __package__, '__init__.py' ) as pkg_path:
-			self._meta_path = Path( pkg_path.parent, 'db', self._meta_name )
+			self._meta_resource_path = Path( pkg_path.parent, 'db', self._meta_name )
+			self._db_resource_path = Path( pkg_path.parent, 'db', self._db_name )
 			if path:
 				self._db_path = Path( path, self._db_name )
-				# alter meta path if meta_name has been provided -> for testing purposes
-				if self._meta_name != META_NAME:
-					self._meta_path = Path( path, self._meta_name )
+				self._meta_path = Path( path, self._meta_name )
+				path.mkdir( parents=True, exist_ok=True )
+				if not self._meta_path.exists():
+					copy( self._meta_resource_path, self._meta_path )
+				if not self._db_path.exists():
+					copy( self._db_resource_path, self._db_path )
 			else:
-				self._db_path = Path( pkg_path.parent, 'db', self._db_name )
+				self._db_path = self._db_resource_path
+				self._meta_path = self._meta_resource_path
 
-			log.debug( f'Using {self._db_path} as database file and {self._meta_path} as source for database metadata' )
+			log.debug( f'Using {self._db_path} as database file and {self._meta_path} as database metadata' )
 
 		# init meta db
 		self._meta: TinyDB = TinyDB( storage=DataClassStorage, path=self._meta_path, use_memory_storage=True, cache=cache, passthrough=True )

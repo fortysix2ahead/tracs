@@ -1,11 +1,6 @@
 {
   "_default": {
     "1": {
-      "version": 12
-    }
-  },
-  "activities": {
-    "1": {
       "name": "Unknown Location",
       "classifier": "strava",
       "groups": {

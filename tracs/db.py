@@ -31,7 +31,6 @@ from .config import CLASSIFIER
 from .config import KEY_GROUPS
 from .config import console
 from .config import APPNAME
-from .config import TABLE_NAME_ACTIVITIES
 from .config import TABLE_NAME_DEFAULT
 from .config import KEY_SERVICE
 from .config import KEY_VERSION
@@ -86,9 +85,8 @@ class ActivityDb:
 
 		# init activities db
 		pretend = pretend if path else True # auto-inmemory mode when path is not provided
-		self._db: TinyDB = TinyDB( storage=DataClassStorage, path=self._db_path, use_memory_storage=pretend, cache=cache, passthrough=passthrough )
+		self._db: TinyDB = TinyDB( storage=DataClassStorage, path=self._db_path, use_memory_storage=pretend, cache=cache, passthrough=passthrough, document_factory=document_cls )
 		self._storage: DataClassStorage = cast( DataClassStorage, self._db.storage )
-		self._storage.document_factory = document_factory
 		self._activities = self.db.table( TABLE_NAME_DEFAULT )
 		self._activities.document_class = document_factory
 

@@ -86,7 +86,10 @@ class DataClassStorage( Storage ):
 				table_data[item_id] = replacement
 
 	def read_item( self, item_id: str, item_data: Any ) -> Optional:
-		item_cls = self._document_factory( item_data, item_id ) if isfunction( self._document_factory ) else self._document_factory
+		if isfunction( self._document_factory ):
+			item_cls = self._document_factory( item_data, item_id )
+		else:
+			item_cls = self._document_factory
 		return item_cls( item_data, int( item_id ) ) if item_cls else None
 
 	def read_data_from_path( self ) -> Any:

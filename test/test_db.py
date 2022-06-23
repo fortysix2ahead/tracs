@@ -1,22 +1,15 @@
 
 from datetime import datetime
-from typing import cast
 
 from pytest import mark
-from tinydb import TinyDB
-from tinydb.middlewares import CachingMiddleware
-from tinydb.storages import MemoryStorage
 from tinydb.table import Document
 from tinydb.table import Table
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.db import ActivityDb
-from tracs.db_middleware import DataClassMiddleware
-from tracs.db_storage import OrJSONStorage
+from tracs.db_storage import DataClassStorage
 from tracs.plugins.groups import ActivityGroup
-from tracs.db import create_db
-from tracs.db import DB_VERSION
 from tracs.db import document_factory
 
 from tracs.plugins.polar import PolarActivity
@@ -26,51 +19,27 @@ from tracs.plugins.waze import WazeActivity
 from .helpers import ids
 from .helpers import get_db_path
 
-# noinspection PyUnresolvedReferences
-def test_create_db():
-	tdb = TinyDB( storage=MemoryStorage )
-	db = create_db( tdb )
-	assert db is tdb
-
-	# creation without path
-
-	tdb = create_db( path=None )
-	assert type( tdb.storage ) is DataClassMiddleware
-	assert type( cast( DataClassMiddleware, tdb.storage ).storage ) is MemoryStorage
-
-	# creation with path
-	tdb = create_db( path=get_db_path( 'empty', True ), pretend=True, cache=False )
-	assert type( tdb.storage ) is DataClassMiddleware
-	assert type( tdb.storage.storage ) is OrJSONStorage
-	assert tdb.storage.storage.use_memory_storage is True
-
-	# cache is on
-	tdb = create_db( path=get_db_path( 'empty', True ), pretend=True, cache=True )
-	assert type( tdb.storage ) is CachingMiddleware
-	assert type( tdb.storage.storage ) is DataClassMiddleware
-	assert type( tdb.storage.storage.storage ) is OrJSONStorage
-	assert tdb.storage.storage.storage.use_memory_storage is True
-
-	tdb = create_db( path=get_db_path( 'empty', True ), pretend=False, cache=False )
-	assert type( tdb.storage ) is DataClassMiddleware
-	assert type( tdb.storage.storage ) is OrJSONStorage
-	assert tdb.storage.storage.use_memory_storage is False
-
-	tdb = create_db( path=get_db_path( 'empty', True ), pretend=False, cache=True )
-	assert type( tdb.storage ) is CachingMiddleware
-	assert type( tdb.storage.storage ) is DataClassMiddleware
-	assert type( tdb.storage.storage.storage ) is OrJSONStorage
-	assert tdb.storage.storage.storage.use_memory_storage is False
-
 def test_new_db():
 	db = ActivityDb( path=None )
-	assert type( db.middleware ) is DataClassMiddleware and type( db.storage ) is MemoryStorage
+	assert type( db.storage ) is DataClassStorage
+	assert db.storage._use_memory_storage is True
 
-	db = ActivityDb( path=get_db_path( 'empty', True ), pretend=True, cache=True )
-	assert type( db.middleware ) is DataClassMiddleware and type( db.storage ) is OrJSONStorage
+	db = ActivityDb( path=None, pretend=True, cache=False )
+	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
 
-	db = ActivityDb( path=get_db_path( 'empty', True ), pretend=False, cache=False )
-	assert type( db.middleware ) is DataClassMiddleware and type( db.storage ) is OrJSONStorage
+	db = ActivityDb( path=None, pretend=False, cache=True )
+	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
+
+	db = ActivityDb( path=None, pretend=True, cache=True )
+	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
+
+	parent_path, db_path, meta_path = get_db_path( 'empty', False )
+	db = ActivityDb( path=parent_path, pretend=True, cache=False )
+	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
+
+	parent_path, db_path, meta_path = get_db_path( 'empty', True )
+	db = ActivityDb( path=parent_path, pretend=False, cache=True )
+	assert db.storage._use_memory_storage is False and db.storage._use_cache is True
 
 @mark.db( template='default', inmemory=True )
 def test_open_db( db ):
@@ -78,7 +47,7 @@ def test_open_db( db ):
 	assert isinstance( db.activities, Table )
 
 	assert len( db.default.all() ) == 1
-	assert db.default.all()[0]['version'] == DB_VERSION
+	assert db.default.all()[0]['version'] > 0
 
 	assert db.default.document_class is Document
 	assert db.activities.document_class is document_factory

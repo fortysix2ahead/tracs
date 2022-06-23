@@ -12,18 +12,16 @@ from tinydb.operations import set
 from tinydb.middlewares import CachingMiddleware
 from tinydb import JSONStorage
 
+from .config import ApplicationContext
 from .config import GlobalConfig as gc
-from .db import DB_VERSION
 from .plugins.polar import _raw_id as polar_id
 
 log = getLogger( __name__ )
 
-def migrate_application( function_name: str = None ):
+def migrate_application( ctx: ApplicationContext, function_name: str = None ):
 	if not function_name:
-		db_schema = gc.db.default.all()[0].get( 'version' )
-		current_schema = DB_VERSION
-		if db_schema != current_schema:
-			function_name = f'_migrate_{db_schema}_{current_schema}'
+		if ctx.db.schema != ctx.db.default_schema:
+			function_name = f'_migrate_{ctx.db.schema}_{ctx.db.default_schema}'
 		else:
 			return
 

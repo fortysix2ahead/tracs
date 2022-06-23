@@ -102,7 +102,7 @@ class Activity( BaseDocument ):
 			self.parent_uid = f"group:{self.groups['parent']}"
 			self.parent_ref = ActivityRef( self.parent_id, self.parent_uid )
 
-		if len( self.resources ) > 0 and all( lambda r: type( r ) is dict for r in self.resources ):
+		if len( self.resources ) > 0 and all( type( r ) is dict for r in self.resources ):
 			self.resources = [ Resource( **r ) for r in self.resources ]
 
 class MultipartActivity( Activity ):

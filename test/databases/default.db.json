@@ -1,11 +1,7 @@
 {
   "_default": {
     "1": {
-      "version": 12
-    }
-  },
-  "activities": {
-    "1": {
+      "classifier": "group",
       "name": "Unknown Location",
       "type": "xcski",
       "time": "2012-01-07T10:40:56+00:00",
@@ -24,40 +20,23 @@
       }
     },
     "2": {
-      "name": "Unknown Location",
+      "name": "03:23:53;0.0 km",
+      "calories": 2904,
       "classifier": "polar",
-      "groups": {
-        "parent": 1
-      },
-      "metadata": {
-      },
-      "raw": {
-        "listItemId": 1234567890,
-        "isTest": false,
-        "title": "03:23:53;0.0 km",
-        "type": "EXERCISE",
-        "hasTrainingTarget": false,
-        "timestamp": 1325932851000,
-        "start": 1325932851,
-        "end": 1325945084,
-        "allDay": false,
-        "iconUrl": "https://platform.cdn.polar.com/ecosystem/sport/icon/3c1103ccbeee33fa663a1dc8e0fd8a6d-2015-10-20_13_45_48",
-        "url": "/training/analysis/1234567890",
-        "borderColor": "#A9D0F5",
-        "textColor": "#000",
-        "datetime": "2012-01-07T10:40:51.000Z",
-        "eventType": "exercise",
-        "duration": 12233300,
-        "distance": 30000.1,
-        "calories": 2904
-      }
+      "distance": 30000.1,
+      "duration_moving": "01:40:00",
+      "parent_id": 1,
+      "parent_uid": "group:1",
+      "heartrate": 150,
+      "metadata": {},
+      "raw_id": 1234567890,
+      "time": "2012-01-07T10:40:51.000+00:00"
     },
     "3": {
-      "name": "Unknown Location",
+      "name": "Run at Noon",
       "classifier": "strava",
-      "groups": {
-        "parent": 1
-      },
+      "parent_id": 1,
+      "parent_uid": "group:1",
       "resources": [
         {
           "name": null,
@@ -72,29 +51,18 @@
           "status": 100
         }
       ],
-      "metadata": {
-      },
-      "raw": {
-        "id": 12345678,
-        "name": "Run at Noon",
-        "type": "NordicSki",
-        "start_date": "2012-01-07 10:40:56+00:00",
-        "start_date_local": "2012-01-07 11:40:56",
-        "elapsed_time": "3:23:48",
-        "moving_time": 6000,
-        "total_photo_count": 0,
-        "distance": 30000.2,
-        "average_heartrate": 150
-      }
+      "metadata": {},
+      "raw_id": 12345678,
+      "time": "2012-01-07T10:40:56+00:00",
+      "localtime": "2012-01-07T11:40:56+01:00"
     },
     "4": {
       "name": "Unknown Location",
       "classifier": "waze",
-      "groups": {
-        "parent": 1
-      },
+      "parent_id": 1,
+      "parent_uid": "group:1",
       "metadata": {
-        "path": "Takeout 2021-01-01/account_activity_3.csv"
+        "source_path": "Takeout 2021-01-01/account_activity_3.csv"
       },
       "resources": [
         {
@@ -104,10 +72,8 @@
           "status": 100
         }
       ],
-      "raw": {
-        "id": 20210101010101,
-        "time": "2021-01-11T12:00:00+00:00"
-      }
+      "raw_id": 20210101010101,
+      "time": "2021-01-11T12:00:00+00:00"
     },
     "11": {
       "name": "Afternoon Run in Berlin",
@@ -227,7 +193,7 @@
       "raw_id": 20200101010101,
       "classifier": "waze",
       "metadata": {
-        "path": "Takeout 2020-01-01/account_activity_3.csv"
+        "source_path": "Takeout 2020-01-01/account_activity_3.csv"
       },
       "resources": [
         {
@@ -237,10 +203,8 @@
           "status": 100
         }
       ],
-      "raw": {
-        "id": 20200101010101,
-        "time": "2020-01-11T12:00:00+00:00"
-      }
+      "time": "2020-01-11T12:00:00+00:00",
+      "localtime": "2020-01-11T13:00:00+01:00"
     },
     "40": {
       "name": "Some Hike",

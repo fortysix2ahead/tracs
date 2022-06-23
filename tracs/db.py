@@ -2,6 +2,7 @@
 from collections import OrderedDict
 from datetime import datetime
 from datetime import timezone
+from importlib.resources import path as resource_path
 from shutil import copy
 from typing import cast
 from typing import Dict
@@ -18,13 +19,10 @@ from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
 from typing import Mapping
 
-from tinydb import Storage
 from tinydb import TinyDB
 from tinydb import Query
-from tinydb.middlewares import CachingMiddleware
 from tinydb.operations import delete
 from tinydb.operations import set
-from tinydb.storages import MemoryStorage
 from tinydb.table import Document
 from tinydb.table import Table
 
@@ -33,12 +31,10 @@ from .config import CLASSIFIER
 from .config import KEY_GROUPS
 from .config import console
 from .config import APPNAME
-from .config import TABLE_NAME_ACTIVITIES
 from .config import TABLE_NAME_DEFAULT
 from .config import KEY_SERVICE
 from .config import KEY_VERSION
-from .db_middleware import DataClassMiddleware
-from .db_storage import OrJSONStorage
+from .db_storage import DataClassStorage
 from .filters import Filter
 from .filters import groups
 from .filters import grouped
@@ -51,29 +47,57 @@ from .queries import is_ungrouped
 
 log = getLogger( __name__ )
 
-DB_VERSION = 12
+META_NAME = 'meta.json'
+DB_NAME = 'db.json'
 
 class ActivityDb:
 
-	def __init__( self, db: TinyDB=None, path: Path=None, pretend: bool=False, cache: bool=False ):
+	def __init__( self, path: Path=None, db_name: str = None, meta_name: str = None, pretend: bool=False, cache: bool=False, passthrough=False ):
+		"""
+		Creates an activity db, consisting of two tiny db instances (meta + activities).
 
-		# use provided db instead of creating a new one -> mainly for test purposes
-		self._db: TinyDB = create_db( db, path, pretend=pretend, cache=cache )
-		self._path: Path = path # save db path for later use
-		self._storage: Storage = self._db.storage
+		:param path: directory containing dbs
+		:param pretend: pretend mode - allows write operations, but does not persist anything to disk
+		:param cache: enable db caching
+		:param passthrough: plain mode, opens activity db without middleware
+		"""
 
-		# configure default table, only contains db version number
-		self._default = self.db.table( TABLE_NAME_DEFAULT )
-		if not self._default.search( Query().version.exists() ):
-			self._default.insert( { KEY_VERSION: DB_VERSION } )
-		self._default.document_class = Document
+		# names
+		self._db_name = db_name if db_name else DB_NAME
+		self._meta_name = meta_name if meta_name else META_NAME
 
-		# configure activities table
-		self._activities = self.db.table( TABLE_NAME_ACTIVITIES )
+		with resource_path( __package__, '__init__.py' ) as pkg_path:
+			self._meta_resource_path = Path( pkg_path.parent, 'db', self._meta_name )
+			self._db_resource_path = Path( pkg_path.parent, 'db', self._db_name )
+			if path:
+				self._db_path = Path( path, self._db_name )
+				self._meta_path = Path( path, self._meta_name )
+				path.mkdir( parents=True, exist_ok=True )
+				if not self._meta_path.exists():
+					copy( self._meta_resource_path, self._meta_path )
+				if not self._db_path.exists():
+					copy( self._db_resource_path, self._db_path )
+			else:
+				self._db_path = self._db_resource_path
+				self._meta_path = self._meta_resource_path
+
+			log.debug( f'Using {self._db_path} as database file and {self._meta_path} as database metadata' )
+
+		# init meta db
+		self._default_meta: TinyDB = TinyDB( storage=DataClassStorage, path=self._meta_resource_path, use_memory_storage=True, cache=cache, passthrough=True )
+		self._meta: TinyDB = TinyDB( storage=DataClassStorage, path=self._meta_path, use_memory_storage=True, cache=cache, passthrough=True )
+		self._schema = self._meta.all()[0][KEY_VERSION]
+		self._default_schema = self._default_meta.all()[0][KEY_VERSION]
+
+		# init activities db
+		pretend = pretend if path else True # auto-inmemory mode when path is not provided
+		self._db: TinyDB = TinyDB( storage=DataClassStorage, path=self._db_path, use_memory_storage=pretend, cache=cache, passthrough=passthrough, document_factory=document_cls )
+		self._storage: DataClassStorage = cast( DataClassStorage, self._db.storage )
+		self._activities = self.db.table( TABLE_NAME_DEFAULT )
 		self._activities.document_class = document_factory
 
-		if self.middleware:
-			self.middleware.transmap[TABLE_NAME_ACTIVITIES] = document_cls
+		# configure transformation map
+		# self._storage.transformation_map[TABLE_NAME_ACTIVITIES] = document_cls
 
 	# ---- DB Properties --------------------------------------------------------
 
@@ -82,29 +106,44 @@ class ActivityDb:
 		return self._db
 
 	@property
+	def default_meta( self ) -> TinyDB:
+		return self._default_meta
+
+	@property
+	def meta( self ) -> TinyDB:
+		return self._meta
+
+	@property
 	def path( self ) -> Path:
-		return self._path
+		return self._db_path.parent
 
 	@property
-	def middleware( self ) -> Optional[DataClassMiddleware]:
-		if type( self._storage ) is CachingMiddleware:
-			return cast( CachingMiddleware, self._storage ).storage
-		elif type( self._storage ) is DataClassMiddleware:
-			return cast( DataClassMiddleware, self._storage )
-		else:
-			return None
+	def db_path( self ) -> Path:
+		return self._db_path
 
 	@property
-	def storage( self ) -> Union[MemoryStorage, OrJSONStorage]:
-		return self.middleware.storage if self.middleware else None
+	def meta_path( self ) -> Path:
+		return self._meta_path
 
 	@property
-	def default( self ) -> Table:
-		return self._default
+	def storage( self ) -> DataClassStorage:
+		return cast( DataClassStorage, self._db.storage )
+
+	@property
+	def default( self ) -> TinyDB:
+		return self.meta
 
 	@property
 	def activities( self ) -> Table:
 		return self._activities
+
+	@property
+	def schema( self ) -> int:
+		return self._schema
+
+	@property
+	def default_schema( self ) -> int:
+		return self._default_schema
 
 	# ---- DB Operations --------------------------------------------------------
 
@@ -180,12 +219,13 @@ class ActivityDb:
 
 	# ----
 
-	def get( self, doc_id: Optional[int] = None, raw_id: Optional[int] = None, service_name: Optional[str] = None ) -> Optional[Activity]:
+	def get( self, doc_id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, service_name: Optional[str] = None ) -> Optional[Activity]:
+		classifier = service_name # todo: for backward compatibility
 		if doc_id and doc_id > 0:
 			return self.activities.get( doc_id=doc_id )
 		elif raw_id and raw_id > 0:
-			if service_name:
-				return self.activities.get( Filter( 'uid', f'{service_name}:{raw_id}' ) )
+			if classifier:
+				return self.activities.get( Filter( 'uid', f'{classifier}:{raw_id}' ) )
 			else:
 				return self.activities.get( Filter( 'raw_id', raw_id ) )
 		else:
@@ -251,22 +291,11 @@ def document_cls( doc: Union[Dict, Document], doc_id: int ) -> Type:
 def document_factory( doc: Union[Dict, Document], doc_id: int ) -> Document:
 	return document_cls( doc, doc_id )( doc, doc_id )
 
-def create_db( db: TinyDB = None, path: Path = None, pretend: bool = False, cache: bool = False ) -> TinyDB:
-	if db is not None:
-		log.debug( 'create db: using provided database, ignoring arguments' )
-		return db
+def create_metadb( path: Path = None, use_memory_storage: bool = False, cache: bool = False ) -> TinyDB:
+	return TinyDB( storage=DataClassStorage, path=path, use_memory_storage=use_memory_storage, cache=cache, passthrough=True )
 
-	use_memory_storage = pretend # pretend results in inmemory db created
-
-	if path:
-		if cache:
-			db = TinyDB( storage=CachingMiddleware( DataClassMiddleware( OrJSONStorage ) ), path=path, use_memory_storage=use_memory_storage, cache=cache )
-		else:
-			db = TinyDB( storage=DataClassMiddleware( OrJSONStorage ), path=path, use_memory_storage=use_memory_storage, cache=cache )
-	else:
-		db = TinyDB( storage=DataClassMiddleware( MemoryStorage ) ) # if path is not provided, memory storage is implicit
-
-	return db
+def create_db( path: Path = None, use_memory_storage: bool = False, cache: bool = False, passthrough = False ) -> TinyDB:
+	return TinyDB( storage=DataClassStorage, path=path, use_memory_storage=use_memory_storage, cache=cache, passthrough=passthrough )
 
 # ---- DB Operations ----
 

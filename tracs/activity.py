@@ -81,7 +81,6 @@ class Activity( BaseDocument ):
 	heartrate_min: float = field( init=True, default=None ) #
 	calories: float = field( init=True, default=None ) #
 
-	groups: Dict = field( init=True, default={}, metadata={ PROTECTED: True } ) # todo: for backward compatibility
 	metadata: Dict = field( init=True, default={}, metadata={ PROTECTED: True } )
 	resources: List[Resource] = field( init=True, default=[], metadata={ PROTECTED: True } )
 
@@ -95,12 +94,6 @@ class Activity( BaseDocument ):
 
 	def __attrs_post_init__( self ):
 		super().__attrs_post_init__()
-
-		# todo: for backward compatibility
-		if isinstance( self.groups, dict ) and 'parent' in self.groups:
-			self.parent_id = self.groups['parent']
-			self.parent_uid = f"group:{self.groups['parent']}"
-			self.parent_ref = ActivityRef( self.parent_id, self.parent_uid )
 
 		if len( self.resources ) > 0 and all( type( r ) is dict for r in self.resources ):
 			self.resources = [ Resource( **r ) for r in self.resources ]

@@ -12,12 +12,9 @@
       "empty_field": "",
       "nonempty_field": "value",
       "null_field": null,
-      "groups": {
-        "ids": [ 2, 3, 4 ],
-        "uids": [ "polar:1234567890", "strava:12345678", "waze:20210101010101" ]
-      },
-      "metadata": {
-      }
+      "group_ids": [ 2, 3, 4 ],
+      "group_uids": [ "polar:1234567890", "strava:12345678", "waze:20210101010101" ],
+      "metadata": {}
     },
     "2": {
       "name": "03:23:53;0.0 km",

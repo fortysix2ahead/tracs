@@ -181,13 +181,13 @@ def test_update( db ):
 	a = db.get( 1 )
 	assert a.name == 'Unknown Location'
 	assert a.type == ActivityTypes.xcski
-	assert a['groups']['ids'] == [2, 3, 4]
-	assert a['groups']['uids'] == [ 'polar:1234567890', 'strava:12345678', 'waze:20210101010101' ]
+	assert a['group_ids'] == [2, 3, 4]
+	assert a['group_uids'] == [ 'polar:1234567890', 'strava:12345678', 'waze:20210101010101' ]
 	assert a['metadata'] == {}
 
 	a.name = 'Known Location'
 	a['additional_field'] = 'additional field value'
-	a['groups']['ids'] = [20, 30, 40]
+	a['group_ids'] = [20, 30, 40]
 
 	del( a['type'] )
 	# del ( a['_groups']['uids'] ) # this break __post_init__
@@ -201,7 +201,7 @@ def test_update( db ):
 	assert a2.name == 'Known Location'
 	assert a2.type is None
 	assert a2['additional_field'] is None
-	assert a2['groups']['ids'] == [20, 30, 40]
+	assert a2['group_ids'] == [20, 30, 40]
 	# assert a2['_groups'].get( 'uids' ) is None
 	assert a2['metadata'] == {}
 

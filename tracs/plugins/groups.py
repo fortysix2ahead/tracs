@@ -32,10 +32,11 @@ def str2groups( v ) -> List:
 @define
 class ActivityGroup( Activity ):
 
-	group_ids: List[int] = field( init=True, default=[], metadata={ PERSIST: False, PERSIST_AS: '_group_ids' } )
-	group_uids: List[str] = field( init=True, default=[], metadata={ PERSIST: False, PERSIST_AS: '_group_uids' } )
+	group: List[Activity] = field( init=True, default=[], metadata={ PERSIST: False, PROTECTED: True } )
+	group_ids: List[int] = field( init=True, default=[], metadata={ PROTECTED: True } )
+	group_uids: List[str] = field( init=True, default=[], metadata={ PROTECTED: True } )
 	group_classifiers: List[str] = field( init=False, default=[], metadata={ PERSIST: False } )
-	group_refs: List[ActivityRef] = field( init=True, default=[], converter=str2groups, metadata={ PERSIST_AS: '_group_refs' } )
+	group_refs: List[ActivityRef] = field( init=True, default=[], converter=str2groups, metadata={ PERSIST: False } ) # not sure if we really need this field
 	classifiers: List[str] = field( init=False, default=[], metadata={ PERSIST: False } )
 
 	def __attrs_post_init__( self ):
@@ -45,13 +46,13 @@ class ActivityGroup( Activity ):
 		self.classifier = 'group'
 		self.uid = f'{self.classifier}:{self.raw_id}'
 
-		if self.groups:
-			if all( isinstance( g, Activity ) for g in self.groups ):
-				self.group_ids = [a.doc_id for a in self.groups]
-				self.group_uids = [a.uid for a in self.groups]
+		if self.group:
+			if all( isinstance( g, Activity ) for g in self.group ):
+				self.group_ids = [a.doc_id for a in self.group]
+				self.group_uids = [a.uid for a in self.group]
 				self.group_classifiers = [uid.split( ':' )[0] for uid in self.group_uids]
 				self.classifiers = sorted( list( set( self.group_classifiers ) ) )
-				self.group_refs = [ActivityRef( id, uid ) for id, uid in zip( self.group_ids, self.group_uids )]
+				# self.group_refs = [ActivityRef( id, uid ) for id, uid in zip( self.group_ids, self.group_uids )]
 
 				derived_atts = {}
 
@@ -66,19 +67,19 @@ class ActivityGroup( Activity ):
 				for key, value in derived_atts.items():
 					setattr( self, key, value )
 
-			elif all( isinstance( g, ActivityRef ) for g in self.groups ):
-				self.group_ids = [g.id for g in self.groups]
-				self.group_uids = [g.uid for g in self.groups]
-				self.group_classifiers = [uid.split( ':' )[0] for uid in self.group_uids]
-				self.classifiers = sorted( list( set( self.group_classifiers ) ) )
-				self.group_refs = [ActivityRef( id, uid ) for id, uid in zip( self.group_ids, self.group_uids )]
+			# elif all( isinstance( g, ActivityRef ) for g in self.groups ):
+			# 	self.group_ids = [g.id for g in self.groups]
+			# 	self.group_uids = [g.uid for g in self.groups]
+			# 	self.group_classifiers = [uid.split( ':' )[0] for uid in self.group_uids]
+			# 	self.classifiers = sorted( list( set( self.group_classifiers ) ) )
+			# 	self.group_refs = [ActivityRef( id, uid ) for id, uid in zip( self.group_ids, self.group_uids )]
 
-			elif isinstance( self.groups, dict ):
-				self.group_ids = self.groups.get( 'ids' )
-				self.group_uids = self.groups.get( 'uids' )
-				self.group_classifiers = [uid.split( ':' )[0] for uid in self.group_uids]
-				self.classifiers = sorted( list( set( self.group_classifiers ) ) )
-				self.group_refs = [ActivityRef( id, uid ) for id, uid in zip( self.group_ids, self.group_uids )]
+			# elif isinstance( self.group, list ):
+			# 	self.group_ids = self.group.get( 'ids' )
+			# 	self.group_uids = self.groups.get( 'uids' )
+			# 	self.group_classifiers = [uid.split( ':' )[0] for uid in self.group_uids]
+			# 	self.classifiers = sorted( list( set( self.group_classifiers ) ) )
+			# 	self.group_refs = [ActivityRef( id, uid ) for id, uid in zip( self.group_ids, self.group_uids )]
 
 	def group_classifiers_str( self ) -> str:
 		return ','.join( sorted( list( set( self.group_classifiers ) ) ) )

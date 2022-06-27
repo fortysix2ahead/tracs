@@ -83,6 +83,7 @@ def cli( ctx, configuration, debug, force, library, verbose, pretend ):
 
 	ctx.obj.instance = gc.app
 	ctx.obj.db = gc.app.db
+	ctx.obj.db_file = gc.app.db.db_path
 	ctx.obj.meta = gc.app.db.meta
 
 	migrate_application( ctx.obj, None ) # check if migration is necessary
@@ -101,7 +102,7 @@ def db( ctx, backup: bool, fields: bool, migrate: str, restore: bool, status: bo
 	elif fields:
 		show_fields()
 	elif migrate:
-		migrate_application( ctx, function_name=migrate )
+		migrate_application( ctx.obj, function_name=migrate, force=app.cfg['force'].get() )
 	elif restore:
 		restore_db( app.db.db, app.db_file, app.backup_dir, app.cfg['force'].get() )
 	elif status:

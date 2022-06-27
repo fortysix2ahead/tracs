@@ -7,107 +7,35 @@ from sys import modules
 
 from rich.prompt import Confirm
 from tinydb import TinyDB
-from tinydb.operations import delete
-from tinydb.operations import set
-from tinydb.middlewares import CachingMiddleware
-from tinydb import JSONStorage
 
 from .config import ApplicationContext
-from .config import GlobalConfig as gc
-from .plugins.polar import _raw_id as polar_id
+from .db import document_cls
+from .db_storage import DataClassStorage
+from .utils import timestring
 
 log = getLogger( __name__ )
 
-def migrate_application( ctx: ApplicationContext, function_name: str = None ):
+def migrate_application( ctx: ApplicationContext, function_name: str = None, force: bool = False ):
 	if not function_name:
 		if ctx.db.schema != ctx.db.default_schema:
 			function_name = f'_migrate_{ctx.db.schema}_{ctx.db.default_schema}'
 		else:
 			return
 
+	current_db = ctx.db
+	current_db_file = ctx.db_file
+
+	next_db_file = Path( current_db_file.parent, current_db_file.name.replace( '.json', f'.migration_{timestring()}.json' ) )
+	copy( current_db_file, next_db_file )
+	next_db = TinyDB( storage=DataClassStorage, path=next_db_file, use_memory_storage=True, cache=True, document_factory=document_cls )
+
 	if function_name and function_name in dir( modules[ __name__ ] ):
-		if Confirm.ask( f'migration function {function_name} found, would you like to execute the migration?' ):
-			getattr( modules[ __name__ ], function_name )()
+		if force or Confirm.ask( f'migration function {function_name} found, would you like to execute the migration?' ):
+			getattr( modules[ __name__ ], function_name )( current_db, next_db )
 	else:
 		log.error( f'migration function "{function_name}" not found in module {__name__}' )
 
 	exit( 0 )
 
-def _migrate_11_12():
+def _migrate_11_12( current_db, next_db ):
 	pass
-
-# migrate db structure from 10 to 11
-def _db_11() -> None:
-	v11path = Path( gc.app.db_file.parent, 'db.v11.json' )
-	copy( gc.app.db_file, v11path )
-	v11db = TinyDB( v11path, indent=2, storage=CachingMiddleware( JSONStorage ) )
-	v11db.table( '_default').update( { 'version': 11 }, doc_ids=[1] )
-	activities = v11db.table( 'activities' )
-
-	for doc in activities:
-		if 'service' in doc:
-			activities.update( set( '_classifier', doc['service'] ), doc_ids=[doc.doc_id] )
-			activities.update( delete( 'service' ), doc_ids=[doc.doc_id] )
-			if doc['service'] == 'polar':
-				doc['_resources'] = []
-				for field in ['gpx', 'csv', 'tcx', 'hrv']:
-					if field in doc['_metadata']:
-						status = doc['_metadata'][field]
-						id = polar_id( doc['_raw'] )
-						path = f'{id}.{field}' if not field == 'hrv' else f'{id}.{field}.csv'
-						doc['_resources'].append(
-							{
-								'name': None,
-								'type': field,
-								'path': path,
-								'status': status
-							}
-						)
-						del doc['_metadata'][field]
-				activities.update( set( '_resources', doc['_resources'] ), doc_ids=[doc.doc_id] )
-			elif doc['service'] == 'strava':
-				doc['_resources'] = []
-				for field in ['gpx', 'tcx']:
-					if field in doc['_metadata']:
-						status = doc['_metadata'][field]
-						path = f"{doc['_raw']['id']}.{field}"
-						doc['_resources'].append(
-							{
-								'name': None,
-								'type': field,
-								'path': path,
-								'status': status
-							}
-						)
-						del doc['_metadata'][field]
-				activities.update( set( '_resources', doc['_resources'] ), doc_ids=[doc.doc_id] )
-			elif doc['service'] == 'waze':
-				doc['_resources'] = [{
-					'name': None,
-					'type': 'gpx',
-					'path': f"{doc['_raw']['id']}.gpx",
-					'status': 100
-				}]
-				activities.update( set( '_resources', doc['_resources'] ), doc_ids=[doc.doc_id] )
-				if 'gpx' in doc['_metadata']:
-					del doc['_metadata']['gpx']
-				doc['_metadata']['source_path'] = doc['_raw']['path']
-				del( doc['_raw']['path'] )
-
-		if '_metadata' in doc and 'groups' in doc['_metadata']:
-			if 'parent' in doc['_metadata']['groups']:
-				d = {'parent': doc['_metadata']['groups']['parent']}
-				activities.update( set( '_groups', d ), doc_ids=[doc.doc_id] )
-				del ( doc['_metadata']['groups'] )
-			elif 'ids' in doc['_metadata']['groups']:
-				d = {
-					'ids': doc['_metadata']['groups']['ids'],
-					'uids': doc['_metadata']['groups']['eids'],
-				}
-				activities.update( set( '_groups', d ), doc_ids=[doc.doc_id] )
-				del( doc['_metadata']['groups'] )
-
-		if '_metadata' in doc:
-			activities.update( set( '_metadata', doc['_metadata'] ), doc_ids=[doc.doc_id] )
-
-	v11db.storage.flush()

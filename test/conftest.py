@@ -41,22 +41,13 @@ ENABLE_LIVE_TESTS = 'ENABLE_LIVE_TESTS'
 # noinspection PyUnboundLocalVariable
 @fixture
 def db( request ) -> ActivityDb:
-	# old way
-	writable = marker.args[0] if (marker := request.node.get_closest_marker( 'db_writable' )) else False
-	name = marker.args[0] if (marker := request.node.get_closest_marker('db_name')) else 'db.json'
-	inmemory = marker.args[0] if (marker := request.node.get_closest_marker( 'db_inmemory' )) else False
-	template = marker.args[0] if (marker := request.node.get_closest_marker( 'db_template' )) else None
-	update_gc = False
-	cleanup = False
-
-	# kwargs processing -> this will be the preferred way
 	if marker := request.node.get_closest_marker( 'db' ):
-		template = marker.kwargs.pop( 'template' ) if 'template' in marker.kwargs else template
-		name = marker.kwargs.pop( 'name' ) if 'name' in marker.kwargs else name
-		inmemory = marker.kwargs.pop( 'inmemory' ) if 'inmemory' in marker.kwargs else inmemory
-		writable = marker.kwargs.pop( 'writable' ) if 'writable' in marker.kwargs else writable
-		update_gc = marker.kwargs.pop( 'update_gc' ) if 'update_gc' in marker.kwargs else False
-		cleanup = marker.kwargs.pop( 'cleanup' ) if 'cleanup' in marker.kwargs else True
+		template = marker.kwargs.get( 'template', 'empty' )
+		name = marker.kwargs.pop( 'name', 'db.json' )
+		inmemory = marker.kwargs.pop( 'inmemory', True )
+		writable = marker.kwargs.pop( 'writable', False )
+		update_gc = marker.kwargs.pop( 'update_gc', False )
+		cleanup = marker.kwargs.pop( 'cleanup', False )
 
 	if inmemory:
 		db = get_inmemory_db( db_template=template )

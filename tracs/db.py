@@ -145,15 +145,14 @@ class ActivityDb:
 
 	# ---- DB Operations --------------------------------------------------------
 
-	def insert( self, doc: Mapping ) -> int:
-		if isinstance( doc, Document ):
-			doc_id = self.activities.insert( dict( doc ) )
-			if doc.doc_id == 0:
-				doc.doc_id = doc_id
-		else:
-			doc_id = self.activities.insert( doc )
+	def insert( self, docs: Union[Activity, List[Activity]] ) -> Union[int, List[int]]:
+		docs = [docs] if isinstance( docs, Activity ) else docs
 
-		return doc_id
+		doc_ids = self.activities.insert_multiple( docs )
+		for doc, doc_id in zip( docs, doc_ids ):
+			doc.doc_id = doc_id
+
+		return doc_ids if len( doc_ids ) > 1 else doc_ids[0]
 
 	def update( self, a: Activity ) -> None:
 		self.activities.update( dict( a ), doc_ids=[a.doc_id] )

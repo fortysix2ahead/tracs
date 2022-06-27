@@ -74,11 +74,18 @@ def test_write_to_file( db ):
 
 @mark.db( template='empty', inmemory=True )
 def test_insert( db ):
-	counter = len( db.activities.all() )
-	doc_id = db.insert( { '_raw': {'listItemId': 1212} } )
-	assert len( db.activities.all() ) == counter + 1
-	db.activities.remove( doc_ids=[doc_id] )
-	assert len( db.activities.all() ) == counter
+	number_in_db = len( db.activities.all() )
+	a = Activity( raw_id = 1000 )
+	doc_id = db.insert( a )
+	assert len( db.activities.all() ) == number_in_db + 1
+	assert a.doc_id == doc_id
+
+	number_in_db = len( db.activities.all() )
+	a1 = Activity( raw_id = 1001 )
+	a2 = Activity( raw_id = 1002 )
+	doc_ids = db.insert( [a1, a2] )
+	assert len( db.activities.all() ) == number_in_db + 2
+	assert a1.doc_id == doc_ids[0] and a2.doc_id == doc_ids[1]
 
 @mark.db( template='default', inmemory=True )
 def test_contains( db ):

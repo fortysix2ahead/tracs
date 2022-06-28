@@ -17,6 +17,7 @@ from .config import ApplicationConfig as cfg
 from .config import CLASSIFIER
 from .config import GlobalConfig as gc
 from .config import console
+from .plugins import Registry
 from .utils import fmt
 from .utils import red
 
@@ -196,6 +197,41 @@ def inspect_activities( activities: [Activity], display_table: bool = False ) ->
 					table.add_row( pp( field ), pp( _value ), pp( _service_value ), pp( _base_value ), pp( _raw_value ) )
 
 			console.print( table )
+
+def inspect_registry() -> None:
+	console.print( 'Services:' )
+	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
+	table.add_column( '[blue]name' )
+	table.add_column( '[blue]display name' )
+	table.add_column( '[blue]class' )
+	table.add_column( '[blue]enabled' )
+
+	for key, value in Registry.services.items():
+		table.add_row( value.name, value.display_name, pp( value.__class__ ), pp( value.enabled ) )
+
+	console.print( table )
+
+	console.print( 'Document Classes:' )
+	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
+	table.add_column( '[blue]type' )
+	table.add_column( '[blue]class' )
+
+	for key, value in Registry.document_classes.items():
+		table.add_row( key, pp( f'{value.__module__}.{value.__name__}' ) )
+
+	console.print( table )
+
+	# document handlers
+
+	console.print( 'Document Handlers:' )
+	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
+	table.add_column( '[blue]type' )
+	table.add_column( '[blue]class' )
+
+	for key, value in Registry.document_handlers.items():
+		table.add_row( key, pp( f'{value.__module__}.{value.__name__}' ) )
+
+	console.print( table )
 
 def show_fields():
 	for f in FIELDS: console.print( f )

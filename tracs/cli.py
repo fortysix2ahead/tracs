@@ -17,6 +17,7 @@ from click import Choice
 from click import Path as ClickPath
 from click_shell import shell
 
+from tracs.list import inspect_registry
 from .activity import Activity
 from .application import Application
 from .config import ApplicationConfig as cfg
@@ -207,7 +208,7 @@ def rename( filters ):
 @argument( 'filters', nargs=-1 )
 @pass_context
 def reimport( ctx, filters ):
-	reimport_activities( ctx.obj.db.find( filters ), ctx.obj.db, ctx.obj.force )
+	reimport_activities( ctx.obj.db.find( filters, True, True, True ), ctx.obj.db, ctx.obj.force )
 
 @cli.command( help='export activities' )
 @option( '-f', '--format', 'fmt', required=True, type=Choice( ['csv', 'geojson', 'gpx', 'kml', 'shp'], case_sensitive=False ), metavar='FORMAT' )
@@ -240,10 +241,15 @@ def init():
 	load_plugins()
 
 @cli.command( hidden=True, help='inspects activities' )
+@option( '-r', '--registry', is_flag=True, required=False, help='inspects the internal registry, activity filter will be ignored' )
 @option( '-t', '--table', is_flag=True, required=False, help='displays fields in a table-like manner' )
 @argument( 'filters', nargs=-1 )
-def inspect( filters, table ):
-	inspect_activities( gc.db.find( filters, True, True, True ), display_table=table )
+@pass_context
+def inspect( ctx, filters, table, registry ):
+	if registry:
+		inspect_registry()
+	else:
+		inspect_activities( gc.db.find( filters, True, True, True ), display_table=table )
 
 @cli.command( hidden=True, help='Performs some validation and sanity tasks.' )
 @argument( 'filters', nargs=-1 )

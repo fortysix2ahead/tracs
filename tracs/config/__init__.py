@@ -1,13 +1,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from dataclasses import field
 from importlib import import_module
 from importlib.resources import path as pkg_path
 from pathlib import Path
+from typing import Any
 from typing import Tuple
 
-from attr import define
-from attr import field
 from confuse import Configuration
 from confuse import Subview
 from rich.console import Console
@@ -33,6 +34,7 @@ CLASSIFIER = 'classifier'
 CLASSIFIERS = 'classifiers'
 
 KEY_CLASSIFER = 'classifier'
+KEY_GROUP = 'group'
 KEY_GROUPS = 'groups'
 KEY_LAST_DOWNLOAD = 'last_download'
 KEY_LAST_FETCH = 'last_fetch'
@@ -51,20 +53,44 @@ NAMESPACE_SERVICES = f'{NAMESPACE_BASE}.services'
 
 # application context
 
-@define
+@dataclass
 class ApplicationContext:
 
-	instance = field( init=True, default=None )
+	instance: Any = field( default=None )
 
-	config = field( init=True, default=None )
-	state = field( init=True, default=None )
+	config: Configuration = field( default=None )
+	#config_default: Configuration = field( default=None )
+	#config_user: Configuration = field( default=None )
 
-	db = field( init=True, default=None )
-	db_dir = field( init=True, default=None )
-	db_file = field( init=True, default=None )
-	meta = field( init=True, default=None )
+	state: Configuration = field( default=None )
+	#state_default: Configuration = field( default=None )
+	#state_user: Configuration = field( default=None )
 
-	lib_dir = field( init=True, default=None )
+	db: Any = field( default=None )
+	db_dir: Path = field( default=None )
+	db_file: Path = field( default=None )
+
+	meta: Any = field( default=None )
+
+	lib_dir: Path = field( default=None )
+
+	force: bool = field( default=False )
+	verbose: bool = field( default=False )
+	debug: bool = field( default=False )
+	pretend: bool = field( default=False )
+
+	console: Console = field( default=Console() )
+
+	def __post_init__( self ):
+		# read internal config
+		self.config = Configuration( APPNAME, __name__, read=False )
+		with pkg_path( self.__module__, CONFIG_FILENAME ) as p:
+			self.config.set_file( p )
+
+		# read internal state
+		self.state = Configuration( f'{APPNAME}.state', __name__, read=False )
+		with pkg_path( self.__module__, STATE_FILENAME ) as p:
+			self.state.set_file( p )
 
 # configuration
 

@@ -16,6 +16,7 @@ from typing import Mapping
 from confuse import Configuration
 
 from .config import ApplicationConfig as cfg
+from .config import ApplicationContext
 from .config import ApplicationState as state
 from .config import APPNAME
 from .config import BACKUP_DIRNAME
@@ -55,7 +56,7 @@ class Application( object ):
 		return instance
 
 	# 'None' as default value means value has not been provided from the outside (via command line switch)
-	def __setup__( self, ctx = None, config_dir: Path = None, lib_dir: Path = None, verbose: bool = None, debug: bool = None, force: bool = None, pretend: bool = None ):
+	def __setup__( self, ctx: ApplicationContext = None, config_dir: Path = None, lib_dir: Path = None, verbose: bool = None, debug: bool = None, force: bool = None, pretend: bool = None ):
 		# save application context
 		self._ctx = ctx
 
@@ -83,17 +84,22 @@ class Application( object ):
 		# load configuration + state from user location if it exists
 		if self.cfg_file.exists():
 			self._cfg.set_file( self.cfg_file )
+			ctx.config.set_file( self.cfg_file )
 
 		if self.state_file.exists():
 			self._state.set_file( self.state_file )
+			ctx.state.set_file( self.state_file )
 
-		# ---- store provided parameters in internal configuration ---------------
+		# ---- evaluate provided parameters (configuration/command line) ------------
+		ctx.force = force if force is not None else ctx.config['force'].get()
+
+		# todo: remove when application context support is fully implemented
+		if force is not None:
+			self._cfg['force'] = force
 		if debug is not None:
 			self._cfg['debug'] = debug
 		if verbose is not None:
 			self._cfg['verbose'] = verbose
-		if force is not None:
-			self._cfg['force'] = force
 		if pretend is not None:
 			self._cfg['pretend'] = pretend
 

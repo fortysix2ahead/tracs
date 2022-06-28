@@ -105,6 +105,14 @@ def test_init( json ):
 	assert a.heartrate == 150
 	assert a.duration_moving == time( 1, 40, 0 )
 
+@mark.db( template='default' )
+def test_init_from( json ):
+	src = PolarActivity( json['_default']['2'], 2 )
+	target = PolarActivity( doc_id = 3 )
+	target.init_from( src )
+
+	assert target.name == src.name
+	assert target.doc_id != src.doc_id
 
 def test_asdict():
 	a = Activity()

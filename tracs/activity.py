@@ -98,6 +98,11 @@ class Activity( BaseDocument ):
 		if len( self.resources ) > 0 and all( type( r ) is dict for r in self.resources ):
 			self.resources = [ Resource( **r ) for r in self.resources ]
 
+	def init_from( self, other: Activity ):
+		for attr in self.__class__.__attrs_attrs__:
+			if not attr.metadata.get( PROTECTED, False ):
+				self.__setattr__( attr.name, other.__getattribute__( attr.name ) )
+
 class MultipartActivity( Activity ):
 
 	parts: List[Activity] = field( init=True, default=[], metadata={ 'persist_as': '_parts' } )

@@ -62,6 +62,7 @@ log = getLogger( __name__ )
 @option( '-p', '--pretend', is_flag=True, default=None, required=False, help='pretends to work, only simulates everything and does not persist any changes' )
 @pass_context
 def cli( ctx, configuration, debug, force, library, verbose, pretend ):
+	# create application context object
 	ctx.obj = ApplicationContext()
 
 	_init_logging( debug )
@@ -73,6 +74,7 @@ def cli( ctx, configuration, debug, force, library, verbose, pretend ):
 	log.debug( f'triggered CLI with flags debug={debug}, verbose={verbose}, force={force}, pretend={pretend}' )
 
 	gc.app = Application.instance(
+		ctx=ctx.obj,
 		config_dir=Path( configuration ) if configuration else None,
 		lib_dir=Path( library ) if library else None,
 		verbose=verbose,
@@ -81,6 +83,7 @@ def cli( ctx, configuration, debug, force, library, verbose, pretend ):
 		pretend=pretend
 	)
 
+	# todo: move this init to application module
 	ctx.obj.instance = gc.app
 	ctx.obj.db = gc.app.db
 	ctx.obj.db_file = gc.app.db.db_path
@@ -202,10 +205,9 @@ def rename( filters ):
 
 @cli.command( help='reimports activities' )
 @argument( 'filters', nargs=-1 )
-def reimport( filters ):
-	_db = Application.instance().db
-	_force = Application.instance().cfg['force'].get( False )
-	reimport_activities( _db.find( filters ), _db, _force )
+@pass_context
+def reimport( ctx, filters ):
+	reimport_activities( ctx.obj.db.find( filters ), ctx.obj.db, ctx.obj.force )
 
 @cli.command( help='export activities' )
 @option( '-f', '--format', 'fmt', required=True, type=Choice( ['csv', 'geojson', 'gpx', 'kml', 'shp'], case_sensitive=False ), metavar='FORMAT' )

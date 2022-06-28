@@ -18,7 +18,6 @@ from typing import Union
 
 from ..base import Service
 from ..config import KEY_CLASSIFER
-from ..config import plugin_config_state
 
 log = getLogger( __name__ )
 NS_PLUGINS = __name__
@@ -28,6 +27,7 @@ class Registry:
 	accessors: Dict[str or Tuple[str, str], Callable ] = {}
 	classifier: str = KEY_CLASSIFER
 	document_classes: Dict[str, Type] = {}
+	document_handlers: Dict[str, Type] = {}
 	downloaders = {}
 	fetchers = {}
 	services: Dict[str, Service] = {}
@@ -269,6 +269,18 @@ def document( *args, **kwargs ):
 		return args[0]
 	else:
 		raise RuntimeError( 'only classes can be used with the @document decorator' )
+
+def handler( *args, **kwargs ):
+	def handler_class( cls ):
+		if isclass( cls ):
+			Registry.document_handlers[kwargs['type']] = cls
+			log.debug( f"registered handler class {cls} for type {kwargs['type']}" )
+			return cls
+		else:
+			raise RuntimeError( 'only classes can be decorated with the @handler decorator' )
+
+	if len( args ) == 0 and 'type' in kwargs:
+		return handler_class
 
 def fetch( fn ):
 	return Registry.register_function( _spec( fn ), fn, Registry.fetchers )

@@ -168,6 +168,8 @@ def serialize( value ) -> Optional[str]:
 		return value
 
 def colored_diff( left: str, right: str ) -> Tuple[str, str]:
+	left, right = '' if left is None else left, '' if right is None else right
+
 	def rred( _s: str ) -> str:
 		return f'[red]{_s}[/red]'
 

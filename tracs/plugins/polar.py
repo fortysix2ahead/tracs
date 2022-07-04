@@ -143,8 +143,8 @@ class Polar( Service, Plugin ):
 
 	def path_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:
 		path = super().path_for( a, ext )
-		if a.is_multipart:
-			path = Path( super().path_for( a ), f'{id}.{ext}.zip' ) if ext in ['gpx', 'tcx', 'hrv'] else None
+		#if a.is_multipart:
+		#	path = Path( super().path_for( a ), f'{id}.{ext}.zip' ) if ext in ['gpx', 'tcx', 'hrv'] else None
 
 		return path
 

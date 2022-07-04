@@ -32,12 +32,12 @@ from .group import group_activities
 from .group import ungroup_activities
 from .group import part_activities
 from .group import unpart_activities
-from .io import export_csv
-from .io import export_geojson
-from .io import export_gpx
-from .io import export_kml
-from .io import export_shp
-from .io import reimport_activities
+from .inout import export_csv
+from .inout import export_geojson
+from .inout import export_gpx
+from .inout import export_kml
+from .inout import export_shp
+from .inout import reimport_activities
 from .list import inspect_activities
 from .list import list_activities
 from .list import show_fields
@@ -208,7 +208,7 @@ def rename( filters ):
 @argument( 'filters', nargs=-1 )
 @pass_context
 def reimport( ctx, filters ):
-	reimport_activities( ctx.obj.db.find( filters, True, True, True ), ctx.obj.db, ctx.obj.force )
+	reimport_activities( ctx.obj, list( ctx.obj.db.find( filters, True, True, True ) ), db=ctx.obj.db, from_raw=True, force=ctx.obj.force )
 
 @cli.command( help='export activities' )
 @option( '-f', '--format', 'fmt', required=True, type=Choice( ['csv', 'geojson', 'gpx', 'kml', 'shp'], case_sensitive=False ), metavar='FORMAT' )

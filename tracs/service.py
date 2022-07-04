@@ -32,9 +32,12 @@ class Service( AbstractServiceClass ):
 	def __init__( self, **kwargs ):
 		self._name = kwargs.pop( 'name' ) if 'name' in kwargs else None
 		self._display_name = kwargs.pop( 'display_name' ) if 'display_name' in kwargs else None
+		self._base_path = kwargs.pop( 'base_path' ) if 'base_path' in kwargs else None
 		self._cfg = kwargs.pop( 'config' ) if 'config' in kwargs else gc.cfg
 		self._state = kwargs.pop( 'state' ) if 'state' in kwargs else gc.state
 		self._logged_in = False
+
+		log.debug( f'service instance {self._name} created, with base path {self._base_path}' )
 
 	# helpers for setting/getting plugin configuration/state values
 
@@ -69,6 +72,14 @@ class Service( AbstractServiceClass ):
 		return self._logged_in
 
 	@property
+	def base_path( self ) -> Path:
+		return self._base_path
+
+	@base_path.setter
+	def base_path( self, path: Path ) -> None:
+		self._base_path = path
+
+	@property
 	def db_dir( self ) -> Path:
 		return self._cfg['db_dir'].get()
 
@@ -81,9 +92,12 @@ class Service( AbstractServiceClass ):
 		:return: path of the activity in the local file system
 		"""
 		id = str( a.raw_id )
-		path = Path( gc.db_dir, self.name, id[0], id[1], id[2], id )
+		path = Path( self.base_path, id[0], id[1], id[2], id )
 		if ext:
-			path = Path( path, f'{id}.{ext}' )
+			if ext == 'raw':
+				path = Path( path, f'{id}.raw.json' ) # default raw file path
+			else:
+				path = Path( path, f'{id}.{ext}' )
 		return path
 
 	def link_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:

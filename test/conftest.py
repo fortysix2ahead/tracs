@@ -24,6 +24,7 @@ from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
 from .helpers import clean
 from .helpers import get_db_as_json
+from .helpers import get_file_as_json
 from .helpers import get_file_db
 from .helpers import get_inmemory_db
 from .helpers import var_run_path
@@ -69,9 +70,11 @@ def db( request ) -> ActivityDb:
 
 @fixture
 def json( request ) -> Optional[Dict]:
-	kwargs = marker.kwargs if (marker := request.node.get_closest_marker( 'db' )) else {}
-	template = kwargs.get( 'template', 'empty' )
-	return get_db_as_json( template ) if template else None
+	if marker := request.node.get_closest_marker( 'db' ):
+		template = marker.kwargs.get( 'template', 'empty' )
+		return get_db_as_json( template )
+	elif marker := request.node.get_closest_marker( 'file' ):
+		return get_file_as_json( marker.args[0] )
 
 @fixture
 def config_state( request ) -> Optional[Tuple[Dict, Dict]]:

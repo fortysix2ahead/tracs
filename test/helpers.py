@@ -108,6 +108,10 @@ def get_db_as_json( db_name: str ) -> Dict:
 	parent_path, db_path, meta_path = get_db_path( db_name, False )
 	return load_json( open( db_path, 'r', encoding='utf8' ) )
 
+def get_file_as_json( rel_path: str ) -> Dict:
+	json_path = get_file_path( rel_path )
+	return load_json( open( json_path, 'r', encoding='utf8' ) )
+
 def get_file_path( rel_path: str ) -> Path:
 	with path( 'test', '__init__.py' ) as test_path:
 		return Path( test_path.parent, rel_path )

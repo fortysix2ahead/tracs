@@ -1,13 +1,38 @@
 
 from platform import system
 from sys import exit as sysexit
+from typing import Dict
 from typing import Optional
 from typing import TextIO
 
+from rich.pretty import Pretty
 from rich.prompt import Confirm
+from rich.table import Table
 from rich.text import TextType
 
+from tracs.utils import colored_diff
 from .config import console as cs
+
+def diff_table( left: Dict, right: Dict ) -> Table:
+	table = Table( box=None, show_header=True, show_footer=False )
+
+	table.add_column( "Field", justify="left", no_wrap=True )
+	table.add_column( "Left", justify="right", no_wrap=True )
+	table.add_column( "", justify="center", no_wrap=True )
+	table.add_column( "Right", justify="left", no_wrap=True )
+
+	keys = sorted( list( left.keys() | right.keys() ) )
+	show_equals = False
+
+	for k in keys:
+		left_str, right_str = left.get( k ), right.get( k )
+		if left_str != right_str:
+			left_str, right_str = colored_diff( left_str, right_str )
+			table.add_row( f'{k}:', left_str, '<->', right_str )
+		elif show_equals and left == right:
+			table.add_row( k, Pretty( left_str ), '', Pretty( right_str ) )
+
+	return table
 
 class InstantConfirm( Confirm ):
 

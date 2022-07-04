@@ -1,0 +1,22 @@
+{
+	"trainingLoadProInterpretation": "Medium",
+	"trainingLoadProIndex": 3,
+	"isTest": false,
+	"title": "Berlin",
+	"type": "EXERCISE",
+	"hasTrainingTarget": false,
+	"timestamp": 1351121380000,
+	"start": 1351121380,
+	"end": 1351122328,
+	"allDay": false,
+	"iconUrl": "https://platform.cdn.polar.com/ecosystem/sport/icon/20951a7d8b02def8265f5231f57f4ed9-2015-10-20_13_45_40",
+	"url": "/training/analysis/100001",
+	"borderColor": "#A9D0F5",
+	"textColor": "#000",
+	"datetime": "2012-10-24T23:29:40.000Z",
+	"eventType": "exercise",
+	"duration": 0,
+	"distance": 0,
+	"calories": 0,
+	"listItemId": 100001
+}

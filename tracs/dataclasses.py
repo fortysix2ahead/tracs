@@ -136,10 +136,12 @@ def str2time( s: Union[time, str] ) -> time:
 		return None
 
 @define( init=True )
-#class DataClass( Mapping ):
 class DataClass( MutableMapping ):
 
 	doc_id: int = field( init=True, default=0, metadata={ PERSIST: False, PROTECTED: True } )
+
+	def __attrs_post_init__( self ):
+		pass # do nothing here
 
 	# implementation of methods for mutable mapping
 
@@ -239,6 +241,8 @@ class BaseDocument( DataClass ):
 	raw_data: Union[str, bytes] = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # serialized version of raw, can be i.e. str or bytes
 
 	def __attrs_post_init__( self ):
+		super().__attrs_post_init__()
+
 		if self.data:
 			for name, value in self.data.items():
 				# overwrite att if its value is the default

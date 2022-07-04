@@ -53,7 +53,7 @@ def reimport_activities( ctx: Optional[ApplicationContext], activities: List[Act
 		#db.update( a )
 
 def _reimport_group_activity( parent: Activity, children: List[Activity], from_raw ) -> Activity:
-	return ActivityGroup( children=children )
+	return ActivityGroup( group=children )
 
 def _reimport_nongroup_activity( a: Activity, from_raw: bool ) -> Activity:
 	resources = [_find_resource( a, 'raw' )] if from_raw else a.resources

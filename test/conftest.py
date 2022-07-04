@@ -43,7 +43,8 @@ ENABLE_LIVE_TESTS = 'ENABLE_LIVE_TESTS'
 @fixture
 def db( request ) -> ActivityDb:
 	if marker := request.node.get_closest_marker( 'db' ):
-		template = marker.kwargs.get( 'template', 'empty' )
+		template = marker.kwargs.get( 'template' )
+		lib = marker.kwargs.get( 'lib' )
 		name = marker.kwargs.pop( 'name', 'db.json' )
 		inmemory = marker.kwargs.pop( 'inmemory', True )
 		writable = marker.kwargs.pop( 'writable', False )
@@ -51,9 +52,15 @@ def db( request ) -> ActivityDb:
 		cleanup = marker.kwargs.pop( 'cleanup', False )
 
 	if inmemory:
-		db = get_inmemory_db( db_template=template )
+		if lib:
+			db = get_inmemory_db( lib=lib )
+		else:
+			db = get_inmemory_db( template=template )
 	else:
-		db = get_file_db( db_template=template, writable=writable )
+		if path:
+			db = get_file_db( lib=lib, writable=writable )
+		else:
+			db = get_file_db( template=template, writable=writable )
 
 	if update_gc:
 		GlobalConfig.db = db

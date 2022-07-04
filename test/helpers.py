@@ -57,7 +57,7 @@ def get_lib_path( name: str, writable: bool = False ) -> Path:
 			copytree( p, dst_lib )
 			return dst_lib
 
-def get_db_path( template_name: str, writable: bool = False ) -> Tuple[Path, Path, Path]:
+def get_db_path( template_name: str = None, lib_name: str = None, writable: bool = False ) -> Tuple[Path, Path, Path]:
 	"""
 	Creates/returns an existing db and returns a tuple consisting of [parent_path, db_path, meta_path]
 
@@ -65,34 +65,50 @@ def get_db_path( template_name: str, writable: bool = False ) -> Tuple[Path, Pat
 	:param writable: if True copies the template and creates new db in var/run, if False returns template directly
 	:return: Tuple of [parent_path, db_path, meta_path]
 	"""
-	with path( 'test.databases', f'{template_name}.db.json' ) as p:
+	with path( 'test', '__init__.py' ) as p:
+		if template_name:
+			db_path = Path( p.parent, 'databases', f'{template_name}.db.json' )
+			meta_path = Path( p.parent, 'databases', 'meta.json' )
+		elif lib_name:
+			db_path = Path( p.parent, 'libraries', lib_name, 'db.json' )
+			meta_path = Path( p.parent, 'libraries', lib_name, 'meta.json' )
+
 		if not writable:
-			return p.parent, p, Path( p.parent, 'meta.json' )
+			return db_path.parent, db_path, meta_path
 		else:
-			dest_dir = var_run_path()
-			dest_db = Path( dest_dir, f'db.json' )
-			dest_meta = Path( dest_dir, f'meta.json' )
-			copy( p, dest_db )
-			copy( Path( p.parent, 'meta.json' ), dest_meta )
-			return dest_dir, dest_db, dest_meta
+			dest_path = var_run_path()
+			if template_name:
+				dest_db = Path( dest_path, f'db.json' )
+				dest_meta = Path( dest_path, f'meta.json' )
+				copy( db_path, dest_db )
+				copy( meta_path, dest_meta )
+				return dest_path, dest_db, dest_meta
+			elif lib_name:
+				copytree( db_path.parent, dest_path )
+				return dest_path, Path( dest_path, 'db.json' ), Path( dest_path, 'meta.json' )
 
 def get_readonly_db_path( template_name: str ) -> Tuple[Path, Path, Path]:
-	return get_db_path( template_name, False )
+	return get_db_path( template_name=template_name, writable=False )
 
 def get_writable_db_path( template_name: str ) -> Tuple[Path, Path, Path]:
-	return get_db_path( template_name, True )
+	return get_db_path( template_name=template_name, writable=True )
 
-def get_inmemory_db( db_template: str = 'empty' ) -> ActivityDb:
+def get_inmemory_db( template: str = None, lib: str = None ) -> ActivityDb:
 	"""
 	Returns an in-memory db initialized from the provided template db.
 
-	:param db_template: template db or None
+	:param template: template db or None
+	:param lib: optional lib name
 	:return: in-memory db
 	"""
-	parent_path, db_path, meta_path = get_db_path( db_template, False )
+	if lib:
+		parent_path, db_path, meta_path = get_db_path( lib_name=lib, writable=False )
+	else:
+		parent_path, db_path, meta_path = get_db_path( template_name=template, writable=False )
+
 	return ActivityDb( path=parent_path, db_name=db_path.name, pretend=True, cache=False )
 
-def get_file_db( db_template: str = 'empty', writable = False ) -> ActivityDb:
+def get_file_db( template: str = None, lib: str = None, writable = False ) -> ActivityDb:
 	"""
 	Returns a file-based db, based on the provided template.
 
@@ -101,11 +117,15 @@ def get_file_db( db_template: str = 'empty', writable = False ) -> ActivityDb:
 	:param writable: if the db shall be writable or not
 	:return: file-based db
 	"""
-	parent_path, db_path, meta_path = get_db_path( db_template, writable )
+	if lib:
+		parent_path, db_path, meta_path = get_db_path( lib_name=lib, writable=writable )
+	else:
+		parent_path, db_path, meta_path = get_db_path( template_name=template, writable=writable )
+
 	return ActivityDb( path=parent_path, db_name=db_path.name, pretend=not writable, cache=False )
 
 def get_db_as_json( db_name: str ) -> Dict:
-	parent_path, db_path, meta_path = get_db_path( db_name, False )
+	parent_path, db_path, meta_path = get_db_path( db_name, writable=False )
 	return load_json( open( db_path, 'r', encoding='utf8' ) )
 
 def get_file_as_json( rel_path: str ) -> Dict:

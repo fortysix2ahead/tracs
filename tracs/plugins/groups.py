@@ -56,7 +56,7 @@ class ActivityGroup( Activity ):
 
 				derived_atts = {}
 
-				for a in self.groups:
+				for a in self.group:
 					if hasattr( a.__class__, '__attrs_attrs__' ):
 						atts: List[Attribute] = a.__class__.__attrs_attrs__
 						for att in atts:

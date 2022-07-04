@@ -33,21 +33,31 @@
 			"heartrate": 0,
 			"metadata": {},
 			"name": "Berlin",
-			"raw_id": 200001,
+			"raw_id": 200002,
 			"resources": [
         {
           "name": null,
-          "path": "200001.gpx",
+          "path": "200002.gpx",
           "type": "gpx",
           "status": 200
         },
         {
           "name": null,
-          "path": "200001.raw.json",
+          "path": "200002.raw.json",
           "type": "raw",
           "status": 200
         }
 			],
+			"time": "2012-10-24T23:29:40+00:00"
+		},
+		"10": {
+			"classifier": "group",
+			"group_ids": [1, 2],
+			"group_uids": ["polar:100001", "strava:200002"],
+			"metadata": {},
+			"name": "Frankfurt",
+			"raw_id": 10,
+			"resources": [],
 			"time": "2012-10-24T23:29:40+00:00"
 		}
 	}

@@ -25,9 +25,10 @@ def diff_table( left: Dict, right: Dict ) -> Table:
 	show_equals = False
 
 	for k in keys:
-		left_str, right_str = left.get( k ), right.get( k )
+		left_str, right_str = str( left.get( k ) ), str( right.get( k ) )
 		if left_str != right_str:
-			left_str, right_str = colored_diff( left_str, right_str )
+			#left_str, right_str = colored_diff( left_str, right_str )
+			left_str, right_str = colored_diff( left_str[:20], right_str[:20] )
 			table.add_row( f'{k}:', left_str, '<->', right_str )
 		elif show_equals and left == right:
 			table.add_row( k, Pretty( left_str ), '', Pretty( right_str ) )

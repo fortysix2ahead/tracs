@@ -138,8 +138,6 @@ def str2time( s: Union[time, str] ) -> time:
 @define( init=True )
 class DataClass( MutableMapping ):
 
-	doc_id: int = field( init=True, default=0, metadata={ PERSIST: False, PROTECTED: True } )
-
 	def __attrs_post_init__( self ):
 		pass # do nothing here
 
@@ -248,7 +246,7 @@ class BaseDocument( DataClass ):
 				# overwrite att if its value is the default
 				if self.hasattr( name ) and getattr( self, name ) == self._attr_for( name ).default:
 					setattr( self, name, value )
-			self.data = None # delete data after content has been imported
+			# self.data = None # delete data after content has been imported
 
 		self.id = self.doc_id if self.id == self._attr_for( 'id' ).default else self.id
 		self.uid = f'base:{self.id}'

@@ -138,6 +138,10 @@ class Application( object ):
 		self._meta_file = self._db.meta_path
 		gc.db = self._db
 
+		# announce library paths to services
+		for name, service in Registry.services.items():
+			service.base_path = Path( self._db_dir, name )
+
 		# ---- announce fields to global config
 		gc.cfg_dir = self.cfg_dir
 		gc.db_dir = self.db_dir

@@ -24,6 +24,31 @@
         }
 			],
 			"time": "2012-10-24T23:29:40+00:00"
+		},
+		"2": {
+			"calories": 0,
+			"classifier": "strava",
+			"distance": 0,
+			"duration_moving": "00:00:00",
+			"heartrate": 0,
+			"metadata": {},
+			"name": "Berlin",
+			"raw_id": 200001,
+			"resources": [
+        {
+          "name": null,
+          "path": "200001.gpx",
+          "type": "gpx",
+          "status": 200
+        },
+        {
+          "name": null,
+          "path": "200001.raw.json",
+          "type": "raw",
+          "status": 200
+        }
+			],
+			"time": "2012-10-24T23:29:40+00:00"
 		}
 	}
 }

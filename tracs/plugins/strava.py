@@ -178,7 +178,7 @@ class Strava( Service, Plugin ):
 
 	def path_for( self, activity: Activity, ext: Optional[str] = None ) -> Optional[Path]:
 		id = str( activity.raw_id )
-		path = Path( gc.db_dir, self.name, id[0], id[1], id[2], id )
+		path = Path( self.base_path, id[0], id[1], id[2], id )
 		if ext:
 			path = Path( path, f'{id}.{ext}' )
 		return path

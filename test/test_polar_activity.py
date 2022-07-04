@@ -2,14 +2,17 @@
 from datetime import datetime
 from datetime import time
 from datetime import timezone
+from pathlib import Path
+
 from dateutil.tz import tzlocal
 
 from pytest import mark
 
-from tracs.activity import ActivityRef
+from tracs.plugins.handlers import JSONHandler
 from tracs.plugins.polar import PolarActivity
-
 from tracs.activity_types import ActivityTypes
+
+from .helpers import get_file_path
 
 @mark.db( template='polar' )
 def test_init_from_db( json ):

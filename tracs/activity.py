@@ -92,16 +92,23 @@ class Activity( BaseDocument ):
 	is_group: bool = field( init=False, default=False, metadata={ PERSIST: False } ) # todo: for backward compatibility
 	is_multipart: bool = field( init=False, default=False, metadata={ PERSIST: False } ) # todo: for backward compatibility
 
+#	def is_multipart( self ) -> bool:
+#		if self.__class__ is
+
 	def __attrs_post_init__( self ):
 		super().__attrs_post_init__()
 
 		if len( self.resources ) > 0 and all( type( r ) is dict for r in self.resources ):
 			self.resources = [ Resource( **r ) for r in self.resources ]
 
-	def init_from( self, other: Activity ):
-		for attr in self.__class__.__attrs_attrs__:
-			if not attr.metadata.get( PROTECTED, False ):
-				self.__setattr__( attr.name, other.__getattribute__( attr.name ) )
+	def init_from( self, other: Activity = None, raw: Dict = None ):
+		if other:
+			for attr in self.__class__.__attrs_attrs__:
+				if not attr.metadata.get( PROTECTED, False ):
+					self.__setattr__( attr.name, other.__getattribute__( attr.name ) )
+		elif raw:
+			self.raw = raw
+			self.__attrs_post_init__()
 
 class MultipartActivity( Activity ):
 

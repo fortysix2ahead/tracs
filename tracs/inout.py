@@ -88,7 +88,7 @@ def _load_resource( activity: Activity, resource: Resource ) -> Any:
 		log.error( f'no handler found for resource type {resource.type}' )
 
 def _confirm_init( source: Activity, target: Activity, console: Console ) -> bool:
-	table = diff_table( as_dict( source, remove_protected=True ), as_dict( target, remove_protected=True ) )
+	table = diff_table( as_dict( source, remove_protected=True ), as_dict( target, remove_protected=True ), header=('Field', 'Old Value', 'New Value') )
 	if len( table.rows ) > 0:
 		console.print( table )
 		answer = Confirm.ask( f'Would you like to reimport activity {source.uid}?', default=False )

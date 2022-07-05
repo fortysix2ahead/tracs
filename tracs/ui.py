@@ -4,6 +4,7 @@ from sys import exit as sysexit
 from typing import Dict
 from typing import Optional
 from typing import TextIO
+from typing import Tuple
 
 from rich.pretty import Pretty
 from rich.prompt import Confirm
@@ -13,13 +14,17 @@ from rich.text import TextType
 from tracs.utils import colored_diff
 from .config import console as cs
 
-def diff_table( left: Dict, right: Dict ) -> Table:
+def diff_table( left: Dict, right: Dict, header: Tuple[str, str, str] = None ) -> Table:
 	table = Table( box=None, show_header=True, show_footer=False )
 
-	table.add_column( "Field", justify="left", no_wrap=True )
-	table.add_column( "Left", justify="right", no_wrap=True )
-	table.add_column( "", justify="center", no_wrap=True )
-	table.add_column( "Right", justify="left", no_wrap=True )
+	field_header = header[0] if header else 'Field'
+	left_header = header[1] if header else 'Left'
+	right_header = header[2] if header else 'Right'
+
+	table.add_column( field_header, justify="left", no_wrap=True )
+	table.add_column( left_header, justify="right", no_wrap=True )
+	table.add_column( '', justify="center", no_wrap=True )
+	table.add_column( right_header, justify="left", no_wrap=True )
 
 	keys = sorted( list( left.keys() | right.keys() ) )
 	show_equals = False

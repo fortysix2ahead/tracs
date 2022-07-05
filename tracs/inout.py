@@ -20,6 +20,7 @@ from .activity import Activity
 from .activity import Resource
 from .config import ApplicationConfig as cfg
 from .config import ApplicationContext
+from .dataclasses import as_dict
 from .db import ActivityDb
 from .gpx import read_gpx
 from .plugins import Registry
@@ -87,8 +88,13 @@ def _load_resource( activity: Activity, resource: Resource ) -> Any:
 		log.error( f'no handler found for resource type {resource.type}' )
 
 def _confirm_init( source: Activity, target: Activity, console: Console ) -> bool:
-	console.print( diff_table( source.asdict(), target.asdict() ) )
-	answer = Confirm.ask( f'Would you like to reimport activity {source.uid}?', default=False )
+	table = diff_table( as_dict( source, remove_protected=True ), as_dict( target, remove_protected=True ) )
+	if len( table.rows ) > 0:
+		console.print( table )
+		answer = Confirm.ask( f'Would you like to reimport activity {source.uid}?', default=False )
+	else:
+		log.info( f'no difference found during reimport of activity {source.uid}, skipping reimport' )
+		answer = False
 	return answer
 
 def export_csv( activities: Iterable[Activity], output: Path ):

@@ -31,11 +31,7 @@ from ..activity_types import ActivityTypes as Types
 from ..config import ApplicationConfig as cfg
 from ..config import console
 from ..config import APPNAME
-from ..config import KEY_CLASSIFER
-from ..config import KEY_METADATA
 from ..config import KEY_PLUGINS
-from ..config import KEY_RAW
-from ..config import KEY_RESOURCES
 from ..service import Service
 from ..utils import seconds_to_time as stt
 
@@ -120,7 +116,6 @@ class PolarActivity( Activity ):
 
 		if self.raw:
 			self.raw_id = _raw_id( self.raw )
-			self.raw_name = f'{self.raw_id}.json'
 			self.name = self.raw.get( 'title' )
 			self.type = _type_of( self.raw )
 			# self.event_type = self.raw.get( 'eventType' )
@@ -232,10 +227,11 @@ class Polar( Service, Plugin ):
 
 	# noinspection PyMethodMayBeStatic
 	def _prototype( self, json ) -> PolarActivity:
-		raw_id = _raw_id(json)
-		json_str = dump_json(json, option=ORJSON_OPTIONS)
-		json_name = f'{raw_id}.json'
-		resources = [ Resource( type=key, path=f'{raw_id}.{key}.csv' if key == 'hrv' else f'{raw_id}.{key}', status= 100 ) for key in ['csv', 'gpx', 'hrv', 'tcx'] ]
+		raw_id = _raw_id( json )
+		json_str = dump_json( json, option=ORJSON_OPTIONS )
+		json_name = f'{raw_id}.raw.json'
+		resources = [ Resource( type='raw', path=f"{raw_id}.raw.json", status=200 ) ]
+		resources.extend( [ Resource( type=key, path=f'{raw_id}.{key}.csv' if key == 'hrv' else f'{raw_id}.{key}', status= 100 ) for key in ['csv', 'gpx', 'hrv', 'tcx'] ] )
 		return PolarActivity( raw=json, raw_data=json_str, raw_name=json_name, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:

@@ -92,6 +92,7 @@ class Application( object ):
 
 		# ---- evaluate provided parameters (configuration/command line) ------------
 		ctx.force = force if force is not None else ctx.config['force'].get()
+		ctx.pretend = pretend if pretend is not None else ctx.config['pretend'].get()
 
 		# todo: remove when application context support is fully implemented
 		if force is not None:

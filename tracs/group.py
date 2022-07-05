@@ -1,7 +1,12 @@
+
+from dataclasses import dataclass
+from dataclasses import field
+from datetime import datetime
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import cast
 
 from click import echo
 from click import style
@@ -19,6 +24,7 @@ from .activity import Activity
 from .config import KEY_GROUPS as GROUPS
 from .config import GlobalConfig as gc
 from .config import console
+from .plugins.groups import ActivityGroup
 from .queries import has_time
 from .queries import is_group
 from .queries import is_ungrouped
@@ -27,68 +33,61 @@ from .utils import fmtl
 
 log = getLogger( __name__ )
 
+@dataclass
 class Bucket:
 
-	def __init__( self ) -> None:
-		self.groups = []
-		self.ungrouped = []
-		self.new_groups = {}
+	ungrouped: List[ActivityGroup] = field( default_factory=list )
+	groups: Dict[datetime, ActivityGroup] = field( default_factory=dict )
 
-def group_activities( activities: [Activity], force: bool = False, persist_changes: bool = True ) -> List[Tuple[Activity, List[Activity]]]:
+def group_activities( activities: List[Activity], force: bool = False, persist_changes: bool = True ) -> List[Tuple[Activity, List[Activity]]]:
 
-	ungrouped: [Activity] = list( filter( is_ungrouped() & has_time(), activities ) )
-	groups = gc.db.activities.search( is_group() )
+	ungrouped_activities: [Activity] = list( filter( is_ungrouped() & has_time(), activities ) )
+	groups = gc.db.activities.search( is_group() ) # todo: this returns an empty list which is not supposed to be empty
 	changes = []
 
 	log.debug( f'attempting to group {len( activities )} activities' )
 
 	buckets: Dict = {}
 
-	for a in ungrouped:
-		a: Activity = a # make a an activity ;-)
-		day_str = a['time'].strftime( '%y%m%d' )
+	for a in ungrouped_activities:
+		a = cast( Activity, a ) # make a an activity ;-)
+		day_str = a.time.strftime( '%y%m%d' )
 		if not day_str in buckets:
 			buckets[day_str] = Bucket()
 		buckets[day_str].ungrouped.append( a )
 
-	log.debug( f'pre-sorted activities into {len( buckets.keys() )} buckets, based on day of activity' )
+	log.debug( f'pre-sorted ungrouped activities into {len( buckets.keys() )} buckets, based on day of activity' )
 
 	for key, bucket in buckets.items():
 		log.debug( f'analysing bucket {key}' )
 		if len( bucket.ungrouped ) <= 1: # skip days with only one activity -> there's nothing to group
 			continue
 
-		for ua in bucket.ungrouped:
-			target = None
-			# check if we find a matching target group
-			for group in bucket.groups:
-				if _delta( group, ua )[0]:
-					target = group
+		for ungrouped in bucket.ungrouped:
+			target_group = None
+			# check if we find a matching target group for the ungrouped activity ua
+			for grouptime, group in bucket.groups.items():
+				if _delta( group, grouptime, ungrouped )[0]:
+					target_group = group
 					break
 
-			# create new target group when none is found
-			if not target:
-				new_group = Activity( init_fields=True, as_group=[ua] )
-				bucket.groups.append( new_group )
-				bucket.new_groups[new_group] = [ua]
+			# create new target group when nothing is found
+			if not target_group:
+				bucket.groups[ungrouped.time] = [ungrouped]
 			else:
-				bucket.new_groups[target].append( ua )
-				if GROUPS not in ua:
-					ua.groups['parent'] = 0
+				target_group.append( ungrouped )
 
 	# now perform the actual (interactive) grouping
 	for key, bucket in buckets.items():
-		for parent, children in bucket.new_groups.items():
-			if len( children ) > 1:
-				do_grouping = True if force else _ask_for_join( parent, children )
+		for grouptime, group in bucket.groups.items():
+			if len( group ) > 1:
+				if force or _confirm_grouping( group ):
+					new_group = _new_group( group )
+					new_group.name = _ask_for_name( group, force )
+					new_group.type = _ask_for_type( group, force )
+					changes.append( (new_group, group) )
 
-				if do_grouping:
-					_group( parent, children )
-					parent['name'] = _ask_for_name( children, force )
-					parent['type'] = _ask_for_type( children, force )
-					changes.append( (parent, children) )
-
-				log.debug( f'grouped activities {fmtl( children )}' )
+				log.debug( f'grouped activities {fmtl( group )}' )
 
 	if persist_changes:
 		for parent, children in changes:
@@ -99,11 +98,9 @@ def group_activities( activities: [Activity], force: bool = False, persist_chang
 	else:
 		return changes
 
-def _ask_for_join( parent: Activity, children: [Activity] ) -> bool:
-	echo( f"Attempting to group activities {fmtl( children )}" )
-
+def _confirm_grouping( group: List[Activity] ) -> bool:
+	echo( f"Attempting to group activities {fmtl( group )}" )
 	delta = 0.0
-
 	if delta >= 60.0 or delta <= -60.0:
 		delta_str = style( f'{delta} sec', fg='red', bold=True )
 	elif -60.0 < delta < 60.0:
@@ -116,19 +113,19 @@ def _ask_for_join( parent: Activity, children: [Activity] ) -> bool:
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 
 	data = [
-		['Id', *[c['id'] for c in children] ],
-		['Uid', *[c['uid'] for c in children] ],
+		['Id', *[c['id'] for c in group] ],
+		['Uid', *[c['uid'] for c in group] ],
 #		['Raw Id', *[c['raw_id'] for c in children] ],
-		['Service', *[c['service'] for c in children] ],
-		['Name', *[c['name'] for c in children] ],
-		['Type', *[fmt( c['type'] ) for c in children] ],
+		['Service', *[c['service'] for c in group] ],
+		['Name', *[c['name'] for c in group] ],
+		['Type', *[fmt( c['type'] ) for c in group] ],
 #		['URL', source.url, target.url],
-		['Local Time', *[fmt( c['localtime'] ) for c in children]],
-		['UTC Time', *[fmt( c['time'] ) for c in children]],
-		['Datetime Delta', *[f"\u00B1{fmt( c['time'] - children[0]['time'] )}" for c in children]],
+		['Local Time', *[fmt( c['localtime'] ) for c in group]],
+		['UTC Time', *[fmt( c['time'] ) for c in group]],
+		['Datetime Delta', *[f"\u00B1{fmt( c['time'] - group[0]['time'] )}" for c in group]],
 		#		['Datetime', *[f'{fmt_delta(c.utctime, children[0].utctime)}' for c in children]],
-		['Elapsed Time', *[fmt( c['duration'] ) for c in children]],
-		['Distance', *[fmt( c['distance'] ) for c in children]],
+		['Elapsed Time', *[fmt( c['duration'] ) for c in group]],
+		['Distance', *[fmt( c['distance'] ) for c in group]],
 	]
 
 	for d in data:
@@ -244,11 +241,12 @@ def validate_parts( activities: [Activity], force: bool ) -> bool:
 
 # helper functions
 
-def _delta( group: Activity, ungrouped: Activity ) -> Tuple[bool, float, bool]:
-	delta = (ungrouped.utctime - group.utctime).total_seconds()
+# group is not used (yet?)
+def _delta( group: List[Activity], grouptime: datetime, ungrouped: Activity ) -> Tuple[bool, float, bool]:
+	delta = (ungrouped.time - grouptime).total_seconds()
 	# delta 2/3: assume that one activity reports localtime as UTC
-	delta2 = (ungrouped.utctime - group.utctime.replace( tzinfo=tzlocal() ).astimezone( UTC )).total_seconds()
-	delta3 = (ungrouped.utctime.replace( tzinfo=tzlocal() ).astimezone( UTC ) - group.utctime).total_seconds()
+	delta2 = (ungrouped.time - grouptime.replace( tzinfo=tzlocal() ).astimezone( UTC )).total_seconds()
+	delta3 = (ungrouped.time.replace( tzinfo=tzlocal() ).astimezone( UTC ) - grouptime).total_seconds()
 	if -60 < delta < 60:
 		return True, delta, False
 	elif (-60 < delta2 < 60) or (-60 < delta3 < 60):
@@ -257,11 +255,10 @@ def _delta( group: Activity, ungrouped: Activity ) -> Tuple[bool, float, bool]:
 	else:
 		return False, delta, False
 
-def _group( parent: Activity, children: [Activity] ) -> None:
-	parent.groups['ids'] = list( [c.doc_id for c in children] )
-	parent.groups['uids'] = list( [c['uid'] for c in children] )
-	for c in children:
-		c.groups['parent'] = parent.doc_id
+def _new_group( children: [Activity] ) -> ActivityGroup:
+	ids = list( [c.doc_id for c in children] )
+	uids = list( [c['uid'] for c in children] )
+	return ActivityGroup( group_ids=ids, group_uids=uids )
 
 def _ungroup( parent: Activity, children: [Activity] ) -> None:
 	del parent[GROUPS]

@@ -50,17 +50,35 @@ def serialize( inst: Optional[Type], field: Optional[Attribute], value: Any ) ->
 		return asdict( value )
 	return value
 
-# noinspection PyShadowingNames,PyUnusedLocal
-def serialize_filter( field: Attribute, value: Any ) -> bool:
-	return field.metadata.get( PERSIST, True )
+class DictFilter:
+	def __init__( self, remove_persist: bool = True, remove_null: bool = True, remove_data: bool = True, remove_protected: bool = False ):
+		self.remove_persist = remove_persist
+		self.remove_null = remove_null
+		self.remove_data = remove_data
+		self.remove_protected = remove_protected
+
+	# from attrs documentation:
+	# A callable whose return code determines whether an attribute or element is included (True) or dropped (False).
+	# Is called with the attrs.Attribute as the first argument and the value as the second argument.
+	def __call__( self, field: Attribute, value: Any ) -> bool:
+		if self.remove_persist and not field.metadata.get( PERSIST, True ):
+			return False
+		elif self.remove_null and value is None:
+			return False
+		elif self.remove_data and field.name == 'data':
+			return False
+		elif self.remove_protected and field.metadata.get( PROTECTED ):
+			return False
+		else:
+			return True
 
 # noinspection PyShadowingNames,PyUnusedLocal
 def deserialize( inst: type, field: Attribute, value: Any ) -> Any:
 	return value
 
-def as_dict( instance: Any, instance_type: Type = None, attributes: List[Attribute] = None, modify_arg: bool = False, remove_persist_fields: bool = True, remove_null_fields: bool = True, remove_data_field = True ) -> Optional[Dict]:
+def as_dict( instance: Union[DataClass, Dict], instance_type: Type[DataClass] = None, attributes: List[Attribute] = None, modify_arg: bool = False, remove_persist: bool = True, remove_null: bool = True, remove_data = True, remove_protected = False ) -> Optional[Dict]:
 	_serialize = serialize # use serializer from above
-	_filter = serialize_filter if remove_persist_fields else None # apply filter when arg is True
+	_filter = DictFilter( remove_persist, remove_null, remove_data, remove_protected )
 
 	_dict = None
 	if instance and hasattr( instance.__class__, '__attrs_attrs__' ):
@@ -86,12 +104,12 @@ def as_dict( instance: Any, instance_type: Type = None, attributes: List[Attribu
 			# else:
 			#	_dict[f] = _serialize( instance_type, None, v )
 
-	if _dict and remove_null_fields:
+	if _dict and remove_null:
 		for f, v in dict( _dict ).items():
 			if v is None:
 				del _dict[f]
 
-	if _dict and remove_data_field and 'data' in _dict:
+	if _dict and remove_data and 'data' in _dict:
 		del _dict['data']
 
 	return _dict
@@ -178,8 +196,7 @@ class DataClass( MutableMapping ):
 		return asdict( self ).values()
 
 	def asdict( self ) -> Dict:
-		#return { **self.data, **asdict( self, value_serializer=serialize, filter=serialize_filter ) }
-		return asdict( self, value_serializer=serialize, filter=serialize_filter )
+		return asdict( self, value_serializer=serialize, filter=DictFilter() )
 
 	def hasattr( self, o: str ) -> bool:
 		return hasattr( self, o )

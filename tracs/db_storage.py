@@ -130,7 +130,7 @@ class DataClassStorage( Storage ):
 	def write_item( self, item_id: str, item: Any ) -> Optional:
 		item_cls = self._document_factory( item, item_id ) if isfunction( self._document_factory ) else self._document_factory
 		# todo: item_cls might be None and Document needs to be used
-		return as_dict( item, item_cls, modify_arg=True, remove_null_fields=self._remove_null_fields )
+		return as_dict( item, item_cls, modify_arg=True, remove_null=self._remove_null_fields )
 
 	def flush( self ) -> None:
 		data = self._memory.read()

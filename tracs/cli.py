@@ -179,11 +179,12 @@ def show( filters, frmt, raw ):
 @cli.command( help='groups activities' )
 @option( '-r', '--revert', is_flag=True, required=False, help='splits up groups and creates separate activities again' )
 @argument( 'filters', nargs=-1 )
-def group( filters, revert: bool ):
+@pass_context
+def group( ctx, filters, revert: bool ):
 	if revert:
 		ungroup_activities( gc.db.find( filters ), cfg['force'].get() )
 	else:
-		group_activities( gc.db.find( filters, True, False, True ), cfg['force'].get() )
+		group_activities( list( ctx.obj.db.find( filters, True, False, True ) ), ctx.obj.force, not ctx.obj.pretend )
 
 @cli.command( hidden=True, help='groups activities to multipart activities' )
 @option( '-r', '--revert', is_flag=True, required=False, help='splits up multipart groups and creates separate activities again' )

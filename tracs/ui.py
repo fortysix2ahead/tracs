@@ -30,7 +30,8 @@ def diff_table( left: Dict, right: Dict, header: Tuple[str, str, str] = None ) -
 	show_equals = False
 
 	for k in keys:
-		left_str, right_str = str( left.get( k ) ), str( right.get( k ) )
+		left_str = str( left.get( k ) ) if left.get( k ) is not None else ''
+		right_str = str( right.get( k ) ) if right.get( k ) is not None else ''
 		if left_str != right_str:
 			#left_str, right_str = colored_diff( left_str, right_str )
 			left_str, right_str = colored_diff( left_str[:20], right_str[:20] )

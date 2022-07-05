@@ -226,7 +226,8 @@ class Bikecitizens( Service, Plugin ):
 	def _prototype( self, json ) -> BikecitizensActivity:
 		json_str = dump_json( json, option=ORJSON_OPTIONS )
 		json_name = f'{json["id"]}.raw.json'
-		resources = [ Resource( type=key, path=f"{json['id']}.{key}", status=100 ) for key in ['json', 'gpx'] ]
+		resources = [ Resource( type='raw', path=f"{json['id']}.raw.json", status=200 ) ]
+		resources.extend( [ Resource( type=key, path=f"{json['id']}.{key}", status=100 ) for key in ['json', 'gpx'] ] )
 		return BikecitizensActivity( raw=json, raw_data=json_str, raw_name=json_name, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:

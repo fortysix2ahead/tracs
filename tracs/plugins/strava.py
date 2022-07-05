@@ -263,8 +263,9 @@ class Strava( Service, Plugin ):
 	# noinspection PyMethodMayBeStatic
 	def _prototype( self, json ) -> StravaActivity:
 		json_str = dump_json( json, option=ORJSON_OPTIONS )
-		json_name = f"{json['id']}.json"
-		resources = [ Resource( type=key, path=f"{json['id']}.{key}", status=100 ) for key in ['gpx', 'tcx'] ]
+		json_name = f"{json['id']}.raw.json"
+		resources = [ Resource( type='raw', path=f"{json['id']}.raw.json", status=200 ) ]
+		resources.extend( [ Resource( type=key, path=f"{json['id']}.{key}", status=100 ) for key in ['gpx', 'tcx'] ] )
 		return StravaActivity( raw=json, raw_data=json_str, raw_name=json_name, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:

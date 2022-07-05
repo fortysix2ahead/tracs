@@ -93,7 +93,7 @@ def group_activities( activities: List[Activity], force: bool = False, persist_c
 		for parent, children in changes:
 			doc_id = gc.db.insert( parent )
 			for c in children:
-				c.groups['parent'] = doc_id
+				c.parent_id = doc_id
 				gc.db.update( c )
 	else:
 		return changes

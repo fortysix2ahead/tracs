@@ -45,13 +45,13 @@ def reimport_activities( ctx: Optional[ApplicationContext], activities: List[Act
 			new_activity = _reimport_group_activity( a, children, from_raw )
 			if force or _confirm_init( a, new_activity, ctx.console if ctx else Console() ):
 				a.init_from( other=new_activity )
+				db.update( a )
 
 		else:
 			new_activity = _reimport_nongroup_activity( a, from_raw )
 			if force or _confirm_init( a, new_activity, ctx.console if ctx else Console() ):
 				a.init_from( other=new_activity )
-
-		#db.update( a )
+				db.update( a )
 
 def _reimport_group_activity( parent: Activity, children: List[Activity], from_raw ) -> Activity:
 	return ActivityGroup( group=children )

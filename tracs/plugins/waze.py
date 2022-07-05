@@ -115,7 +115,7 @@ class Waze( Service, Plugin ):
 		raw = tokens
 		raw_id = int( tokens[0][1].strftime( '%Y%m%d%H%M%S' ) )
 		raw_name = f'{raw_id}.raw.txt'
-		resources = [ Resource( type='gpx', path=f'{raw_id}.gpx', status= 100 ) ]
+		resources = [ Resource( type='raw', path=f'{raw_name}', status= 200 ), Resource( type='gpx', path=f'{raw_id}.gpx', status= 100 ) ]
 		return WazeActivity( raw=raw, raw_data=raw_data, raw_name=raw_name, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:

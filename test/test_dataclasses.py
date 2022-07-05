@@ -117,8 +117,24 @@ def test_as_dict():
 	assert as_dict( bd ) == {'raw_id': 0}
 
 	bd = BaseDocument( data={'k': 'v'} )
+
 	assert as_dict( bd, remove_data_field=False ) == {'raw_id': 0}
-	assert as_dict( bd, remove_persist_fields=False, remove_data_field=False ) == {'doc_id': 0, 'id': 0, 'raw_id': 0, 'uid': 'base:0'}
+
+	assert as_dict( bd, remove_persist_fields=False, remove_data_field=True ) == {
+		'doc_id': 0,
+		'id': 0,
+		'raw_id': 0,
+		'uid': 'base:0'
+	}
+
+	assert as_dict( bd, remove_persist_fields=False, remove_data_field=False ) == {
+		'data': {'k': 'v'},
+		'doc_id': 0,
+		'id': 0,
+		'raw_id': 0,
+		'uid': 'base:0'
+	}
+
 	assert as_dict( bd, remove_persist_fields=False, remove_null_fields=False, remove_data_field=True ) == {
 		'classifier': None,
 		'dataclass' : None,
@@ -133,7 +149,7 @@ def test_as_dict():
 	}
 	assert as_dict( bd, remove_persist_fields=False, remove_null_fields=False, remove_data_field=False ) == {
 		'classifier': None,
-		'data'      : None,
+		'data'      : {'k': 'v'},
 		'dataclass' : None,
 		'doc_id'    : 0,
 		'id'        : 0,

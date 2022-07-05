@@ -115,19 +115,18 @@ def test_attr_for():
 def test_as_dict():
 	bd = BaseDocument()
 	assert as_dict( bd ) == {'raw_id': 0}
+	assert as_dict( bd, remove_protected=True ) == {}
 
-	bd = BaseDocument( data={'k': 'v'} )
+	bd.data= { 'k': 'v' }
 
-	assert as_dict( bd, remove_data_field=False ) == {'raw_id': 0}
-
-	assert as_dict( bd, remove_persist_fields=False, remove_data_field=True ) == {
+	assert as_dict( bd, remove_persist=False, remove_data=True ) == {
 		'doc_id': 0,
 		'id': 0,
 		'raw_id': 0,
 		'uid': 'base:0'
 	}
 
-	assert as_dict( bd, remove_persist_fields=False, remove_data_field=False ) == {
+	assert as_dict( bd, remove_persist=False, remove_data=False ) == {
 		'data': {'k': 'v'},
 		'doc_id': 0,
 		'id': 0,
@@ -135,7 +134,7 @@ def test_as_dict():
 		'uid': 'base:0'
 	}
 
-	assert as_dict( bd, remove_persist_fields=False, remove_null_fields=False, remove_data_field=True ) == {
+	assert as_dict( bd, remove_persist=False, remove_null=False, remove_data=True ) == {
 		'classifier': None,
 		'dataclass' : None,
 		'doc_id'    : 0,
@@ -147,7 +146,7 @@ def test_as_dict():
 		'service'   : None,
 		'uid'       : 'base:0'
 	}
-	assert as_dict( bd, remove_persist_fields=False, remove_null_fields=False, remove_data_field=False ) == {
+	assert as_dict( bd, remove_persist=False, remove_null=False, remove_data=False ) == {
 		'classifier': None,
 		'data'      : {'k': 'v'},
 		'dataclass' : None,

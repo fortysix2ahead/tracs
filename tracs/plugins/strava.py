@@ -168,13 +168,13 @@ class Strava( Service, Plugin ):
 		per_page = FETCH_PAGE_SIZE  # we might make this configurable later ...
 		return f'{self._base_url}/api/v3/athlete/activities?before={before}&after={after}&page={page}&per_page={per_page}'
 
-	def url_export_for( self, id: int, ext: str ) -> str:
+	def export_url_for( self, id: int, ext: str ) -> Optional[str]:
 		if ext == 'gpx':
 			return f'{self._activities_url}/{id}/export_gpx'
 		elif ext == 'tcx':
 			return f'{self._activities_url}/{id}/export_original'
 		else:
-			return ''
+			return None
 
 	def path_for( self, activity: Activity, ext: Optional[str] = None ) -> Optional[Path]:
 		id = str( activity.raw_id )
@@ -272,9 +272,9 @@ class Strava( Service, Plugin ):
 		if not self._session:
 			self.weblogin()
 
-		url = self.url_export_for( activity.raw_id, resource.type )
-		log.debug( f'attempting download from {url}' )
+		url = self.export_url_for( activity.raw_id, resource.type )
 
+		log.debug( f'attempting download from {url}' )
 		response = self._session.get( url, headers=HEADERS_LOGIN, allow_redirects=True, stream=True )
 		return response.content, response.status_code
 

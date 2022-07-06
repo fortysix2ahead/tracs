@@ -190,6 +190,10 @@ class Service( AbstractServiceClass ):
 			sysexit( -1 )
 
 		for r in activity.resources:
+			# don't care about raw resources
+			if r.type == 'raw':
+				continue
+
 			# todo: r is currently a dict -> need to change that later to Resource
 			if r.status in [204, 404]:  # file does not exist on server -> do nothing
 				log.debug( f"skipped download of {r.type} for {self.name} activity {activity.raw_id}: file does not exist on server" )

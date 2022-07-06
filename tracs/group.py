@@ -110,22 +110,18 @@ def _confirm_grouping( group: List[Activity] ) -> bool:
 
 #	et_diff = [children[0].duration - c.duration for c in children]
 
-	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
+	table = Table( box=None, show_header=False, show_footer=False )
 
 	data = [
-		['Id', *[c['id'] for c in group] ],
-		['Uid', *[c['uid'] for c in group] ],
-#		['Raw Id', *[c['raw_id'] for c in children] ],
-		['Service', *[c['service'] for c in group] ],
-		['Name', *[c['name'] for c in group] ],
-		['Type', *[fmt( c['type'] ) for c in group] ],
-#		['URL', source.url, target.url],
-		['Local Time', *[fmt( c['localtime'] ) for c in group]],
-		['UTC Time', *[fmt( c['time'] ) for c in group]],
-		['Datetime Delta', *[f"\u00B1{fmt( c['time'] - group[0]['time'] )}" for c in group]],
-		#		['Datetime', *[f'{fmt_delta(c.utctime, children[0].utctime)}' for c in children]],
-		['Elapsed Time', *[fmt( c['duration'] ) for c in group]],
-		['Distance', *[fmt( c['distance'] ) for c in group]],
+		['ID:', *[c.id for c in group] ],
+		['UID:', *[c.uid for c in group] ],
+		['Name', *[c.name for c in group] ],
+		['Type', *[fmt( c.type ) for c in group] ],
+		['Local Time', *[fmt( c.localtime ) for c in group]],
+		['UTC Time', *[fmt( c.time ) for c in group]],
+		['Datetime Delta', *[f"\u00B1{fmt( c.time - group[0].time )}" for c in group]],
+		['Elapsed Time', *[fmt( c.duration ) for c in group]],
+		['Distance', *[fmt( c.distance ) for c in group]],
 	]
 
 	for d in data:

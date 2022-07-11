@@ -28,6 +28,7 @@ from .plugins.groups import ActivityGroup
 from .queries import has_time
 from .queries import is_group
 from .queries import is_ungrouped
+from .ui import diff_table
 from .utils import fmt
 from .utils import fmtl
 
@@ -100,33 +101,26 @@ def group_activities( activities: List[Activity], force: bool = False, persist_c
 
 def _confirm_grouping( group: List[Activity] ) -> bool:
 	echo( f"Attempting to group activities {fmtl( group )}" )
-	delta = 0.0
-	if delta >= 60.0 or delta <= -60.0:
-		delta_str = style( f'{delta} sec', fg='red', bold=True )
-	elif -60.0 < delta < 60.0:
-		delta_str = style( f'{delta} sec', fg='blue', bold=True )
-	else:
-		delta_str = style( f'{delta} sec', fg='green', bold=True )
 
-#	et_diff = [children[0].duration - c.duration for c in children]
+	left = {
+		'Name': group[0].name,
+		'Type': group[0].type,
+		'Localtime': fmt( group[0].localtime ),
+		'Time': fmt( group[0].time ),
+		'Elapsed Time': fmt( group[0].duration ),
+		'Distance': fmt( group[0].distance ),
+	}
+	right = {
+		'Name': group[1].name,
+		'Type': group[1].type,
+		'Localtime': fmt( group[1].localtime ),
+		'Time': fmt( group[1].time ),
+		'Distance': fmt( group[1].distance ),
+	}
 
-	table = Table( box=None, show_header=False, show_footer=False )
-
-	data = [
-		['ID:', *[c.id for c in group] ],
-		['UID:', *[c.uid for c in group] ],
-		['Name', *[c.name for c in group] ],
-		['Type', *[fmt( c.type ) for c in group] ],
-		['Local Time', *[fmt( c.localtime ) for c in group]],
-		['UTC Time', *[fmt( c.time ) for c in group]],
-		['Datetime Delta', *[f"\u00B1{fmt( c.time - group[0].time )}" for c in group]],
-		['Elapsed Time', *[fmt( c.duration ) for c in group]],
-		['Distance', *[fmt( c.distance ) for c in group]],
-	]
-
-	for d in data:
-		table.add_row( *[ pp( item ) for item in d ] )
-
+	table = diff_table( left, right, sort_entries=False )
+	table.add_row( 'ID:', str( group[0].id ), '', str( group[1].id ) )
+	table.add_row( 'UID:', group[0].uid, '', group[1].uid )
 	console.print( table )
 
 	# source_time = time_str( source.activity.localtime, app.cfg )

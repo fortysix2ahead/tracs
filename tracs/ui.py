@@ -14,7 +14,7 @@ from rich.text import TextType
 from tracs.utils import colored_diff
 from .config import console as cs
 
-def diff_table( left: Dict, right: Dict, header: Tuple[str, str, str] = None ) -> Table:
+def diff_table( left: Dict, right: Dict, header: Tuple[str, str, str] = None, sort_entries: bool = False ) -> Table:
 	table = Table( box=None, show_header=True, show_footer=False )
 
 	field_header = header[0] if header else 'Field'
@@ -26,7 +26,9 @@ def diff_table( left: Dict, right: Dict, header: Tuple[str, str, str] = None ) -
 	table.add_column( '', justify="center", no_wrap=True )
 	table.add_column( right_header, justify="left", no_wrap=True )
 
-	keys = sorted( list( left.keys() | right.keys() ) )
+	keys = list( left.keys() | right.keys() )
+	if sort_entries:
+		keys = sorted( keys )
 	show_equals = False
 
 	for k in keys:
@@ -98,6 +100,27 @@ class InstantConfirm( Confirm ):
 			cs.print( '' )
 			return super().process_response( value )
 
+def combo():
+	from rich.live import Live
+	from rich.table import Table
+	from rich.console import Group
+	from rich.prompt import Prompt
+
+	table = Table( box=None, show_header=False )
+	table.add_column( "Row ID" )
+	table.add_column( "Description" )
+
+	for row in range( 3 ):
+		table.add_row( '>>', f"description {row}" )
+
+	#name = Prompt.ask( "Enter your name" )
+	name = InstantConfirm.ask( "Enter your name" )
+	group = Group( table, name )
+
+	with Live( table, auto_refresh=False, refresh_per_second=4 ):  # update 4 times a second to feel fluid
+		pass
+
 if __name__ == '__main__':
-	c = InstantConfirm.ask( "Are you sure?" )
-	print( f'entered: {c}' )
+	combo()
+#	c = InstantConfirm.ask( "Are you sure?" )
+#	print( f'entered: {c}' )

@@ -88,7 +88,7 @@ def cli( ctx, configuration, debug, force, library, verbose, pretend ):
 	ctx.obj.instance = gc.app
 	ctx.obj.db = gc.app.db
 	ctx.obj.db_file = gc.app.db.db_path
-	ctx.obj.meta = gc.app.db.meta
+	ctx.obj.meta = gc.app.db.metadata
 
 	migrate_application( ctx.obj, None ) # check if migration is necessary
 

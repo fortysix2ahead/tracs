@@ -1,63 +1,10 @@
 {
   "_default": {
 		"1": {
-			"calories": 0,
-			"classifier": "polar",
-			"distance": 0,
-			"duration_moving": "00:00:00",
-			"heartrate": 0,
-			"metadata": {},
-			"name": "Berlin",
-			"raw_id": 100001,
-			"resources": [
-        {
-          "name": null,
-          "path": "100001.gpx",
-          "type": "gpx",
-          "status": 200
-        },
-        {
-          "name": null,
-          "path": "100001.raw.json",
-          "type": "raw",
-          "status": 200
-        }
-			],
-			"time": "2012-10-24T23:29:40+00:00"
-		},
-		"2": {
-			"calories": 0,
-			"classifier": "strava",
-			"distance": 0,
-			"duration_moving": "00:00:00",
-			"heartrate": 0,
-			"metadata": {},
-			"name": "Berlin",
-			"raw_id": 200002,
-			"resources": [
-        {
-          "name": null,
-          "path": "200002.gpx",
-          "type": "gpx",
-          "status": 200
-        },
-        {
-          "name": null,
-          "path": "200002.raw.json",
-          "type": "raw",
-          "status": 200
-        }
-			],
-			"time": "2012-10-24T23:29:40+00:00"
-		},
-		"10": {
-			"classifier": "group",
-			"group_ids": [1, 2],
-			"group_uids": ["polar:100001", "strava:200002"],
+			"uids": ["polar:100001", "strava:200002"],
 			"metadata": {},
 			"name": "Frankfurt",
-			"raw_id": 10,
-			"resources": [],
+			"resources": [1, 2, 3, 4],
 			"time": "2012-10-24T23:29:40+00:00"
 		}
 	}

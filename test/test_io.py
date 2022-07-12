@@ -13,13 +13,13 @@ from .helpers import get_file_path
 
 @mark.db( lib='default', inmemory=True )
 def test_reimport( db ):
-	json = JSONHandler().load( get_file_path( 'libraries/default/db.json' ) )
+	json = JSONHandler().load( get_file_path( 'libraries/default/activities.json' ) )
 	pa = PolarActivity( data=json['_default']['1'], doc_id=1 )
 	sa = StravaActivity( data=json['_default']['2'], doc_id=2 )
 	ga = db.get( doc_id=10 )
 
-	Registry.services['polar'].base_path = Path( get_file_path( 'libraries/default/db.json' ).parent, 'polar' )
-	Registry.services['strava'].base_path = Path( get_file_path( 'libraries/default/db.json' ).parent, 'strava' )
+	Registry.services['polar'].base_path = Path( get_file_path( 'libraries/default/activities.json' ).parent, 'polar' )
+	Registry.services['strava'].base_path = Path( get_file_path( 'libraries/default/activities.json' ).parent, 'strava' )
 
 	assert pa.name == 'Berlin'
 	pa.name = 'Hamburg'

@@ -28,8 +28,8 @@ from .config import LOG_DIRNAME
 from .config import LOG_FILENAME
 from .config import STATE_FILENAME
 from .db import ActivityDb
-from .db import DB_NAME
-from .db import META_NAME
+from .db import ACTIVITIES_NAME
+from .db import METADATA_NAME
 from .plugins import Registry
 from .service import Service
 
@@ -136,7 +136,7 @@ class Application( object ):
 		self._db_dir = Path( self._lib_dir, DB_DIRNAME )
 		self._db = ActivityDb( path=self._db_dir, cache=cache )
 		self._db_file = self._db.db_path
-		self._meta_file = self._db.meta_path
+		self._meta_file = self._db.metadata_path
 		gc.db = self._db
 
 		# announce library paths to services

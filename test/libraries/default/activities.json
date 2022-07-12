@@ -1,6 +1,12 @@
 {
   "_default": {
 		"1": {
+			"metadata": {},
+			"name": "Frankfurt",
+			"resources": [1, 2, 3, 4],
+			"time": "2012-10-24T23:29:40+00:00"
+		},
+		"2": {
 			"uids": ["polar:100001", "strava:200002"],
 			"metadata": {},
 			"name": "Frankfurt",

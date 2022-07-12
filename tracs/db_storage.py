@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from inspect import isfunction
@@ -23,16 +22,71 @@ log = getLogger( __name__ )
 
 EMPTY_JSON = '{}'
 
+class OrJSONStorage( Storage ):
+
+	def __init__( self, path: str, create_dirs=False, encoding=None, access_mode='r+', **kwargs ):
+		super().__init__()
+
+		self._mode = access_mode
+		self.kwargs = kwargs
+
+		# Create the file if it doesn't exist and creating is allowed by the access mode
+		if any( [character in self._mode for character in ('+', 'w', 'a')] ):  # any of the writing modes
+			touch( path, create_dirs=create_dirs )
+
+		# Open the file for reading/writing
+		self._handle = open( path, mode=self._mode, encoding=encoding )
+
+	def close( self ) -> None:
+		self._handle.close()
+
+	def read( self ) -> Optional[Dict[str, Dict[str, Any]]]:
+		# Get the file size by moving the cursor to the file end and reading its location
+		self._handle.seek( 0, os.SEEK_END )
+		size = self._handle.tell()
+
+		if not size:
+			# File is empty, so we return ``None`` so TinyDB can properly
+			# initialize the database
+			return None
+		else:
+			# Return the cursor to the beginning of the file
+			self._handle.seek( 0 )
+
+			# Load the JSON contents of the file
+			return json.load( self._handle )
+
+	def write( self, data: Dict[str, Dict[str, Any]] ):
+		# Move the cursor to the beginning of the file just in case
+		self._handle.seek( 0 )
+
+		# Serialize the database state using the user-provided arguments
+		serialized = json.dumps( data, **self.kwargs )
+
+		# Write the serialized data to the file
+		try:
+			self._handle.write( serialized )
+		except io.UnsupportedOperation:
+			raise IOError( 'Cannot write to the database. Access mode is "{0}"'.format( self._mode ) )
+
+		# Ensure the file has been written
+		self._handle.flush()
+		os.fsync( self._handle.fileno() )
+
+		# Remove data that is behind the new cursor in case the file has
+		# gotten shorter
+		self._handle.truncate()
+
 class DataClassStorage( Storage ):
 	"""
 	Unifies middleware/storage requirements without fiddling around with tinydb middleware/storage instantiation chain.
 
 	"""
 
-	#options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS| OPT_PASSTHROUGH_SUBCLASS
+	# options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS| OPT_PASSTHROUGH_SUBCLASS
 	orjson_options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
-	def __init__( self, path: Path=None, use_memory_storage: bool=False, access_mode: bool = 'r+', cache: bool=False, cache_size: int=1000, passthrough=False, document_factory=None, *args, **kwargs ):
+	def __init__( self, path: Path = None, use_memory_storage: bool = False, access_mode: bool = 'r+', cache: bool = False, cache_size: int = 1000, passthrough=False, document_factory=None, *args, **kwargs ):
 		super().__init__()
 
 		self._initial_read = True
@@ -44,16 +98,16 @@ class DataClassStorage( Storage ):
 		self._encoding = 'UTF-8'
 
 		self._memory = MemoryStorage()
-		self._use_memory_storage = use_memory_storage if path else True # auto-turn on memory mode when no path is provided
+		self._use_memory_storage = use_memory_storage if path else True  # auto-turn on memory mode when no path is provided
 
-		self._use_cache = cache if not self._use_memory_storage else True # turn on cache if in-memory mode is on
+		self._use_cache = cache if not self._use_memory_storage else True  # turn on cache if in-memory mode is on
 		self._cache_hits = 0
 		self._cache_size = cache_size if self._use_cache else 0
 
 		self._document_factory = document_factory
 		if not self._document_factory:
 			log.debug( 'data storage initialized without a document factory' )
-		#self._transformation_map: Dict[str, Union[Type, Callable]] = {}
+		# self._transformation_map: Dict[str, Union[Type, Callable]] = {}
 		self._remove_null_fields: bool = True  # don't write fields which do not have a value
 		self._passthrough = passthrough
 
@@ -136,9 +190,9 @@ class DataClassStorage( Storage ):
 		data = self._memory.read()
 		if self._path and data:
 			if self._memory_changed:
-				data = self.write_data( data ) # do final conversion to dict as memory might contain unconverted data
+				data = self.write_data( data )  # do final conversion to dict as memory might contain unconverted data
 				self._path.write_bytes( dump_as_json( data, option=self.orjson_options ) )
-				self._memory_changed = False # keep track of 'persist necessary' status
+				self._memory_changed = False  # keep track of 'persist necessary' status
 		else:
 			log.debug( 'db storage flush called without path and/or data' )
 

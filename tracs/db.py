@@ -23,6 +23,7 @@ from tinydb import TinyDB
 from tinydb import Query
 from tinydb.operations import delete
 from tinydb.operations import set
+from tinydb.storages import JSONStorage
 from tinydb.table import Document
 from tinydb.table import Table
 
@@ -47,14 +48,16 @@ from .queries import is_ungrouped
 
 log = getLogger( __name__ )
 
-META_NAME = 'meta.json'
-DB_NAME = 'db.json'
+ACTIVITIES_NAME = 'activities.json'
+METADATA_NAME = 'metadata.json'
+RESOURCES_NAME = 'resources.json'
+SCHEMA_NAME = 'schema.json'
 
 class ActivityDb:
 
-	def __init__( self, path: Path=None, db_name: str = None, meta_name: str = None, pretend: bool=False, cache: bool=False, passthrough=False ):
+	def __init__( self, path: Path = None, activities_name: str = None, metadata_name: str = None, resources_name: str = None, schema_name: str = None, pretend: bool=False, cache: bool=False, passthrough=False ):
 		"""
-		Creates an activity db, consisting of two tiny db instances (meta + activities).
+		Creates an activity db, consisting of tiny db instances (meta + activities + resources + schema).
 
 		:param path: directory containing dbs
 		:param pretend: pretend mode - allows write operations, but does not persist anything to disk
@@ -63,39 +66,56 @@ class ActivityDb:
 		"""
 
 		# names
-		self._db_name = db_name if db_name else DB_NAME
-		self._meta_name = meta_name if meta_name else META_NAME
+		self._activities_name = activities_name if activities_name else ACTIVITIES_NAME
+		self._metadata_name = metadata_name if metadata_name else METADATA_NAME
+		self._resources_name = resources_name if resources_name else RESOURCES_NAME
+		self._schema_name = schema_name if schema_name else SCHEMA_NAME
 
 		with resource_path( __package__, '__init__.py' ) as pkg_path:
-			self._meta_resource_path = Path( pkg_path.parent, 'db', self._meta_name )
-			self._db_resource_path = Path( pkg_path.parent, 'db', self._db_name )
+			self._db_resource_path = Path( pkg_path.parent, 'db' )
 			if path:
-				self._db_path = Path( path, self._db_name )
-				self._meta_path = Path( path, self._meta_name )
-				path.mkdir( parents=True, exist_ok=True )
-				if not self._meta_path.exists():
-					copy( self._meta_resource_path, self._meta_path )
-				if not self._db_path.exists():
-					copy( self._db_resource_path, self._db_path )
-			else:
-				self._db_path = self._db_resource_path
-				self._meta_path = self._meta_resource_path
+				self._activities_path = Path( path, self._activities_name )
+				self._metadata_path = Path( path, self._metadata_name )
+				self._resources_path = Path( path, self._resources_name )
+				self._schema_path = Path( path, self._schema_name )
 
-		# init meta db
-		self._default_meta: TinyDB = TinyDB( storage=DataClassStorage, path=self._meta_resource_path, use_memory_storage=True, cache=cache, passthrough=True )
-		self._meta: TinyDB = TinyDB( storage=DataClassStorage, path=self._meta_path, use_memory_storage=True, cache=cache, passthrough=True )
-		self._schema = self._meta.all()[0][KEY_VERSION]
-		self._default_schema = self._default_meta.all()[0][KEY_VERSION]
+				path.mkdir( parents=True, exist_ok=True )
+
+				if not self._schema_path.exists():
+					copy( Path( self._db_resource_path, SCHEMA_NAME ), self._schema_path )
+				if not self._activities_path.exists():
+					copy( Path( self._db_resource_path, ACTIVITIES_NAME ), self._activities_path )
+				if not self._metadata_path.exists():
+					copy( Path( self._db_resource_path, METADATA_NAME ), self._metadata_path )
+				if not self._resources_path.exists():
+					copy( Path( self._db_resource_path, RESOURCES_NAME ), self._resources_path )
+			else:
+				self._activities_path = Path( self._db_resource_path, ACTIVITIES_NAME )
+				self._resources_path = Path( self._db_resource_path, RESOURCES_NAME )
+				self._metadata_path = Path(  self._db_resource_path, METADATA_NAME )
+				self._schema_path = Path( self._db_resource_path, SCHEMA_NAME )
+
+				pretend = True # turn on in-memory mode when path is not provided
+
+		# init schema db
+		self._default_schema: TinyDB = TinyDB( storage=JSONStorage, path=Path( self._db_resource_path, SCHEMA_NAME ), access_mode='r' )
+		self._default_schema_version = self._default_schema.all()[0][KEY_VERSION]
+		self._schema: TinyDB = TinyDB( storage=JSONStorage, path=self._schema_path, access_mode='r' )
+		self._schema_version = self._schema.all()[0][KEY_VERSION]
 
 		# init activities db
-		pretend = pretend if path else True # auto-inmemory mode when path is not provided
-		self._db: TinyDB = TinyDB( storage=DataClassStorage, path=self._db_path, use_memory_storage=pretend, cache=cache, passthrough=passthrough, document_factory=document_cls )
+		self._db: TinyDB = TinyDB( storage=DataClassStorage, path=self._activities_path, use_memory_storage=pretend, cache=cache, passthrough=passthrough, document_factory=document_cls )
 		self._storage: DataClassStorage = cast( DataClassStorage, self._db.storage )
 		self._activities = self.db.table( TABLE_NAME_DEFAULT )
 		self._activities.document_class = document_factory
 
-		# configure transformation map
-		# self._storage.transformation_map[TABLE_NAME_ACTIVITIES] = document_cls
+		# init resources db
+		self._resources_db: TinyDB = TinyDB( storage=JSONStorage, path=self._resources_path, access_mode='r' )
+		self._resources = self._resources_db.table( TABLE_NAME_DEFAULT )
+
+		# init resources db
+		self._metadata_db: TinyDB = TinyDB( storage=JSONStorage, path=self._metadata_path, access_mode='r' )
+		self._metadata = self._metadata_db.table( TABLE_NAME_DEFAULT )
 
 	# ---- DB Properties --------------------------------------------------------
 
@@ -104,44 +124,68 @@ class ActivityDb:
 		return self._db
 
 	@property
-	def default_meta( self ) -> TinyDB:
-		return self._default_meta
+	def activities_db( self ) -> TinyDB:
+		return self._db
 
 	@property
-	def meta( self ) -> TinyDB:
-		return self._meta
+	def resources_db( self ) -> TinyDB:
+		return self._resources_db
+
+	@property
+	def metadata_db( self ) -> TinyDB:
+		return self._metadata_db
+
+	@property
+	def schema_db( self ) -> TinyDB:
+		return self._schema
+
+	@property
+	def default_schema_db( self ) -> TinyDB:
+		return self._default_schema
+
+	@property
+	def metadata( self ) -> Table:
+		return self._metadata
 
 	@property
 	def path( self ) -> Path:
-		return self._db_path.parent
+		return self._activities_path.parent
 
 	@property
 	def db_path( self ) -> Path:
-		return self._db_path
+		return self._activities_path
 
 	@property
-	def meta_path( self ) -> Path:
-		return self._meta_path
+	def activities_path( self ) -> Path:
+		return self._activities_path
+
+	@property
+	def resources_path( self ) -> Path:
+		return self._resources_path
+
+	@property
+	def metadata_path( self ) -> Path:
+		return self._metadata_path
 
 	@property
 	def storage( self ) -> DataClassStorage:
 		return cast( DataClassStorage, self._db.storage )
 
 	@property
-	def default( self ) -> TinyDB:
-		return self.meta
-
-	@property
 	def activities( self ) -> Table:
 		return self._activities
 
 	@property
+	def resources( self ) -> Table:
+		return self._resources
+
+	@property
 	def schema( self ) -> int:
-		return self._schema
+		return self._schema_version
 
 	@property
 	def default_schema( self ) -> int:
-		return self._default_schema
+		return self._default_schema_version
 
 	# ---- DB Operations --------------------------------------------------------
 

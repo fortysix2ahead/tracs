@@ -34,8 +34,8 @@ class JSONHandler( DocumentHandler ):
 			return load_json( p.read() )
 
 	def save( self, path: Path, content: Union[Dict] ) -> None:
-		with open( file=path, mode='b+', buffering=8192, encoding='UTF-8' ) as p:
-			p.write( save_json( content, option=JSONHandler.options ) )
+		with open( file=path, mode='w+', buffering=8192, encoding='UTF-8' ) as p:
+			p.write( save_json( content, option=JSONHandler.options ).decode( 'UTF-8' ) )
 
 @define
 class GPXActivity( Activity ):

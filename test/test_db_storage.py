@@ -13,7 +13,6 @@ from orjson import loads as load_json
 from orjson import dumps as save_json
 
 from tracs.activity import Activity
-from tracs.activity import Resource
 from tracs.activity_types import ActivityTypes
 from tracs.db import document_cls
 from tracs.db_storage import DataClassStorage
@@ -96,12 +95,6 @@ serialized_file_data = {
 
 @mark.db( template='default' )
 def test_read( json ):
-	storage = DataClassStorage( path=None, use_memory_storage=False )
-	assert storage.memory.memory is None
-
-	storage = DataClassStorage( path=None, use_memory_storage=True )
-	assert storage.memory.memory is None
-
 	# read from default db template
 	path, db_path, meta_path = get_db_path( 'default', writable=False )
 
@@ -110,52 +103,49 @@ def test_read( json ):
 	assert type( data['_default']['1']['time'] ) is str
 	assert type( data['_default']['1']['type'] ) is str
 
-	deserializers = {
-		'localtime': lambda v: datetime.fromisoformat( v ),
-		'time': lambda v: datetime.fromisoformat( v ),
-		'type': lambda v: ActivityTypes.get( v )
-	}
-	data = OrJSONStorage( path=db_path, access_mode='r', deserializers=deserializers ).read()
+	data = OrJSONStorage( path=db_path, access_mode='r', deserializers=DataClassStorage.deserializers ).read()
 
 	assert type( data['_default']['1']['time'] ) is datetime
 	assert type( data['_default']['1']['localtime'] ) is datetime
 	assert type( data['_default']['1']['type'] ) is ActivityTypes
 
-	return
+	# pure memory storage
+	storage = DataClassStorage( path=None, use_memory_storage=False )
+	assert storage.memory_storage.memory is None
+
+	storage = DataClassStorage( path=None, use_memory_storage=True )
+	assert storage.memory_storage.memory is None
 
 	storage = DataClassStorage( path=db_path, use_memory_storage=True )
-	assert storage.memory.memory is None
+	assert storage.memory_storage.memory is not None
 	data = storage.read()
 	assert data is not None and len( data.items() ) == 1 and len( data['_default'].items() ) > 0
 
-	# type is dict as transformation_map is still empty
-	assert type( data['_default'].get( '2' ) ) is dict
-
-	# setup transformation map
-	storage.document_factory = document_cls
+	storage = DataClassStorage( path=db_path, use_memory_storage=True, passthrough=False )
+	assert storage.memory_storage.memory is not None
 	data = storage.read()
-	assert type( data['_default'].get( '2' ) ) is PolarActivity
-	assert type( data['_default'].get( '3' ) ) is StravaActivity
-	assert type( data['_default'].get( '4' ) ) is WazeActivity
+	assert data is not None and len( data.items() ) == 1 and len( data['_default'].items() ) > 0
+	assert type( data['_default']['1'] ) is Activity
 
 @mark.db( template='default' )
 def test_write( json ):
 	path, db_path, meta_path = get_db_path( 'empty', writable=True )
-	OrJSONStorage( path=db_path, access_mode='r+' ).write( serialized_file_data )
+	storage = OrJSONStorage( path=db_path, access_mode='r+' )
+	storage.write( serialized_file_data )
 
-	return
+	data = storage.read()
+	assert type( data['_default']['1'] ) is not None
 
 	path, db_path, meta_path = get_db_path( 'empty', writable=False )
-	storage = DataClassStorage( path=path, use_memory_storage=True )
+	storage = DataClassStorage( path=db_path, use_memory_storage=True )
 	storage.write( json )
 
-	data = storage.memory.memory
+	data = storage.memory_storage.memory
 	assert data is not None and len( data.items() ) == 1 and len( data['_default'].items() ) > 0
 
 	# setup transformation map
-	storage.document_factory = document_cls
 	storage.write( deepcopy( unserialized_data ) )
-	written_data = storage.memory.memory
+	written_data = storage.memory_storage.memory
 	assert written_data == serialized_memory_data
 
 	path, db_path, meta_path = get_writable_db_path( 'empty' )

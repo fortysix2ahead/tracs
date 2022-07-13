@@ -18,8 +18,6 @@ from tracs.db import document_cls
 from tracs.db_storage import DataClassStorage
 from tracs.db_storage import OrJSONStorage
 from tracs.plugins.polar import PolarActivity
-from tracs.plugins.strava import StravaActivity
-from tracs.plugins.waze import WazeActivity
 
 from .helpers import get_db_path
 from .helpers import get_writable_db_path

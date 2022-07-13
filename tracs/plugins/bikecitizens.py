@@ -76,8 +76,8 @@ HEADERS_OPTIONS = { **HEADERS_TEMPLATE, **{
 @document
 class BikecitizensActivity( Activity ):
 
-	def __attrs_post_init__( self ):
-		super().__attrs_post_init__()
+	def __post_init__( self ):
+		super().__post_init__()
 
 		if self.raw:
 			self.raw_id = self.raw.get( 'id', 0 )
@@ -91,7 +91,6 @@ class BikecitizensActivity( Activity ):
 			self.tags = self.raw.get( 'tags' )
 			self.uuid = self.raw.get( 'uuid' )
 
-		self.classifier = SERVICE_NAME
 		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
 
 @service

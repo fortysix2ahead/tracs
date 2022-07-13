@@ -40,8 +40,8 @@ class JSONHandler( DocumentHandler ):
 @define
 class GPXActivity( Activity ):
 
-	def __attrs_post_init__( self ):
-		super().__attrs_post_init__()
+	def __post_init__( self ):
+		super().__post_init__()
 
 		if self.raw:
 			gpx: GPX = self.raw

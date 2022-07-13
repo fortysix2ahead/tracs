@@ -41,8 +41,8 @@ DISPLAY_NAME = 'Waze'
 @document
 class WazeActivity( Activity ):
 
-	def __attrs_post_init__( self ):
-		super().__attrs_post_init__()
+	def __post_init__( self ):
+		super().__post_init__()
 
 		if self.raw and len( self.raw ) > 0:
 			self.raw_id = int( self.raw[0][1].strftime( '%Y%m%d%H%M%S' ) )
@@ -50,7 +50,6 @@ class WazeActivity( Activity ):
 			self.localtime = as_datetime( self.time, tz=gettz() )
 
 		self.type = ActivityTypes.drive
-		self.classifier = SERVICE_NAME
 		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
 
 @service

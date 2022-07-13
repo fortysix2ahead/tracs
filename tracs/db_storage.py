@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+from datetime import datetime
+from io import UnsupportedOperation
 from inspect import isfunction
 from logging import getLogger
+from os import fsync
+from os import SEEK_END
 from pathlib import Path
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Optional
+from typing import Tuple
 
 from orjson import loads as load_json
 from orjson import dumps as dump_as_json
@@ -22,69 +27,79 @@ log = getLogger( __name__ )
 
 EMPTY_JSON = '{}'
 
+# based on tinydb.JSONStorage, adjusted to use OrJSON
+
 class OrJSONStorage( Storage ):
 
-	def __init__( self, path: str, create_dirs=False, encoding=None, access_mode='r+', **kwargs ):
+	options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
+
+	def __init__( self, path: Path, create_dirs: bool = False, encoding: str = 'UTF-8', access_mode: str = 'r+', deserializers: Dict = None, **kwargs ):
 		super().__init__()
 
-		self._mode = access_mode
+		self.path = path
+		self.encoding = encoding
+		self.access_mode = access_mode
+		self.deserializers = deserializers
 		self.kwargs = kwargs
 
 		# Create the file if it doesn't exist and creating is allowed by the access mode
-		if any( [character in self._mode for character in ('+', 'w', 'a')] ):  # any of the writing modes
-			touch( path, create_dirs=create_dirs )
+		if any( [character in self.access_mode for character in ('+', 'w', 'a')] ):  # any of the writing modes
+			self.path.touch( exist_ok=True )
 
 		# Open the file for reading/writing
-		self._handle = open( path, mode=self._mode, encoding=encoding )
+		self.handle = open( self.path, mode=self.access_mode, encoding=encoding )
 
 	def close( self ) -> None:
-		self._handle.close()
+		self.handle.close()
 
 	def read( self ) -> Optional[Dict[str, Dict[str, Any]]]:
 		# Get the file size by moving the cursor to the file end and reading its location
-		self._handle.seek( 0, os.SEEK_END )
-		size = self._handle.tell()
+		self.handle.seek( 0, SEEK_END )
+		size = self.handle.tell()
 
 		if not size:
-			# File is empty, so we return ``None`` so TinyDB can properly
-			# initialize the database
-			return None
+			data = None # File is empty, so we return ``None`` so TinyDB can properly initialize the database
 		else:
-			# Return the cursor to the beginning of the file
-			self._handle.seek( 0 )
+			self.handle.seek( 0 ) # Return the cursor to the beginning of the file
+			data = load_json( self.handle.read() ) # Load the JSON contents of the file
 
-			# Load the JSON contents of the file
-			return json.load( self._handle )
+		if self.deserializers:
+			for table_name, table in data.items():
+				for doc_id, doc in table.items():
+					for key, value in doc.items():
+						if key in self.deserializers.keys():
+							doc[key] = self.deserializers[key]( doc[key] )
+
+		return data
 
 	def write( self, data: Dict[str, Dict[str, Any]] ):
-		# Move the cursor to the beginning of the file just in case
-		self._handle.seek( 0 )
+		self.handle.seek( 0 ) # Move the cursor to the beginning of the file just in case
+		serialized = dump_as_json( data, option=self.options ) # Serialize the database state using options from above
 
-		# Serialize the database state using the user-provided arguments
-		serialized = json.dumps( data, **self.kwargs )
-
+		#self._path.write_bytes( dump_as_json( data, option=self.orjson_options ) )
 		# Write the serialized data to the file
 		try:
-			self._handle.write( serialized )
-		except io.UnsupportedOperation:
-			raise IOError( 'Cannot write to the database. Access mode is "{0}"'.format( self._mode ) )
+			self.handle.write( serialized.decode( self.encoding ) )
+		except UnsupportedOperation:
+			raise IOError( f'Unable to write database to {self.path}, access mode is {self.access_mode}' )
 
 		# Ensure the file has been written
-		self._handle.flush()
-		os.fsync( self._handle.fileno() )
-
-		# Remove data that is behind the new cursor in case the file has
-		# gotten shorter
-		self._handle.truncate()
+		self.handle.flush()
+		fsync( self.handle.fileno() )
+		self.handle.truncate() # Remove data that is behind the new cursor in case the file has gotten shorter
 
 class DataClassStorage( Storage ):
 	"""
 	Unifies middleware/storage requirements without fiddling around with tinydb middleware/storage instantiation chain.
-
 	"""
 
 	# options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS| OPT_PASSTHROUGH_SUBCLASS
 	orjson_options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
+
+	# map of converters field_name -> ( serializer_function, deserializer_function )
+	converters: Dict[str, Tuple[Callable[[datetime], str], Callable[[str], datetime]]] = {
+		'time': ( lambda v: v.isoformat(), lambda s: datetime.fromisoformat( s ) )
+	}
 
 	def __init__( self, path: Path = None, use_memory_storage: bool = False, access_mode: bool = 'r+', cache: bool = False, cache_size: int = 1000, passthrough=False, document_factory=None, *args, **kwargs ):
 		super().__init__()
@@ -97,17 +112,14 @@ class DataClassStorage( Storage ):
 		self._buffering = 8192
 		self._encoding = 'UTF-8'
 
-		self._memory = MemoryStorage()
 		self._use_memory_storage = use_memory_storage if path else True  # auto-turn on memory mode when no path is provided
+		self._memory = MemoryStorage()
 
 		self._use_cache = cache if not self._use_memory_storage else True  # turn on cache if in-memory mode is on
 		self._cache_hits = 0
 		self._cache_size = cache_size if self._use_cache else 0
 
 		self._document_factory = document_factory
-		if not self._document_factory:
-			log.debug( 'data storage initialized without a document factory' )
-		# self._transformation_map: Dict[str, Union[Type, Callable]] = {}
 		self._remove_null_fields: bool = True  # don't write fields which do not have a value
 		self._passthrough = passthrough
 

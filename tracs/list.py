@@ -1,4 +1,4 @@
-
+from dataclasses import fields
 from datetime import datetime
 from pathlib import Path
 from re import match
@@ -233,7 +233,8 @@ def inspect_registry() -> None:
 	console.print( table )
 
 def show_fields():
-	for f in FIELDS: console.print( f )
+	for f in fields( Activity ):
+		console.print( f'{f.name} <{f.type}>' )
 
 def show_config():
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )

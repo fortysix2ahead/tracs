@@ -173,8 +173,9 @@ def ls( sort, format_name, filters, include_grouped ):
 @option( '-f', '--format', 'frmt', is_flag=False, required=False, type=str, hidden=True, help='uses the provided format string when printing', metavar='FORMAT' )
 @option( '-r', '--raw', is_flag=True, required=False, help='display raw data' )
 @argument('filters', nargs=-1)
-def show( filters, frmt, raw ):
-	show_activity( gc.db.find( filters, include_grouped=True ), frmt=frmt, display_raw=raw )
+@pass_context
+def show( ctx, filters, frmt, raw ):
+	show_activity( ctx.obj.db.find( filters ), frmt=frmt, display_raw=raw )
 
 @cli.command( help='groups activities' )
 @option( '-r', '--revert', is_flag=True, required=False, help='splits up groups and creates separate activities again' )

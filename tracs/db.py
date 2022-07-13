@@ -104,10 +104,10 @@ class ActivityDb:
 		self._schema_version = self._schema.all()[0][KEY_VERSION]
 
 		# init activities db
-		self._db: TinyDB = TinyDB( storage=DataClassStorage, path=self._activities_path, use_memory_storage=pretend, cache=cache, passthrough=passthrough, document_factory=document_cls )
+		self._db: TinyDB = TinyDB( storage=DataClassStorage, path=self._activities_path, use_memory_storage=pretend, use_cache=cache, passthrough=True )
 		self._storage: DataClassStorage = cast( DataClassStorage, self._db.storage )
 		self._activities = self.db.table( TABLE_NAME_DEFAULT )
-		self._activities.document_class = document_factory
+		self._activities.document_class = Activity
 
 		# init resources db
 		self._resources_db: TinyDB = TinyDB( storage=JSONStorage, path=self._resources_path, access_mode='r' )
@@ -260,8 +260,7 @@ class ActivityDb:
 
 	# ----
 
-	def get( self, doc_id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, service_name: Optional[str] = None ) -> Optional[Activity]:
-		classifier = service_name # todo: for backward compatibility
+	def get( self, doc_id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None ) -> Optional[Activity]:
 		if doc_id and doc_id > 0:
 			return self.activities.get( doc_id=doc_id )
 		elif raw_id and raw_id > 0:
@@ -272,15 +271,15 @@ class ActivityDb:
 		else:
 			return None
 
-	def find( self, filters: Union[List[str], List[Filter], str, Filter] = None, include_groups: bool = True, include_grouped: bool = False, include_ungrouped = True ) -> [Activity]:
+	def find( self, filters: Union[List[str], List[Filter], str, Filter] = None ) -> [Activity]:
 		parsed_filters = parse_filters( filters or [] )
-		all_activities = self.all( include_groups, include_grouped, include_ungrouped )
+		all_activities = self.activities.all()
 		for f in parsed_filters:
 			all_activities = filter( f, all_activities )
 		return all_activities
 
-	def find_ids( self, filters: Union[List[str], str] = None, include_groups: bool = True, include_grouped: bool = False, include_ungrouped = True ) -> [int]:
-		return [a.doc_id for a in self.find( filters, include_groups, include_grouped, include_ungrouped )]
+	def find_ids( self, filters: Union[List[str], str] = None ) -> [int]:
+		return [a.doc_id for a in self.find( filters )]
 
 	def find_by_id( self, id: int = 0 ) -> Optional[Activity]:
 		a = None
@@ -292,9 +291,9 @@ class ActivityDb:
 
 	def find_last( self, service_name: Optional[str] ) -> Optional[Activity]:
 		if service_name:
-			_all = self.find( [f'{KEY_SERVICE}:{service_name}'], False, True, True )
+			_all = self.find( [f'{KEY_SERVICE}:{service_name}'] )
 		else:
-			_all = self.find( [], True, False, True )
+			_all = self.find( [] )
 
 		_all = self.filter( _all, [Query().time.exists()] )
 		return max( _all, key=lambda x: x.get( 'time' ) ) if len( _all ) > 0 else None

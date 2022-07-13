@@ -1,7 +1,5 @@
-from typing import Any
-from typing import Dict
+
 from typing import List
-from typing import Optional
 
 from attrs import define
 from attrs import field
@@ -13,7 +11,6 @@ from . import document
 from ..activity import Activity
 from ..activity import ActivityRef
 from ..dataclasses import PERSIST
-from ..dataclasses import PERSIST_AS
 from ..dataclasses import PROTECTED
 
 log = getLogger( __name__ )
@@ -39,8 +36,8 @@ class ActivityGroup( Activity ):
 	group_refs: List[ActivityRef] = field( init=True, default=[], converter=str2groups, metadata={ PERSIST: False } ) # not sure if we really need this field
 	classifiers: List[str] = field( init=False, default=[], metadata={ PERSIST: False } )
 
-	def __attrs_post_init__( self ):
-		super().__attrs_post_init__()
+	def __post_init__( self ):
+		super().__post_init__()
 
 		self.raw_id = self.id
 		self.classifier = 'group'

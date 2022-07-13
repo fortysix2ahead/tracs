@@ -107,8 +107,8 @@ TYPES = {
 @document
 class StravaActivity( Activity ):
 
-	def __attrs_post_init__( self ):
-		super().__attrs_post_init__()
+	def __post_init__( self ):
+		super().__post_init__()
 
 		if self.raw:
 			self.raw_id = self.raw.get( 'id', 0 )
@@ -129,7 +129,6 @@ class StravaActivity( Activity ):
 			self.heartrate_max = float( self.raw.get( 'max_heartrate' ) ) if self.raw.get( 'max_heartrate' ) else None
 			self.location_country = self.raw.get( 'location_country' )
 
-		self.classifier = SERVICE_NAME
 		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
 
 @service

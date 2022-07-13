@@ -111,21 +111,19 @@ TYPES = {
 @document
 class PolarActivity( Activity ):
 
-	def __attrs_post_init__( self ):
-		super().__attrs_post_init__()
+	def __post_init__( self ):
+		super().__post_init__()
 
 		if self.raw:
 			self.raw_id = _raw_id( self.raw )
 			self.name = self.raw.get( 'title' )
 			self.type = _type_of( self.raw )
-			# self.event_type = self.raw.get( 'eventType' )
 			self.time = parse( self.raw['datetime'], ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC )
 			self.localtime = parse( self.raw['datetime'], ignoretz=True ).replace( tzinfo=tzlocal() )
 			self.distance = self.raw.get( 'distance' )
 			self.duration = stt( self.raw['duration'] / 1000 ) if self.raw.get( 'duration' ) else None
 			self.calories = self.raw.get( 'calories' )
 
-		self.classifier = SERVICE_NAME
 		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
 
 @service

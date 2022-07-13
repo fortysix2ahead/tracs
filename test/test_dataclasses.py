@@ -2,7 +2,6 @@
 from pytest import raises
 
 from tracs.dataclasses import as_dict
-from tracs.dataclasses import attr_for
 from tracs.dataclasses import BaseDocument
 
 # test BaseDocument as the DataClass class is not of much use as it does not contain any fields
@@ -10,18 +9,22 @@ def test_dataclass_document():
 	bd = BaseDocument()
 	assert bd.doc_id == 0 and bd['doc_id'] == 0 and 'doc_id' in bd
 	assert bd.id == 0 and bd['id'] == 0 and 'id' in bd
-
-	bd = BaseDocument( {'value': 1} )
-	assert 'value' not in bd
 	with raises( AttributeError ):
-		assert bd.value == 1
+		test = bd.undeclared
+	assert bd.get( 'undeclared' ) is None
 
-	bd = BaseDocument( {'value': 1}, 20 )
-	assert 'value' not in bd
+	bd = BaseDocument( { 'undeclared': 1 } )
+	with raises( AttributeError ):
+		test = bd.undeclared
+	assert bd.get( 'undeclared' ) is None
+	assert 'undeclared' not in bd
+
+	bd = BaseDocument( {'undeclared': 1}, 20 )
+	assert 'undeclared' not in bd
 	assert bd['doc_id'] == 20 and bd.doc_id == 20
 
 	with raises( TypeError ):
-		BaseDocument( {'value': 1}, some_value=20 )  # this leads to unexpected keyword argument
+		BaseDocument( {'value': 1}, undeclared=20 )  # this leads to unexpected keyword argument
 
 	# provided doc_id
 	bd = BaseDocument( doc_id=10 )
@@ -32,7 +35,6 @@ def test_dataclass_document():
 	assert 'value' not in bd
 	assert bd['doc_id'] == 10 and bd.doc_id == 10
 
-
 def test_contains():
 	bd = BaseDocument( {'value': 1}, 10 )
 
@@ -42,7 +44,6 @@ def test_contains():
 	assert bd.hasattr( 'doc_id' )
 	assert 'doc_id' in bd
 
-
 def test_get():
 	bd = BaseDocument()
 	assert bd._values_for( 'doc_id' ) == (0, 0, 0)
@@ -51,14 +52,12 @@ def test_get():
 	assert bd._values_for( 'doc_id' ) == (10, 10, 10)
 	assert bd._values_for( 'value' ) == (None, None, None)
 
-
 def test_keys_values_items():
 	bd = BaseDocument( {'value': 1}, 10 )
 
 	assert 'doc_id' in list( bd.keys() )
 	assert 10 in bd.values()
 	assert ('doc_id', 10) in list( bd.items() )
-
 
 def test_testdataclass():
 	# default empty document
@@ -91,30 +90,24 @@ def test_testdataclass():
 	bd = BaseDocument( {'undeclared': 10} )
 	assert bd._values_for( 'undeclared' ) == (None, None, None)
 
-
 def test_testdataclass_asdict():
 	bd = BaseDocument()
-	assert bd.asdict() == {'classifier': None, 'raw_id': 0}
+	assert bd.asdict() == {}
 	bd.id = 20
-	assert bd.asdict() == {'classifier': None, 'raw_id': 0}
+	assert bd.asdict() == {}
 	bd['id'] = 30
-	assert bd.asdict() == {'classifier': None, 'raw_id': 0}
+	assert bd.asdict() == {}
 
 	bd = BaseDocument( id=30 )
-	assert bd.asdict() == {'classifier': None, 'raw_id': 0}
+	assert bd.asdict() == {}
 	bd = BaseDocument( {'id': 20} )
-	assert bd.asdict() == {'classifier': None, 'raw_id': 0}
+	assert bd.asdict() == {}
 	bd = BaseDocument( {'undeclared': 10} )
-	assert bd.asdict() == {'classifier': None, 'raw_id': 0}
-
-def test_attr_for():
-	attrs = BaseDocument().__attrs_attrs__
-	assert attr_for( attributes=attrs, key='uid' ) is not None
-	assert attr_for( attributes=attrs, key='uuid' ) is None
+	assert bd.asdict() == {}
 
 def test_as_dict():
 	bd = BaseDocument()
-	assert as_dict( bd ) == {'raw_id': 0}
+	assert as_dict( bd ) == {}
 	assert as_dict( bd, remove_protected=True ) == {}
 
 	bd.data= { 'k': 'v' }
@@ -122,40 +115,22 @@ def test_as_dict():
 	assert as_dict( bd, remove_persist=False, remove_data=True ) == {
 		'doc_id': 0,
 		'id': 0,
-		'raw_id': 0,
-		'uid': 'base:0'
 	}
 
 	assert as_dict( bd, remove_persist=False, remove_data=False ) == {
 		'data': {'k': 'v'},
 		'doc_id': 0,
-		'id': 0,
-		'raw_id': 0,
-		'uid': 'base:0'
+		'id': 0
 	}
 
 	assert as_dict( bd, remove_persist=False, remove_null=False, remove_data=True ) == {
-		'classifier': None,
-		'dataclass' : None,
 		'doc_id'    : 0,
 		'id'        : 0,
-		'raw'       : None,
-		'raw_data'  : None,
-		'raw_id'    : 0,
-		'raw_name'  : None,
-		'service'   : None,
-		'uid'       : 'base:0'
+		'uid'        : None,
 	}
 	assert as_dict( bd, remove_persist=False, remove_null=False, remove_data=False ) == {
-		'classifier': None,
 		'data'      : {'k': 'v'},
-		'dataclass' : None,
 		'doc_id'    : 0,
 		'id'        : 0,
-		'raw'       : None,
-		'raw_data'  : None,
-		'raw_id'    : 0,
-		'raw_name'  : None,
-		'service'   : None,
-		'uid'       : 'base:0'
+		'uid'       : None
 	}

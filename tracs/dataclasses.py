@@ -236,49 +236,17 @@ class BaseDocument( DataClass ):
 	"""doc_id for tinydb compatibility"""
 
 	id: int = field( init=True, default=0, metadata={ PERSIST: False, PROTECTED: True } )
-	"""id of the document, will not be persisted as it is calculated from raw_id/doc_id"""
+	"""id of the document, will not be persisted as it is calculated from doc_id"""
 
-	uid: str = field( init=False, default=None, metadata={ PERSIST: False, PROTECTED: True } )
-	"""unique id of this document in the form of <classfifier>:<id or raw_id>"""
-
-	classifier: str = field( init=True, default=None, metadata={ PROTECTED: True } )
-	"""classifier of this document, used to mark documents as belonging to a certain service"""
-
-	dataclass: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )
-	"""indicator for which class is to be used when deserializing, not yet used"""
-
-	service: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )
-	"""virtual field for backward compatibility, to be removed"""
-
-	raw: Any = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # raw data used for initialization from external data sources
-	raw_id: int = field( init=True, default=0, metadata= { PROTECTED: True } )  # raw id as raw data might not contain all data necessary
-	raw_name: str = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # same as raw id
-	raw_data: Union[str, bytes] = field( init=True, default=None, metadata={ PERSIST: False, PROTECTED: True } )  # serialized version of raw, can be i.e. str or bytes
+	uid: str = field( init=True, default=None, metadata={ PROTECTED: True } )
+	"""unique id of this document in the form of <classifier:number>"""
 
 	def __attrs_post_init__( self ):
 		super().__attrs_post_init__()
 
 		if self.data:
 			for name, value in self.data.items():
-				# overwrite att if its value is the default
-				if self.hasattr( name ) and getattr( self, name ) == self._attr_for( name ).default:
-					setattr( self, name, value )
-			# self.data = None # delete data after content has been imported
+				setattr( self, name, value )
 
-		self.id = self.doc_id if self.id == self._attr_for( 'id' ).default else self.id
-		self.uid = f'base:{self.id}'
-		self.service = self.classifier # todo: for backward compatibility
-
-# syntactic sugar for field
-
-def fld( *args, **kwargs ) -> Any:
-	_persist = kwargs.pop( PERSIST, False )
-	_persist_as = kwargs.pop( PERSIST_AS, None )
-	_protected = kwargs.pop( PROTECTED, False )
-	_metadata = {
-		PERSIST: _persist,
-		PERSIST_AS: _persist_as,
-		PROTECTED: _protected,
-	}
-
-	return field( *args, **kwargs, metadata=_metadata )
+		if self.doc_id:
+			self.id = self.doc_id

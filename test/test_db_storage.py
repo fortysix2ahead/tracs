@@ -12,10 +12,12 @@ from pytest import mark
 from orjson import loads as load_json
 from orjson import dumps as save_json
 
+from tracs.activity import Activity
 from tracs.activity import Resource
 from tracs.activity_types import ActivityTypes
 from tracs.db import document_cls
 from tracs.db_storage import DataClassStorage
+from tracs.db_storage import OrJSONStorage
 from tracs.plugins.polar import PolarActivity
 from tracs.plugins.strava import StravaActivity
 from tracs.plugins.waze import WazeActivity
@@ -25,7 +27,7 @@ from .helpers import get_writable_db_path
 
 unserialized_data = {
 	"_default": {
-		"1": PolarActivity(
+		"1": Activity(
 			doc_id=1,
 			calories=2904,
 			distance=30000.1,
@@ -33,7 +35,6 @@ unserialized_data = {
 			localtime=datetime( 2012, 1, 7, 10, 40, 51, tzinfo=tzlocal() ),
 			name='03:23:53;0.0 km',
 			raw_id=1234567890,
-			resources=[Resource( name='one', type='gpx', status=100, path='one.gpx' )],
 			time=datetime( 2012, 1, 7, 9, 40, 51, tzinfo=UTC ),
 			type=ActivityTypes.xcski_classic,
 		)
@@ -102,7 +103,25 @@ def test_read( json ):
 	assert storage.memory.memory is None
 
 	# read from default db template
-	path, db_path, meta_path = get_db_path( 'default', False )
+	path, db_path, meta_path = get_db_path( 'default', writable=False )
+
+	# read without deserializers
+	data = OrJSONStorage( path=db_path, access_mode='r' ).read()
+	assert type( data['_default']['1']['time'] ) is str
+	assert type( data['_default']['1']['type'] ) is str
+
+	deserializers = {
+		'localtime': lambda v: datetime.fromisoformat( v ),
+		'time': lambda v: datetime.fromisoformat( v ),
+		'type': lambda v: ActivityTypes.get( v )
+	}
+	data = OrJSONStorage( path=db_path, access_mode='r', deserializers=deserializers ).read()
+
+	assert type( data['_default']['1']['time'] ) is datetime
+	assert type( data['_default']['1']['localtime'] ) is datetime
+	assert type( data['_default']['1']['type'] ) is ActivityTypes
+
+	return
 
 	storage = DataClassStorage( path=db_path, use_memory_storage=True )
 	assert storage.memory.memory is None
@@ -121,7 +140,12 @@ def test_read( json ):
 
 @mark.db( template='default' )
 def test_write( json ):
-	path, db_path, meta_path = get_db_path( 'empty', False )
+	path, db_path, meta_path = get_db_path( 'empty', writable=True )
+	OrJSONStorage( path=db_path, access_mode='r+' ).write( serialized_file_data )
+
+	return
+
+	path, db_path, meta_path = get_db_path( 'empty', writable=False )
 	storage = DataClassStorage( path=path, use_memory_storage=True )
 	storage.write( json )
 

@@ -1,7 +1,6 @@
 {
   "_default": {
     "1": {
-      "classifier": "group",
       "name": "Unknown Location",
       "type": "xcski",
       "time": "2012-01-07T10:40:56+00:00",
@@ -9,66 +8,25 @@
       "location_country": "",
       "location_city": null,
       "tags": [],
-      "empty_field": "",
-      "nonempty_field": "value",
-      "null_field": null,
-      "group_ids": [ 2, 3, 4 ],
-      "group_uids": [ "polar:1234567890", "strava:12345678", "waze:20210101010101" ],
-      "metadata": {}
+      "uids": [ "polar:1234567890", "strava:12345678", "waze:20210101010101" ]
     },
     "2": {
       "name": "03:23:53;0.0 km",
       "calories": 2904,
-      "classifier": "polar",
       "distance": 30000.1,
       "duration_moving": "01:40:00",
-      "parent_id": 1,
-      "parent_uid": "group:1",
       "heartrate": 150,
-      "metadata": {},
       "raw_id": 1234567890,
       "time": "2012-01-07T10:40:51.000+00:00"
     },
     "3": {
       "name": "Run at Noon",
-      "classifier": "strava",
-      "parent_id": 1,
-      "parent_uid": "group:1",
-      "resources": [
-        {
-          "name": null,
-          "path": "12345678.gpx",
-          "type": "gpx",
-          "status": 100
-        },
-        {
-          "name": null,
-          "path": "12345678.tcx",
-          "type": "tcx",
-          "status": 100
-        }
-      ],
-      "metadata": {},
       "raw_id": 12345678,
       "time": "2012-01-07T10:40:56+00:00",
       "localtime": "2012-01-07T11:40:56+01:00"
     },
     "4": {
       "name": "Unknown Location",
-      "classifier": "waze",
-      "parent_id": 1,
-      "parent_uid": "group:1",
-      "metadata": {
-        "source_path": "Takeout 2021-01-01/account_activity_3.csv"
-      },
-      "resources": [
-        {
-          "name": null,
-          "path": "20210101010101.gpx",
-          "type": "gpx",
-          "status": 100
-        }
-      ],
       "raw_id": 20210101010101,
       "time": "2021-01-11T12:00:00+00:00"
     },

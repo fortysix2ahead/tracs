@@ -164,10 +164,10 @@ def _filter_activities( all_, filters ) -> [Activity]:
 @cli.command( 'list', help='lists activities' )
 @option( '-s', '--sort', is_flag=False, required=False, type=Choice(['id', 'name', 'date', 'type'], case_sensitive=False), help='sorts the output according to an attribute' )
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )
-@option( '-g', '--include-grouped', is_flag=True, required=False, help='include grouped activities' )
 @argument('filters', nargs=-1)
-def ls( sort, format_name, filters, include_grouped ):
-	list_activities( gc.db.find( filters, True, include_grouped, True ), sort, format_name )
+@pass_context
+def ls( ctx, sort, format_name, filters ):
+	list_activities( ctx.obj.db.find( filters ), sort, format_name )
 
 @cli.command( help='shows details about activities' )
 @option( '-f', '--format', 'frmt', is_flag=False, required=False, type=str, hidden=True, help='uses the provided format string when printing', metavar='FORMAT' )

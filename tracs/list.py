@@ -120,7 +120,6 @@ def show_activity( activities: [Activity], frmt: str = None, display_raw: bool =
 					[ 'Calories', a.calories ],
 					[ 'Raw ID', a.raw_id ],
 					[ 'UID', a.uid ],
-					[ 'Service', a.classifier ],
 				]
 
 				for row in rows:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from datetime import time
 from io import UnsupportedOperation
 from inspect import isfunction
 from logging import getLogger
@@ -101,6 +102,8 @@ class DataClassStorage( Storage ):
 	}
 
 	deserializers: Dict[str,Callable] = {
+		'duration': lambda v: time.fromisoformat( v ),
+		'duration_moving': lambda v: time.fromisoformat( v ),
 		'localtime': lambda v: datetime.fromisoformat( v ),
 		'time': lambda v: datetime.fromisoformat( v ),
 		'type': lambda v: ActivityTypes.get( v )
@@ -173,14 +176,9 @@ class DataClassStorage( Storage ):
 		return as_dict( item, item_cls, modify_arg=True, remove_null=self._remove_null_fields )
 
 	def flush( self ) -> None:
-		data = self._memory.read()
-		if self._path and data:
-			if self._memory_changed:
-				data = self.write_data( data )  # do final conversion to dict as memory might contain unconverted data
-				self._path.write_bytes( dump_as_json( data, option=self.orjson_options ) )
-				self._memory_changed = False  # keep track of 'persist necessary' status
-		else:
-			log.debug( 'db storage flush called without path and/or data' )
+		data = self.memory_storage.read()
+		if self.json_storage:
+			self.json_storage.write( data )
 
 	def close( self ) -> None:
 		self.flush()

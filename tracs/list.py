@@ -62,7 +62,7 @@ def list_activities( activities: [Activity], sort: str, format_name: str ) -> No
 	table.add_column( '[blue]uid' )
 
 	for a in activities:
-		table.add_row( pp( a.doc_id ), a.name, fmt( a.type ), fmt( a.localtime ), pp( a.uid ) )
+		table.add_row( pp( a.doc_id ), a.name, fmt( a.type ), fmt( a.localtime ), pp( a.uids ) )
 
 	if len( table.rows ) > 0:
 		console.print( table )

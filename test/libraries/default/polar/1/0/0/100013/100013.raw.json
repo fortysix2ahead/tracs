@@ -1,0 +1,8 @@
+{
+        "type": "ORTHOSTATICTEST",
+        "eventType": "orthostaticTest",
+        "title": "Orthostatic test",
+        "datetime": "2016-09-28T21:11:04.000",
+        "result": "60 (0)",
+        "url": "/progress/tests?type=orthostatic_test&id=100013"
+}

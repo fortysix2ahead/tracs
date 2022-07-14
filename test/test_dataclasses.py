@@ -125,12 +125,11 @@ def test_as_dict():
 
 	assert as_dict( bd, remove_persist=False, remove_null=False, remove_data=True ) == {
 		'doc_id'    : 0,
-		'id'        : 0,
-		'uid'        : None,
+		'id'        : 0
 	}
+
 	assert as_dict( bd, remove_persist=False, remove_null=False, remove_data=False ) == {
 		'data'      : {'k': 'v'},
 		'doc_id'    : 0,
-		'id'        : 0,
-		'uid'       : None
+		'id'        : 0
 	}

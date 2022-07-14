@@ -26,6 +26,7 @@ from .helpers import clean
 from .helpers import get_db_as_json
 from .helpers import get_file_as_json
 from .helpers import get_file_db
+from .helpers import get_file_path
 from .helpers import get_inmemory_db
 from .helpers import var_run_path
 from .polar_server import polar_server
@@ -82,6 +83,11 @@ def json( request ) -> Optional[Dict]:
 		return get_db_as_json( template )
 	elif marker := request.node.get_closest_marker( 'file' ):
 		return get_file_as_json( marker.args[0] )
+
+@fixture
+def path( request ) -> Optional[Path]:
+	if marker := request.node.get_closest_marker( 'file' ):
+		return get_file_path( marker.args[0] )
 
 @fixture
 def config_state( request ) -> Optional[Tuple[Dict, Dict]]:

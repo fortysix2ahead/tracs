@@ -1,10 +1,9 @@
-
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
 from typing import Protocol
 from typing import Union
 
-from attr import define
 from gpxpy import parse as parse_gpx
 from gpxpy.gpx import GPX
 from orjson import loads as load_json
@@ -37,7 +36,7 @@ class JSONHandler( DocumentHandler ):
 		with open( file=path, mode='w+', buffering=8192, encoding='UTF-8' ) as p:
 			p.write( save_json( content, option=JSONHandler.options ).decode( 'UTF-8' ) )
 
-@define
+@dataclass
 class GPXActivity( Activity ):
 
 	def __post_init__( self ):

@@ -138,9 +138,6 @@ class BaseDocument( DataClass ):
 	id: int = field( default=0, metadata={ PERSIST: False, PROTECTED: True } )
 	"""id of the document, will not be persisted as it is calculated from doc_id"""
 
-	uid: str = field( default=None, metadata={ PROTECTED: True } )
-	"""unique id of this document in the form of <classifier:number>"""
-
 	def __post_init__( self ):
 		super().__post_init__()
 

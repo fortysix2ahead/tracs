@@ -50,7 +50,8 @@ class WazeActivity( Activity ):
 			self.localtime = as_datetime( self.time, tz=gettz() )
 
 		self.type = ActivityTypes.drive
-		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
+		self.classifier = f'{SERVICE_NAME}'
+		self.uid = f'{self.classifier}:{self.raw_id}'
 
 @service
 class Waze( Service, Plugin ):

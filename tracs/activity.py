@@ -52,7 +52,9 @@ class ActivityRef:
 @dataclass
 class Activity( BaseDocument ):
 
-	uids: List[str] = field( default_factory=list, metadata={ PERSIST: False, PROTECTED: True } ) # uids of activities which belong to this activity
+	classifier: str = field( default=None, metadata={ PROTECTED: True } ) # classifier of this activity, only used in subclasses
+	uid: str = field( default=None, metadata={ PROTECTED: True } ) # unique id of this actvity in the form of <classifier:number>, only used in subclasses
+	uids: List[str] = field( default_factory=list, metadata={ PROTECTED: True } ) # uids of activities which belong to this activity
 
 	raw: Any = field( default=None, metadata={ PERSIST: False, PROTECTED: True } )  # structured raw data used for initialization from external data
 	raw_id: int = field( default=None, metadata= { PROTECTED: True } )  # raw id as raw data might not contain all data necessary

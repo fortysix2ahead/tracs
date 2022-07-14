@@ -5,36 +5,30 @@ from datetime import timezone
 
 from pytest import mark
 
-from tracs.activity import ActivityRef
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.strava import StravaActivity
 
-@mark.db( template='strava' )
-def test_init_from_db( json ):
-	sa = StravaActivity( json['_default']['1'], 1 )
-	assert sa.groups == { "parent": 1 }
-	assert sa.parent_id == 1
-	assert sa.parent_uid == 'group:1'
-	assert sa.parent_ref == ActivityRef( 1, 'group:1' )
+@mark.file( 'libraries/default/strava/2/0/0/200002/200002.raw.json' )
+def test_init_from_raw( json ):
+	sa = StravaActivity( raw = json )
 
-	sa = StravaActivity( json['_default']['2'], 2 )
-
-	assert sa.id == 2
-	assert sa.uid == 'strava:20000000'
-	assert sa.raw_id == 20000000
-	assert sa.type == ActivityTypes.hike
-	assert sa.time == datetime( 2019, 4, 22, 12, 4, 41, tzinfo=timezone.utc )
-	assert sa.localtime == datetime( 2019, 4, 22, 14, 4, 41, tzinfo=timezone.utc )
+	assert sa.id == 0
+	assert sa.classifier == 'strava'
+	assert sa.uid == 'strava:200001'
+	assert sa.raw_id == 200001
+	assert sa.type == ActivityTypes.run
+	assert sa.time == datetime( 2018, 12, 16, 13, 15, 12, tzinfo=timezone.utc )
+	assert sa.localtime == datetime( 2018, 12, 16, 14, 15, 12, tzinfo=timezone.utc )
 	assert sa.distance == 8533.7
-	assert sa.speed == 1.116
-	assert sa.speed_max == 8.4
-	assert sa.ascent == 237.7
-	assert sa.descent == 237.7
-	assert sa.elevation_max == 236.3
-	assert sa.elevation_min == 117.2
-	assert sa.duration == time( 3, 0, 39 )
-	assert sa.duration_moving == time( 2, 7, 25 )
-	assert sa.heartrate == 87.7
+	assert sa.speed == 2.353
+	assert sa.speed_max == 3.1
+	assert sa.ascent == 81.0
+	assert sa.descent == 81.0
+	assert sa.elevation_max == 260.5
+	assert sa.elevation_min == 202.4
+	assert sa.duration == time( 0, 36, 25 )
+	assert sa.duration_moving == time( 0, 33, 29 )
+	assert sa.heartrate == 149.1
 	assert sa.heartrate_min is None
-	assert sa.heartrate_max == 151.0
+	assert sa.heartrate_max == 171.0
 	assert sa.location_country == 'Germany'

@@ -129,7 +129,8 @@ class StravaActivity( Activity ):
 			self.heartrate_max = float( self.raw.get( 'max_heartrate' ) ) if self.raw.get( 'max_heartrate' ) else None
 			self.location_country = self.raw.get( 'location_country' )
 
-		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
+		self.classifier = f'{SERVICE_NAME}'
+		self.uid = f'{self.classifier}:{self.raw_id}'
 
 @service
 class Strava( Service, Plugin ):

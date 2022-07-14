@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import fields
 from datetime import datetime
 from typing import Any
 from typing import Dict
@@ -109,9 +110,9 @@ class Activity( BaseDocument ):
 
 	def init_from( self, other: Activity = None, raw: Dict = None ):
 		if other:
-			for attr in self.__class__.__attrs_attrs__:
-				if not attr.metadata.get( PROTECTED, False ):
-					self.__setattr__( attr.name, other.__getattribute__( attr.name ) )
+			for f in fields( self ):
+				if not f.metadata.get( PROTECTED, False ):
+					setattr( self, f.name, getattr( other, f.name ) )
 		elif raw:
 			self.raw = raw
 			self.__post_init__()

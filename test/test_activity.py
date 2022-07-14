@@ -11,7 +11,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.dataclasses import as_dict
 from tracs.plugins.polar import PolarActivity
 
-@mark.db( template='default' )
+@mark.file( 'libraries/default/activities.json' )
 def test_init( json ):
 	# empty init
 	a = Activity()
@@ -29,19 +29,18 @@ def test_init( json ):
 
 	assert a.doc_id == 1 and a['doc_id'] == 1
 	assert a['id'] == 1 and a.id == 1
-	assert a.type == ActivityTypes.xcski
-
-	# empty_field is in json, but is not declared as attribute
-	assert a['empty_field'] is None
-	assert 'empty_field' not in a
+	assert a.type == "run"
+	# assert a.type == ActivityTypes.run
 
 	# times
-	assert a.time == datetime( 2012, 1, 7, 10, 40, 56, tzinfo=UTC )
-	assert a.localtime == datetime( 2012, 1, 7, 11, 40, 56, tzinfo=tzlocal() )
+	assert a.time == '2012-10-24T23:29:40+00:00'
+	#assert a.time == datetime( 2012, 1, 7, 10, 40, 56, tzinfo=UTC )
+	assert a.localtime == '2012-10-24T22:29:40+01:00'
+	#assert a.localtime == datetime( 2012, 1, 7, 11, 40, 56, tzinfo=tzlocal() )
 
-@mark.db( template='default' )
+@mark.file( 'libraries/default/polar/1/0/0/100001/100001.raw.json' )
 def test_init_from( json ):
-	src = PolarActivity( json['_default']['2'], 2 )
+	src = PolarActivity( json, 2 )
 	target = Activity( doc_id = 3 )
 	target.init_from( src )
 
@@ -53,11 +52,13 @@ def test_asdict():
 	assert a.asdict() == {
 		'resources'       : [],
 		'tags'            : [],
+		'uids'            : []
 	}
 
 	assert as_dict( a ) == {
 		'resources': [],
-		'tags'     : []
+		'tags'     : [],
+		'uids'     : []
 	}
 
 	assert as_dict( a, remove_persist=False ) == {
@@ -71,7 +72,6 @@ def test_asdict():
 	activity_dict = {
 		'classifier': 'polar',
 		'doc_id'    : 1,
-		'groups'    : {},
 		'id'        : 1,
 		'metadata'  : {},
 		'name'      : 'name',
@@ -79,12 +79,11 @@ def test_asdict():
 		'resources' : [Resource( name='one', path='one.gpx', status=100, type='gpx' )],
 		'time'      : datetime( 2020, 1, 1, 10, 0, 0, tzinfo=UTC ),
 		'type'      : ActivityTypes.run,
-		'uid'       : 'polar:1'
+		'uid'       : 'test:1'
 	}
 
-	assert as_dict( activity_dict, Activity ) == {
+	assert as_dict( Activity( data=activity_dict ) ) == {
 		'classifier': 'polar',
-		'groups'    : {},
 		'metadata'  : {},
 		'resources' : [{
 			'name'  : 'one',
@@ -94,8 +93,10 @@ def test_asdict():
 			'uid'   : None
 		}],
 		'name'       : 'name',
-		'raw_id'     : 1,
-		'time'       : '2020-01-01T10:00:00+00:00',
-		'type'       : 'run',
-		'uid'        : 'polar:1'
+		'raw_id'       : 1,
+		'tags'     : [],
+		'time'       : datetime( 2020, 1, 1, 10, 0, 0, tzinfo=UTC ),
+		'type'       : ActivityTypes.run,
+		'uid'        : 'test:1',
+		'uids'        : []
 	}

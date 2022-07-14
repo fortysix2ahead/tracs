@@ -22,35 +22,33 @@ from .helpers import get_db_path
 def test_new_db():
 	db = ActivityDb( path=None )
 	assert type( db.storage ) is DataClassStorage
-	assert db.storage._use_memory_storage is True
+	assert db.storage.use_memory_storage is True
 
 	db = ActivityDb( path=None, pretend=True, cache=False )
-	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
+	assert db.storage.use_memory_storage is True and db.storage.use_cache is True
 
 	db = ActivityDb( path=None, pretend=False, cache=True )
-	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
+	assert db.storage.use_memory_storage is True and db.storage.use_cache is True
 
 	db = ActivityDb( path=None, pretend=True, cache=True )
-	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
+	assert db.storage.use_memory_storage is True and db.storage.use_cache is True
 
 	parent_path, db_path, meta_path = get_db_path( 'empty', writable=False )
 	db = ActivityDb( path=parent_path, pretend=True, cache=False )
-	assert db.storage._use_memory_storage is True and db.storage._use_cache is True
+	assert db.storage.use_memory_storage is True and db.storage.use_cache is True
 
 	parent_path, db_path, meta_path = get_db_path( 'empty', writable=True )
 	db = ActivityDb( path=parent_path, pretend=False, cache=True )
-	assert db.storage._use_memory_storage is False and db.storage._use_cache is True
+	assert db.storage.use_memory_storage is False and db.storage.use_cache is True
 
 @mark.db( template='default', inmemory=True )
 def test_open_db( db ):
-	assert isinstance( db.default, Table )
 	assert isinstance( db.activities, Table )
 
-	assert len( db.default.all() ) == 1
-	assert db.default.all()[0]['version'] > 0
+	assert len( db.activities.all() ) > 1
+	assert db.activities.all()[0]['version'] > 0
 
-	assert db.default.document_class is Document
-	assert db.activities.document_class is document_factory
+	assert db.activities.document_class is Activity
 
 @mark.db( template='empty', inmemory=True )
 def test_write_middleware( db ):

@@ -1,6 +1,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from dataclasses import field as fld
 from datetime import date
 from datetime import datetime
 from datetime import time
@@ -20,8 +22,6 @@ from typing import Union
 
 from arrow import Arrow
 from arrow import now
-from attrs import define
-from attrs import field as fld
 from dateutil.tz import UTC
 from tinydb.queries import Query
 from tinydb.queries import QueryLike
@@ -90,26 +90,28 @@ R_EXPR_DATE_RANGE = '({DATE_FROM})?\.\.({DATE_TO})?$'.format( DATE_FROM = DATE_F
 R_EXPR_TIME = '{TIME}$'.format( TIME = TIME )
 R_EXPR_TIME_RANGE = '({TIME_FROM})?\.\.({TIME_TO})?$'.format( TIME_FROM = TIME_FROM, TIME_TO = TIME_TO )
 
-@define( frozen=False, hash=True )
+@dataclass
 class Filter( QueryLike ):
 
 	field: Optional[Union[str, List[str]]] = fld( default=None ) # field to filter for
-	value: Any = fld( default=None ) # value which needs to match
-	classifier: Optional[str] = fld( default=None )
-	sequence: Optional[List] = fld( default=None )
+
+	# value which needs to match, example: calories = 100 matches doc['calories] = 100
+	# if value is a list: example: location = [Berlin, Frankfurt, Hamburg] matches doc[location] = Berlin
+	value: Any = fld( default=None )
+	# classifier: Optional[str] = fld( default=None )
+	# sequence: Optional[List] = fld( default=None )
 	range_from: Any = fld( default=None )
 	range_to: Any = fld( default=None )
-	negate: bool = fld( default=False )
-	# raw: bool = fld( default=False ) # treat the field as raw field, not as a regular one
 
-	# not used at the moment, this for grouping other filters
-	filters: List[Filter] = fld( default=None, eq=False )
+	regex: bool = fld( default=True ) # indicator that value does not contain the exact value to match but a regex instead
+	part_of_list: bool = fld( default=False ) # when true the value is expected to be part of a list
+	negate: bool = fld( default=False )
 
 	# callable to be executed during filter evaluation
-	callable: Optional[Union[Callable, QueryLike]] = fld( default=None, repr=False, eq=False )
-	valid: bool = fld( default=True, repr=False, eq=False )
+	callable: Optional[Union[Callable, QueryLike]] = fld( default=None, repr=False, compare=False )
+	valid: bool = fld( default=True, repr=False, compare=False )
 
-	def __attrs_post_init__( self ):
+	def __post_init__( self ):
 		self.freeze()
 
 	def __call__( self, value: Mapping ) -> bool:
@@ -117,15 +119,6 @@ class Filter( QueryLike ):
 			return self.callable( value )
 		else:
 			raise RuntimeError( f'error calling filter {self}, has the filter been freezed?' )
-
-	def prepare( self ) -> Filter:
-		"""
-		Convenience method: calls prepare().
-
-		:return: self
-		"""
-		prepare( self )
-		return self
 
 	# noinspection PyTypeChecker
 	def freeze( self ) -> Filter:
@@ -143,16 +136,20 @@ class Filter( QueryLike ):
 
 		if self.field is None:
 			if type( self.value ) is int:
-				self.callable = (Query()['id'] == self.value) | (Query()['doc_id'] == self.value) | (Query()['raw_id'] == self.value)
+				self.callable = (Query()['id'] == self.value) | (Query()['raw_id'] == self.value)
 
 		if type( self.field ) is str:
 			if type( self.value ) is str:
-				if self.field in CLASSIFIER_FIELDS: # special case for classifier:/service:/soource:
-					def fn( value, classifier: str ) -> bool:
-						return classifier in value if value else False
-					self.callable = (Query()[FIELD_CLASSIFIER] == self.value) | (Query()[FIELD_CLASSIFIERS].test( fn, self.value ))
+				if self.part_of_list:
+					if self.regex:
+						self.callable = Query()[self.field].test( lambda values, s: any( [ match( s, v ) for v in values ] ), self.value )
+					else:
+						self.callable = Query()[self.field].test( lambda values, s: s in values, self.value )
 				else:
-					self.callable = Query()[self.field].matches( f'.*{self.value}.*', flags=IGNORECASE )
+					if self.regex:
+						self.callable = Query()[self.field].matches( self.value, flags=IGNORECASE )
+					else:
+						self.callable = Query()[self.field] == self.value
 
 			elif isinstance( self.value, Enum ):
 				self.callable = Query()[self.field] == self.value
@@ -216,6 +213,15 @@ class Filter( QueryLike ):
 			return True
 		else:
 			return False
+
+@dataclass
+class FilterGroup( QueryLike ):
+
+	AND: str = 'AND'
+	OR: str = 'OR'
+
+	filters: List[Filter] = fld( default=None )
+	conjunction: str = fld( default=AND )
 
 # prepared/predefined filters
 
@@ -300,20 +306,15 @@ def parse( filter: Union[Filter, str] ) -> Optional[Filter]:
 
 	expr = ''
 
-	# integer number -> treated as id
+	# integer number -> treat as id
 	if m:= match( INTEGER, filter ):
-		f.value=int( m.groupdict()['value'] )
+		f.field = 'id'
+		f.value = int( m.groupdict()['value'] )
 
-	# classifier.field:expression
-	elif m := match( R_CLASSIFIER_FIELD_EXPR, filter ):
-		f.classifier = m.groupdict()['classifier']
-		f.field = m.groupdict()['field']
-		expr = m.groupdict()['expr']
-
-	# classifier.field:
-	elif m := match( R_CLASSIFIER_FIELD_EMPTY_EXPR, filter ):
-		f.classifier = m.groupdict()['classifier']
-		f.field = m.groupdict()['field']
+#	if m:= match( STRING, filter ):
+#		f.field = 'name'
+#		f.value = m.groupdict()['value']
+#		f.exact = False
 
 	# field:expression
 	elif m := match( R_FIELD_EXPR, filter ):
@@ -334,13 +335,13 @@ def parse( filter: Union[Filter, str] ) -> Optional[Filter]:
 			f.value = me.groupdict()['value']
 
 		elif me := match( R_EXPR_INTEGER_SEQUENCE, expr ):
-			f.sequence = [int( i ) for i in me.group().split( ',' )]
+			f.value = [int( i ) for i in me.group().split( ',' )]
 
 		elif me := match( R_EXPR_FLOAT_SEQUENCE, expr ):
-			f.sequence = [float( i ) for i in me.group().split( ',' )]
+			f.value = [float( i ) for i in me.group().split( ',' )]
 
 		elif me := match( R_EXPR_WORD_SEQUENCE, expr ):
-			f.sequence = [i for i in me.group().split( ',' )]
+			f.value = [i for i in me.group().split( ',' )]
 
 		elif me := match( R_EXPR_INTEGER_RANGE, expr ):
 			if me.groupdict()['range_from']:
@@ -415,19 +416,13 @@ def parse( filter: Union[Filter, str] ) -> Optional[Filter]:
 			elif me.groupdict()['hour_to']:
 				f.range_to = time( int( hour_to ) )
 
-	prepare( f )
+	# prepare the filter (adjustments after parsing)
 
-	return f
-
-def prepare( f: Filter ) -> None:
-	# special treament of field='service'/'source'
-	if f.field in ['classifier', 'service', 'source']:
-		f.field = FIELD_CLASSIFIER
-
-	# treat i.e. polar:123456 as raw_id for a service
+	# special treatment of raw ids
 	if f.field in Registry.services.keys() and type( f.value ) is int:
-		f.classifier = f.field
-		f.field = 'raw_id'
+		f.value = f'{f.field}:{f.value}'
+		f.field = 'uids'
+		f.regex = False
 
 	# date:<year> is captured by <field>:<int> in parser, so we need to correct it here
 	# same holds true for date:<year>..<year>
@@ -466,7 +461,8 @@ def prepare( f: Filter ) -> None:
 		if isinstance( f.range_to, int ):
 			f.range_to = time( f.range_to )
 
-	f.freeze() # freeze if not already done
+	# finally freeze the filter
+	return f.freeze()
 
 # helper functions
 

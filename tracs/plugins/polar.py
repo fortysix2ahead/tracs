@@ -226,11 +226,16 @@ class Polar( Service, Plugin ):
 	# noinspection PyMethodMayBeStatic
 	def _prototype( self, json ) -> PolarActivity:
 		raw_id = _raw_id( json )
+		uid = f'{self.name}:{raw_id}'
 		json_str = dump_json( json, option=ORJSON_OPTIONS )
-		json_name = f'{raw_id}.raw.json'
-		resources = [ Resource( type='raw', path=f"{raw_id}.raw.json", status=200 ) ]
-		resources.extend( [ Resource( type=key, path=f'{raw_id}.{key}.csv' if key == 'hrv' else f'{raw_id}.{key}', status= 100 ) for key in ['csv', 'gpx', 'hrv', 'tcx'] ] )
-		return PolarActivity( raw=json, raw_data=json_str, raw_name=json_name, resources=resources )
+		resources = [
+			Resource( type='raw', path=f"{raw_id}.raw.json", status=200, uid=uid, raw_data=json_str ),
+			Resource( type='csv', path=f'{raw_id}.csv', status=100, uid=uid ),
+			Resource( type='gpx', path=f'{raw_id}.gpx', status=100, uid=uid ),
+			Resource( type='tcx', path=f'{raw_id}.tcx', status=100, uid=uid ),
+			Resource( type='hrv', path=f'{raw_id}.hrv.csv', status=100, uid=uid )
+		]
+		return PolarActivity( raw=json, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
 		url = self.export_url_for( activity.raw_id, resource.type )

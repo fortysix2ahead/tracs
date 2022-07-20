@@ -109,11 +109,21 @@ class DataClassStorage( Storage ):
 		'type': lambda v: ActivityTypes.get( v )
 	}
 
-	def __init__( self, path: Path = None, use_memory_storage: bool = False, access_mode: str = 'r+', use_cache: bool = False, cache_size: int = 1000, passthrough=True ):
+	def __init__( self,
+	              path: Path = None,
+	              use_memory_storage: bool = False,
+	              access_mode: str = 'r+',
+	              use_cache: bool = False,
+	              cache_size: int = 1000,
+	              passthrough: bool = True,
+	              use_serializers: bool = True ):
 		super().__init__()
 
 		self.use_memory_storage = use_memory_storage if path else True  # auto-turn on memory mode when no path is provided
 		self.memory_storage = MemoryStorage()
+
+		self.serializers = DataClassStorage.serializers if use_serializers else None
+		self.deserializers = DataClassStorage.deserializers if use_serializers else None
 
 		self.json_storage = OrJSONStorage( path, access_mode=access_mode, serializers=self.serializers, deserializers=self.deserializers ) if path else None
 		self.data = self.json_storage.read() if self.json_storage else None

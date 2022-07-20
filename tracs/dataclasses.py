@@ -87,7 +87,7 @@ class DataClass( MutableMapping ):
 		return asdict( self ).__len__()
 
 	def keys( self ):
-		return asdict( self ).keys()
+		return as_dict( self ).keys()
 
 	def items( self ):
 		return asdict( self ).items()

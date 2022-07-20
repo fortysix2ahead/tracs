@@ -14,13 +14,14 @@ from typing import Tuple
 
 from dateutil.tz import UTC
 
-from .base import Activity
-from .base import Resource
+from .activity import Activity
+from .activity import Resource
 from .base import Service as AbstractServiceClass
 from .config import GlobalConfig as gc
 from .config import KEY_LAST_DOWNLOAD
 from .config import KEY_LAST_FETCH
 from .config import KEY_PLUGINS
+from .dataclasses import as_dict
 from .utils import fmt
 
 log = getLogger( __name__ )
@@ -130,36 +131,45 @@ class Service( AbstractServiceClass ):
 		#fetched_activities = []
 
 		fetched = self._fetch( force=force )
-		existing = list( gc.db.find( f'classifier:{self.name}', False, True, True ) )
-		old_new = [ ( next( (e for e in existing if e.uid == f.uid), None ), f ) for f in fetched ]
+		existing = list( gc.db.find_by_classifier( self.name ) )
+		old_new = [ ( next( ( e for e in existing if f.uid in e.uids ), None ), f ) for f in fetched ]
 
 		for _old, _new in old_new:
 			# insert if no old activity exists
 			if not _old:
-				doc_id = gc.db.insert( _new )
-				new_activities.append( _new )
-				# todo: log statement might cause problem when certain unicode chars are contained in name
-				# log.debug( f'created new activity {_new.uid} (id {doc_id}), name = {_new["name"]}, time = {fmt( _new["localtime"] )}')
-				log.debug( f'created new activity {_new.uid} (id {doc_id}), time = {fmt( _new["localtime"] )}')
+				_new_activity = Activity().init_from( _new )
+				_new_activity.uids.append( _new.uid ) # todo: this might be moved to init_from
+				doc_id = gc.db.insert( _new_activity )
+				new_activities.append( _new_activity )
+				log.debug( f'created new activity {doc_id} (id {_new_activity.id}), time = {fmt( _new_activity.time )}')
+
 			# update if forced
 			elif _old and force:
 				_new.doc_id = _old.doc_id
 				gc.db.update( _new )
 				updated_activities.append( _new )
-				# todo: log statement might cause problem when certain unicode chars are contained in name
-				#log.debug( f'updated activity {_new.uid} (id {_new.doc_id}), name = {_new["name"]}, time = {fmt( _new["localtime"] )}')
-				log.debug( f'updated activity {_new.uid} (id {_new.doc_id}), time = {fmt( _new["localtime"] )}')
+				log.debug( f'updated activity {_old.doc_uid}, time = {fmt( _new.time )}')
 
-			if _new.raw_data and _new.raw_name:
-				path = Path( self.path_for( _new ), _new.raw_name )
+			# write raw data of resources
+			for r in _new.resources:
+				path = Path( self.path_for( _new ), r.path )
 				if not path.exists() or force:
 					path.parent.mkdir( parents=True, exist_ok=True )
-					if type( _new.raw_data ) is bytes:
-						path.write_bytes( _new.raw_data )
-					elif type( _new.raw_data ) is str:
-						path.write_text( data=_new.raw_data, encoding='UTF-8' )
+					if type( r.raw_data ) is bytes:
+						path.write_bytes( r.raw_data )
+					elif type( r.raw_data ) is str:
+						path.write_text( data=r.raw_data, encoding='UTF-8' )
 					else:
-						log.error( f'error writing raw data for activity {_new.uid}, type of data is neither str or bytes' )
+						log.debug( f'skipping write of resource data for activity {_new.uid}, resource {r.path}, status {r.status}, type of data is neither str or bytes' )
+
+			# write resource information to resource db
+			new_resources = []
+			existing_resources = gc.db.find_resources( _new.uid )
+			for r in _new.resources:
+				if not next( (e for e in existing_resources if e.get( 'path' ) == r.path), None ):
+					new_resources.append( as_dict( r ) )
+
+			gc.db.resources.insert_multiple( new_resources )
 
 		log.info( f"fetched activities from {self.display_name}: {len( new_activities )} new, {len( updated_activities )} updated" )
 

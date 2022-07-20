@@ -1,4 +1,4 @@
-
+from dataclasses import dataclass
 from logging import getLogger
 from re import match
 from re import DOTALL
@@ -74,6 +74,7 @@ HEADERS_OPTIONS = { **HEADERS_TEMPLATE, **{
 }
 
 @document
+@dataclass
 class BikecitizensActivity( Activity ):
 
 	def __post_init__( self ):
@@ -225,9 +226,11 @@ class Bikecitizens( Service, Plugin ):
 	def _prototype( self, json ) -> BikecitizensActivity:
 		json_str = dump_json( json, option=ORJSON_OPTIONS )
 		json_name = f'{json["id"]}.raw.json'
-		resources = [ Resource( type='raw', path=f"{json['id']}.raw.json", status=200 ) ]
-		resources.extend( [ Resource( type=key, path=f"{json['id']}.{key}", status=100 ) for key in ['json', 'gpx'] ] )
-		return BikecitizensActivity( raw=json, raw_data=json_str, raw_name=json_name, resources=resources )
+		uid = f'{self.name}:{json["id"]}'
+		activity = BikecitizensActivity( raw=json )
+		activity.resources.append( Resource( type='raw', path=json_name, status=200, uid=uid, raw_data=json_str ) )
+		activity.resources.extend( [ Resource( type=key, path=f"{json['id']}.{key}", status=100, uid=uid ) for key in ['json', 'gpx'] ] )
+		return activity
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
 		url = self.export_url( activity.raw_id, resource.type )

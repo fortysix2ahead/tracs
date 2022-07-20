@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from dateutil.tz import UTC
 from dateutil.tz import tzlocal
@@ -17,10 +16,10 @@ def test_init( json ):
 	a = Activity()
 	assert a['id'] == 0 and a.id == 0
 
-	a = Activity( doc_id = 1 )
+	a = Activity( doc_id=1 )
 	assert a['id'] == 1 and a.id == 1
 
-	a = Activity( {'name': 'Run' }, 1 )
+	a = Activity( {'name': 'Run'}, 1 )
 	assert a['id'] == 1 and a.id == 1
 	assert a.name == 'Run'
 
@@ -34,25 +33,28 @@ def test_init( json ):
 
 	# times
 	assert a.time == '2012-10-24T23:29:40+00:00'
-	#assert a.time == datetime( 2012, 1, 7, 10, 40, 56, tzinfo=UTC )
+	# assert a.time == datetime( 2012, 1, 7, 10, 40, 56, tzinfo=UTC )
 	assert a.localtime == '2012-10-24T22:29:40+01:00'
-	#assert a.localtime == datetime( 2012, 1, 7, 11, 40, 56, tzinfo=tzlocal() )
+
+
+# assert a.localtime == datetime( 2012, 1, 7, 11, 40, 56, tzinfo=tzlocal() )
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.raw.json' )
 def test_init_from( json ):
 	src = PolarActivity( json, 2 )
-	target = Activity( doc_id = 3 )
+	target = Activity( doc_id=3 )
 	target.init_from( src )
 
 	assert target.name == src.name
 	assert target.doc_id != src.doc_id
 
+
 def test_asdict():
 	a = Activity()
 	assert a.asdict() == {
-		'resources'       : [],
-		'tags'            : [],
-		'uids'            : []
+		'resources': [],
+		'tags'     : [],
+		'uids'     : []
 	}
 
 	assert as_dict( a ) == {
@@ -62,11 +64,11 @@ def test_asdict():
 	}
 
 	assert as_dict( a, remove_persist=False ) == {
-		'doc_id'      : 0,
-		'id'          : 0,
-		'resources'   : [],
-		'tags'        : [],
-		'uids'         : []
+		'doc_id'   : 0,
+		'id'       : 0,
+		'resources': [],
+		'tags'     : [],
+		'uids'     : []
 	}
 
 	activity_dict = {
@@ -86,17 +88,24 @@ def test_asdict():
 		'classifier': 'polar',
 		'metadata'  : {},
 		'resources' : [{
-			'name'  : 'one',
-			'path'  : 'one.gpx',
-			'status': 100,
-			'type'  : 'gpx',
-			'uid'   : None
+			'data'    : None,
+			'doc_id'  : 0,
+			'id'      : 0,
+			'name'    : 'one',
+			'path'    : 'one.gpx',
+			'raw'     : None,
+			'raw_data': None,
+			'status'  : 100,
+			'type'    : 'gpx',
+			'uid'     : None
 		}],
-		'name'       : 'name',
-		'raw_id'       : 1,
-		'tags'     : [],
-		'time'       : datetime( 2020, 1, 1, 10, 0, 0, tzinfo=UTC ),
-		'type'       : ActivityTypes.run,
-		'uid'        : 'test:1',
-		'uids'        : []
+		'name'      : 'name',
+		'raw_id'    : 1,
+		'tags'      : [],
+		'time'      : datetime( 2020, 1, 1, 10, 0, 0, tzinfo=UTC ),
+		'type'      : ActivityTypes.run,
+		'uid'       : 'test:1',
+		'uids'      : []
 	}
+
+	d = dict( Activity( data=activity_dict ) )

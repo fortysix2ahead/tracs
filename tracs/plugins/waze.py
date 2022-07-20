@@ -45,7 +45,7 @@ class WazeActivity( Activity ):
 		super().__post_init__()
 
 		if self.raw and len( self.raw ) > 0:
-			self.raw_id = int( self.raw[0][1].strftime( '%Y%m%d%H%M%S' ) )
+			self.raw_id = int( self.raw[0][1].strftime( '%y%m%d%H%M%S' ) )
 			self.time = self.raw[0][1]
 			self.localtime = as_datetime( self.time, tz=gettz() )
 
@@ -73,7 +73,7 @@ class Waze( Service, Plugin ):
 		:return: path for activity
 		"""
 		id = str( a.raw_id )
-		path = Path( gc.db_dir, self.name, id[0:4], id[4:6], id[6:8], id )
+		path = Path( gc.db_dir, self.name, id[0:2], id[2:4], id[4:6], id )
 		if ext:
 			path = Path( path, f'{id}.{ext}' )
 		return path
@@ -112,7 +112,7 @@ class Waze( Service, Plugin ):
 
 	# noinspection PyMethodMayBeStatic
 	def _prototype( self, raw: List[Tuple[int, datetime, float, float]], raw_data: str ) -> WazeActivity:
-		raw_id = int( raw[0][1].strftime( '%Y%m%d%H%M%S' ) )
+		raw_id = int( raw[0][1].strftime( '%y%m%d%H%M%S' ) )
 		uid = f'{self.name}:{raw_id}'
 		resources = [
 			Resource( type='raw', path=f'{raw_id}.raw.txt', status= 200, uid=uid, raw_data=raw_data ),

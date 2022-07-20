@@ -111,12 +111,14 @@ class Waze( Service, Plugin ):
 		return fetched
 
 	# noinspection PyMethodMayBeStatic
-	def _prototype( self, tokens: List[Tuple[int, datetime, float, float]], raw_data: str ) -> WazeActivity:
-		raw = tokens
-		raw_id = int( tokens[0][1].strftime( '%Y%m%d%H%M%S' ) )
-		raw_name = f'{raw_id}.raw.txt'
-		resources = [ Resource( type='raw', path=f'{raw_name}', status= 200 ), Resource( type='gpx', path=f'{raw_id}.gpx', status= 100 ) ]
-		return WazeActivity( raw=raw, raw_data=raw_data, raw_name=raw_name, resources=resources )
+	def _prototype( self, raw: List[Tuple[int, datetime, float, float]], raw_data: str ) -> WazeActivity:
+		raw_id = int( raw[0][1].strftime( '%Y%m%d%H%M%S' ) )
+		uid = f'{self.name}:{raw_id}'
+		resources = [
+			Resource( type='raw', path=f'{raw_id}.raw.txt', status= 200, uid=uid, raw_data=raw_data ),
+			Resource( type='gpx', path=f'{raw_id}.gpx', status= 100, uid=uid )
+		]
+		return WazeActivity( raw=raw, resources=resources )
 
 	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
 		raw_path = Path( self.path_for( activity ), f'{activity.raw_id}.raw.txt' )

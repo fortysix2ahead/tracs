@@ -37,9 +37,7 @@ from .config import KEY_SERVICE
 from .config import KEY_VERSION
 from .db_storage import DataClassStorage
 from .filters import Filter
-from .filters import groups
-from .filters import grouped
-from .filters import ungrouped
+from .filters import classifier as classifier_filter
 from .filters import parse_filters
 from .plugins import Registry
 from .queries import is_group
@@ -110,7 +108,7 @@ class ActivityDb:
 		self._activities.document_class = Activity
 
 		# init resources db
-		self._resources_db: TinyDB = TinyDB( storage=JSONStorage, path=self._resources_path, access_mode='r' )
+		self._resources_db: TinyDB = TinyDB( storage=DataClassStorage, path=self._resources_path, use_memory_storage=pretend, use_cache=cache, passthrough=True, use_serializers=False )
 		self._resources = self._resources_db.table( TABLE_NAME_DEFAULT )
 
 		# init resources db
@@ -278,6 +276,9 @@ class ActivityDb:
 			all_activities = filter( f, all_activities )
 		return all_activities
 
+	def find_by_classifier( self, classifier: str ) -> [Activity]:
+		return self.find( classifier_filter( classifier ) )
+
 	def find_ids( self, filters: Union[List[str], str] = None ) -> [int]:
 		return [a.doc_id for a in self.find( filters )]
 
@@ -297,6 +298,12 @@ class ActivityDb:
 
 		_all = self.filter( _all, [Query().time.exists()] )
 		return max( _all, key=lambda x: x.get( 'time' ) ) if len( _all ) > 0 else None
+
+	def find_resources( self, uid: str, path: str = None ) -> List:
+		if path:
+			return self.resources.search( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )
+		else:
+			return self.resources.search( Query()['uid'] == uid )
 
 	# noinspection PyMethodMayBeStatic
 	def filter( self, activities: [Activity], queries: [Query] ) -> [Activity]:

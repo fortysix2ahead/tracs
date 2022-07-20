@@ -238,30 +238,10 @@ def invalid() -> Filter:
 	return Filter( field=None, value=False, callable=fn, valid=False )
 
 def classifier( c: str ) -> Filter:
-	return Filter( 'classifier', callable=Query()[FIELD_CLASSIFIER] == c )
+	return Filter( 'uids', f'^{c}:.*$', regex=True, part_of_list=True )
 
-def groups() -> Filter:
-	return Filter( 'group', callable=Query()[FIELD_CLASSIFIER] == 'group' )
-
-def grouped() -> Filter:
-	return Filter( 'parent_id', value=True, callable=Query()['parent_id'].test( lambda v: True if v else False ) )
-
-def ungrouped() -> Filter:
-	_not_parent_id = ~ ( Query()['parent_id'].test( lambda v: True if v else False ) )
-	_not_group = ~ ( Query()[FIELD_CLASSIFIER] == 'group' )
-	return Filter( 'parent_id', value=False, callable=(_not_parent_id & _not_group) )
-
-# wrong!!!
-def all_( include_groups, include_grouped, include_ungrouped ) -> Filter:
-	f_groups = Query()[FIELD_CLASSIFIER] == 'group'
-	f_grouped = Query()['parent_id'].test( lambda v: True if v else False )
-	f_ungrouped = Query()['parent_id'].test( lambda v: True if not v else False )
-
-	f_groups = f_groups if include_groups else (~ f_groups)
-	f_grouped = f_grouped if include_grouped else (~ f_grouped)
-	f_ungrouped = f_ungrouped if include_ungrouped else (~ f_ungrouped)
-
-	return f_groups | f_grouped | f_ungrouped
+def uid( uid: str ) -> Filter:
+	return Filter( 'uids', uid, regex=False, part_of_list=True )
 
 def is_number( field: str ) -> Filter:
 	return Filter( field, callable=lambda v: isinstance( v.get( field ), ( float, int ) ) )

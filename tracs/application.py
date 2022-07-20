@@ -156,7 +156,8 @@ class Application( object ):
 		log.debug( f'using database metadata at {self._meta_file}' )
 
 		# ---- register cleanup functions ----
-		register_atexit( self._db.db.close )
+		register_atexit( self._db.activities_db.close )
+		register_atexit( self._db.resources_db.close )
 		register_atexit( self.dump_state )
 
 	def _setup_logging( self ):

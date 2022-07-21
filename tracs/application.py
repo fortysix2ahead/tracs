@@ -225,7 +225,7 @@ class Application( object ):
 
 	@property
 	def log_dir( self ) -> Path:
-		return Path( self.db_dir, LOG_DIRNAME )
+		return Path( self.cfg_dir, LOG_DIRNAME )
 
 	@property
 	def log_file( self ) -> Path:

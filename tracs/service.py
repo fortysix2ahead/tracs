@@ -101,7 +101,7 @@ class Service( AbstractServiceClass ):
 			path = Path( path, f'{id}.{ext}' )
 		return path
 
-	def link_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:
+	def link_for( self, a: Activity, r: Resource, ext: Optional[str] = None ) -> Optional[Path]:
 		"""
 		Returns the link path for an activity.
 
@@ -109,12 +109,11 @@ class Service( AbstractServiceClass ):
 		:param ext: file extension
 		:return: link path for activity
 		"""
-		ts = a['time'].strftime( '%Y%m%d%H%M%S' ) if a['time'] else None
-		if not ts:
-			return None
-
+		ts = a.time.strftime( '%Y%m%d%H%M%S' )
 		path = Path( gc.lib_dir, ts[0:4], ts[4:6], ts[6:8] )
-		if ext:
+		if r:
+			path = Path( path, f'{ts[8:]}.{self.name}.{r.type}' )
+		elif ext:
 			path = Path( path, f'{ts[8:]}.{self.name}.{ext}' )
 		return path
 
@@ -240,18 +239,18 @@ class Service( AbstractServiceClass ):
 	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
 		pass
 
-	def link( self, activity: Activity, force: bool, pretend: bool ) -> None:
-		for r in activity.resources:
-			src = self.path_for( activity, r.type )
-			dest = self.link_for( activity, r.type )
+	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
+		if resource.type in ['gpx', 'tcx'] and resource.status == 200: # todo: make linkable resources configurable
+			src = self.path_for( resource=resource )
+			dest = self.link_for( activity, resource )
 
 			if not src or not dest:
 				log.error( f"cannot determine source and/or destination for linking activity {activity.id}" )
-				continue
+				return
 
 			if not src.exists() or src.is_dir():
 				log.error( f"cannot link activity {activity.id}: source file {src} does not exist or is not a file" )
-				continue
+				return
 
 			if not pretend:
 				dest.parent.mkdir( parents=True, exist_ok=True )
@@ -290,4 +289,4 @@ def _process_activities( activities: [Activity], download: bool, link: bool, for
 				if download:
 					service.download( resource=r, force=force, pretend=pretend )
 				if link:
-					service.link( r, force, pretend )
+					service.link( activity, r, force, pretend )

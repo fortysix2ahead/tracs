@@ -29,6 +29,7 @@ from ..config import console
 from ..config import APPNAME
 from ..config import KEY_PLUGINS
 from ..service import Service
+from ..utils import seconds_to_time
 
 log = getLogger( __name__ )
 
@@ -86,7 +87,7 @@ class BikecitizensActivity( Activity ):
 			self.average_speed = self.raw.get( 'average_speed' )
 			self.cccode = self.raw.get( 'cccode' )
 			self.distance = self.raw.get( 'distance' )
-			self.duration = self.raw.get( 'duration' )
+			self.duration = seconds_to_time( self.raw.get( 'duration' ) )
 			self.time = parse( self.raw['start_time'] )
 			self.localtime = parse( self.raw['start_time'] ).astimezone( tzlocal() )
 			self.tags = self.raw.get( 'tags' )

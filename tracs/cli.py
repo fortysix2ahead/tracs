@@ -144,11 +144,10 @@ def download( ctx, filters, all_ ):
 @cli.command( help='creates links for downloaded resources of activities' )
 @option( '-a', '--all', 'all_', is_flag=True, required=False, help='creates links for all activities (instead of recent ones only), overriding provided filters' )
 @argument( 'filters', nargs=-1 )
-def link( all_, filters ):
-	if all_:
-		link_activities( gc.db.find( [], False, True, True ) )
-	else:
-		link_activities( gc.db.find( filters, False, True, True ) )
+@pass_context
+def link( ctx, all_, filters ):
+	filters = [] if all_ else filters
+	link_activities( ctx.obj.db.find( filters ), force=ctx.obj.force, pretend=ctx.obj.pretend )
 
 def _filter_activities( all_, filters ) -> [Activity]:
 	app = Application.instance()

@@ -124,7 +124,7 @@ class Service( ABC ):
 		pass
 
 	@abstractmethod
-	def link( self, activity: Activity, force: bool, pretend: bool ) -> None:
+	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
 		pass
 
 	@abstractmethod

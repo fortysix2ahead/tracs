@@ -134,12 +134,10 @@ class Polar( Service, Plugin ):
 		self.base_url = base_url
 		self._session = None
 
-	def path_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:
-		path = super().path_for( a, ext )
-		#if a.is_multipart:
-		#	path = Path( super().path_for( a ), f'{id}.{ext}.zip' ) if ext in ['gpx', 'tcx', 'hrv'] else None
-
-		return path
+	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
+		return super().path_for( activity, resource, ext )
+		# if a.is_multipart: # todo: add multipart support
+		#	 path = Path( super().path_for( a ), f'{id}.{ext}.zip' ) if ext in ['gpx', 'tcx', 'hrv'] else None
 
 	def _link_path( self, pa: Activity, ext: str ) -> Path or None:
 		if pa.id:
@@ -183,6 +181,9 @@ class Polar( Service, Plugin ):
 		return f'{self._activity_url}/{id}'
 
 	def login( self ) -> bool:
+		if self.logged_in and self._session:
+			return self.logged_in
+
 		if not self._session:
 			self._session = Session()
 
@@ -237,8 +238,8 @@ class Polar( Service, Plugin ):
 		]
 		return PolarActivity( raw=json, resources=resources )
 
-	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
-		url = self.export_url_for( activity.raw_id, resource.type )
+	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
+		url = self.export_url_for( int( resource.uid.split( ':', maxsplit=1 )[1] ), resource.type )
 		log.debug( f'attempting download from {url}' )
 
 		response = self._session.get( url, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )

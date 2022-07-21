@@ -145,6 +145,9 @@ class Bikecitizens( Service, Plugin ):
 	# service methods
 
 	def login( self ) -> bool:
+		if self.logged_in and self._session:
+			return self.logged_in
+
 		if not self._session:
 			self._session = Session()
 
@@ -233,10 +236,8 @@ class Bikecitizens( Service, Plugin ):
 		]
 		return BikecitizensActivity( raw=json, resources=resources )
 
-	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
-		url = self.export_url( activity.raw_id, resource.type )
-		log.debug( f'attempting download from {url}' )
-
+	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
+		url = self.export_url( resource.raw_id(), resource.type )
 		# noinspection PyUnusedLocal
 		response = options( url, headers=HEADERS_OPTIONS )
 		response = self._session.get( url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } } )

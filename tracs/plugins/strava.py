@@ -176,13 +176,6 @@ class Strava( Service, Plugin ):
 		else:
 			return None
 
-	def path_for( self, activity: Activity, ext: Optional[str] = None ) -> Optional[Path]:
-		id = str( activity.raw_id )
-		path = Path( self.base_path, id[0], id[1], id[2], id )
-		if ext:
-			path = Path( path, f'{id}.{ext}' )
-		return path
-
 	def _link_path( self, activity: Activity, ext: str ) -> Path or None:
 		#		if activity.id:
 		utc = activity.utctime
@@ -271,13 +264,8 @@ class Strava( Service, Plugin ):
 		]
 		return StravaActivity( raw=json, resources=resources )
 
-	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
-		if not self._session:
-			self.weblogin()
-
-		url = self.export_url_for( activity.raw_id, resource.type )
-
-		log.debug( f'attempting download from {url}' )
+	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
+		url = self.export_url_for( resource.raw_id(), resource.type )
 		response = self._session.get( url, headers=HEADERS_LOGIN, allow_redirects=True, stream=True )
 		return response.content, response.status_code
 

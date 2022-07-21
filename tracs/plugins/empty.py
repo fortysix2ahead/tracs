@@ -34,7 +34,7 @@ class Empty( Service, Plugin ):
 	def _fetch( self, year: int ) -> Iterable[Activity]:
 		return []
 
-	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
+	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
 		return [], 200
 
 	def setup( self ) -> None:

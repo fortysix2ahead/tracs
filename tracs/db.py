@@ -28,6 +28,7 @@ from tinydb.table import Document
 from tinydb.table import Table
 
 from .activity import Activity
+from .activity import Resource
 from .config import CLASSIFIER
 from .config import KEY_GROUPS
 from .config import console
@@ -110,6 +111,7 @@ class ActivityDb:
 		# init resources db
 		self._resources_db: TinyDB = TinyDB( storage=DataClassStorage, path=self._resources_path, use_memory_storage=pretend, use_cache=cache, passthrough=True, use_serializers=False )
 		self._resources = self._resources_db.table( TABLE_NAME_DEFAULT )
+		self._resources.document_class = Resource
 
 		# init resources db
 		self._metadata_db: TinyDB = TinyDB( storage=JSONStorage, path=self._metadata_path, access_mode='r' )
@@ -198,6 +200,9 @@ class ActivityDb:
 
 	def update( self, a: Activity ) -> None:
 		self.activities.update( dict( a ), doc_ids=[a.doc_id] )
+
+	def update_resource( self, r: Resource ) -> None:
+		self.resources.update( dict( r ), doc_ids=[r.doc_id] )
 
 	def remove( self, a: Activity ) -> None:
 		self._activities.remove( doc_ids=[a.doc_id] )

@@ -64,17 +64,20 @@ class Waze( Service, Plugin ):
 	def _takeouts_dir( self ) -> Path:
 		return Path( gc.db_dir, self.name, TAKEOUTS_DIRNAME )
 
-	def path_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:
+	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
 		"""
 		Returns the path for an activity.
 
-		:param a: activity for which the path shall be calculated
+		:param activity: activity for which the path shall be calculated
+		:param resource: resource
 		:param ext: file extension
 		:return: path for activity
 		"""
-		id = str( a.raw_id )
-		path = Path( gc.db_dir, self.name, id[0:2], id[2:4], id[4:6], id )
-		if ext:
+		_id = str( activity.raw_id ) if activity else resource.raw_id()
+		path = Path( self.base_path, _id[0:2], _id[2:4], _id[4:6], _id )
+		if resource:
+			path = Path( path, resource.path )
+		elif ext:
 			path = Path( path, f'{id}.{ext}' )
 		return path
 
@@ -120,8 +123,8 @@ class Waze( Service, Plugin ):
 		]
 		return WazeActivity( raw=raw, resources=resources )
 
-	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
-		raw_path = Path( self.path_for( activity ), f'{activity.raw_id}.raw.txt' )
+	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
+		raw_path = Path( self.path_for( resource=resource ).parent, f'{resource.raw_id()}.raw.txt' )
 		with open( raw_path, mode='r', encoding='UTF-8' ) as p:
 			content = p.read()
 			drive = read_drive( content )

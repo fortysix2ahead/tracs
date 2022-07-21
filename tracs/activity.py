@@ -7,6 +7,7 @@ from dataclasses import fields
 from datetime import datetime
 from typing import Any
 from typing import Dict
+from typing import Tuple
 from typing import Union
 
 from logging import getLogger
@@ -40,6 +41,16 @@ class Resource( BaseDocument ):
 
 	raw: Any = field( default=None, metadata={ PERSIST: False, PROTECTED: True } )  # structured raw data making up this resource
 	raw_data: Union[str, bytes] = field( default=None, metadata={ PERSIST: False, PROTECTED: True } )  # serialized version of raw, can be str or bytes
+
+	def classifier( self ):
+		return self._uid()[0]
+
+	def raw_id( self ):
+		return self._uid()[1]
+
+	def _uid( self ) -> Tuple[str, str]:
+		classifier, raw_id = self.uid.split( ':', maxsplit=1 )
+		return classifier, raw_id
 
 @dataclass
 class ActivityRef:

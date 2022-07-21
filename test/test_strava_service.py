@@ -67,7 +67,7 @@ def test_service( strava_server, service ):
 
 	# download
 	for r in a.resources:
-		content, status = service._download_file( a, r )
+		content, status = service._download_resource( a, r )
 		assert content is not None and status == 200
 
 @mark.service( (Strava, TEST_BASE_URL) )

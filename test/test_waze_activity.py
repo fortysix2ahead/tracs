@@ -46,4 +46,4 @@ def _test_fetch_download():
 	assert len( activities ) == 2
 
 	for a in activities:
-		Waze()._download_file( a, get_file_path( 'templates/waze' ) )
+		Waze()._download_resource( a, get_file_path( 'templates/waze' ) )

@@ -84,21 +84,21 @@ class Service( AbstractServiceClass ):
 	def db_dir( self ) -> Path:
 		return self._cfg['db_dir'].get()
 
-	def path_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:
+	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
 		"""
 		Returns the path in the local file system where all artefacts of a provided activity are located.
 
-		:param a: activity
+		:param activity: activity
+		:param resource: resource
 		:param ext: file extension for which the path should be returned, can be None
 		:return: path of the activity in the local file system
 		"""
-		id = str( a.raw_id )
-		path = Path( self.base_path, id[0], id[1], id[2], id )
-		if ext:
-			if ext == 'raw':
-				path = Path( path, f'{id}.raw.json' ) # default raw file path
-			else:
-				path = Path( path, f'{id}.{ext}' )
+		_id = str( activity.raw_id ) if activity else resource.uid.split( ':', maxsplit=1 )[1]
+		path = Path( self.base_path, _id[0], _id[1], _id[2], _id )
+		if resource:
+			path = Path( path, resource.path )
+		elif ext:
+			path = Path( path, f'{id}.{ext}' )
 		return path
 
 	def link_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:
@@ -189,68 +189,55 @@ class Service( AbstractServiceClass ):
 		"""
 		pass
 
-	def download( self, activity: Activity, force: bool, pretend: bool ) -> None:
-		log.debug( f"attempting to download activity {activity.raw_id} from {self.name}" )
-
-		if not self.logged_in:
-			self._logged_in = self.login()
-
-		if not self.logged_in:
+	def download( self, resource: Resource = None, force: bool = False, pretend: bool = False ) -> None:
+		if not self.login():
 			log.error( f"unable to login to service {self.display_name}, exiting ..." )
 			sysexit( -1 )
 
-		for r in activity.resources:
-			# don't care about raw resources
-			if r.type == 'raw':
-				continue
+		# don't care about raw resources
+		if resource.type == 'raw':
+			log.debug( f"skipped download of {resource.path} for activity {resource.uid}: raw resources will not be processed by download" )
+			return
 
-			# todo: r is currently a dict -> need to change that later to Resource
-			if r.status in [204, 404]:  # file does not exist on server -> do nothing
-				log.debug( f"skipped download of {r.type} for {self.name} activity {activity.raw_id}: file does not exist on server" )
-				continue
+		if resource.status in [204, 404]:  # file does not exist on server -> do nothing
+			log.debug( f"skipped download of {resource.path} for activity {resource.uid}: file does not exist on server" )
+			return
 
-			if not (path := self.path_for( activity, r.type )):
-				log.error( f'unable to determine path for {r.type} for {self.name} activity {activity.raw_id}' )
-				continue
+		if resource.status == 200 and not force:
+			log.debug( f"skipped download of {resource.path} for activity {resource.uid}: marked as already existing" )
+			return
 
+		if resource.status == 100 or (resource.status == 200 and force):
+			path = self.path_for( resource=resource )
 			if path.exists() and not force:  # file exists already and no force to re-download -> do nothing
-				if r.status != 200:  # mark file as 'exists on server' if not already done
-					r.status = 200
-					gc.db.update( activity )
-				log.debug( f"skipped download of {r.type} for {self.name} activity {activity.raw_id}: file already exists' )" )
-				continue
+				log.debug( f"skipped download of {resource.path} for activity {resource.uid}: file already exists" )
+				return
 
-			if not path.exists() or force:  # either file does not exist or it's a forced download, todo: multipart support
-				content, status = self._download_file( activity, r )
-				if status == 200 and len( content ) == 0:
-					status = 204
+			content, status = self.download_resource( resource )
 
-				if status == 200:
-					path.parent.mkdir( parents=True, exist_ok=True )
-					path.write_bytes( content )
-					log.info( f"downloaded {r.type} for {self.name} activity {activity.raw_id} to {path}" )
+			if status == 200:
+				path.parent.mkdir( parents=True, exist_ok=True )
+				path.write_bytes( content )
+				log.info( f"downloaded {resource.type} for activity {resource.uid} to {path}" )
 
-				elif status == 204:
-					log.error( f"failed to download {r.type} for {self.name} activity {activity.raw_id}, service responded with HTTP 200, but without content" )
+			elif status == 204:
+				log.error( f"failed to download {resource.type} for activity {resource.uid}, service responded with HTTP 200, but without content" )
 
-				elif status == 404:
-					log.error( f"failed to download {r.type} for {self.name} activity {activity.raw_id}, service responded with HTTP 404 - not found" )
+			elif status == 404:
+				log.error( f"failed to download {resource.type} for activity {resource.uid}, service responded with HTTP 404 - not found" )
 
-				else:
-					log.error( f"failed to download {r.type} for {self.name} activity {activity.raw_id}, service responded with HTTP {r.status}" )
+			else:
+				log.error( f"failed to download {resource.type} for activity {resource.uid}, service responded with HTTP {resource.status}" )
 
-				r.status = status
+			resource.status = status
 
-				if activity.id != 0:
-					gc.db.update( activity )
-				else:
-					log.warning( f'unable to update resource status for activity {activity.uid}: db id is 0' )
+			gc.db.update_resource( resource ) # update status of resource in db
 
 		# update last_download in state
 		gc.state[KEY_PLUGINS][self.name][KEY_LAST_DOWNLOAD] = datetime.utcnow().astimezone( UTC ).isoformat()
 
 	@abstractmethod
-	def _download_file( self, activity: Activity, resource: Resource ) -> Tuple[Any, int]:
+	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
 		pass
 
 	def link( self, activity: Activity, force: bool, pretend: bool ) -> None:
@@ -282,29 +269,25 @@ class Service( AbstractServiceClass ):
 
 # ------------------------------------------------------------------------------
 
-def download_activities( activities: [Activity] ):
-	_process_activities( activities, True, False )
+def download_activities( activities: [Activity], force: bool = False, pretend: bool = False ):
+	_process_activities( activities, True, False, force, pretend )
 
-def link_activities( activities: [Activity] ):
-	_process_activities( activities, False, True )
+def link_activities( activities: [Activity], force: bool = False, pretend: bool = False ):
+	_process_activities( activities, False, True, force, pretend )
 
-def _process_activities( activities: [Activity], download: bool, link: bool ):
-	force = gc.cfg['force'].get( bool )
-	pretend = gc.cfg['pretend'].get( bool )
+def _process_activities( activities: [Activity], download: bool, link: bool, force: bool, pretend: bool ):
 	for activity in activities:
-		if activity.is_group:
-			_queue = [gc.db.get( doc_id=doc_id ) for doc_id in activity.group_for]
-		else:
-			_queue = [activity]
+		for uid in activity.uids:
+			resources = gc.db.find_resources( uid )
+			for r in resources:
+				classifier, raw_id = r.uid.split( ':', maxsplit=1 )
+				service = gc.app.services.get( classifier, None )
 
-		for a in _queue:
-			service = gc.app.services.get( a.service, None )
+				if not service:
+					log.warning( f"service {classifier} not found for activity {uid}, skipping ..." )
+					continue
 
-			if not service:
-				log.warning( f"service {a.service} not found for activity {a.id}, skipping ..." )
-				continue
-
-			if download:
-				service.download( a, force, pretend )
-			if link:
-				service.link( a, force, pretend )
+				if download:
+					service.download( resource=r, force=force, pretend=pretend )
+				if link:
+					service.link( r, force, pretend )

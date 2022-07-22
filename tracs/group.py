@@ -6,139 +6,128 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import cast
 
 from click import echo
-from click import style
 from dateutil.tz import tzlocal
 from dateutil.tz import UTC
 from logging import getLogger
 from questionary import confirm as qconfirm
 from questionary import select as qselect
-from rich import box
-from rich.pretty import pretty_repr as pp
-from rich.table import Table
 from sys import exit as sysexit
+
+from rich.pretty import Pretty
+from rich.table import Table
 
 from .activity import Activity
 from .config import KEY_GROUPS as GROUPS
 from .config import GlobalConfig as gc
 from .config import console
 from .plugins.groups import ActivityGroup
-from .queries import has_time
-from .queries import is_group
-from .queries import is_ungrouped
 from .ui import diff_table
+from .utils import colored_diff
 from .utils import fmt
 from .utils import fmtl
 
 log = getLogger( __name__ )
 
 @dataclass
+class GroupResult:
+
+	target: Activity = field( default=None )
+	members: List[Activity] = field( default_factory=list )
+
+@dataclass
 class Bucket:
 
-	ungrouped: List[ActivityGroup] = field( default_factory=list )
-	groups: Dict[datetime, ActivityGroup] = field( default_factory=dict )
+	day: int = field( default=None )
+	queue: List[Activity] = field( default_factory=list )
+	targets: List[GroupResult] = field( default_factory=list )
 
-def group_activities( activities: List[Activity], force: bool = False, persist_changes: bool = True ) -> List[Tuple[Activity, List[Activity]]]:
-
-	ungrouped_activities: [Activity] = list( filter( is_ungrouped() & has_time(), activities ) )
-	groups = gc.db.activities.search( is_group() ) # todo: this returns an empty list which is not supposed to be empty
-	changes = []
-
+def group_activities( activities: List[Activity], force: bool = False, pretend: bool = False ) -> List[Tuple[Activity, List[Activity]]]:
 	log.debug( f'attempting to group {len( activities )} activities' )
 
-	buckets: Dict = {}
+	changes: List[Activity] = []
+	removals: List[Activity] = []
+	buckets: Dict[int, Bucket] = {}
 
-	for a in ungrouped_activities:
-		a = cast( Activity, a ) # make a an activity ;-)
-		day_str = a.time.strftime( '%y%m%d' )
-		if not day_str in buckets:
-			buckets[day_str] = Bucket()
-		buckets[day_str].ungrouped.append( a )
+	for a in activities:
+		day = int( a.time.strftime( '%y%m%d' ) )
+		if not day in buckets:
+			buckets[day] = Bucket( day=day )
+		buckets[day].queue.append( a )
 
-	log.debug( f'pre-sorted ungrouped activities into {len( buckets.keys() )} buckets, based on day of activity' )
+	log.debug( f'sorted activities into {len( buckets.keys() )} buckets, based on day of activity' )
 
 	for key, bucket in buckets.items():
 		log.debug( f'analysing bucket {key}' )
-		if len( bucket.ungrouped ) <= 1: # skip days with only one activity -> there's nothing to group
+		if len( bucket.queue ) <= 1: # skip days with only one activity -> there's nothing to group
 			continue
 
-		for ungrouped in bucket.ungrouped:
-			target_group = None
+		for src in bucket.queue: # src means activity to be merged into a group
 			# check if we find a matching target group for the ungrouped activity ua
-			for grouptime, group in bucket.groups.items():
-				if _delta( group, grouptime, ungrouped )[0]:
-					target_group = group
+			target = None  # target group
+			for t in bucket.targets:
+				delta_res, delta_time, delta_ask = _delta( t.target.time, src.time )
+				if delta_res:
+					target = t
 					break
 
 			# create new target group when nothing is found
-			if not target_group:
-				bucket.groups[ungrouped.time] = [ungrouped]
+			if target:
+				target.members.append( src )
 			else:
-				target_group.append( ungrouped )
+				bucket.targets.append( GroupResult( target=src ) )
 
 	# now perform the actual (interactive) grouping
 	for key, bucket in buckets.items():
-		for grouptime, group in bucket.groups.items():
-			if len( group ) > 1:
-				if force or _confirm_grouping( group ):
-					new_group = _new_group( group )
-					new_group.name = _ask_for_name( group, force )
-					new_group.type = _ask_for_type( group, force )
-					changes.append( (new_group, group) )
+		for t in bucket.targets:
+			if t.target and len( t.members ) > 0:
+				if force or _confirm_grouping( t ):
+					for m in t.members:
+						t.target.init_from( m )
+						t.target.uids.extend( m.uids )
+						changes.append( t.target )
+						removals.append( m )
 
-				log.debug( f'grouped activities {fmtl( group )}' )
+	if not pretend:
+		for c in changes: gc.db.update( c )
+		for r in removals: gc.db.remove( r )
 
-	if persist_changes:
-		for parent, children in changes:
-			doc_id = gc.db.insert( parent )
-			for c in children:
-				c.parent_id = doc_id
-				gc.db.update( c )
-	else:
-		return changes
-
-def _confirm_grouping( group: List[Activity] ) -> bool:
-	echo( f"Attempting to group activities {fmtl( group )}" )
-
+def _confirm_grouping(  gr: GroupResult ) -> bool:
+	echo( f"Attempting to group activities:" )
 	left = {
-		'Name': group[0].name,
-		'Type': group[0].type,
-		'Localtime': fmt( group[0].localtime ),
-		'Time': fmt( group[0].time ),
-		'Elapsed Time': fmt( group[0].duration ),
-		'Distance': fmt( group[0].distance ),
+		'Name': gr.target.name,
+		'Type': fmt( gr.target.type ),
+		'Localtime': fmt( gr.target.localtime ),
+		'Time': fmt( gr.target.time ),
+		'Elapsed Time': fmt( gr.target.duration ),
+		'Distance': fmt( gr.target.distance ),
 	}
-	right = {
-		'Name': group[1].name,
-		'Type': group[1].type,
-		'Localtime': fmt( group[1].localtime ),
-		'Time': fmt( group[1].time ),
-		'Distance': fmt( group[1].distance ),
-	}
+	rights = []
+	for m in gr.members:
+		right = {
+				'Name': m.name,
+				'Type': fmt( m.type ),
+				'Localtime': fmt( m.localtime ),
+				'Time': fmt( m.time ),
+				'Elapsed Time': fmt( m.duration ),
+				'Distance': fmt( m.distance ),
+			}
+		rights.append( right )
 
-	table = diff_table( left, right, sort_entries=False )
-	table.add_row( 'ID:', str( group[0].id ), '', str( group[1].id ) )
-	table.add_row( 'UID:', group[0].uid, '', group[1].uid )
+	table = Table( box=None, show_header=False, show_footer=False )
+	for key, value in left.items():
+		row = [ key, value ]
+		for r in rights:
+			left, right = colored_diff( value, r.get( key ) )
+			row.append( right )
+		table.add_row( *row )
+
 	console.print( table )
-
-	# source_time = time_str( source.activity.localtime, app.cfg )
-	# target_time = time_str( target.activity.localtime, app.cfg )
-	# if source_time == target_time:
-	# 	data.append( ['Start Time (local)', source_time, target_time] )
-	# else:
-	# 	data.append( ['Start Time (local)', style( source_time, fg='red' ), style( target_time, fg='red' )] )
-	#
-	# if tz_correction:
-	# 	data.append( ['Start Time Delta', style( f'{delta} sec (assuming that one timezone is incorrect)', fg='red' )] )
-	# else:
-	# 	data.append( ['Start Time Delta', delta_str ] )
-	#
 
 	answer = qconfirm( f'Continue grouping?', default=False, qmark='', auto_enter=True ).ask()
 	if answer is None:
-		sysexit(-1)
+		sysexit( -1 )
 	else:
 		return answer
 
@@ -231,12 +220,11 @@ def validate_parts( activities: [Activity], force: bool ) -> bool:
 
 # helper functions
 
-# group is not used (yet?)
-def _delta( group: List[Activity], grouptime: datetime, ungrouped: Activity ) -> Tuple[bool, float, bool]:
-	delta = (ungrouped.time - grouptime).total_seconds()
+def _delta( target_time: datetime, src_time: datetime ) -> Tuple[bool, float, bool]:
+	delta = (src_time - target_time).total_seconds()
 	# delta 2/3: assume that one activity reports localtime as UTC
-	delta2 = (ungrouped.time - grouptime.replace( tzinfo=tzlocal() ).astimezone( UTC )).total_seconds()
-	delta3 = (ungrouped.time.replace( tzinfo=tzlocal() ).astimezone( UTC ) - grouptime).total_seconds()
+	delta2 = (src_time - target_time.replace( tzinfo=tzlocal() ).astimezone( UTC )).total_seconds()
+	delta3 = (src_time.replace( tzinfo=tzlocal() ).astimezone( UTC ) - target_time).total_seconds()
 	if -60 < delta < 60:
 		return True, delta, False
 	elif (-60 < delta2 < 60) or (-60 < delta3 < 60):

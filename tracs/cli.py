@@ -185,7 +185,7 @@ def group( ctx, filters, revert: bool ):
 	if revert:
 		ungroup_activities( gc.db.find( filters ), cfg['force'].get() )
 	else:
-		group_activities( list( ctx.obj.db.find( filters, True, False, True ) ), ctx.obj.force, not ctx.obj.pretend )
+		group_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.force, ctx.obj.pretend )
 
 @cli.command( hidden=True, help='groups activities to multipart activities' )
 @option( '-r', '--revert', is_flag=True, required=False, help='splits up multipart groups and creates separate activities again' )

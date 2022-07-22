@@ -404,6 +404,12 @@ def parse( filter: Union[Filter, str] ) -> Optional[Filter]:
 		f.field = 'uids'
 		f.regex = False
 
+	if f.field in ['classifier', 'service', 'source'] and f.value in Registry.services.keys():
+		f.field = 'uids'
+		f.value = f'^{f.value}:.*$'
+		f.regex = True
+		f.part_of_list = True
+
 	# date:<year> is captured by <field>:<int> in parser, so we need to correct it here
 	# same holds true for date:<year>..<year>
 	if f.field == 'date':

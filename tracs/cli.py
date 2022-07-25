@@ -41,7 +41,7 @@ from .inout import reimport_activities
 from .list import inspect_activities
 from .list import list_activities
 from .list import show_fields
-from .list import show_activity
+from tracs.show import show_activity
 from .list import show_config
 from .edit import rename_activities
 from .migrate import migrate_application

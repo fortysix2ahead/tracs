@@ -1,12 +1,9 @@
 from dataclasses import fields
-from datetime import datetime
 from pathlib import Path
 from re import match
 from re import split
 
-from click import echo
 from confuse.exceptions import NotFoundError
-from dateutil.tz import tzlocal
 from logging import getLogger
 from rich import box
 from rich.pretty import Pretty as pp
@@ -14,7 +11,6 @@ from rich.table import Table
 
 from .activity import Activity
 from .config import ApplicationConfig as cfg
-from .config import CLASSIFIER
 from .config import GlobalConfig as gc
 from .config import console
 from .plugins import Registry
@@ -66,70 +62,6 @@ def list_activities( activities: [Activity], sort: str, format_name: str ) -> No
 
 	if len( table.rows ) > 0:
 		console.print( table )
-
-def show_activity( activities: [Activity], frmt: str = None, display_raw: bool = False ) -> None:
-	for a in activities:
-		if frmt is not None:
-			try:
-				echo( frmt.format_map( a ) )
-			except KeyError:
-				echo( "KeyError: invalid format string, check if provided fields really exist" )
-
-		else:
-			table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
-
-			if display_raw:
-				table.add_column( '[blue]raw field' )
-				table.add_column( '[blue]raw value' )
-				for field, value in a.raw.items():
-					table.add_row( field, pp( value ) )
-				if CLASSIFIER in a:
-					table.add_row( 'classifier', pp( a['classifier'] ) )
-				if 'metadata' in a:
-					table.add_row( 'metadata', pp( a['metadata'] ) )
-				if 'groups' in a:
-					table.add_row( 'groups', pp( a['groups'] ) )
-				if 'parts' in a:
-					table.add_row( 'parts', pp( a['parts'] ) )
-				if 'resources' in a:
-					table.add_row( 'resources', pp( a['resources'] ) )
-
-			else:
-				table.add_column( '[blue]field' )
-				table.add_column( '[blue]value' )
-				rows = [
-					[ 'ID', a.id ],
-					[ 'Name', a.name ],
-					[ 'Type', fmt( a.type ) ],
-					[ 'Time (local)', fmt( a.localtime ) ],
-					[ 'Time (UTC)', fmt( a.time ) ],
-					[ 'Timezone\u00b9', datetime.now( tzlocal()).tzname() ],
-					[ 'Location', a.location_country ],
-					[ 'Duration (elapsed)', fmt( a.duration ) ],
-					[ 'Duration (moving)', fmt( a.duration_moving ) ],
-					[ 'Distance', a.distance ],
-					[ 'Ascent', a.ascent ],
-					[ 'Descent', a.descent ],
-					[ 'Elevation (highest)', a.elevation_max ],
-					[ 'Elevation (lowest)', a.elevation_min ],
-					[ 'Speed (average)', a.speed ],
-					[ 'Speed (max)', a.speed_max ],
-					[ 'Heart Rate (average)', a.heartrate ],
-					[ 'Heart Rate (max)', a.heartrate_max ],
-					[ 'Heart Rate (min)', a.heartrate_min ],
-					[ 'Calories', a.calories ],
-					[ 'Raw ID', a.raw_id ],
-					[ 'UID', a.uid ],
-				]
-
-				for row in rows:
-					if row[1] is None or row[1] == '':
-						continue
-					else:
-						table.add_row( row[0], pp( row[1] ) )
-
-			console.print( table )
-			console.print( '\u00b9 Proper timezone support is currently missing, local timezone is displayed' )
 
 def inspect_activities( activities: [Activity], display_table: bool = False ) -> None:
 	for a in activities:

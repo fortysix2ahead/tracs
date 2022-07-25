@@ -7,12 +7,13 @@ from rich import box
 from rich.pretty import Pretty as pp
 from rich.table import Table
 
-from tracs.activity import Activity
-from tracs.config import CLASSIFIER
-from tracs.config import console
-from tracs.utils import fmt
+from .activity import Activity
+from .config import ApplicationContext
+from .config import console
+from .dataclasses import as_dict
+from .utils import fmt
 
-def show_activity( activities: [Activity], frmt: str = None, display_raw: bool = False ) -> None:
+def show_activity( activities: [Activity], ctx: ApplicationContext, frmt: str = None, display_raw: bool = False ) -> None:
 	for a in activities:
 		if frmt is not None:
 			try:
@@ -24,20 +25,20 @@ def show_activity( activities: [Activity], frmt: str = None, display_raw: bool =
 			table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
 
 			if display_raw:
-				table.add_column( '[blue]raw field' )
-				table.add_column( '[blue]raw value' )
-				for field, value in a.raw.items():
-					table.add_row( field, pp( value ) )
-				if CLASSIFIER in a:
-					table.add_row( 'classifier', pp( a['classifier'] ) )
-				if 'metadata' in a:
-					table.add_row( 'metadata', pp( a['metadata'] ) )
-				if 'groups' in a:
-					table.add_row( 'groups', pp( a['groups'] ) )
-				if 'parts' in a:
-					table.add_row( 'parts', pp( a['parts'] ) )
-				if 'resources' in a:
-					table.add_row( 'resources', pp( a['resources'] ) )
+				table.add_column( '[blue]field' )
+				table.add_column( '[blue]value' )
+				for field, value in as_dict( a, remove_persist=False, remove_null=False ).items():
+					if field not in ['metadata', 'resources']:
+						table.add_row( field, pp( value ) )
+
+				if ctx:
+					table.add_row( '[blue]resources', '' )
+					for uid in a.uids:
+						resources = ctx.db.find_resources( uid )
+						for r in resources:
+							table.add_row( '', '' )
+							for field, value in as_dict( r, remove_persist=False, remove_null=False ).items():
+								table.add_row( field, pp( value ) )
 
 			else:
 				table.add_column( '[blue]field' )

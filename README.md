@@ -1,11 +1,11 @@
 # Tracs
 
-Tracs is a command line application for managing GNSS tracks (data recorded from GPS/Galileo and the like)
+Tracs is a command line application for managing GPS tracks (data recorded from GPS/Galileo and the like)
 and simultaneously a command line client for sports online services which allow creation/recording/uploading etc.
 of such tracks. Currently, Polar Flow, Strava, Bikecitizens and Waze are supported.
 
-Tracs downloads tracks activities, manages them, displays information and, well, does also a bit more than that.
-The role model for Tracs is the command line music organizer beets (https://github.com/beetbox/beets).
+Tracs downloads activities, manages them, displays information and, well, does also a bit more than that (at least
+that's the plan). The role model for Tracs is the command line music organizer beets (https://github.com/beetbox/beets).
 Many ideas are borrowed from beets. Tracs is written in Python and served as my playground for learning the language,
 but has evolved heavily since then.
 
@@ -79,6 +79,12 @@ Tracs is a command line client. It provides various commands to interact with re
 downloaded files. The following commands/options are currently supported. Please note that the CLI is not yet stable and
 names/parameters might change.
 
+The overall command line usage is the following:
+
+```bash
+tracs <general options> <command> <command specific options> <parameters>
+```
+
 **General Options:**
 
 ```generic
@@ -86,9 +92,9 @@ names/parameters might change.
 -d, --debug: enable output of debug messages
 -f, --force: forces operations to be carried out
 -l, --library LIB_DIR: library location
--p, --pretend: pretend to work, only displays what is happening, but does not persists any changes
+-p, --pretend: pretend to work, only displays what is happening, but does not persist any changes
 -v, --verbose: be more verbose
---help: Show a help message
+--help: show help message
 ```
 
 **Commands:**

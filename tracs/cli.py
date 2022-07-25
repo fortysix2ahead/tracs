@@ -175,7 +175,7 @@ def ls( ctx, sort, format_name, filters ):
 @argument('filters', nargs=-1)
 @pass_context
 def show( ctx, filters, frmt, raw ):
-	show_activity( ctx.obj.db.find( filters ), frmt=frmt, display_raw=raw )
+	show_activity( ctx.obj.db.find( filters ), ctx=ctx.obj, frmt=frmt, display_raw=raw )
 
 @cli.command( help='groups activities' )
 @option( '-r', '--revert', is_flag=True, required=False, help='splits up groups and creates separate activities again' )

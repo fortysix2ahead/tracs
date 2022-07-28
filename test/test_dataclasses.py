@@ -52,12 +52,11 @@ def test_get():
 	assert bd._values_for( 'doc_id' ) == (10, 10, 10)
 	assert bd._values_for( 'value' ) == (None, None, None)
 
-def test_keys_values_items():
-	bd = BaseDocument( {'value': 1}, 10 )
-
-	assert 'doc_id' in list( bd.keys() )
-	assert 10 in bd.values()
-	assert ('doc_id', 10) in list( bd.items() )
+#def test_keys_values_items():
+#	bd = BaseDocument( {'value': 1}, 10 )
+#	assert 'doc_id' in list( bd.keys() )
+#	assert 10 in bd.values()
+#	assert ('doc_id', 10) in list( bd.items() )
 
 def test_testdataclass():
 	# default empty document

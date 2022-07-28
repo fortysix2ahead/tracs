@@ -52,13 +52,11 @@ def test_init_from( json ):
 def test_asdict():
 	a = Activity()
 	assert a.asdict() == {
-		'resources': [],
 		'tags'     : [],
 		'uids'     : []
 	}
 
 	assert as_dict( a ) == {
-		'resources': [],
 		'tags'     : [],
 		'uids'     : []
 	}
@@ -66,6 +64,7 @@ def test_asdict():
 	assert as_dict( a, remove_persist=False ) == {
 		'doc_id'   : 0,
 		'id'       : 0,
+		'metadata' : {},
 		'resources': [],
 		'tags'     : [],
 		'uids'     : []
@@ -86,19 +85,19 @@ def test_asdict():
 
 	assert as_dict( Activity( data=activity_dict ) ) == {
 		'classifier': 'polar',
-		'metadata'  : {},
-		'resources' : [{
-			'data'    : None,
-			'doc_id'  : 0,
-			'id'      : 0,
-			'name'    : 'one',
-			'path'    : 'one.gpx',
-			'raw'     : None,
-			'raw_data': None,
-			'status'  : 100,
-			'type'    : 'gpx',
-			'uid'     : None
-		}],
+#		'metadata'  : {},
+#		'resources' : [{
+#			'data'    : None,
+#			'doc_id'  : 0,
+#			'id'      : 0,
+#			'name'    : 'one',
+#			'path'    : 'one.gpx',
+#			'raw'     : None,
+#			'raw_data': None,
+#			'status'  : 100,
+#			'type'    : 'gpx',
+#			'uid'     : None
+#		}],
 		'name'      : 'name',
 		'raw_id'    : 1,
 		'tags'      : [],
@@ -107,5 +106,3 @@ def test_asdict():
 		'uid'       : 'test:1',
 		'uids'      : []
 	}
-
-	d = dict( Activity( data=activity_dict ) )

@@ -33,9 +33,9 @@ def test_activity_from_raw( path ):
 	a = WazeActivity( raw=points )
 
 	assert a.id == 0
-	assert a.raw_id == 20200712074743
+	assert a.raw_id == 200712074743
 	assert a.classifier == 'waze'
-	assert a.uid == 'waze:20200712074743'
+	assert a.uid == 'waze:200712074743'
 
 	assert a.time == datetime( 2020, 7, 12, 7, 47, 43, tzinfo=timezone.utc )
 	assert a.localtime == datetime( 2020, 7, 12, 9, 47, 43, tzinfo=gettz() )

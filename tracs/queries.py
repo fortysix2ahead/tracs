@@ -6,8 +6,8 @@ from logging import getLogger
 from sys import float_info
 from typing import List
 
-import arrow
 from arrow import Arrow
+from arrow import get as arrow_get
 
 from tinydb.queries import Query
 from tinydb.queries import QueryLike
@@ -191,10 +191,10 @@ def datetime_in_range( field: str, from_time: Arrow or datetime, to_time: Arrow 
 			return True
 		return False
 
-	from_time = arrow.get( from_time ) if type( from_time ) is datetime else from_time
-	to_time = arrow.get( to_time ) if type( to_time ) is datetime else to_time
+	from_time = arrow_get( from_time ) if type( from_time ) is datetime else from_time
+	to_time = arrow_get( to_time ) if type( to_time ) is datetime else to_time
 
-	return Query()[field].map( lambda t: arrow.get( t ) ).test( fn, from_time, to_time )
+	return Query()[field].map( lambda t: arrow_get( t ) ).test( fn, from_time, to_time )
 
 def time_is( field: str, tm: time or datetime or Arrow ) -> Query:
 	def fn( value: time, _tm: time ) -> bool:
@@ -205,7 +205,7 @@ def time_is( field: str, tm: time or datetime or Arrow ) -> Query:
 
 	tm = tm.time() if type( tm ) in [datetime, Arrow] else tm
 
-	return Query()[field].map( lambda t: arrow.get( t ).time() ).test( fn, tm )
+	return Query()[field].map( lambda t: arrow_get( t ).time() ).test( fn, tm )
 
 def time_in_range( field: str, from_time: time or datetime or Arrow, to_time: time or datetime or Arrow ) -> Query:
 	def fn( value: time, _from_time: time, _to_time: time ) -> bool:
@@ -217,7 +217,7 @@ def time_in_range( field: str, from_time: time or datetime or Arrow, to_time: ti
 	from_time = from_time.time() if type( from_time ) in [datetime, Arrow] else from_time
 	to_time = to_time.time() if type( to_time ) in [datetime, Arrow] else to_time
 
-	return Query()[field].map( lambda t: arrow.get( t ).time() ).test( fn, from_time, to_time )
+	return Query()[field].map( lambda t: arrow_get( t ).time() ).test( fn, from_time, to_time )
 
 def enum_is( enum_field: str, enum_value: str ) -> Query:
 	def fn( e, value ):

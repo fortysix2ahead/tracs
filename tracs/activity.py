@@ -105,7 +105,7 @@ class Activity( BaseDocument ):
 	heartrate_min: float = field( default=None ) #
 	calories: float = field( default=None ) #
 
-	metadata: Dict = field( init=False, default=dict, metadata={ PROTECTED: True, PERSIST: False } )
+	metadata: Dict = field( init=False, default_factory=dict, metadata={ PROTECTED: True, PERSIST: False } )
 	resources: List[Resource] = field( init=True, default_factory=list, metadata={ PROTECTED: True, PERSIST: False } )
 
 	#parent: Activity = field( default=None, metadata={ PERSIST: False, PROTECTED: True } )

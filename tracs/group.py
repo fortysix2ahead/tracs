@@ -11,11 +11,8 @@ from click import echo
 from dateutil.tz import tzlocal
 from dateutil.tz import UTC
 from logging import getLogger
-from questionary import confirm as qconfirm
-from questionary import select as qselect
 from sys import exit as sysexit
 
-from rich.pretty import Pretty
 from rich.table import Table
 
 from .activity import Activity
@@ -23,10 +20,8 @@ from .config import KEY_GROUPS as GROUPS
 from .config import GlobalConfig as gc
 from .config import console
 from .plugins.groups import ActivityGroup
-from .ui import diff_table
 from .utils import colored_diff
 from .utils import fmt
-from .utils import fmtl
 
 log = getLogger( __name__ )
 

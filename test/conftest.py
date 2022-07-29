@@ -1,5 +1,5 @@
 
-from importlib.resources import path
+from importlib.resources import path as resource_path
 from pathlib import Path
 from typing import Dict
 from typing import Optional
@@ -109,36 +109,28 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 
 	return config_dict, state_dict
 
-# noinspection PyUnboundLocalVariable
 @fixture
-def service( request ) -> Service:
-	# marker processing
+def service( request ) -> Optional[Service]:
 	if marker := request.node.get_closest_marker( 'service' ):
-		service_class, base_url = marker.args[0] if marker.args else (None, None)
-		service_class = marker.kwargs.pop( 'cls' ) if 'cls' in marker.kwargs else service_class
-		base_url = marker.kwargs.pop( 'url' ) if 'url' in marker.kwargs else base_url
-
-	# old way
-	if marker := request.node.get_closest_marker( 'service_config' ):
-		config_file, state_file = marker.args[0] if marker.args else (None, None)
-	# new way
-	if marker := request.node.get_closest_marker( 'config' ):
-		config_file = marker.kwargs.pop( 'config' ) if 'config' in marker.kwargs else config_file
-		state_file = marker.kwargs.pop( 'state' ) if 'state' in marker.kwargs else state_file
-
-	service_class_name = service_class.__name__.lower()
+		service_class = marker.kwargs.get( 'cls' )
+		base_url = marker.kwargs.get( 'base_url' )
+		service_config = marker.kwargs.get( 'config' )
+		service_state = marker.kwargs.get( 'state' )
+		service_class_name = service_class.__name__.lower()
+	else:
+		return None
 
 	config, state = None, None
-	with path('test', '__init__.py') as test_pkg_path:
-		config_path = Path(test_pkg_path.parent.parent, config_file )
+	with resource_path( 'test', '__init__.py' ) as test_pkg_path:
+		config_path = Path( test_pkg_path.parent.parent, service_config )
 		if config_path.exists():
 			config = Configuration( f'test.{service_class_name}', __name__, read=False )
-			config.set_file(config_path)
+			config.set_file( config_path )
 
-		state_path = Path(test_pkg_path.parent.parent, state_file )
+		state_path = Path( test_pkg_path.parent.parent, service_state )
 		if state_path.exists():
 			state = Configuration( f'test.{service_class_name}', __name__, read=False )
-			state.set_file(state_path)
+			state.set_file( state_path )
 
 	return service_class( base_url=base_url, config=config, state=state )
 

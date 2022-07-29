@@ -29,8 +29,7 @@ def test_constructor():
 	assert polar._events_url == f'{TEST_BASE_URL}/training/getCalendarEvents'
 	assert polar._export_url == f'{TEST_BASE_URL}/api/export/training'
 
-@mark.service( (Polar, TEST_BASE_URL) )
-@mark.service_config( ('test/configurations/default/config.yaml', 'test/configurations/default/state.yaml') )
+@mark.service( cls=Polar, base_url=TEST_BASE_URL, config='test/configurations/default/config.yaml', state='test/configurations/default/state.yaml' )
 def test_service( polar_server, service ):
 	# login
 	service.login()
@@ -44,17 +43,19 @@ def test_service( polar_server, service ):
 	assert type( a ) is PolarActivity
 	assert a.raw is not None
 	assert a.raw_id == 300003
-	assert a.raw_name == '300003.json'
+	assert a.uid == 'polar:300003'
 
-	assert len( a.resources ) == 4
+	assert len( a.resources ) == 5
 
 	# download
 	for r in a.resources:
-		content, status = service._download_resource( a, r )
-		assert content is not None and status == 200
+		content, status = service.download_resource( r )
+		if r.type == 'raw':
+			assert status == 404
+		else:
+			assert content is not None and status == 200
 
-@mark.service( cls=Polar, url=TEST_BASE_URL )
-@mark.config( config='test/configurations/default/config.yaml', state='test/configurations/default/state.yaml' )
+@mark.service( cls=Polar, base_url=TEST_BASE_URL, config='test/configurations/default/config.yaml', state='test/configurations/default/state.yaml' )
 @mark.db( template='empty', inmemory=True, update_gc=True )
 def test_workflow( polar_server, service, db ):
 	service.login()
@@ -62,9 +63,8 @@ def test_workflow( polar_server, service, db ):
 	assert len( fetched ) == 3
 
 @mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
-@mark.service( (Polar, BASE_URL) )
-@mark.service_config( ('var/config_live.yaml', 'var/state_live.yaml' ) )
-@mark.db_inmemory( True )
+@mark.service( cls=Polar, url=BASE_URL, config='var/config_live.yaml', state='var/state_live.yaml' )
+@mark.db( template='empty', inmemory=True, update_gc=True )
 def test_live_workflow( service, db, config_state ):
 	gc.db = db
 	gc.db_dir = db.path.parent

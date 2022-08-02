@@ -1,5 +1,6 @@
 
 from importlib.resources import path as resource_path
+from logging import getLogger
 from pathlib import Path
 from typing import Dict
 from typing import Optional
@@ -13,6 +14,7 @@ from yaml import load as load_yaml
 
 from tracs.config import ApplicationConfig as cfg
 from tracs.config import ApplicationConfig as state
+from tracs.config import ApplicationContext
 from tracs.config import GlobalConfig
 from tracs.config import KEY_PLUGINS
 from tracs.db import ActivityDb
@@ -28,7 +30,6 @@ from .helpers import get_file_as_json
 from .helpers import get_file_db
 from .helpers import get_file_path
 from .helpers import get_inmemory_db
-from .helpers import var_run_path
 from .polar_server import polar_server
 from .polar_server import polar_server_thread
 from .polar_server import TEST_BASE_URL as POLAR_TEST_BASE_URL
@@ -36,45 +37,35 @@ from .polar_server import LIVE_BASE_URL as POLAR_LIVE_BASE_URL
 from .strava_server import strava_server
 from .strava_server import strava_server_thread
 
+log = getLogger( __name__ )
+
 ENABLE_LIVE_TESTS = 'ENABLE_LIVE_TESTS'
 
 # shared fixtures
 
-# noinspection PyUnboundLocalVariable
 @fixture
 def db( request ) -> ActivityDb:
 	if marker := request.node.get_closest_marker( 'db' ):
 		template = marker.kwargs.get( 'template' )
-		lib = marker.kwargs.get( 'lib' )
-		name = marker.kwargs.pop( 'name', 'db.json' )
-		inmemory = marker.kwargs.pop( 'inmemory', True )
-		writable = marker.kwargs.pop( 'writable', False )
-		update_gc = marker.kwargs.pop( 'update_gc', False )
-		cleanup = marker.kwargs.pop( 'cleanup', False )
+		library_template = marker.kwargs.get( 'library' )
+		inmemory = marker.kwargs.get( 'inmemory', True )
+		writable = marker.kwargs.get( 'writable', False )
+		cleanup = marker.kwargs.get( 'cleanup', True )
+	else:
+		return None
 
 	if inmemory:
-		if lib:
-			db = get_inmemory_db( lib=lib )
-		else:
-			db = get_inmemory_db( template=template )
+		db = get_inmemory_db( library=library_template ) if library_template else get_inmemory_db( template=template )
 	else:
-		if path:
-			db = get_file_db( lib=lib, writable=writable )
-		else:
-			db = get_file_db( template=template, writable=writable )
-
-	if update_gc:
-		GlobalConfig.db = db
-		GlobalConfig.db_dir = var_run_path() if inmemory else db.path.parent
-		GlobalConfig.db_file = Path( GlobalConfig.db_dir, 'db.json' ) if inmemory else db.path
+		db = get_file_db( library=library_template, writable=writable ) if library_template else get_file_db( template=template, writable=writable )
 
 	yield db
 
-	if cleanup:
-		if inmemory and update_gc:
-			clean( db_dir=GlobalConfig.db_dir )
-		elif not inmemory:
-			clean( db_dir=db.path.parent )
+	if cleanup and not inmemory and writable:
+		clean( db_dir=db.path )
+
+def ctx( request ) -> ApplicationContext:
+	pass
 
 @fixture
 def json( request ) -> Optional[Dict]:

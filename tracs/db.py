@@ -39,7 +39,10 @@ from .config import KEY_VERSION
 from .db_storage import DataClassStorage
 from .filters import Filter
 from .filters import classifier as classifier_filter
+from .filters import false as false_filter
 from .filters import parse_filters
+from .filters import raw_id as raw_id_filter
+from .filters import uid as uid_filter
 from .plugins import Registry
 from .queries import is_group
 from .queries import is_grouped
@@ -215,64 +218,39 @@ class ActivityDb:
 
 	# -----
 
-	def all_exclude( self, group: bool = True, grouped: bool = True, ungrouped: bool = True ) -> List[Activity]:
-		activities = self.activities.all() or []
-		activities = list( filter( is_group(), activities ) ) if group else activities
-		activities = list( filter( is_grouped(), activities ) ) if grouped else activities
-		activities = list( filter( is_ungrouped(), activities ) ) if ungrouped else activities
-		return activities
-
-	def all( self, include_groups: bool = True, include_grouped: bool = False, include_ungrouped = True ) -> [Activity]:
+	def all( self ) -> List[Activity]:
 		"""
 		Retrieves all activities stored in the internal db.
 
-		:param include_groups: when True includes activity groups (this is the default)
-		:param include_grouped: when True includes grouped activities (default is False)
-		:param include_ungrouped: when True includes ungrouped activities (default is False)
 		:return: list containing all activities
 		"""
-		od = OrderedDict()
-		for a in self.activities.search( groups() ) if include_groups else []:
-			od[a.doc_id] = a
-		for a in self.activities.search( grouped() ) if include_grouped else []:
-			od[a.doc_id] = a
-		for a in self.activities.search( ungrouped() ) if include_ungrouped else []:
-			od[a.doc_id] = a
-		return list( od.values() )
+		return cast( List[Activity], self.activities.all() )
 
-		#return self.activities.search( f_all( include_groups, include_grouped, include_ungrouped ) )
+	def contains( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> bool:
+		filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
+		for a in self.activities.all():
+			if all( [ f( a ) for f in filters ] ):
+				return True
+		return False
 
-	def contains( self, id: Optional[int] = None, raw_id: Optional[int] = None, service_name: Optional[str] = None ) -> bool:
-		"""
-		Checks if the db contains an activitiy with the provided id.
+	def get( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> Optional[Activity]:
+		filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
+		for a in self.activities.all():
+			if all( [ f( a ) for f in filters ] ):
+				return cast( Activity, a )
+		return None
 
-		:param id: id of the activity to be checked
-		:param raw_id: raw id of the activity to be checked
-		:param service_name: if provided checks for external activities
-		:return: true, if the activity can be found
-		"""
+	def _create_filter( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None ) -> List[Filter]:
 		if id and id > 0:
-			return self.activities.contains( Filter( 'id', id ) )
+			return [ Filter( 'id', id ) ]
 		elif raw_id and raw_id > 0:
-			if service_name:
-				return self.activities.contains( Filter( 'uid', f'{service_name}:{raw_id}' ) )
-			else:
-				return self.activities.contains( Filter( 'raw_id', raw_id ) )
+			return [ uid_filter( f'{classifier}:{raw_id}' ) ] if classifier else [ raw_id_filter( raw_id ) ]
+		elif uid:
+			return [ uid_filter( uid ) ]
 		else:
-			return False
+			return [ false_filter() ]
 
 	# ----
-
-	def get( self, doc_id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None ) -> Optional[Activity]:
-		if doc_id and doc_id > 0:
-			return self.activities.get( doc_id=doc_id )
-		elif raw_id and raw_id > 0:
-			if classifier:
-				return self.activities.get( Filter( 'uid', f'{classifier}:{raw_id}' ) )
-			else:
-				return self.activities.get( Filter( 'raw_id', raw_id ) )
-		else:
-			return None
 
 	def find( self, filters: Union[List[str], List[Filter], str, Filter] = None ) -> [Activity]:
 		parsed_filters = parse_filters( filters or [] )

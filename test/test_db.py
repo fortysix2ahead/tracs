@@ -2,7 +2,6 @@
 from datetime import datetime
 
 from pytest import mark
-from tinydb.table import Document
 from tinydb.table import Table
 
 from tracs.activity import Activity
@@ -10,7 +9,6 @@ from tracs.activity_types import ActivityTypes
 from tracs.db import ActivityDb
 from tracs.db_storage import DataClassStorage
 from tracs.plugins.groups import ActivityGroup
-from tracs.db import document_factory
 
 from tracs.plugins.polar import PolarActivity
 from tracs.plugins.strava import StravaActivity
@@ -33,12 +31,12 @@ def test_new_db():
 	db = ActivityDb( path=None, pretend=True, cache=True )
 	assert db.storage.use_memory_storage is True and db.storage.use_cache is True
 
-	parent_path, db_path, meta_path = get_db_path( 'empty', writable=False )
-	db = ActivityDb( path=parent_path, pretend=True, cache=False )
+	db_path = get_db_path( 'empty', writable=False )
+	db = ActivityDb( path=db_path.parent, pretend=True, cache=False )
 	assert db.storage.use_memory_storage is True and db.storage.use_cache is True
 
-	parent_path, db_path, meta_path = get_db_path( 'empty', writable=True )
-	db = ActivityDb( path=parent_path, pretend=False, cache=True )
+	db_path = get_db_path( 'empty', writable=True )
+	db = ActivityDb( path=db_path.parent, pretend=False, cache=True )
 	assert db.storage.use_memory_storage is False and db.storage.use_cache is True
 
 @mark.db( template='default', inmemory=True )
@@ -46,7 +44,7 @@ def test_open_db( db ):
 	assert isinstance( db.activities, Table )
 
 	assert len( db.activities.all() ) > 1
-	assert db.activities.all()[0]['version'] > 0
+	assert db.schema > 0
 
 	assert db.activities.document_class is Activity
 
@@ -88,91 +86,57 @@ def test_insert( db ):
 @mark.db( template='default', inmemory=True )
 def test_contains( db ):
 	# check activity table
-	assert db.contains( 1 ) == True
-	assert db.contains( 111 ) == False
+	assert db.contains( 1 ) is True
+	assert db.contains( 111 ) is False
 
-	assert db.contains( raw_id=1234567890 ) == True
-	assert db.contains( raw_id=9999 ) == False
+	assert db.contains( raw_id=1234567890 ) is True
+	assert db.contains( raw_id=9999 ) is False
 
-	assert db.contains( raw_id=1234567890, service_name='polar' ) == True
-	assert db.contains( raw_id=9999, service_name='polar' ) == False
+	assert db.contains( raw_id=1234567890, classifier='polar' ) is True
+	assert db.contains( raw_id=9999, classifier='polar' ) is False
 
-@mark.db( template='default', inmemory=True )
-def test_all( db ):
-	# parameters are: include_groups, include_grouped, include_ungrouped
-	# all
-	result = ids( db.all( True, True, True ) )
-	assert result == [1, 2, 3, 4, 11, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
-
-	# groups only
-	result = ids( db.all( True, False, False ) )
-	assert result == [1]
-
-	# grouped only
-	result = ids( db.all( False, True, False ) )
-	assert result == [2, 3, 4]
-
-	# ungrouped only
-	result = ids( db.all( False, False, True ) )
-	assert result == [11, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
-
-	# groups and grouped
-	result = ids( db.all( True, True, False ) )
-	assert result == [1, 2, 3, 4]
-
-	# groups and ungrouped -> the default case!
-	result = ids( db.all( True, False, True ) )
-	assert result == [1, 11, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
-	result = ids( db.all() )
-	assert result == [1, 11, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
-
-	# grouped and ungrouped
-	result = ids( db.all( False, True, True ) )
-	assert result == [2, 3, 4, 11, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
-
-	# nothing at all
-	result = ids( db.all( False, False, False ) )
-	assert result == []
+	assert db.contains( uid='polar:1234567890' ) is True
+	assert db.contains( uid='polar:9999' ) is False
 
 @mark.db( template='default', inmemory=True )
 def test_get( db ):
 	# existing activity -> 1 is considered the doc_id
 	a = db.get( 1 )
-	assert a.id == 1 and isinstance( a, ActivityGroup )
-	a = db.get( 11 )
-	assert a.id == 11 and isinstance( a, PolarActivity )
+	assert a.id == 1 and isinstance( a, Activity )
+	a = db.get( 4 )
+	assert a.id == 4 and isinstance( a, Activity )
 
 	# get via doc_id
-	a = db.get( doc_id=1 )
-	assert a.doc_id == 1 and isinstance( a, ActivityGroup )
+	a = db.get( id = 1 )
+	assert a.doc_id == 1 and isinstance( a, Activity )
 
 	# non-existing id
-	assert db.get( doc_id=999 ) is None
+	assert db.get( id=999 ) is None
 	assert db.get( raw_id=999 ) is None
 
 	# existing polar activity
 	a = db.get( raw_id=1234567890 )
-	assert a.id == 2 and isinstance( a, PolarActivity )
-	a = db.get( raw_id=1234567890, service_name='polar' )
-	assert a.doc_id == 2 and isinstance( a, PolarActivity )
+	assert a.id == 1 and isinstance( a, Activity )
+	a = db.get( raw_id=1234567890, classifier='polar' )
+	assert a.doc_id == 1 and isinstance( a, Activity )
 
 	# non-existing polar activity
-	assert db.get( raw_id=999, service_name='polar' ) is None
-	assert db.get( doc_id=999, service_name='polar' ) is None
+	assert db.get( raw_id=999, classifier='polar' ) is None
+	assert db.get( id=999, classifier='polar' ) is None
 
 	# existing strava activity
-	a = db.get( raw_id=12345678, service_name='strava' )
-	assert a.doc_id == 3 and isinstance( a, StravaActivity )
+	a = db.get( raw_id=12345678, classifier='strava' )
+	assert a.doc_id == 1 and isinstance( a, Activity )
 
 	# existing waze activity
-	a = db.get( raw_id=20210101010101, service_name='waze' )
-	assert a.doc_id == 4 and isinstance( a, WazeActivity )
+	a = db.get( raw_id=20210101010101, classifier='waze' )
+	assert a.doc_id == 1 and isinstance( a, Activity )
 
 	# get with id=0
 	assert db.get( 0 ) is None
-	assert db.get( doc_id=0 ) is None
-	assert db.get( 0, service_name='polar' ) is None
-	assert db.get( doc_id=0, service_name='polar' ) is None
+	assert db.get( id = 0 ) is None
+	assert db.get( 0, classifier='polar' ) is None
+	assert db.get( id = 0, classifier='polar' ) is None
 
 @mark.db( template='default', inmemory=True )
 def test_update( db ):

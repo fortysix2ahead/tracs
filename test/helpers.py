@@ -1,4 +1,5 @@
-
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import datetime
 from json import load as load_json
 from pathlib import Path
@@ -8,11 +9,32 @@ from shutil import copytree
 from importlib.resources import path
 from shutil import rmtree
 from typing import Dict
+from typing import Optional
 from typing import Tuple
 
 from tinydb.table import Document
 
 from tracs.db import ActivityDb
+
+DATABASES = 'databases'
+LIBRARIES = 'libraries'
+VAR = 'var/run'
+
+@dataclass
+class DbPath:
+
+	parent: Path = field()
+	activities: Path = field( default=None )
+	metadata: Path = field( default=None )
+	resources: Path = field( default=None )
+	schema: Path = field( default=None )
+
+	def __post_init__( self ):
+		if self.parent:
+			self.activities = Path( self.parent, 'activities.json' )
+			self.metadata = Path( self.parent, 'metadata.json' )
+			self.resources = Path( self.parent, 'resources.json' )
+			self.schema = Path( self.parent, 'schema.json' )
 
 def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: str = None ) -> Tuple[Path, Path]:
 	run_dir = _run_path()
@@ -57,7 +79,7 @@ def get_lib_path( name: str, writable: bool = False ) -> Path:
 			copytree( p, dst_lib )
 			return dst_lib
 
-def get_db_path( template_name: str = None, lib_name: str = None, writable: bool = False ) -> Tuple[Path, Path, Path]:
+def get_db_path( template_name: str = None, library_name: str = None, writable: bool = False ) -> DbPath:
 	"""
 	Creates/returns an existing db and returns a tuple consisting of [parent_path, db_path, meta_path]
 
@@ -67,62 +89,51 @@ def get_db_path( template_name: str = None, lib_name: str = None, writable: bool
 	"""
 	with path( 'test', '__init__.py' ) as p:
 		if template_name:
-			db_path = Path( p.parent, 'databases', f'{template_name}.db.json' )
-			meta_path = Path( p.parent, 'databases', 'meta.json' )
-		elif lib_name:
-			db_path = Path( p.parent, 'libraries', lib_name, 'db.json' )
-			meta_path = Path( p.parent, 'libraries', lib_name, 'meta.json' )
+			db_path = DbPath( parent = Path( p.parent, DATABASES, template_name ) )
+		elif library_name:
+			db_path = DbPath( parent = Path( p.parent, LIBRARIES, library_name ) )
 
 		if not writable:
-			return db_path.parent, db_path, meta_path
+			return db_path
 		else:
 			dest_path = var_run_path()
-			if template_name:
-				dest_db = Path( dest_path, f'db.json' )
-				dest_meta = Path( dest_path, f'meta.json' )
-				copy( db_path, dest_db )
-				copy( meta_path, dest_meta )
-				return dest_path, dest_db, dest_meta
-			elif lib_name:
-				copytree( db_path.parent, dest_path )
-				return dest_path, Path( dest_path, 'db.json' ), Path( dest_path, 'meta.json' )
+			dest_path.mkdir( exist_ok=True )
+			copytree( db_path.parent, dest_path, dirs_exist_ok=True )
+			db_path = DbPath( dest_path )
+			return db_path
 
-def get_readonly_db_path( template_name: str ) -> Tuple[Path, Path, Path]:
-	return get_db_path( template_name=template_name, writable=False )
-
-def get_writable_db_path( template_name: str ) -> Tuple[Path, Path, Path]:
-	return get_db_path( template_name=template_name, writable=True )
-
-def get_inmemory_db( template: str = None, lib: str = None ) -> ActivityDb:
+def get_inmemory_db( template: str = None, library: str = None ) -> Optional[ActivityDb]:
 	"""
 	Returns an in-memory db initialized from the provided template db.
 
 	:param template: template db or None
-	:param lib: optional lib name
+	:param library: optional lib name
 	:return: in-memory db
 	"""
-	if lib:
-		parent_path, db_path, meta_path = get_db_path( lib_name=lib, writable=False )
+	if library:
+		db_path = get_db_path( library_name=library, writable=False )
+	elif template:
+		db_path = get_db_path( template_name=template, writable=False )
 	else:
-		parent_path, db_path, meta_path = get_db_path( template_name=template, writable=False )
+		return None
 
-	return ActivityDb( path=parent_path, activities_name=db_path.name, pretend=True, cache=False )
+	return ActivityDb( path=db_path.parent, pretend=True, cache=False )
 
-def get_file_db( template: str = None, lib: str = None, writable = False ) -> ActivityDb:
+def get_file_db( template: str = None, library: str = None, writable = False ) -> ActivityDb:
 	"""
 	Returns a file-based db, based on the provided template.
 
-	:param db_template:
-	:param db_name: name of the db, defaults to db.json
+	:param template:
+	:param library:
 	:param writable: if the db shall be writable or not
 	:return: file-based db
 	"""
-	if lib:
-		parent_path, db_path, meta_path = get_db_path( lib_name=lib, writable=writable )
+	if library:
+		db_path = get_db_path( library_name=library, writable=writable )
 	else:
-		parent_path, db_path, meta_path = get_db_path( template_name=template, writable=writable )
+		db_path = get_db_path( template_name=template, writable=writable )
 
-	return ActivityDb( path=parent_path, activities_name=db_path.name, pretend=not writable, cache=False )
+	return ActivityDb( path=db_path.parent, pretend=not writable, cache=False )
 
 def get_db_as_json( db_name: str ) -> Dict:
 	parent_path, db_path, meta_path = get_db_path( db_name, writable=False )
@@ -146,20 +157,16 @@ def var_run_path( file_name = None ) -> Path:
 	"""
 	with path( 'test', '__init__.py' ) as test_pkg_path:
 		if file_name:
-			run_path = Path( test_pkg_path.parent.parent, 'var', 'run', f'{datetime.now().strftime( "%H%M%S_%f" )}', file_name )
+			run_path = Path( test_pkg_path.parent.parent, VAR, f'{datetime.now().strftime( "%H%M%S_%f" )}', file_name )
 			run_path.parent.mkdir( parents=True, exist_ok=True )
 		else:
-			run_path = Path( test_pkg_path.parent.parent, 'var', 'run', f'{datetime.now().strftime( "%H%M%S_%f" )}' )
+			run_path = Path( test_pkg_path.parent.parent, VAR, f'{datetime.now().strftime( "%H%M%S_%f" )}' )
 			run_path.mkdir( parents=True, exist_ok=True )
 		return run_path
 
 def clean( db_dir: Path = None, db_path: Path = None ) -> None:
-	return
-
-	if db_dir:
+	if db_dir and db_dir.parent.name == 'run' and db_dir.parent.parent.name == 'var': # sanity check: only remove when in test/var/run
 		rmtree( db_dir, ignore_errors=True )
-	if db_path:
-		db_path.unlink( missing_ok=True )
 
 def ids( doc_list: [Document] ) -> []:
 	return [a.doc_id for a in doc_list]

@@ -238,7 +238,10 @@ def invalid() -> Filter:
 	return Filter( field=None, value=False, callable=fn, valid=False )
 
 def classifier( c: str ) -> Filter:
-	return Filter( 'uids', f'^{c}:.*$', regex=True, part_of_list=True )
+	return Filter( 'uids', f'^{c}:\d+$', regex=True, part_of_list=True )
+
+def raw_id( id: int ) -> Filter:
+	return Filter( 'uids', f'^\w+:{id}+$', regex=True, part_of_list=True )
 
 def uid( uid: str ) -> Filter:
 	return Filter( 'uids', uid, regex=False, part_of_list=True )

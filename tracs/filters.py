@@ -27,7 +27,6 @@ from tinydb.queries import Query
 from tinydb.queries import QueryLike
 
 from .config import CLASSIFIER as FIELD_CLASSIFIER
-from .config import CLASSIFIERS as FIELD_CLASSIFIERS
 from .plugins import Registry
 
 log = getLogger( __name__ )
@@ -413,6 +412,13 @@ def parse( filter: Union[Filter, str] ) -> Optional[Filter]:
 		f.regex = True
 		f.part_of_list = True
 
+	if f.field in ['name']:
+		if type( f.value ) is str:
+			f.value = f'^.*{f.value.lower()}.*$'
+		elif type( f.value ) is list:
+			f.value = list( map( lambda s: f'^.*{s.lower()}.*$', f.value ) )
+		f.regex = True
+
 	# date:<year> is captured by <field>:<int> in parser, so we need to correct it here
 	# same holds true for date:<year>..<year>
 	if f.field == 'date':
@@ -426,6 +432,13 @@ def parse( filter: Union[Filter, str] ) -> Optional[Filter]:
 			f.range_from, f.range_to = _range_of_keyword( keyword=f.value )
 		f.field = 'time' # adjustment: we are not querying the date field, but the time field
 		f.value = None
+
+		if isinstance( f.range_from, int ):
+			f.range_from = time( f.range_from )
+		elif isinstance( f.range_from, str ):
+			f.range_from = time.fromisoformat( f.range_from )
+		if isinstance( f.range_to, int ):
+			f.range_to = time( f.range_to )
 
 	if f.field == 'time':
 		if isinstance( f.value, int ):
@@ -442,13 +455,6 @@ def parse( filter: Union[Filter, str] ) -> Optional[Filter]:
 			elif f.value == 'night':
 				f.range_from, f.range_to = time( 22 ), time( 6 )
 			f.value = None
-
-		if isinstance( f.range_from, int ):
-			f.range_from = time( f.range_from )
-		elif isinstance( f.range_from, str ):
-			f.range_from = time.fromisoformat( f.range_from )
-		if isinstance( f.range_to, int ):
-			f.range_to = time( f.range_to )
 
 	# finally freeze the filter
 	return f.freeze()

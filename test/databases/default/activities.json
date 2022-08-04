@@ -25,6 +25,7 @@
       "name": "Run at Noon",
       "raw_id": 12345678,
       "time": "2012-01-07T10:40:56+00:00",
+      "heartrate": 140,
       "localtime": "2012-01-07T11:40:56+01:00",
       "type": "run",
       "uids": [ "strava:12345678" ]
@@ -32,6 +33,7 @@
     "4": {
       "name": "Unknown Location",
       "raw_id": 20210101010101,
+      "heartrate": 130,
       "time": "2021-01-11T12:00:00+00:00",
       "type": "drive",
       "uids": [ "waze:20210101010101" ]

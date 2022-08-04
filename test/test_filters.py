@@ -42,9 +42,9 @@ def test_parse():
 	# this is special: this is an uid and should be treated as raw_id:<number>
 	assert parse( 'polar:123456' ) == Filter( 'uids', 'polar:123456', regex=False )
 
-	assert parse( 'name:Run1' ) == Filter( 'name', '^.*Run1.*$' )
+	assert parse( 'name:Run1' ) == Filter( 'name', '^.*run1.*$' )
 	assert parse( 'name:run,hike,walk' ) == Filter( 'name', value=['^.*run.*$', '^.*hike.*$', '^.*walk.*$'] )
-	assert parse( 'classifier:polar' ) == Filter( 'classifier', 'polar' )
+	assert parse( 'classifier:polar' ) == Filter( 'uids', value='^polar:.*$', part_of_list=True )
 	assert parse( 'type:run' ) == Filter( 'type', 'run' )
 
 	assert parse( 'distance:5000' ) == Filter( 'distance', int( 5000 ) )
@@ -164,34 +164,28 @@ def test_filters_on_activities( db ):
 	assert Filter( 'uids', '^polar:1234567890$', part_of_list=True, regex=True )( m[1] )
 	assert not Filter( 'uids', 'polar:9999', part_of_list=True, regex=False )( m[1] )
 
-	# service of group activities
-	assert Filter( 'service', 'polar' )( m[1] )
-	assert Filter( 'service', 'strava' )( m[1] )
-	assert Filter( 'service', 'waze' )( m[1] )
-
 	# field is
 	assert Filter( 'calories', 2904 )( m[2] )
 	assert not Filter( 'calories', 100 )( m[2] )
 
 	# field in range
-	assert Filter( 'heartrate', range_from=80, range_to=90 )( m [40] )
-	assert Filter( 'heartrate', range_from=110, range_to=150 )( m[41] )
-	assert Filter( 'heartrate', range_to=130 )( m[40] )
-	assert Filter( 'heartrate', range_from=110 )( m[41] )
+	assert Filter( 'heartrate', range_from=140, range_to=160 )( m[2] )
+	assert Filter( 'heartrate', range_to=160 )( m[2] )
+	assert Filter( 'heartrate', range_from=100 )( m[2] )
+	assert not Filter( 'heartrate', range_from=160, range_to=200 )( m[2] )
 
 	# field in list
 	assert Filter( 'id', [1, 2, 3] )( m[1] )
 	assert not Filter( 'id', [2, 3] )( m[1] )
 
 	# datetime in range
-	assert Filter( 'time', range_from=datetime( 2020, 1, 10 ), range_to=datetime( 2020, 1, 12 ) )( m[30] )
+	assert Filter( 'time', range_from=datetime( 2012, 1, 1 ), range_to=datetime( 2012, 1, 12 ) )( m[2] )
 
 	# time_is
-	assert Filter( 'time', value=time( 12, 0, 0 ) )( m[30] )
-	assert Filter( 'time', value=time( 15, 48, 10 ) )( m[11] )
+	assert Filter( 'time', value=time( 10, 40, 51 ) )( m[2] )
 
 	# time in range
-	assert Filter( 'time', range_from=time( 11 ), range_to=time( 13 ) )( m[4] )
+	assert Filter( 'time', range_from=time( 10 ), range_to=time( 11 ) )( m[2] )
 
 	# field exists, field value is not None/''/[]
 	assert Filter( 'name' )( m[1] )
@@ -213,57 +207,31 @@ def test_filters_on_list( db ):
 			rval.extend( ids( filter( f, [a] ) ) )
 		return rval
 
-	def fltp( f: Filter ) -> List[int]:
-		return ids( filter( prepare( f ), _all ) )
-
-	assert flt( true() ) == [1, 2, 3, 4, 11, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
+	assert flt( true() ) == [1, 2, 3, 4]
 	assert flt( false() ) == []
 
 	assert flt( Filter( value = 1 ) ) == [1]
 	assert flt( Filter( 'id', 1 ) ) == [1]
 	assert flt( Filter( 'id', 2 ) ) == [2]
 
-	assert flt( Filter( value=1001 ) ) == [11]
+	assert flt( Filter( value=1234567890 ) ) == [2]
 
-	assert flt( Filter( value=2002 ) ) == [12]
-	assert flt( Filter( value=3003 ) ) == [13]
-	assert flt( Filter( value=4004 ) ) == [14]
-	assert flt( Filter( value=12345600 ) ) == [20]
-	assert flt( Filter( value=20200101010101 ) ) == [30]
+	assert flt( Filter( 'name', 'run' ) ) == [3]
 
-	assert flt( Filter( 'name', 'run' ) ) == [3, 20]
-
-	assert flt( Filter( 'type', ActivityTypes.xcski ) ) == [1, 3, 20]
-
-	assert flt( Filter( 'service', 'polar' ) ) == [1, 2, 11, 12, 13, 14, 41, 51, 52]
-	assert flt( Filter( 'service', 'strava' ) ) == [1, 3, 20, 40, 53, 54, 55]
-	assert flt( Filter( 'service', 'waze' ) ) == [1, 4, 30]
+	assert flt( Filter( 'type', ActivityTypes.xcski ) ) == [1]
 
 	assert flt( Filter( 'calories', 2904 ) ) == [2]
-	assert flt( Filter( 'calories', 456 ) ) == [11]
 
-	assert flt( Filter( 'heartrate', range_from=80, range_to=90 ) ) == [40]
-	assert flt( Filter( 'heartrate', range_from=110, range_to=150 ) ) == [41]
-	assert flt( Filter( 'heartrate', range_to=130 ) ) == [40, 41]
-	assert flt( Filter( 'heartrate', range_from=110 ) ) == [3, 41]
-	# assert flt( Filter( 'heartrate' ) ) == [3, 40, 41]
+	assert flt( Filter( 'heartrate', range_from=110, range_to=150 ) ) == [3, 4]
+	assert flt( Filter( 'heartrate', range_to=140 ) ) == [4]
+	assert flt( Filter( 'heartrate', range_from=140 ) ) == [2, 3]
 
 	assert flt( Filter( 'id', [1, 2, 3] ) ) == [1, 2, 3]
 
-	assert flt( Filter( 'time', range_from=datetime( 2020, 1, 10 ), range_to=datetime( 2020, 1, 12 ) ) ) == [30]
-
-	assert flt( Filter( 'time', time( 12 ) ) ) == [4, 30]
-	assert flt( Filter( 'time', time( 15, 48, 10 ) ) ) == [11]
-
-	assert flt( Filter( 'time', range_from=time( 11 ), range_to=time( 13 ) ) ) == [4, 30, 40, 41]
-
-	#assert flt( is_empty( 'empty_field' ) ) == [1, 2, 3, 4, 11, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
-	#assert flt( is_empty( 'nonempty_field' ) ) == [2, 3, 4, 11, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
-	#assert flt( is_empty( 'null_field' ) ) == [1, 2, 3, 4, 11, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
-
-	#assert flt( is_ungrouped() ) == [11, 12, 13, 14, 20, 30, 40, 41, 51, 52, 53, 54, 55]
-
-	#assert flt( is_group() ) == [1]
+	assert flt( Filter( 'time', range_from=datetime( 2021, 1, 10 ), range_to=datetime( 2021, 1, 12 ) ) ) == [4]
+	assert flt( Filter( 'time', time( 12 ) ) ) == [4]
+	assert flt( Filter( 'time', time( 12, 0, 0 ) ) ) == [4]
+	assert flt( Filter( 'time', range_from=time( 11 ), range_to=time( 13 ) ) ) == [4]
 
 @mark.db( template='default', inmemory=True )
 def test_prepared_filters( db ):
@@ -277,20 +245,20 @@ def test_prepared_filters( db ):
 	assert flt( 'id:1' ) == [1]
 	assert flt( 'id:1..4' ) == [1, 2, 3]
 
-	assert flt( 'name:run' ) == [3, 20]
-	assert flt( 'name:drive' ) == [30]
+	assert flt( 'name:run' ) == [3]
+	assert flt( 'name:unknown' ) == [1, 4]
 
-	#assert flt( 'service:waze' ) == [1, 4, 30]
+	assert flt( 'service:waze' ) == [1, 4]
 
 	assert flt( 'calories:2904' ) == [2]
 
-	assert flt( 'heartrate:110..150' ) == [41]
-	assert flt( 'heartrate:..130' ) == [40, 41]
-	assert flt( 'heartrate:110..' ) == [3, 41]
+	assert flt( 'heartrate:110..150' ) == [3, 4]
+	assert flt( 'heartrate:..140' ) == [4]
+	assert flt( 'heartrate:130..' ) == [2, 3, 4]
 
-	#assert flt( 'date:2020-01-10..2020-01-12' ) == [30]
+	assert flt( 'date:2021-01-10..2021-01-12' ) == [4]
 
-	assert flt( 'time:12' ) == [4, 30]
+	assert flt( 'time:12' ) == [4]
 	#assert flt( 'time:154810' ) == [11] # not allowed (yet?)
 	assert flt( 'time:11..13' ) == [4, 30, 40, 41]
 

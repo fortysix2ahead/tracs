@@ -123,7 +123,8 @@ R_EXPR_TIME_RANGE = '({TIME_FROM})?\.\.({TIME_TO})?$'.format( TIME_FROM = TIME2,
 @dataclass
 class Filter( QueryLike ):
 
-	field: Optional[Union[str, List[str]]] = datafield( default=None ) # field to filter for
+	# field to filter for
+	field: Optional[Union[str, List[str]]] = datafield( default=None )
 
 	# value which needs to match, example: calories = 100 matches doc['calories'] = 100
 	value: Any = datafield( default=None )
@@ -137,7 +138,7 @@ class Filter( QueryLike ):
 	# indicator that value does not contain the exact value to match, but a regular expression
 	regex: bool = datafield( default=False )
 	# when true value is expected to be part of a list (opposite of 'values' from above)
-	part_of_list: bool = datafield( default=False )
+	value_in_list: bool = datafield( default=False )
 	# negates the filter
 	negate: bool = datafield( default=False )
 
@@ -175,7 +176,7 @@ class Filter( QueryLike ):
 
 		if type( self.field ) is str:
 			if type( self.value ) is str:
-				if self.part_of_list:
+				if self.value_in_list:
 					if self.regex:
 						self.callable = Query()[self.field].test( lambda values, s: any( [ match( s, v ) for v in values ] ), self.value )
 					else:
@@ -273,13 +274,13 @@ def invalid() -> Filter:
 	return Filter( field=None, value=False, callable=fn, valid=False )
 
 def classifier( c: str ) -> Filter:
-	return Filter( 'uids', f'^{c}:\d+$', regex=True, part_of_list=True )
+	return Filter( 'uids', f'^{c}:\d+$', regex=True, value_in_list=True )
 
 def raw_id( id: int ) -> Filter:
-	return Filter( 'uids', f'^\w+:{id}+$', regex=True, part_of_list=True )
+	return Filter( 'uids', f'^\w+:{id}+$', regex=True, value_in_list=True )
 
 def uid( uid: str ) -> Filter:
-	return Filter( 'uids', uid, regex=False, part_of_list=True )
+	return Filter( 'uids', uid, regex=False, value_in_list=True )
 
 def is_number( field: str ) -> Filter:
 	return Filter( field, callable=lambda v: isinstance( v.get( field ), ( float, int ) ) )
@@ -357,7 +358,7 @@ def parse( flt: Union[Filter, str] ) -> Optional[Filter]:
 	# preprocess special cases
 	flt = preprocess( flt )
 
-	# generic filter pattern
+	# match filter pattern and parse it
 	if m := match( filter_pattern, flt ):
 		field, regex, expr = unpack_filter( **m.groupdict() )
 		value, values, range_from, range_to, valid = parse_expr( field, expr, regex )
@@ -365,10 +366,10 @@ def parse( flt: Union[Filter, str] ) -> Optional[Filter]:
 	else: # no match -> set invalid
 		f = Filter( valid = False )
 
+	# postprocess parsed filter
 	postprocess( f )
 
-	return f
-	# return f.freeze()
+	return f.freeze()
 
 def parse_expr( field: str, expr: str, regex: bool ) -> Tuple[Any, Any, Any, Any, bool]:
 	value, values, range_from, range_to, valid = (None, None, None, None, True)
@@ -472,7 +473,7 @@ def parse_date( field: str, expr: str ) -> Tuple:
 		range_from, range_to = _floor( year_from, month_from, day_from ), _ceil( year_to, month_to, day_to )
 
 	elif m := match( date_range_keyword, expr ):
-		range_from, range_to = _range_of_keyword( m.groupdict().get( 'value' ) )
+		range_from, range_to = _range_of_date_keyword( m.groupdict().get( 'value' ) )
 		if not range_from and not range_to:
 			valid = False
 
@@ -543,7 +544,7 @@ def postprocess( f: Filter ) -> None:
 		f.value = f'^{f.value}:\d+$'
 		f.field = 'uids'
 		f.regex = True
-		f.part_of_list = True
+		f.value_in_list = True
 
 def postprocess_string( f: Filter ) -> None:
 	f.value = f.value.lower() if f.value else f.value
@@ -552,199 +553,6 @@ def postprocess_string( f: Filter ) -> None:
 def postprocess_date( f: Filter ) -> None:
 	if f.field == 'date': # adjust field name
 		f.field = 'time'
-
-def parse_old( filter: Union[Filter, str] ) -> Optional[Filter]:
-	"""
-	Parses a string into a valid filter. The filter might already be usable, but there's no guarantee. In order to make
-	the filter usable, call prepare( f ).
-
-	:param filter: string to be parsed into a filter
-	:return: parsed filter
-	"""
-	if not len( filter ) > 0:
-		return Filter.true()
-
-	if type( filter ) is Filter:
-		return filter
-
-	# create empty filter
-	f = Filter()
-
-	# filter is negated?
-	filter, f.negate = (filter[1:], True) if filter[0] == '^' else (filter, False)
-
-	expr = ''
-
-	# integer number -> treat as id
-	if m:= match( INTEGER, filter ):
-		f.field = 'id'
-		f.value = int( m.groupdict()['value'] )
-
-#	if m:= match( STRING, filter ):
-#		f.field = 'name'
-#		f.value = m.groupdict()['value']
-#		f.exact = False
-
-	# field:expression
-	elif m := match( R_FIELD_EXPR, filter ):
-		f.field = m.groupdict()['field']
-		expr = m.groupdict()['expr']
-
-	elif m := match( R_FIELD_EMPTY_EXPR, filter ):
-		f.field = m.groupdict()['field']
-
-	if expr:
-		if me := match( R_EXPR_INTEGER, expr ):
-			f.value = int( me.groupdict()['value'] )
-
-		elif me := match( R_EXPR_FLOAT, expr ):
-			f.value = float( me.groupdict()['value'] )
-
-		elif me := match( R_EXPR_WORD, expr ):
-			f.value = me.groupdict()['value']
-
-		elif me := match( R_EXPR_INTEGER_SEQUENCE, expr ):
-			f.value = [int( i ) for i in me.group().split( ',' )]
-
-		elif me := match( R_EXPR_FLOAT_SEQUENCE, expr ):
-			f.value = [float( i ) for i in me.group().split( ',' )]
-
-		elif me := match( R_EXPR_WORD_SEQUENCE, expr ):
-			f.value = [i for i in me.group().split( ',' )]
-
-		elif me := match( R_EXPR_INTEGER_RANGE, expr ):
-			if me.groupdict()['range_from']:
-				f.range_from = int( me.groupdict()['range_from'] )
-			if me.groupdict()['range_to']:
-				f.range_to = int( me.groupdict()['range_to'] )
-
-		elif me := match( R_EXPR_FLOAT_RANGE, expr ):
-			if me.groupdict()['range_from']:
-				f.range_from = float( me.groupdict()['range_from'] )
-			if me.groupdict()['range_to']:
-				f.range_to = float( me.groupdict()['range_to'] )
-
-		elif me := match( R_EXPR_DATE, expr ):
-			year = int( me.groupdict()['year'] )
-			month = int( me.groupdict()['month'] )
-			if me.groupdict()['day']:
-				f.range_from = _floor( year, month, int( me.groupdict()['day'] ) )
-				f.range_to = _ceil( year, month, int( me.groupdict()['day'] ) )
-			else:
-				f.range_from = _floor( year, month )
-				f.range_to = _ceil( year, month )
-
-		elif me := match( R_EXPR_DATE_RANGE, expr ):
-			hour_from = me.groupdict()['year_from']
-			minute_from = me.groupdict()['month_from']
-			second_from = me.groupdict()['day_from']
-			if me.groupdict()['day_from']:
-				f.range_from = _floor( int( hour_from ), int( minute_from ), int( second_from ) )
-			elif me.groupdict()['month_from']:
-				f.range_from = _floor( int( hour_from ), int( minute_from ) )
-			elif me.groupdict()['year_from']:
-				f.range_from = _floor( int( hour_from ) )
-
-			hour_to = me.groupdict()['year_to']
-			month_to = me.groupdict()['month_to']
-			day_to = me.groupdict()['day_to']
-			if me.groupdict()['day_to']:
-				f.range_to = _ceil( int( hour_to ), int( month_to ), int( day_to ) )
-			elif me.groupdict()['month_to']:
-				f.range_to = _ceil( int( hour_to ), int( month_to ) )
-			elif me.groupdict()['year_to']:
-				f.range_to = _ceil( int( hour_to ) )
-
-		elif me := match( R_EXPR_TIME, expr ):
-			hour = int( me.groupdict()['hour'] )
-			if me.groupdict()['second']:
-				f.value= time( hour, int( me.groupdict()['minute'] ), int( me.groupdict()['second'] ) )
-			elif me.groupdict()['minute']:
-				f.value = time( hour, int( me.groupdict()['minute'] ) )
-			else:
-				f.value= time( hour )
-
-		elif me := match( R_EXPR_TIME_RANGE, expr ):
-			hour_from = me.groupdict()['hour_from']
-			minute_from = me.groupdict()['minute_from']
-			second_from = me.groupdict()['second_from']
-			if me.groupdict()['second_from']:
-				f.range_from = time( int( hour_from ), int( minute_from ), int( second_from ) )
-			elif me.groupdict()['minute_from']:
-				f.range_from = time( int( hour_from ), int( minute_from ) )
-			elif me.groupdict()['hour_from']:
-				f.range_from = time( int( hour_from ) )
-
-			hour_to = me.groupdict()['hour_to']
-			minute_to = me.groupdict()['minute_to']
-			second_to = me.groupdict()['second_to']
-			if me.groupdict()['second_to']:
-				f.range_to = time( int( hour_to ), int( minute_to ), int( second_to ) )
-			elif me.groupdict()['minute_to']:
-				f.range_to = time( int( hour_to ), int( minute_to ) )
-			elif me.groupdict()['hour_to']:
-				f.range_to = time( int( hour_to ) )
-
-	# prepare the filter (adjustments after parsing)
-
-	# special treatment of raw ids
-	if f.field in Registry.services.keys() and type( f.value ) is int:
-		f.value = f'{f.field}:{f.value}'
-		f.field = 'uids'
-		f.regex = False
-
-	if f.field in ['classifier', 'service', 'source'] and f.value in Registry.services.keys():
-		f.field = 'uids'
-		f.value = f'^{f.value}:.*$'
-		f.regex = True
-		f.part_of_list = True
-
-	if f.field in ['name']:
-		if type( f.value ) is str:
-			f.value = f'^.*{f.value.lower()}.*$'
-		elif type( f.value ) is list:
-			f.value = list( map( lambda s: f'^.*{s.lower()}.*$', f.value ) )
-		f.regex = True
-
-	# date:<year> is captured by <field>:<int> in parser, so we need to correct it here
-	# same holds true for date:<year>..<year>
-	if f.field == 'date':
-		if isinstance( f.value, int ):
-			f.range_from, f.range_to = _floor( f.value ), _ceil( f.value )
-		if f.range_from and isinstance( f.range_from, int ):
-			f.range_from = _floor( f.range_from )
-		if f.range_to and isinstance( f.range_to, int ):
-			f.range_to = _ceil( f.range_to )
-		if isinstance( f.value, str ):
-			f.range_from, f.range_to = _range_of_keyword( keyword=f.value )
-		f.field = 'time' # adjustment: we are not querying the date field, but the time field
-		f.value = None
-
-		if isinstance( f.range_from, int ):
-			f.range_from = time( f.range_from )
-		elif isinstance( f.range_from, str ):
-			f.range_from = time.fromisoformat( f.range_from )
-		if isinstance( f.range_to, int ):
-			f.range_to = time( f.range_to )
-
-	if f.field == 'time':
-		if isinstance( f.value, int ):
-			f.value = time( f.value )
-		elif isinstance( f.value, str ):
-			if f.value == 'morning':
-				f.range_from, f.range_to = time( 6 ), time( 11 )
-			elif f.value == 'noon':
-				f.range_from, f.range_to = time( 11 ), time( 13 )
-			elif f.value == 'afternoon':
-				f.range_from, f.range_to = time( 13 ), time( 18 )
-			elif f.value == 'evening':
-				f.range_from, f.range_to = time( 18 ), time( 22 )
-			elif f.value == 'night':
-				f.range_from, f.range_to = time( 22 ), time( 6 )
-			f.value = None
-
-	# finally freeze the filter
-	return f.freeze()
 
 # helper functions
 
@@ -792,7 +600,7 @@ def _ceil( year = None, month = None, day = None ) -> Optional[datetime]:
 	else:
 		return Arrow( 2099, 7, 15 ).ceil( 'year' ).datetime
 
-def _range_of_keyword( keyword ) -> (Optional[date], Optional[date]):
+def _range_of_date_keyword( keyword ) -> (Optional[date], Optional[date]):
 	_now = now()
 	range_from, range_to = (None, None)
 	if keyword == 'today':

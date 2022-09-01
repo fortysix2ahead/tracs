@@ -154,7 +154,7 @@ def test_parse():
 	# special treament for uids
 	assert parse( 'polar:123456' ) == Filter( 'uids', 'polar:123456', regex=False )
 	# treatment of classifiers
-	assert parse( 'classifier:polar' ) == Filter( 'uids', value='^polar:\\d+$', regex=True, part_of_list=True )
+	assert parse( 'classifier:polar' ) == Filter( 'uids', value='^polar:\\d+$', regex=True, value_in_list=True )
 
 @mark.db( template='default', inmemory=True )
 def test_filters_on_activities( db ):

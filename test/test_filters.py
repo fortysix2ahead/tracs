@@ -1,4 +1,5 @@
 
+from sys import float_info
 from typing import List
 
 from arrow import Arrow as dt
@@ -6,6 +7,7 @@ from arrow import now
 from datetime import datetime
 from datetime import time
 from pytest import mark
+from sys import maxsize
 from tinydb.queries import QueryLike
 
 from tracs.activity_types import ActivityTypes
@@ -28,48 +30,64 @@ def test_predefined_filters():
 	assert invalid().valid == False
 
 def test_parse():
+	# special cases first
+	assert not parse( '^' ).valid # invalid only is invalid ...
+
+	# integer number is interpreted as id
 	assert parse( '1000' ) == Filter( 'id', 1000 ) # number is assumed to be an id
+	assert parse( '^1000' ) == Filter( 'id', 1000, negate=True ) # negate also works on id (does not make much sense however ...)
+
+	# list of ids
+	assert parse( '1000,1001,1002' ) == Filter( 'id', values=[1000, 1001, 1002] )
+	assert parse( '^1000,1001,1002' ) == Filter( 'id', values=[1000, 1001, 1002], negate=True )
+
+	# range of ids
+	assert parse( '1000..1002' ) == Filter( 'id', range_from=1000, range_to=1002 )
+	assert parse( '1000..' ) == Filter( 'id', range_from=1000, range_to=maxsize )
+	assert parse( '..1002' ) == Filter( 'id', range_from=~maxsize, range_to=1002 )
+	assert parse( '^1000..1002' ) == Filter( 'id', range_from=1000, range_to=1002, negate=True )
+	assert not parse( '..' ).valid # empty range is invalid
 
 	assert parse( 'id:1000' ) == Filter( 'id', 1000 )
 	assert parse( '^id:1000' ) == Filter( 'id', 1000, negate=True )
 	assert parse( 'id:' ) == Filter( 'id' )
-	assert parse( 'id:1000..' ) == Filter( 'id', range_from=1000 )
-	assert parse( 'id:..1010' ) == Filter( 'id', range_to=1010 )
+	assert parse( 'id:1000..' ) == Filter( 'id', range_from=1000, range_to=maxsize )
+	assert parse( 'id:..1010' ) == Filter( 'id', range_from=~maxsize, range_to=1010 )
 	assert parse( 'id:1000..1010' ) == Filter( 'id', range_from=1000, range_to=1010 )
+	assert parse( 'id:1000,1001,1002' ) == Filter( 'id', values=[1000, 1001, 1002] )
 
-	assert parse( 'id:1000,1001,1002' ) == Filter( 'id', value=[1000, 1001, 1002] )
+	# non-existing field
+	assert not parse( 'invalid_filter:1000' ).valid
 
-	# this is special: this is an uid and should be treated as raw_id:<number>
-	assert parse( 'polar:123456' ) == Filter( 'uids', 'polar:123456', regex=False )
+	# strings as values
+	assert parse( 'name:Run1' ) == Filter( 'name', 'run1' )
+	assert parse( 'name:"Run 5K in 2021"' ) == Filter( 'name', 'run 5k in 2021' )
+	assert parse( 'name:run,hike,walk' ) == Filter( 'name', values=['run', 'hike', 'walk'] )
 
-	assert parse( 'name:Run1' ) == Filter( 'name', '^.*run1.*$' )
-	assert parse( 'name:run,hike,walk' ) == Filter( 'name', value=['^.*run.*$', '^.*hike.*$', '^.*walk.*$'] )
-	assert parse( 'classifier:polar' ) == Filter( 'uids', value='^polar:.*$', part_of_list=True )
-	assert parse( 'type:run' ) == Filter( 'type', 'run' )
-
+	# numbers as values
 	assert parse( 'distance:5000' ) == Filter( 'distance', int( 5000 ) )
 	assert parse( 'distance:5500.55' ) == Filter( 'distance', 5500.55 )
 	assert parse( 'distance:5000..6000' ) == Filter( 'distance', range_from=5000, range_to=6000 )
-	assert parse( 'distance:5000..' ) == Filter( 'distance', range_from=5000 )
-	assert parse( 'distance:..6000' ) == Filter( 'distance', range_to=6000 )
+	assert parse( 'distance:5000..' ) == Filter( 'distance', range_from=5000, range_to=float_info.max )
+	assert parse( 'distance:..6000' ) == Filter( 'distance', range_from=float_info.min, range_to=6000 )
 	assert parse( 'distance:5000.0..6000.0' ) == Filter( 'distance', range_from=5000.0, range_to=6000.0 )
-	assert parse( 'distance:5000.0..' ) == Filter( 'distance', range_from=5000.0 )
-	assert parse( 'distance:..6000.0' ) == Filter( 'distance', range_to=6000.0 )
+	assert parse( 'distance:5000.0..' ) == Filter( 'distance', range_from=5000.0, range_to=float_info.max )
+	assert parse( 'distance:..6000.0' ) == Filter( 'distance', range_from=float_info.min, range_to=6000.0 )
 	assert parse( 'distance:' ) == Filter( 'distance' )
 
 	assert parse( 'date:2020' ) == Filter( 'time', range_from=_fyear( 2020 ), range_to=_cyear( 2020 ) )
-	assert parse( 'date:..2020' ) == Filter( 'time', range_to=_cyear( 2020 ) )
-	assert parse( 'date:2020..' ) == Filter( 'time', range_from=_fyear( 2020 ) )
+	assert parse( 'date:..2020' ) == Filter( 'time', range_from=_fyear( 1900 ), range_to=_cyear( 2020 ) )
+	assert parse( 'date:2020..' ) == Filter( 'time', range_from=_fyear( 2020 ), range_to=_cyear( 2099 ) )
 	assert parse( 'date:2020..2021' ) == Filter( 'time', range_from=_fyear( 2020 ), range_to=_cyear( 2021 ) )
 
 	assert parse( 'date:2020-05' ) == Filter( 'time', range_from=_fmonth( 2020, 5 ), range_to=_cmonth( 2020, 5 ) )
-	assert parse( 'date:2020-05..' ) == Filter( 'time', range_from=_fmonth( 2020, 5 ) )
-	assert parse( 'date:..2020-05' ) == Filter( 'time', range_to=_cmonth( 2020, 5 ) )
+	assert parse( 'date:2020-05..' ) == Filter( 'time', range_from=_fmonth( 2020, 5 ), range_to=_cyear( 2099 ) )
+	assert parse( 'date:..2020-05' ) == Filter( 'time', range_from=_fyear( 1900 ), range_to=_cmonth( 2020, 5 ) )
 	assert parse( 'date:2020-02..2020-05' ) == Filter( 'time', range_from=_fmonth( 2020, 2 ), range_to=_cmonth( 2020, 5 ) )
 
 	assert parse( 'date:2020-05-17' ) == Filter( 'time', range_from=_fday( 2020, 5, 17 ), range_to=_cday( 2020, 5, 17 ) )
-	assert parse( 'date:2020-05-17..' ) == Filter( 'time', range_from=_fday( 2020, 5, 17 ) )
-	assert parse( 'date:..2020-05-17' ) == Filter( 'time', range_to=_cday( 2020, 5, 17 ) )
+	assert parse( 'date:2020-05-17..' ) == Filter( 'time', range_from=_fday( 2020, 5, 17 ), range_to=_cyear( 2099 ) )
+	assert parse( 'date:..2020-05-17' ) == Filter( 'time', range_from=_fyear( 1900 ), range_to=_cday( 2020, 5, 17 ) )
 	assert parse( 'date:2020-05-04..2020-05-17' ) == Filter( 'time', range_from=_fday( 2020, 5, 4 ), range_to=_cday( 2020, 5, 17 ) )
 
 #	assert parse( 'date:latest' ) == Filter( 'date', value='latest' )
@@ -109,6 +127,17 @@ def test_parse():
 	assert parse( 'time:15' ) == Filter( 'time', value=time( 15 ) )
 	assert parse( 'time:15:00' ) == Filter( 'time', value=time( 15, 0 ) )
 	assert parse( 'time:15:00:07' ) == Filter( 'time', value=time( 15, 0, 7 ) )
+	# leaving out the colons also works
+	assert parse( 'time:1500' ) == Filter( 'time', value=time( 15, 0 ) )
+	assert parse( 'time:150007' ) == Filter( 'time', value=time( 15, 0, 7 ) )
+
+	# time ranges
+	assert parse( 'time:15..17' ) == Filter( 'time', range_from=time( 15 ), range_to=time( 17 ) )
+	assert parse( 'time:..17' ) == Filter( 'time', range_from= time( 0 ), range_to=time( 17 ) )
+	assert parse( 'time:15..' ) == Filter( 'time', range_from=time( 15 ), range_to=time( 0 ) )
+	assert parse( 'time:15:00..17:00' ) == Filter( 'time', range_from=time( 15 ), range_to=time( 17 ) )
+	assert parse( 'time:15:00:05..17:00:07' ) == Filter( 'time', range_from=time( 15, 0, 5 ), range_to=time( 17, 0, 7 ) )
+	assert parse( 'time:150005..1700' ) == Filter( 'time', range_from=time( 15, 0, 5 ), range_to=time( 17, 0, 0 ) )
 
 	# time keywords
 	assert parse( 'time:morning' ) == Filter( 'time', range_from=time( 6 ), range_to=( time( 11 ) ) ) # 06 to 11
@@ -117,12 +146,15 @@ def test_parse():
 	assert parse( 'time:evening' ) == Filter( 'time', range_from=time( 18 ), range_to=( time( 22 ) ) ) # 18 to 22
 	assert parse( 'time:night' ) == Filter( 'time', range_from=time( 22 ), range_to=( time( 6 ) ) ) # 22 to 06
 
-	# time ranges
-	assert parse( 'time:15..17' ) == Filter( 'time', range_from=time( 15 ), range_to=time( 17 ) )
-	assert parse( 'time:..17' ) == Filter( 'time', range_to=time( 17 ) )
-	assert parse( 'time:15..' ) == Filter( 'time', range_from=time( 15 ) )
-	assert parse( 'time:15:00..17:00' ) == Filter( 'time', range_from=time( 15 ), range_to=time( 17 ) )
-	assert parse( 'time:15:00:05..17:00:07' ) == Filter( 'time', range_from=time( 15, 0, 5 ), range_to=time( 17, 0, 7 ) )
+	# types
+	assert parse( 'type:run' ) == Filter( 'type', 'run' )
+
+	# special cases
+
+	# special treament for uids
+	assert parse( 'polar:123456' ) == Filter( 'uids', 'polar:123456', regex=False )
+	# treatment of classifiers
+	assert parse( 'classifier:polar' ) == Filter( 'uids', value='^polar:\\d+$', regex=True, part_of_list=True )
 
 @mark.db( template='default', inmemory=True )
 def test_filters_on_activities( db ):

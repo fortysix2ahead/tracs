@@ -28,7 +28,7 @@ from dateutil.tz import UTC
 from tinydb.queries import Query
 from tinydb.queries import QueryLike
 
-from .config import CLASSIFIER as FIELD_CLASSIFIER
+from .config import CLASSIFIER
 from .plugins import Registry
 
 log = getLogger( __name__ )
@@ -36,7 +36,7 @@ log = getLogger( __name__ )
 field_types = {
 	'ascent': float,
 	'calories': float,
-	'classifier': str,
+	CLASSIFIER: str,
 	'date': date,
 	'datetime': datetime,
 	'descent': float,
@@ -60,65 +60,6 @@ field_types = {
 # add service names as valid field types
 for s in Registry.services.keys():
 	field_types[s] = int
-
-CLASSIFIER_FIELDS = [FIELD_CLASSIFIER, 'service', 'source']
-
-NEGATE = '(?P<negate>^)'
-FIELD = '(?P<field>\w+)'
-SERVICE = '((?P<service>\w+)\.)?'
-CLASSIFIER = '((?P<classifier>\w+)\.)?'
-
-INTEGER = '(?P<value>\d+)'
-PLAIN_INTEGER = '(\d+)'
-INTEGER_RANGE = '(?P<range_from>\d+)?\.\.(?P<range_to>\d+)?'
-
-FLOAT = '(?P<value>\d+\.\d+)'
-PLAIN_FLOAT = '(\d+\.\d+)'
-FLOAT_RANGE = '(?P<range_from>\d+\.\d+)?\.\.(?P<range_to>\d+\.\d+)?'
-
-NUMBER = '(?P<value>\d+(\.\d+)?)'
-PLAIN_NUMBER = '(\d+(\.\d+)?)'
-
-DATE = '(?P<year>\d\d\d\d)(-(?P<month>\d\d))?(-(?P<day>\d\d))?'
-DATE_FROM = '(?P<year_from>\d\d\d\d)(-(?P<month_from>\d\d))?(-(?P<day_from>\d\d))?'
-DATE_TO = '(?P<year_to>\d\d\d\d)(-(?P<month_to>\d\d))?(-(?P<day_to>\d\d))?'
-
-TIME = '(?P<hour>\d\d)(:(?P<minute>\d\d))?(:(?P<second>\d\d))?'
-TIME_FROM = '(?P<hour_from>\d\d)(:(?P<minute_from>\d\d))?(:(?P<second_from>\d\d))?'
-TIME_TO = '(?P<hour_to>\d\d)(:(?P<minute_to>\d\d))?(:(?P<second_to>\d\d))?'
-TIME2 = '(?P<hour>[0-1]\d|2[0-4])(?P<minute>[0-5]\d)?(?P<second>[0-5]\d)?'
-
-WORD = '(?P<value>\w+)'
-PLAIN_WORD = '([a-zA-Z]\w*)'
-EXPR = '(?P<expr>.+)$'
-
-#R_FIELD_EXPR = '{SERVICE}{FIELD}:{EXPR}'.format( SERVICE = SERVICE, FIELD = FIELD, EXPR = EXPR )
-#R_FIELD_EMPTY_EXPR = '{SERVICE}{FIELD}:'.format( SERVICE = SERVICE, FIELD = FIELD )
-
-R_FIELD_EXPR = '{FIELD}:{EXPR}'.format( FIELD=FIELD, EXPR=EXPR )
-R_FIELD_EMPTY_EXPR = '{FIELD}:'.format( FIELD=FIELD )
-
-R_CLASSIFIER_FIELD_EXPR = '{CLASSIFIER}{FIELD}:{EXPR}'.format( CLASSIFIER = CLASSIFIER, FIELD = FIELD, EXPR = EXPR )
-R_CLASSIFIER_FIELD_EMPTY_EXPR = '{CLASSIFIER}{FIELD}:'.format( CLASSIFIER = CLASSIFIER, FIELD = FIELD )
-
-R_EXPR_INTEGER = '{INTEGER}$'.format( INTEGER = INTEGER )
-R_EXPR_INTEGER_RANGE = '{INTEGER_RANGE}$'.format( INTEGER_RANGE = INTEGER_RANGE )
-R_EXPR_INTEGER_SEQUENCE = '^({INTEGER})(,{INTEGER})*$'.format( INTEGER = PLAIN_INTEGER )
-
-R_EXPR_FLOAT = '{FLOAT}$'.format( FLOAT = FLOAT )
-R_EXPR_FLOAT_RANGE = '{FLOAT_RANGE}$'.format( FLOAT_RANGE = FLOAT_RANGE )
-R_EXPR_FLOAT_SEQUENCE = '^({FLOAT})(,{FLOAT})*$'.format( FLOAT = PLAIN_FLOAT )
-
-R_EXPR_WORD = '{WORD}$'.format( WORD = WORD )
-R_EXPR_WORD_SEQUENCE = '^({WORD})(,{WORD})*$'.format( WORD = PLAIN_WORD )
-#R_EXPR_WORD_SEQUENCE = '((?:^|[,])\w+)+'
-#R_EXPR_WORD_SEQUENCE = '[^,\s][^\,]*[^,\s]*'
-
-R_EXPR_DATE = '{DATE}$'.format( DATE = DATE )
-R_EXPR_DATE_RANGE = '({DATE_FROM})?\.\.({DATE_TO})?$'.format( DATE_FROM = DATE_FROM, DATE_TO = DATE_TO )
-
-R_EXPR_TIME = '{TIME}$'.format( TIME = TIME2 )
-R_EXPR_TIME_RANGE = '({TIME_FROM})?\.\.({TIME_TO})?$'.format( TIME_FROM = TIME2, TIME_TO = TIME2 )
 
 @dataclass
 class Filter( QueryLike ):
@@ -539,6 +480,9 @@ def postprocess( f: Filter ) -> None:
 	if f.field in Registry.services.keys() and type( f.value ) is int:  # allow queries like <service>:<id>
 		f.value = f'{f.field}:{f.value}'
 		f.field = 'uids'
+
+	if f.field == 'service' or f.field == 'source': # allow service/source queries
+		f.field = 'classifier'
 
 	if f.field == 'classifier' and f.value in Registry.services.keys():  # allow queries for classifier
 		f.value = f'^{f.value}:\d+$'

@@ -173,28 +173,34 @@ def test_filters_on_activities( db ):
 	assert not false()( m[1] )
 	assert length( false() ) == 0
 
-	# has_id
-	assert Filter( value=1 )( m[1] )
-	assert not Filter( value=1, negate=True )( m[1] )
-	assert not Filter( value=1 )( m[2] )
-	assert Filter( value=1, negate=True )( m[2] )
+	# has_id, equal to value
+	assert Filter( field='id', value=1 )( m[1] )
+	assert not Filter( field='id', value=1, negate=True )( m[1] )
+	assert not Filter( field='id', value=1 )( m[2] )
+	assert Filter( field='id', value=1, negate=True )( m[2] )
 
-	# field_is equal to value
-	assert Filter( 'id', 1 )( m[1] )
-	assert not Filter( 'id', 2 )( m[1] )
+	# list of ids
+	assert Filter( field='id', values=[1, 3, 5] )( m[1] )
+	assert not Filter( field='id', values=[0, 2, 4] )( m[1] )
 
-	# field_match
-	assert Filter( 'name', '^.*unknown.*$' )( m[1] )
-	assert not Filter( 'name', '^.*somewhere.*$' )( m[1] )
+	# range of ids
+	assert Filter( field='id', range_from=0, range_to=2 )( m[1] )
+	assert not Filter( field='id', range_from=0, range_to=1 )( m[1] )
+
+	# strings
+	assert Filter( 'name', 'unknown' )( m[1] )
+	assert Filter( 'name', 'UNKNOWN' )( m[1] )
+	assert not Filter( 'name', 'somewhere' )( m[1] )
+	assert Filter( 'name', '^Unknown.*$', regex=True )( m[1] )
+	assert not Filter( 'name', '^Unknown.*$' )( m[1] )
 
 	# enum type
 	assert Filter( 'type', ActivityTypes.xcski  )( m[1] )
 	assert not Filter( 'type', ActivityTypes.xcski )( m[2] )
 
 	# uids
-	assert Filter( 'uids', 'polar:1234567890', part_of_list=True, regex=False )( m[1] )
-	assert Filter( 'uids', '^polar:1234567890$', part_of_list=True, regex=True )( m[1] )
-	assert not Filter( 'uids', 'polar:9999', part_of_list=True, regex=False )( m[1] )
+	assert Filter( 'uids', 'polar:1234567890' )( m[1] )
+	assert not Filter( 'uids', 'polar:9999' )( m[1] )
 
 	# field is
 	assert Filter( 'calories', 2904 )( m[2] )
@@ -202,13 +208,7 @@ def test_filters_on_activities( db ):
 
 	# field in range
 	assert Filter( 'heartrate', range_from=140, range_to=160 )( m[2] )
-	assert Filter( 'heartrate', range_to=160 )( m[2] )
-	assert Filter( 'heartrate', range_from=100 )( m[2] )
 	assert not Filter( 'heartrate', range_from=160, range_to=200 )( m[2] )
-
-	# field in list
-	assert Filter( 'id', [1, 2, 3] )( m[1] )
-	assert not Filter( 'id', [2, 3] )( m[1] )
 
 	# datetime in range
 	assert Filter( 'time', range_from=datetime( 2012, 1, 1 ), range_to=datetime( 2012, 1, 12 ) )( m[2] )

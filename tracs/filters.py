@@ -8,7 +8,6 @@ from datetime import datetime
 from datetime import time
 from enum import Enum
 from logging import getLogger
-from numbers import Number
 from re import IGNORECASE
 from re import match
 from sys import float_info
@@ -28,38 +27,15 @@ from dateutil.tz import UTC
 from tinydb.queries import Query
 from tinydb.queries import QueryLike
 
-from .config import CLASSIFIER
+from .fields import field_types
+from .fields import filter_types
 from .plugins import Registry
 
 log = getLogger( __name__ )
 
-field_types = {
-	'ascent': float,
-	'calories': float,
-	CLASSIFIER: str,
-	'date': date,
-	'datetime': datetime,
-	'descent': float,
-	'description': str,
-	'distance': float,
-	'duration': time,
-	'heartrate': float,
-	'id': int,
-	'name': str,
-	'raw_id': int,
-	'service': str,
-	'source': str,
-	'speed': float,
-	'tags': List[str],
-	'time': time,
-	'type': Enum,
-	'uid': str,
-	'uids': list[str],
-}
-
 # add service names as valid field types
 for s in Registry.services.keys():
-	field_types[s] = int
+	filter_types[s] = int
 
 @dataclass
 class Filter( QueryLike ):
@@ -95,7 +71,7 @@ class Filter( QueryLike ):
 		if self.callable:
 			return self.callable( value )
 		else:
-			raise RuntimeError( f'error calling filter {self}, has the filter been freezed?' )
+			raise RuntimeError( f'error calling filter {self}, has the filter been frozen?' )
 
 	# noinspection PyTypeChecker
 	def freeze( self ) -> Filter:
@@ -107,7 +83,7 @@ class Filter( QueryLike ):
 		if self.callable:
 			return self# do nothing if a callable already exists
 
-		if not self.valid or self.field not in field_types:
+		if not self.valid or self.field not in filter_types:
 			self.callable = invalid() # create invalid callable if flag valid is false
 			return self
 
@@ -123,8 +99,11 @@ class Filter( QueryLike ):
 		elif field_types.get( self.field ) == list[str]:
 			self._freeze_list()
 
-		elif isinstance( self.value, datetime ):
-			pass
+		elif field_types.get( self.field ) == datetime:
+			self._freeze_datetime()
+
+		elif field_types.get( self.field ) == time:
+			self._freeze_time()
 
 		elif isinstance( self.value, time ):
 			def fn( value: Union[datetime, time], _tm: time ) -> bool:
@@ -191,6 +170,15 @@ class Filter( QueryLike ):
 	def _freeze_list( self ) -> None:
 		if self.value:
 			self.callable = Query()[self.field].test( lambda v: True if self.value in v else False )
+
+	def _freeze_datetime( self ) -> None:
+		if self.range_from and self.range_to:
+			range_from = self.range_from.astimezone( UTC )
+			range_to = self.range_to.astimezone( UTC )
+			self.callable = Query()[self.field].test( lambda v: True if v and range_from <= v <= range_to else False )
+
+	def _freeze_time( self ) -> None:
+		pass
 
 	def is_empty( self ) -> bool:
 		if not self.value and not self.sequence and not self.range_from and not self.range_to:
@@ -322,8 +310,8 @@ def parse( flt: Union[Filter, str] ) -> Optional[Filter]:
 def parse_expr( field: str, expr: str, regex: bool ) -> Tuple[Any, Any, Any, Any, bool]:
 	value, values, range_from, range_to, valid = (None, None, None, None, True)
 
-	if field in field_types:
-		field_type = field_types.get( field )
+	if field in filter_types:
+		field_type = filter_types.get( field )
 		if field_type is int:
 			value, values, range_from, range_to, valid = parse_int( field, expr )
 		elif field_type is float:
@@ -475,13 +463,13 @@ def postprocess( f: Filter ) -> None:
 	if not f.valid: # do nothing when filter is already invalid
 		return
 
-	if f.field not in field_types: # mark as invalid when field not in fields
+	if f.field not in filter_types: # mark as invalid when field not in fields
 		f.valid = False
 
-	if field_types[f.field] is str:
+	if filter_types[f.field] is str:
 		postprocess_string( f )
 
-	elif field_types[f.field] is date:
+	elif filter_types[f.field] is date:
 		postprocess_date( f )
 
 	if f.field in Registry.services.keys() and type( f.value ) is int:  # allow queries like <service>:<id>

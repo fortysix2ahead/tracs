@@ -54,7 +54,7 @@ field_types = {
 	'time': time,
 	'type': Enum,
 	'uid': str,
-	'uids': List[str],
+	'uids': list[str],
 }
 
 # add service names as valid field types
@@ -107,83 +107,90 @@ class Filter( QueryLike ):
 		if self.callable:
 			return self# do nothing if a callable already exists
 
-		if not self.valid:
+		if not self.valid or self.field not in field_types:
 			self.callable = invalid() # create invalid callable if flag valid is false
 			return self
 
-		if self.field is None:
-			if type( self.value ) is int:
-				self.callable = (Query()['id'] == self.value) | (Query()['raw_id'] == self.value)
+		if field_types.get( self.field ) in [int, float]:
+			self._freeze_number()
 
-		if type( self.field ) is str:
-			if type( self.value ) is str:
-				if self.value_in_list:
-					if self.regex:
-						self.callable = Query()[self.field].test( lambda values, s: any( [ match( s, v ) for v in values ] ), self.value )
-					else:
-						self.callable = Query()[self.field].test( lambda values, s: s in values, self.value )
-				else:
-					if self.regex:
-						self.callable = Query()[self.field].matches( self.value, flags=IGNORECASE )
-					else:
-						self.callable = Query()[self.field] == self.value
+		elif field_types.get( self.field ) is str:
+			self._freeze_str()
 
-			elif isinstance( self.value, Enum ):
-				self.callable = Query()[self.field] == self.value
+		elif field_types.get( self.field ) is Enum:
+			self._freeze_enum()
 
-			elif isinstance( self.value, Number ):
-				self.callable = Query()[self.field] == self.value
+		elif field_types.get( self.field ) == list[str]:
+			self._freeze_list()
 
-			elif isinstance( self.value, datetime ):
-				pass
+		elif isinstance( self.value, datetime ):
+			pass
 
-			elif isinstance( self.value, time ):
-				def fn( value: Union[datetime, time], _tm: time ) -> bool:
-					value = value.time() if type( value ) is datetime else value
-					return True if value == _tm else False
-				self.callable = Query()[self.field].test( fn, self.value )
+		elif isinstance( self.value, time ):
+			def fn( value: Union[datetime, time], _tm: time ) -> bool:
+				value = value.time() if type( value ) is datetime else value
+				return True if value == _tm else False
+			self.callable = Query()[self.field].test( fn, self.value )
 
-			elif isinstance( self.value, list ):
-				self.callable = Query()[self.field].one_of( self.value )
+		elif isinstance( self.range_from, datetime ) or isinstance( self.range_to, datetime ):
+			def fn( value: datetime, _from: datetime, _to: datetime ) -> bool:
+				return True if value and _from <= value <= _to else False
+			from_time = self.range_from.astimezone( UTC ) if self.range_from else datetime( 1900, 1, 1, tzinfo=UTC )
+			to_time = self.range_to.astimezone( UTC ) if self.range_to else datetime( 2100, 1, 1, tzinfo=UTC )
+			self.callable = Query()[self.field].test( fn, from_time, to_time )
 
-			elif isinstance( self.range_from, Number ) or isinstance( self.range_to, Number ):
-				def fn( value: Number, _from: Number, _to: Number ) -> bool:
-					if value and _from <= value < _to:
-						return True
-					return False
-				_from = self.range_from if self.range_from else float_info.min
-				_to = self.range_to if self.range_to else float_info.max
-				# self.callable = (Query()[self.field] >= _from) & (Query()[self.field] < _to) # this fails if field value is None
-				self.callable = Query()[self.field].test( fn, _from, _to )
+		elif isinstance( self.range_from, time ) or isinstance( self.range_to, time ):
+			def fn( value: Union[datetime, time], _from_time: time, _to_time: time ) -> bool:
+				value = value.time() if type( value ) is datetime else value
+				if _from_time <= value < _to_time:
+					return True
+				return False
+			from_time = self.range_from if self.range_from else time( 0, 0, 0, 0 )
+			to_time = self.range_to if self.range_to else time( 23, 59, 59, 999999 )
+			self.callable = Query()[self.field].test( fn, from_time, to_time )
 
-			elif isinstance( self.range_from, datetime ) or isinstance( self.range_to, datetime ):
-				def fn( value: datetime, _from: datetime, _to: datetime ) -> bool:
-					return True if value and _from <= value <= _to else False
-				from_time = self.range_from.astimezone( UTC ) if self.range_from else datetime( 1900, 1, 1, tzinfo=UTC )
-				to_time = self.range_to.astimezone( UTC ) if self.range_to else datetime( 2100, 1, 1, tzinfo=UTC )
-				self.callable = Query()[self.field].test( fn, from_time, to_time )
+		elif self.value is None:
+			self.callable = Query()[self.field].test( lambda v: True if v else False )
 
-			elif isinstance( self.range_from, time ) or isinstance( self.range_to, time ):
-				def fn( value: Union[datetime, time], _from_time: time, _to_time: time ) -> bool:
-					value = value.time() if type( value ) is datetime else value
-					if _from_time <= value < _to_time:
-						return True
-					return False
-				from_time = self.range_from if self.range_from else time( 0, 0, 0, 0 )
-				to_time = self.range_to if self.range_to else time( 23, 59, 59, 999999 )
-				self.callable = Query()[self.field].test( fn, from_time, to_time )
-
-			elif self.value is None:
-				self.callable = Query()[self.field].test( lambda v: True if v else False )
-
-			else:
-				self.valid = False
-				self.callable = invalid()
+		else:
+			self.valid = False
+			self.callable = invalid()
 
 		if self.valid and self.negate:
 			self.callable = ~ cast( Query, self.callable )
 
 		return self
+
+	def _freeze_number( self ) -> None:
+		if self.value:
+			self.callable = Query()[self.field] == self.value
+		elif self.values:
+			self.callable = Query()[self.field].test( lambda v: True if v in self.values else False )
+		elif self.range_from is not None and self.range_to is not None:
+			self.callable = Query()[self.field].test( lambda v: True if self.range_from <= v < self.range_to else False )
+
+	def _freeze_str( self ) -> None:
+		if self.value:
+			if self.regex:
+				self.callable = Query()[self.field].matches( self.value, flags=IGNORECASE )
+			else:
+				self.callable = Query()[self.field].test( lambda v: True if self.value.lower() in v.lower() else False )
+		elif self.values:
+			pass
+
+#		if self.value_in_list:
+#			if self.regex:
+#				self.callable = Query()[self.field].test( lambda values, s: any( [match( s, v ) for v in values] ), self.value )
+#			else:
+#				self.callable = Query()[self.field].test( lambda values, s: s in values, self.value )
+
+	def _freeze_enum( self ) -> None:
+		if self.value:
+			self.callable = Query()[self.field] == self.value
+
+	def _freeze_list( self ) -> None:
+		if self.value:
+			self.callable = Query()[self.field].test( lambda v: True if self.value in v else False )
 
 	def is_empty( self ) -> bool:
 		if not self.value and not self.sequence and not self.range_from and not self.range_to:

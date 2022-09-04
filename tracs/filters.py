@@ -105,35 +105,13 @@ class Filter( QueryLike ):
 		elif field_types.get( self.field ) == time:
 			self._freeze_time()
 
-		elif isinstance( self.value, time ):
-			def fn( value: Union[datetime, time], _tm: time ) -> bool:
-				value = value.time() if type( value ) is datetime else value
-				return True if value == _tm else False
-			self.callable = Query()[self.field].test( fn, self.value )
-
-		elif isinstance( self.range_from, datetime ) or isinstance( self.range_to, datetime ):
-			def fn( value: datetime, _from: datetime, _to: datetime ) -> bool:
-				return True if value and _from <= value <= _to else False
-			from_time = self.range_from.astimezone( UTC ) if self.range_from else datetime( 1900, 1, 1, tzinfo=UTC )
-			to_time = self.range_to.astimezone( UTC ) if self.range_to else datetime( 2100, 1, 1, tzinfo=UTC )
-			self.callable = Query()[self.field].test( fn, from_time, to_time )
-
-		elif isinstance( self.range_from, time ) or isinstance( self.range_to, time ):
-			def fn( value: Union[datetime, time], _from_time: time, _to_time: time ) -> bool:
-				value = value.time() if type( value ) is datetime else value
-				if _from_time <= value < _to_time:
-					return True
-				return False
-			from_time = self.range_from if self.range_from else time( 0, 0, 0, 0 )
-			to_time = self.range_to if self.range_to else time( 23, 59, 59, 999999 )
-			self.callable = Query()[self.field].test( fn, from_time, to_time )
-
-		elif self.value is None:
-			self.callable = Query()[self.field].test( lambda v: True if v else False )
-
 		else:
 			self.valid = False
 			self.callable = invalid()
+
+		# all values/ranges are null -> check for existence of field
+		if ( self.value or self.values or self.range_from or self.range_to ) is None:
+			self.callable = Query()[self.field].test( lambda v: True if v != '' and v is not None and v != [] else False )
 
 		if self.valid and self.negate:
 			self.callable = ~ cast( Query, self.callable )

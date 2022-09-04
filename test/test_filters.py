@@ -219,9 +219,7 @@ def test_filters_on_activities( db ):
 
 	# field exists, field value is not None/''/[]
 	assert Filter( 'name' )( m[1] )
-	assert not Filter( 'empty_field' )( m[1] )
-	assert not Filter( 'location_country' )( m[1] )
-	assert not Filter( 'location_city' )( m[1] )
+	assert not Filter( 'heartrate' )( m[1] )
 	assert not Filter( 'tags' )( m[1] )
 
 @mark.db( template='default', inmemory=True )

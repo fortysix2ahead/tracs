@@ -210,13 +210,11 @@ def test_filters_on_activities( db ):
 	assert Filter( 'heartrate', range_from=140, range_to=160 )( m[2] )
 	assert not Filter( 'heartrate', range_from=160, range_to=200 )( m[2] )
 
-	# datetime in range
+	# datetime ranges
 	assert Filter( 'time', range_from=datetime( 2012, 1, 1 ), range_to=datetime( 2012, 1, 12 ) )( m[2] )
 
-	# time_is
+	# time_ranges
 	assert Filter( 'time', value=time( 10, 40, 51 ) )( m[2] )
-
-	# time in range
 	assert Filter( 'time', range_from=time( 10 ), range_to=time( 11 ) )( m[2] )
 
 	# field exists, field value is not None/''/[]

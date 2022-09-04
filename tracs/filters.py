@@ -172,10 +172,15 @@ class Filter( QueryLike ):
 			self.callable = Query()[self.field].test( lambda v: True if self.value in v else False )
 
 	def _freeze_datetime( self ) -> None:
-		if self.range_from and self.range_to:
-			range_from = self.range_from.astimezone( UTC )
-			range_to = self.range_to.astimezone( UTC )
-			self.callable = Query()[self.field].test( lambda v: True if v and range_from <= v <= range_to else False )
+		if self.value and type( self.value ) is time:
+			self.callable = Query()[self.field].test( lambda v: True if v.time() == self.value else False )
+		elif self.range_from and self.range_to:
+			if type( self.range_from ) is datetime and type( self.range_to ) is datetime:
+				range_from = self.range_from.astimezone( UTC )
+				range_to = self.range_to.astimezone( UTC )
+				self.callable = Query()[self.field].test( lambda v: True if v and range_from <= v <= range_to else False )
+			elif type( self.range_from ) is time and type( self.range_to ) is time:
+				self.callable = Query()[self.field].test( lambda v: True if v and self.range_from <= v.time() <= self.range_to else False )
 
 	def _freeze_time( self ) -> None:
 		pass

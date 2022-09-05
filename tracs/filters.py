@@ -10,6 +10,7 @@ from enum import Enum
 from logging import getLogger
 from re import IGNORECASE
 from re import match
+from re import compile as re_compile
 from sys import float_info
 from sys import maxsize
 from typing import Any
@@ -81,11 +82,11 @@ class Filter( QueryLike ):
 		:return: self
 		"""
 		if self.callable:
-			return self# do nothing if a callable already exists
+			return self # do nothing if a callable already exists
 
-		if not self.valid or self.field not in filter_types:
-			self.callable = invalid() # create invalid callable if flag valid is false
-			return self
+#		if not self.valid or self.field not in filter_types:
+#			self.callable = invalid() # create invalid callable if flag valid is false
+#			return self
 
 		if field_types.get( self.field ) in [int, float]:
 			self._freeze_number()
@@ -105,10 +106,6 @@ class Filter( QueryLike ):
 		elif field_types.get( self.field ) == time:
 			self._freeze_time()
 
-		else:
-			self.valid = False
-			self.callable = invalid()
-
 		# all values/ranges are null -> check for existence of field
 		if ( self.value or self.values or self.range_from or self.range_to ) is None:
 			self.callable = Query()[self.field].test( lambda v: True if v != '' and v is not None and v != [] else False )
@@ -124,7 +121,7 @@ class Filter( QueryLike ):
 		elif self.values:
 			self.callable = Query()[self.field].test( lambda v: True if v in self.values else False )
 		elif self.range_from is not None and self.range_to is not None:
-			self.callable = Query()[self.field].test( lambda v: True if self.range_from <= v < self.range_to else False )
+			self.callable = Query()[self.field].test( lambda v: True if v and self.range_from <= v < self.range_to else False )
 
 	def _freeze_str( self ) -> None:
 		if self.value:
@@ -147,16 +144,18 @@ class Filter( QueryLike ):
 
 	def _freeze_list( self ) -> None:
 		if self.value:
-			self.callable = Query()[self.field].test( lambda v: True if self.value in v else False )
+			if self.regex:
+				regex = re_compile( self.value )
+				self.callable = Query()[self.field].test( lambda v: True if any( regex.match( item ) for item in v ) else False )
+			else:
+				self.callable = Query()[self.field].test( lambda v: True if self.value in v else False )
 
 	def _freeze_datetime( self ) -> None:
 		if self.value and type( self.value ) is time:
 			self.callable = Query()[self.field].test( lambda v: True if v.time() == self.value else False )
 		elif self.range_from and self.range_to:
 			if type( self.range_from ) is datetime and type( self.range_to ) is datetime:
-				range_from = self.range_from.astimezone( UTC )
-				range_to = self.range_to.astimezone( UTC )
-				self.callable = Query()[self.field].test( lambda v: True if v and range_from <= v <= range_to else False )
+				self.callable = Query()[self.field].test( lambda v: True if v and self.range_from <= v <= self.range_to else False )
 			elif type( self.range_from ) is time and type( self.range_to ) is time:
 				self.callable = Query()[self.field].test( lambda v: True if v and self.range_from <= v.time() <= self.range_to else False )
 
@@ -190,7 +189,7 @@ def invalid() -> Filter:
 	# noinspection PyUnusedLocal
 	def fn( value: Mapping ) -> bool:
 		raise RuntimeError( f'unable to execute a query marked as invalid' )
-	return Filter( field=None, value=False, callable=fn, valid=False )
+	return Filter( callable=fn, valid=False )
 
 def classifier( c: str ) -> Filter:
 	return Filter( 'uids', f'^{c}:\d+$', regex=True, value_in_list=True )
@@ -215,12 +214,17 @@ def parse_filters( filters: Union[List[Filter, str], Filter, str] ) -> [Filter]:
 	"""
 	if not filters:
 		return []
-	elif type( filters ) is str:
-		return [ parse( filters ) ]
-	elif type( filters ) is Filter:
-		return [ filters ]
-	else:
-		return [ parse( f ) for f in filters ]
+
+	if type( filters ) is Filter:
+		return [filters]
+
+	if type( filters ) is str:
+		filters = [filters]
+
+	if type( filters ) is tuple:
+		filters = list( filters )
+
+	return [ parse( f ) for f in filters ]
 
 
 # patterns for parse function
@@ -267,7 +271,7 @@ range_pattern = '^(?P<range_from>.*)\.\.(?P<range_to>.*)$'
 list_pattern = '^(\w+,)+(\w+)$'
 simple_pattern = '^(.*)$'
 
-def parse( flt: Union[Filter, str] ) -> Optional[Filter]:
+def parse( flt: Union[Filter, str] ) -> Filter:
 	if type( flt ) is Filter:
 		return flt
 
@@ -281,12 +285,15 @@ def parse( flt: Union[Filter, str] ) -> Optional[Filter]:
 	if m := match( filter_pattern, flt ):
 		field, regex, expr = unpack_filter( **m.groupdict() )
 		value, values, range_from, range_to, valid = parse_expr( field, expr, regex )
-		f = Filter( field=field, value=value, values=values, range_from=range_from, range_to=range_to, valid=valid, negate=negate )
 	else: # no match -> set invalid
-		f = Filter( valid = False )
+		field, value, values, range_from, range_to, valid = (None, None, None, None, None, False)
 
-	# postprocess parsed filter
-	postprocess( f )
+	# create and postprocess parsed filter
+	if valid:
+		f = Filter( field=field, value=value, values=values, range_from=range_from, range_to=range_to, valid=valid, negate=negate )
+		postprocess( f )
+	else:
+		f = invalid()
 
 	return f.freeze()
 
@@ -504,23 +511,23 @@ def unpack_time_range( hour_from, minute_from, second_from, hour_to, minute_to, 
 
 def _floor( year: int = None, month: int = None, day: int = None ) -> Optional[datetime]:
 	if day:
-		return Arrow( year, month, day ).floor( 'day' ).datetime
+		return Arrow( year, month, day ).floor( 'day' ).datetime.astimezone( UTC )
 	elif month:
-		return Arrow( year, month, 15 ).floor( 'month' ).datetime
+		return Arrow( year, month, 15 ).floor( 'month' ).datetime.astimezone( UTC )
 	elif year:
-		return Arrow( year, 7, 15 ).floor( 'year' ).datetime
+		return Arrow( year, 7, 15 ).floor( 'year' ).datetime.astimezone( UTC )
 	else:
-		return Arrow( 1900, 7, 15 ).floor( 'year' ).datetime
+		return Arrow( 1900, 7, 15 ).floor( 'year' ).datetime.astimezone( UTC )
 
 def _ceil( year = None, month = None, day = None ) -> Optional[datetime]:
 	if day:
-		return Arrow( year, month, day ).ceil( 'day' ).datetime
+		return Arrow( year, month, day ).ceil( 'day' ).datetime.astimezone( UTC )
 	elif month:
-		return Arrow( year, month, 15 ).ceil( 'month' ).datetime
+		return Arrow( year, month, 15 ).ceil( 'month' ).datetime.astimezone( UTC )
 	elif year:
-		return Arrow( year, 7, 15 ).ceil( 'year' ).datetime
+		return Arrow( year, 7, 15 ).ceil( 'year' ).datetime.astimezone( UTC )
 	else:
-		return Arrow( 2099, 7, 15 ).ceil( 'year' ).datetime
+		return Arrow( 2099, 7, 15 ).ceil( 'year' ).datetime.astimezone( UTC )
 
 def _range_of_date_keyword( keyword ) -> (Optional[date], Optional[date]):
 	_now = now()

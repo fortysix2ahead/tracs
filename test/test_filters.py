@@ -6,6 +6,8 @@ from arrow import Arrow as dt
 from arrow import now
 from datetime import datetime
 from datetime import time
+
+from dateutil.tz import UTC
 from pytest import mark
 from sys import maxsize
 from tinydb.queries import QueryLike
@@ -211,7 +213,7 @@ def test_filters_on_activities( db ):
 	assert not Filter( 'heartrate', range_from=160, range_to=200 )( m[2] )
 
 	# datetime ranges
-	assert Filter( 'time', range_from=datetime( 2012, 1, 1 ), range_to=datetime( 2012, 1, 12 ) )( m[2] )
+	assert Filter( 'time', range_from=datetime( 2012, 1, 1, tzinfo=UTC ), range_to=datetime( 2012, 1, 12, tzinfo=UTC ) )( m[2] )
 
 	# time_ranges
 	assert Filter( 'time', value=time( 10, 40, 51 ) )( m[2] )
@@ -238,11 +240,8 @@ def test_filters_on_list( db ):
 	assert flt( true() ) == [1, 2, 3, 4]
 	assert flt( false() ) == []
 
-	assert flt( Filter( value = 1 ) ) == [1]
 	assert flt( Filter( 'id', 1 ) ) == [1]
 	assert flt( Filter( 'id', 2 ) ) == [2]
-
-	assert flt( Filter( value=1234567890 ) ) == [2]
 
 	assert flt( Filter( 'name', 'run' ) ) == [3]
 
@@ -266,8 +265,7 @@ def test_prepared_filters( db ):
 	_all = db.activities.all()
 
 	def flt( *args, **kwargs ) -> List[int]:
-		f = parse( *args )
-		return ids( filter( f, _all ) )
+		return ids( filter( parse( *args ), _all ) )
 
 	assert flt( '1' ) == [1]
 	assert flt( 'id:1' ) == [1]
@@ -288,7 +286,7 @@ def test_prepared_filters( db ):
 
 	assert flt( 'time:12' ) == [4]
 	#assert flt( 'time:154810' ) == [11] # not allowed (yet?)
-	assert flt( 'time:11..13' ) == [4, 30, 40, 41]
+	assert flt( 'time:11..13' ) == [4]
 
 # internal helpers
 

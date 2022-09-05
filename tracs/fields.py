@@ -4,7 +4,6 @@ from datetime import date
 from datetime import datetime
 from datetime import time
 from enum import Enum
-from typing import List
 
 filter_types = {
 	'ascent'     : float,

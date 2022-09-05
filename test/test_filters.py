@@ -250,12 +250,10 @@ def test_filters_on_list( db ):
 	assert flt( Filter( 'calories', 2904 ) ) == [2]
 
 	assert flt( Filter( 'heartrate', range_from=110, range_to=150 ) ) == [3, 4]
-	assert flt( Filter( 'heartrate', range_to=140 ) ) == [4]
-	assert flt( Filter( 'heartrate', range_from=140 ) ) == [2, 3]
+	assert flt( Filter( 'heartrate', range_from=~maxsize, range_to=140 ) ) == [4]
+	assert flt( Filter( 'heartrate', range_from=140, range_to=maxsize ) ) == [2, 3]
 
-	assert flt( Filter( 'id', [1, 2, 3] ) ) == [1, 2, 3]
-
-	assert flt( Filter( 'time', range_from=datetime( 2021, 1, 10 ), range_to=datetime( 2021, 1, 12 ) ) ) == [4]
+	assert flt( Filter( 'time', range_from=datetime( 2021, 1, 10, tzinfo=UTC ), range_to=datetime( 2021, 1, 12, tzinfo=UTC ) ) ) == [4]
 	assert flt( Filter( 'time', time( 12 ) ) ) == [4]
 	assert flt( Filter( 'time', time( 12, 0, 0 ) ) ) == [4]
 	assert flt( Filter( 'time', range_from=time( 11 ), range_to=time( 13 ) ) ) == [4]

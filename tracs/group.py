@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+from sys import exit as sysexit
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -11,8 +12,7 @@ from click import echo
 from dateutil.tz import tzlocal
 from dateutil.tz import UTC
 from logging import getLogger
-from sys import exit as sysexit
-
+from rich.prompt import Confirm
 from rich.table import Table
 
 from .activity import Activity
@@ -20,6 +20,7 @@ from .config import KEY_GROUPS as GROUPS
 from .config import GlobalConfig as gc
 from .config import console
 from .plugins.groups import ActivityGroup
+from .ui import Choice
 from .utils import colored_diff
 from .utils import fmt
 
@@ -120,7 +121,7 @@ def _confirm_grouping(  gr: GroupResult ) -> bool:
 
 	console.print( table )
 
-	answer = qconfirm( f'Continue grouping?', default=False, qmark='', auto_enter=True ).ask()
+	answer = Confirm.ask( f'Continue grouping?' )
 	if answer is None:
 		sysexit( -1 )
 	else:
@@ -130,13 +131,7 @@ def _ask_for_name( children: [Activity], force: bool ) -> str:
 	if not force:
 		names = sorted( { *[c['name'] for c in children] } )
 		if len( names ) > 1:
-			answer = qselect(
-				'Which name should be used for the grouped activity?',
-				choices=names,
-				qmark='',
-				use_shortcuts=True
-			).ask()
-
+			answer = Choice.ask( "Select one of the following options:\n", choices=names )
 			if answer is None:
 				sysexit( -1 )
 			else:
@@ -150,13 +145,7 @@ def _ask_for_type( children: [Activity], force: bool ) -> str:
 	if not force:
 		types = sorted( { *[c['type'] for c in children] } )
 		if len( types ) > 1:
-			answer = qselect(
-				'Which type should be used for the grouped activity?',
-				choices=types,
-				qmark='',
-				use_shortcuts=True
-			).ask()
-
+			answer = Choice.ask( "Select one of the following options:\n", choices=types )
 			if answer is None:
 				sysexit( -1 )
 			else:
@@ -182,7 +171,7 @@ def ungroup_activities( activities: [Activity], force: bool, persist_changes = T
 		if a.is_group:
 			grouped = [ gc.db.get( doc_id=id ) for id in a.group_for ]
 			if not force:
-				answer = qconfirm( f'Ungroup activity {a.id} ({a.name})?', default=False, qmark='', auto_enter=True ).ask()
+				answer = Confirm.ask( f'Ungroup activity {a.id} ({a.name})?' )
 			else:
 				answer = True
 

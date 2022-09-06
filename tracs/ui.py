@@ -8,7 +8,11 @@ from typing import Tuple
 
 from rich.pretty import Pretty
 from rich.prompt import Confirm
+from rich.prompt import DefaultType
+from rich.prompt import Prompt
+from rich.prompt import PromptType
 from rich.table import Table
+from rich.text import Text
 from rich.text import TextType
 
 from tracs.utils import colored_diff
@@ -41,6 +45,42 @@ def diff_table( left: Dict, right: Dict, header: Tuple[str, str, str] = None, so
 			table.add_row( k, Pretty( left_str ), '', Pretty( right_str ) )
 
 	return table
+
+class Choice( Prompt ):
+
+	FREE_TEXT_OPTION = 'None of the above, enter free text'
+
+	def make_prompt( self, default: DefaultType ) -> Text:
+		prompt = self.prompt.copy()
+		prompt.end = ''
+
+		if self.show_choices and self.choices:
+			for index in range( len( self.choices ) ):
+				prompt.append( f' [{index + 1}] {self.choices[index]}\n', 'prompt.choices' )
+			prompt.append( f' [{len( self.choices ) + 1}] {Choice.FREE_TEXT_OPTION}\n', 'prompt.choices' )
+			prompt.append( 'Enter option' )
+
+		prompt.append( self.prompt_suffix )
+
+		return prompt
+
+	def process_response( self, value: str ) -> PromptType:
+
+		try:
+			index = int( value.strip() )
+			if 0 < index <= len( self.choices ):
+				selected_value = self.choices[index - 1]
+			elif index == len( self.choices ) + 1:
+				selected_value = Choice.FREE_TEXT_OPTION
+			else:
+				selected_value = ''
+		except ValueError:
+			selected_value = ''
+
+		return super().process_response( selected_value )
+
+	def check_choice( self, value: str ) -> bool:
+		return value in self.choices or value == Choice.FREE_TEXT_OPTION
 
 class InstantConfirm( Confirm ):
 

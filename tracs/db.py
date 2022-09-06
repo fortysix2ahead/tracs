@@ -1,5 +1,4 @@
 
-from collections import OrderedDict
 from datetime import datetime
 from datetime import timezone
 from importlib.resources import path as resource_path
@@ -44,9 +43,6 @@ from .filters import parse_filters
 from .filters import raw_id as raw_id_filter
 from .filters import uid as uid_filter
 from .plugins import Registry
-from .queries import is_group
-from .queries import is_grouped
-from .queries import is_ungrouped
 
 log = getLogger( __name__ )
 
@@ -262,15 +258,12 @@ class ActivityDb:
 	def find_by_classifier( self, classifier: str ) -> [Activity]:
 		return self.find( classifier_filter( classifier ) )
 
-	def find_ids( self, filters: Union[List[str], str] = None ) -> [int]:
+	def find_ids( self, filters: Union[List[str], List[Filter], str, Filter] = None ) -> [int]:
 		return [a.doc_id for a in self.find( filters )]
 
 	def find_by_id( self, id: int = 0 ) -> Optional[Activity]:
-		a = None
-		if id > 0:
-			a = self.get( doc_id=id )
-		if not a:
-			a = self.get( raw_id=id )
+		a = self.get( id = id ) if id > 0 else None # try get by id
+		a = self.get( raw_id = id ) if not a else a # try get by raw id
 		return a
 
 	def find_last( self, service_name: Optional[str] ) -> Optional[Activity]:

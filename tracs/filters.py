@@ -9,8 +9,8 @@ from datetime import time
 from enum import Enum
 from logging import getLogger
 from re import IGNORECASE
-from re import match
 from re import compile as re_compile
+from re import match
 from sys import float_info
 from sys import maxsize
 from typing import Any
@@ -60,13 +60,20 @@ class Filter( QueryLike ):
 	# negates the filter
 	negate: bool = datafield( default=False )
 
+	# filter field (result of parsing the filter, used to store parse result)
+	filter: Optional[str] = datafield( default=None, repr=False, compare=False )
+	# filter expression (result of parsing the filter, used to store parse result)
+	expr: Optional[str] = datafield( default=None, repr=False, compare=False )
 	# callable to be executed during filter evaluation
 	callable: Optional[Union[Callable, QueryLike]] = datafield( default=None, repr=False, compare=False )
 	# indicator that the filter is invalid
 	valid: bool = datafield( default=True, repr=False, compare=False )
+	# indicator that freeze is to be skipped upon instance creation
+	freeze_on_init: bool = datafield( default=True, repr=False, compare=False )
 
 	def __post_init__( self ):
-		self.freeze()
+		if self.freeze_on_init:
+			self.freeze()
 
 	def __call__( self, value: Mapping ) -> bool:
 		if self.callable:
@@ -140,7 +147,10 @@ class Filter( QueryLike ):
 
 	def _freeze_enum( self ) -> None:
 		if self.value:
-			self.callable = Query()[self.field] == self.value
+			if isinstance( self.value, Enum ):
+				self.callable = Query()[self.field] == self.value
+			elif type( self.value ) is str:
+				self.callable = Query()[self.field].test( lambda v: True if v and v.name == self.value else False )
 
 	def _freeze_list( self ) -> None:
 		if self.value:
@@ -275,58 +285,63 @@ def parse( flt: Union[Filter, str] ) -> Filter:
 	if type( flt ) is Filter:
 		return flt
 
-	# check for negation
-	flt, negate = (flt[1:], True) if flt.startswith( '^' ) else (flt, False)
+	# create filter instance
+	f = Filter( freeze_on_init=False )
 
-	# preprocess special cases
+	# check for negation
+	flt, f.negate = (flt[1:], True) if flt.startswith( '^' ) else (flt, False)
+
+	# normalize filter string
+	flt = normalize( flt )
+
+	# preprocess
 	flt = preprocess( flt )
 
 	# match filter pattern and parse it
 	if m := match( filter_pattern, flt ):
-		field, regex, expr = unpack_filter( **m.groupdict() )
-		value, values, range_from, range_to, valid = parse_expr( field, expr, regex )
+		f.filter, f.regex, f.expr = unpack_filter( **m.groupdict() )
+		parse_expr( f.filter, f.expr, f )
 	else: # no match -> set invalid
-		field, value, values, range_from, range_to, valid = (None, None, None, None, None, False)
+		f.valid = False
+
+	log.debug( f'parsed filter to {f}' )
 
 	# create and postprocess parsed filter
-	if valid:
-		f = Filter( field=field, value=value, values=values, range_from=range_from, range_to=range_to, valid=valid, negate=negate )
-		postprocess( f )
-	else:
-		f = invalid()
+	postprocess( f )
 
 	return f.freeze()
 
-def parse_expr( field: str, expr: str, regex: bool ) -> Tuple[Any, Any, Any, Any, bool]:
-	value, values, range_from, range_to, valid = (None, None, None, None, True)
+def parse_expr( filter: str, expr: str, f: Filter ) -> None:
+	field_type = filter_types.get( filter )
 
-	if field in filter_types:
-		field_type = filter_types.get( field )
-		if field_type is int:
-			value, values, range_from, range_to, valid = parse_int( field, expr )
-		elif field_type is float:
-			value, values, range_from, range_to, valid = parse_number( field, expr )
-		elif field_type is str:
-			value, values, range_from, range_to, valid = parse_str( field, expr )
-		elif field_type is date:
-			value, values, range_from, range_to, valid = parse_date( field, expr )
-		elif field_type is time:
-			value, values, range_from, range_to, valid = parse_time( field, expr )
-		elif field_type is datetime:
-			pass  # not yet supported
-		elif field_type is Enum:
-			value, values, range_from, range_to, valid = parse_enum( field, expr )
-		else:
-			valid = False
+	if field_type is int:
+		f.value, f.values, f.range_from, f.range_to, f.valid = parse_int( filter, expr )
 
-	elif field in Registry.services.keys():
-		value, values, range_from, range_to, valid = parse_int( field, expr )
-		pass
+	elif field_type is float:
+		f.value, f.values, f.range_from, f.range_to, f.valid = parse_number( filter, expr )
+
+	elif field_type is str:
+		f.value, f.values, f.range_from, f.range_to, f.valid = parse_str( filter, expr )
+
+	elif field_type is date:
+		f.value, f.values, f.range_from, f.range_to, f.valid = parse_date( filter, expr )
+
+	elif field_type is time:
+		f.value, f.values, f.range_from, f.range_to, f.valid = parse_time( filter, expr )
+
+	elif field_type is datetime:
+		pass  # not yet supported
+
+	elif field_type is Enum:
+		f.value, f.values, f.range_from, f.range_to, f.valid = parse_enum( filter, expr )
 
 	else:
-		valid = False
+		f.valid = False
 
-	return value, values, range_from, range_to, valid
+#	if filter in Registry.services.keys():
+#		f.value, f.values, f.range_from, f.range_to, f.valid = parse_int( filter, expr )
+#	else:
+#		valid = False
 
 def parse_int( field: str, expr: str ) -> Tuple:
 	value, values, range_from, range_to, valid = (None, None, None, None, True)
@@ -433,54 +448,81 @@ def parse_time( field: str, expr: str ) -> Tuple:
 
 	return value, values, range_from, range_to, valid
 
-def preprocess( flt: str ) -> str:
+def normalize( flt: str ) -> str:
+	"""
+	Normalize the filter, bringing it to the form of <field>:<expression>.
+
+	:param flt: filter string
+	:return: normalized filter string
+	"""
 	# integer number only
 	if m := match( int_pattern, flt ):
-		flt = f'id:{flt}'
+		normalized_flt = f'id:{flt}'
 
 	# list of integers
 	elif m := match( int_list_pattern, flt ):
-		flt = f'id:{flt}'
+		normalized_flt = f'id:{flt}'
 
 	# range of integers
 	elif m := match( int_range_pattern, flt ):
-		flt = f'id:{flt}'
+		normalized_flt = f'id:{flt}'
 
-	return flt
+	else:
+		normalized_flt = flt
+
+	if flt != normalized_flt:
+		log.debug( f'normalized filter {flt} to {normalized_flt}' )
+
+	return normalized_flt
+
+def preprocess( flt: str ) -> str:
+	"""
+	Reserved for future use.
+
+	:param flt:
+	:return:
+	"""
+
+	preprocessed_flt = flt
+
+	if flt != preprocessed_flt:
+		log.debug( f'preprocessed filter {flt} to {preprocessed_flt}' )
+
+	return preprocessed_flt
 
 def postprocess( f: Filter ) -> None:
 
 	if not f.valid: # do nothing when filter is already invalid
 		return
 
-	if f.field not in filter_types: # mark as invalid when field not in fields
+	if f.filter in filter_types: # mark filter field as field by default, otherwise it's invalid
+		f.field = f.filter
+	else:
 		f.valid = False
+		return
 
-	if filter_types[f.field] is str:
-		postprocess_string( f )
+	if filter_types[f.filter] is str:
+		f.value = f.value.lower() if f.value else f.value
+		f.values = list( map( lambda s: s.lower(), f.values ) ) if f.values else f.values
 
-	elif filter_types[f.field] is date:
-		postprocess_date( f )
-
-	if f.field in Registry.services.keys() and type( f.value ) is int:  # allow queries like <service>:<id>
+	# allow queries for <service>:<id>
+	if f.filter in Registry.services.keys() and type( f.value ) is int:  # allow queries like <service>:<id>
 		f.value = f'{f.field}:{f.value}'
 		f.field = 'uids'
 
-	if f.field == 'service' or f.field == 'source': # allow service/source queries
+	# service/source keys are allowed, but are not queryable directly
+	if f.filter in [ 'service', 'source' ]:
 		f.field = 'classifier'
 
+	# a classifier field does not exist, it can only be queried indirectly
 	if f.field == 'classifier' and f.value in Registry.services.keys():  # allow queries for classifier
 		f.value = f'^{f.value}:\d+$'
 		f.field = 'uids'
 		f.regex = True
 		f.value_in_list = True
 
-def postprocess_string( f: Filter ) -> None:
-	f.value = f.value.lower() if f.value else f.value
-	f.values = list( map( lambda s: s.lower(), f.values ) ) if f.values else f.values
-
-def postprocess_date( f: Filter ) -> None:
-	if f.field == 'date': # adjust field name
+	# filter for date is actually filter for the field time
+	if f.filter == 'date':
 		f.field = 'time'
 
 # helper functions

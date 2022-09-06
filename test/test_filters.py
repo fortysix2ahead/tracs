@@ -198,6 +198,7 @@ def test_filters_on_activities( db ):
 
 	# enum type
 	assert Filter( 'type', ActivityTypes.xcski  )( m[1] )
+	assert Filter( 'type', 'xcski'  )( m[1] )
 	assert not Filter( 'type', ActivityTypes.xcski )( m[2] )
 
 	# uids

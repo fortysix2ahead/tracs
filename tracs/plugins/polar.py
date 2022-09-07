@@ -219,7 +219,7 @@ class Polar( Service, Plugin ):
 		self._logged_in = True
 		return self._logged_in
 
-	def _fetch( self, force: bool = False ) -> Iterable[Activity]:
+	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
 		events_url = self.all_events_url()
 		response = self._session.get( events_url, headers=HEADERS_API)
 		return [ self._prototype( json ) for json in response.json() ]

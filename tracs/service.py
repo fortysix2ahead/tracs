@@ -117,7 +117,7 @@ class Service( AbstractServiceClass ):
 			path = Path( path, f'{ts[8:]}.{self.name}.{ext}' )
 		return path
 
-	def fetch( self, force: bool = False ) -> List[Activity]:
+	def fetch( self, force: bool = False, **kwargs ) -> List[Activity]:
 		if not self.logged_in:
 			self._logged_in = self.login()
 
@@ -129,7 +129,7 @@ class Service( AbstractServiceClass ):
 		updated_activities = []
 		#fetched_activities = []
 
-		fetched = self._fetch( force=force )
+		fetched = self._fetch( force=force, kwargs=kwargs )
 		existing = list( gc.db.find_by_classifier( self.name ) )
 		old_new = [ ( next( ( e for e in existing if f.uid in e.uids ), None ), f ) for f in fetched ]
 
@@ -178,12 +178,14 @@ class Service( AbstractServiceClass ):
 		return new_activities
 
 	@abstractmethod
-	def _fetch( self, force: bool = False ) -> Iterable[Activity]:
+	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
 		"""
 		Called by fetch(). This method has to be implemented by a service class. It shall fetch information concerning
 		activities from external service and create activities out of it. The newly created activities will be matched
 		against the internal database and inserted if necessary.
 
+		:param force: flag to signal force execution
+		:param kwargs: additional parameters
 		:return: list of fetched activities
 		"""
 		pass

@@ -84,7 +84,7 @@ class Waze( Service, Plugin ):
 	def login( self ) -> bool:
 		return self._logged_in
 
-	def _fetch( self, takeouts_dir: Path = None, force: bool = False ) -> Iterable[Activity]:
+	def _fetch( self, takeouts_dir: Path = None, force: bool = False, **kwargs ) -> Iterable[Activity]:
 		_field_size_limit = self.cfg_value( 'field_size_limit' )
 		log.debug( f"Using {_field_size_limit} as field size limit for CSV parser in Waze service" )
 

@@ -31,7 +31,7 @@ class Empty( Service, Plugin ):
 	def login( self ) -> bool:
 		return True
 
-	def _fetch( self, year: int ) -> Iterable[Activity]:
+	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
 		return []
 
 	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:

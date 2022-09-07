@@ -127,9 +127,10 @@ The usual workflow is the following:
 tracs fetch
 ```
 
-This will fetch activity information from one or more remote services (currently Polar Flow and Strava, and Waze, but
-the latter one is special). This command basically checks what activities are available online and stores this
-information in the internal database. Only metadata is downloaded.
+This will fetch activity information from one or more remote services (currently Bikecitizens, Polar Flow, Strava, and
+Waze, but the latter one is special). This command basically checks what activities
+are available online and stores this information in the internal database. Only
+metadata is downloaded.
 
 ```bash
 tracs download
@@ -162,13 +163,12 @@ This command lists activities based on certain filters. In this example it will 
 A typical output would look like this:
 
 ```generic
-  ID  Name                         Date                 Type               Polar ID    Strava ID    Waze ID
-----  ---------------------------  -------------------  -----------------  ----------  -----------  --------------
-1407  Afternoon Drive              22.06.2021 16:36:35  Cycling            1000000001  2000000001
-1408  Evening Run                  22.06.2021 19:30:52  Run                1000000002  2000000002
-1409  Morning Cycling              24.06.2021 08:24:17  Cycling            1000000003  2000000003
-1410  Afternoon Hike               24.06.2021 16:44:50  Hiking             1000000004  2000000004
-1411  Noon Activity                25.06.2021 11:13:44  Strength Training  1000000005  2000000005
+  id   │ name            │ type    │ local time          │ uid
+╶──────┼─────────────────┼─────────┼─────────────────────┼────────────────────╴
+  1407 │ Afternoon Drive │ Cycling │ 22.06.2021 16:36:35 │ ['polar:123456001']
+  1408 │ Evening Run     │ Run     │ 22.06.2021 19:30:52 │ ['polar:123456002']
+  1409 │ Morning Cycling │ Cycling │ 24.06.2021 08:24:17 │ ['polar:123456003']
+  1410 │ Afternoon Hike  │ Hiking  │ 24.06.2021 16:44:50 │ ['polar:123456004']
 ```
 
 Finally, it's possible to show details for an activity:
@@ -180,19 +180,17 @@ tracs show 1409
 The show command displays information about a certain activity. A typical output will look like this:
 
 ```generic
------------------  ---------------------------------------------------
-Id                 1409
-Name               Morning Cycling
-Type               Cycling
-Time (local)       24.06.2021 08:24:17
-Time (UTC)         24.06.2021 06:24:17
-Timezone           CEST
-Polar Activities   1000000003
-Strava Activities  2000000003
-Waze Activities
-URLs               https://flow.polar.com/training/analysis/1000000003
-                   https://www.strava.com/activities/2000000003
------------------  ---------------------------------------------------
+  field              │ value
+╶────────────────────┼──────────────────────────────╴
+  ID                 │ 1326
+  Name               │ 00:15:27;3.69039990234375 km
+  Type               │ Cycling
+  Time (local)       │ 24.06.2021, 08:24:16
+  Time (UTC)         │ 24.06.2021, 06:24:16
+  Timezone¹          │ CEST
+  Duration (elapsed) │ 00:15:28
+  Distance           │ 3690.39990234375
+  Calories           │ 138
 ```
 
 ## Commands and Options
@@ -213,11 +211,10 @@ This prints the current configuration to the console. Please note that stored pa
 tracs download [OPTIONS] FILTERS
 
 Options:
-  -a, --all fetches all activities (instead of current year only)
 ```
 
-Downloads activities, namely .gpx, .tcx files etc. The download will be triggered for either all activities (when using
-the switch **-a**) or only activities matching the provided filters. See the section below on filtering activities to
+Downloads activities, namely .gpx, .tcx files etc. The download will be triggered for either all activities or only
+activities matching the provided filters. See the section below on filtering activities to
 learn about existing filters.
 
 ### fetch
@@ -226,15 +223,14 @@ learn about existing filters.
 tracs fetch [OPTIONS]
 
 Options:
-  -a, --all                            fetches all activities (instead of current year only)
-  -r, --restrict [polar|strava|waze]   restricts fetching to only one source
+  -r, --restrict [bikecitizens|polar|strava|waze]   restricts fetching to only one source
 ```
 
 Fetches activity metadata. Note that Tracs only checks what activities exist by downloading their metadata, but does
 not yet download any gpx or tcx file. The downloaded metadata is stored in the internal database. By default, only
-activities from the current year are checked. If all existing activities shall be checked, use the switch **-a**. The
-sources to be checked can be restricted by using the **-r** switch with one of the three parameters **polar**,
-**strava** or **waze**. By default, all configured services are checked.
+activities from the current year are checked. The sources to be checked can be restricted by using the **-r** switch
+with one of the parameters **bikecitizens**, **polar**, **strava** or **waze**. By default, all configured services
+are checked.
 
 Important note for Waze: currently the process of requesting and downloading the takeouts cannot be automated due to
 captchas used on the Waze site. For this reason Waze takeouts need to be downloaded manually and put into the Waze

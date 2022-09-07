@@ -129,7 +129,7 @@ class Service( AbstractServiceClass ):
 		updated_activities = []
 		#fetched_activities = []
 
-		fetched = self._fetch( force=force, kwargs=kwargs )
+		fetched = self._fetch( force=force, kwargs=kwargs.items() )
 		existing = list( gc.db.find_by_classifier( self.name ) )
 		old_new = [ ( next( ( e for e in existing if f.uid in e.uids ), None ), f ) for f in fetched ]
 

@@ -203,8 +203,9 @@ def edit( identifier ):
 
 @cli.command( help='renames activities' )
 @argument( 'filters', nargs=-1 )
-def rename( filters ):
-	rename_activities( gc.db.find( filters, True, False, True ) )
+@pass_context
+def rename( ctx, filters ):
+	rename_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.force, ctx.obj.pretend )
 
 @cli.command( help='reimports activities' )
 @argument( 'filters', nargs=-1 )

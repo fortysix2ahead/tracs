@@ -17,6 +17,7 @@ from click import Choice
 from click import Path as ClickPath
 from click_shell import shell
 
+from tracs.inout import open_activities
 from tracs.list import inspect_registry
 from .activity import Activity
 from .application import Application
@@ -41,7 +42,7 @@ from .inout import reimport_activities
 from .list import inspect_activities
 from .list import list_activities
 from .list import show_fields
-from tracs.show import show_activity
+from .show import show_activity
 from .list import show_config
 from .edit import rename_activities
 from .migrate import migrate_application
@@ -212,6 +213,12 @@ def rename( ctx, filters ):
 @pass_context
 def reimport( ctx, filters ):
 	reimport_activities( ctx.obj, list( ctx.obj.db.find( filters, True, True, True ) ), db=ctx.obj.db, from_raw=True, force=ctx.obj.force )
+
+@cli.command( help='opens activities in an external application' )
+@argument( 'filters', nargs=-1 )
+@pass_context
+def open( ctx, filters ):
+	open_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.db )
 
 @cli.command( help='export activities' )
 @option( '-f', '--format', 'fmt', required=True, type=Choice( ['csv', 'geojson', 'gpx', 'kml', 'shp'], case_sensitive=False ), metavar='FORMAT' )

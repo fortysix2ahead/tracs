@@ -216,7 +216,7 @@ class Bikecitizens( Service, Plugin ):
 		self._logged_in = True
 		return self._logged_in
 
-	def _fetch( self, force: bool = False ) -> Iterable[Activity]:
+	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
 		# noinspection PyUnusedLocal
 		response = options( url=self.user_tracks_url, headers=HEADERS_OPTIONS )
 		response = self._session.get( self.user_tracks_url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } } )

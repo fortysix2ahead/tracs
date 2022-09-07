@@ -116,7 +116,7 @@ class Service( ABC ):
 		pass
 
 	@abstractmethod
-	def fetch( self, force: bool ) -> [Activity]:
+	def fetch( self, force: bool, **kwargs ) -> [Activity]:
 		pass
 
 	@abstractmethod

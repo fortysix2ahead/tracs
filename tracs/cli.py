@@ -135,12 +135,10 @@ def fetch( restrict: str = None ):
 			service.fetch( cfg['force'].get( bool ) )
 
 @cli.command( help='downloads activities' )
-@option( '-a', '--all', 'all_', is_flag=True, required=False, help='downloads all activities (instead of recent ones only), overriding provided filters' )
 @argument( 'filters', nargs=-1 )
 @pass_context
 def download( ctx, filters, all_ ):
-	filters = [] if all_ else filters
-	download_activities( ctx.obj.db.find( filters ), force=ctx.obj.force, pretend=ctx.obj.pretend )
+	download_activities( ctx.obj.db.find( filters or [] ), force=ctx.obj.force, pretend=ctx.obj.pretend )
 
 @cli.command( help='creates links for downloaded resources of activities' )
 @option( '-a', '--all', 'all_', is_flag=True, required=False, help='creates links for all activities (instead of recent ones only), overriding provided filters' )

@@ -2,6 +2,7 @@
 from logging import getLogger
 
 from csv import writer as csv_writer
+from os import system
 from typing import Any
 from typing import Iterable
 from typing import List
@@ -25,6 +26,7 @@ from .db import ActivityDb
 from .gpx import read_gpx
 from .plugins import Registry
 from .plugins.groups import ActivityGroup
+from .plugins.polar import PolarActivity
 from .ui import diff_table
 from .ui import InstantConfirm as Confirm
 
@@ -32,6 +34,27 @@ log = getLogger( __name__ )
 
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
+
+def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
+	if len( activities ) > 0:
+		activity = activities[0]
+		if len( activities ) > 1:
+			log.warning( 'opening more than one activity at once is not yet supported, only opening the first ...' )
+
+		resource_type = 'gpx' # todo: make this configurable
+
+		# todo: this is just a PoC!
+		for uid in activity.uids:
+			resources = db.find_resources( uid )
+			for r in resources:
+				if r.type == resource_type:
+					service, raw_id = r.uid.split( ':' )
+					path = Registry.services.get( service ).path_for( PolarActivity( raw_id=raw_id ) )
+					path = Path( path, r.path )
+					system( 'open ' + path.as_posix() )
+
+		# os.system( "open " + shlex.quote( filename ) )  # MacOS/X
+		# os.system( "start " + filename )  # windows
 
 def reimport_activities( ctx: Optional[ApplicationContext], activities: List[Activity], db: ActivityDb, from_raw: bool = True, force: bool = False ):
 	log.debug( f'reimporting {len( activities )} activities, with force={force}' )

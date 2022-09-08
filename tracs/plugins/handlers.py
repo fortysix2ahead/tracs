@@ -15,6 +15,7 @@ from orjson import OPT_SORT_KEYS
 
 from . import handler
 from ..activity import Activity
+from ..activity import Resource
 from ..utils import seconds_to_time
 
 class DocumentHandler( Protocol ):
@@ -57,8 +58,8 @@ class GPXHandler( DocumentHandler ):
 	def load( self, path: Path ) -> Union[Dict, Activity]:
 		with open( path, encoding='utf-8', mode='r', buffering=8192 ) as p:
 			data = p.read()
-			activity = GPXActivity( raw=parse_gpx( data ), raw_data=data )
-			return activity
+			resource = Resource( path=path.name, type='gpx', raw_data=data, source=path.as_uri(), status=100 )
+			return GPXActivity( raw=parse_gpx( data ), resources=[resource] )
 
 	def save( self, path: Path, content: Union[Dict, Activity] ) -> None:
 		raise RuntimeError( 'not supported yet' )

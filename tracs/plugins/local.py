@@ -52,10 +52,9 @@ class Local( Service, Plugin ):
 	# noinspection PyMethodMayBeStatic
 	def _prototype( self, activity ) -> Activity:
 		activity.uid = f'{self.name}:{activity.raw_id}'
-		activity.resources = [
-			Resource( type='gpx', path=f'{activity.raw_id}.gpx', status=200, uid=activity.uid, raw_data=activity.raw_data ),
-		]
-		activity.raw_data = None
+		activity.resources[0].path = f'{activity.raw_id}.{activity.resources[0].type}'
+		activity.resources[0].status = 200
+		activity.resources[0].uid = activity.uid
 		return activity
 
 	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:

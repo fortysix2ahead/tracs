@@ -36,6 +36,7 @@ class Resource( BaseDocument ):
 	name: str = field( default=None )
 	type: str = field( default=None )
 	path: str = field( default=None )
+	source: str = field( default=None )
 	status: int = field( default=None )
 	uid: str = field( default=None )
 

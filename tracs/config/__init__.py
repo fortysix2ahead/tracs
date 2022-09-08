@@ -18,11 +18,12 @@ from rich.console import Console
 APPNAME = 'tracs'
 
 BACKUP_DIRNAME = '.backup'
-CACHE_DIRNAME = 'cache'
+CACHE_DIRNAME = '.cache'
 DB_DIRNAME = 'db'
 DB_FILENAME = 'db.json'
 LOG_DIRNAME = 'logs'
 LOG_FILENAME = f'{APPNAME}.log'
+TMP_DIRNAME = '.tmp'
 
 CONFIG_FILENAME = 'config.yaml'
 STATE_FILENAME = 'state.yaml'

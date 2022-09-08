@@ -4,6 +4,7 @@ from typing import Dict
 from typing import Protocol
 from typing import Union
 
+from dateutil.tz import UTC
 from gpxpy import parse as parse_gpx
 from gpxpy.gpx import GPX
 from orjson import loads as load_json
@@ -14,6 +15,7 @@ from orjson import OPT_SORT_KEYS
 
 from . import handler
 from ..activity import Activity
+from ..utils import seconds_to_time
 
 class DocumentHandler( Protocol ):
 
@@ -45,14 +47,18 @@ class GPXActivity( Activity ):
 		if self.raw:
 			gpx: GPX = self.raw
 			self.name = gpx.name
-			self.time = gpx.time
+			self.time = gpx.get_time_bounds().start_time.astimezone( UTC )
+			self.duration = seconds_to_time( gpx.get_duration() ) if gpx.get_duration() else None
+			self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
 
 @handler( type='gpx' )
 class GPXHandler( DocumentHandler ):
 
 	def load( self, path: Path ) -> Union[Dict, Activity]:
 		with open( path, encoding='utf-8', mode='r', buffering=8192 ) as p:
-			return GPXActivity( raw=parse_gpx( p ) )
+			data = p.read()
+			activity = GPXActivity( raw=parse_gpx( data ), raw_data=data )
+			return activity
 
 	def save( self, path: Path, content: Union[Dict, Activity] ) -> None:
 		raise RuntimeError( 'not supported yet' )

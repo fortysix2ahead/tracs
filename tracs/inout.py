@@ -2,6 +2,7 @@
 from logging import getLogger
 
 from csv import writer as csv_writer
+from os import getcwd
 from os import system
 from typing import Any
 from typing import Iterable
@@ -34,6 +35,14 @@ log = getLogger( __name__ )
 
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
+
+def import_activities( ctx: Optional[ApplicationContext], sources: List[str], importer: str ):
+	for src in list( sources ):
+		path = Path( src )
+		if not path.is_absolute():
+			path = Path( getcwd(), src )
+
+		Registry.services.get( 'local' ).fetch( force=False, path=path )
 
 def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 	if len( activities ) > 0:

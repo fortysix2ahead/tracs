@@ -17,6 +17,7 @@ from click import Choice
 from click import Path as ClickPath
 from click_shell import shell
 
+from tracs.inout import import_activities
 from tracs.inout import open_activities
 from tracs.list import inspect_registry
 from .activity import Activity
@@ -217,6 +218,13 @@ def reimport( ctx, filters ):
 @pass_context
 def open( ctx, filters ):
 	open_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.db )
+
+@cli.command( 'import', hidden=True, help='imports activities' )
+@option( '-i', '--importer', required=False )
+@argument( 'sources', nargs=-1 )
+@pass_context
+def import_from( ctx, sources, importer = 'auto' ):
+	import_activities( ctx, sources, importer )
 
 @cli.command( help='export activities' )
 @option( '-f', '--format', 'fmt', required=True, type=Choice( ['csv', 'geojson', 'gpx', 'kml', 'shp'], case_sensitive=False ), metavar='FORMAT' )

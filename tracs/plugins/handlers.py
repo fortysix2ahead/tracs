@@ -1,7 +1,10 @@
+
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 from typing import Dict
-from typing import Protocol
+from typing import List
+from typing import Optional
 from typing import Union
 
 from dateutil.tz import UTC
@@ -14,30 +17,28 @@ from orjson import OPT_INDENT_2
 from orjson import OPT_SORT_KEYS
 
 from . import handler
+from . import importer
 from ..activity import Activity
 from ..activity import Resource
+from ..base import Handler
+from ..base import Importer
 from ..utils import seconds_to_time
 
-class DocumentHandler( Protocol ):
-
-	def load( self, path: Path ) -> Union[Dict]:
-		pass
-
-	def save( self, path: Path, content: Union[Dict] ) -> None:
-		pass
-
-@handler( type='json' )
-class JSONHandler( DocumentHandler ):
+@handler( types=['json'] )
+class JSONHandler( Handler ):
 
 	options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
-	def load( self, path: Path ) -> Union[Dict]:
-		with open( file=path, mode='r', buffering=8192, encoding='UTF-8' ) as p:
-			return load_json( p.read() )
+	def load( self, path: Optional[Path] = None, data: Optional[Union[str, bytes]] = None ) -> Union[Dict, Any]:
+		data = self.load_raw( path ) if path else data
+		return load_json( data ) if data else None
 
-	def save( self, path: Path, content: Union[Dict] ) -> None:
+	def save( self, path: Path, data: Union[Dict, str, bytes] ) -> None:
 		with open( file=path, mode='w+', buffering=8192, encoding='UTF-8' ) as p:
-			p.write( save_json( content, option=JSONHandler.options ).decode( 'UTF-8' ) )
+			p.write( save_json( data, option=JSONHandler.options ).decode( 'UTF-8' ) )
+
+	def types( self ) -> List[str]:
+		return [ 'json' ]
 
 @dataclass
 class GPXActivity( Activity ):
@@ -52,14 +53,33 @@ class GPXActivity( Activity ):
 			self.duration = seconds_to_time( gpx.get_duration() ) if gpx.get_duration() else None
 			self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
 
-@handler( type='gpx' )
-class GPXHandler( DocumentHandler ):
+@handler( types=['gpx'] )
+@importer( types=['gpx'] )
+class GPXHandler( Handler, Importer ):
 
-	def load( self, path: Path ) -> Union[Dict, Activity]:
-		with open( path, encoding='utf-8', mode='r', buffering=8192 ) as p:
-			data = p.read()
-			resource = Resource( path=path.name, type='gpx', raw_data=data, source=path.as_uri(), status=100 )
-			return GPXActivity( raw=parse_gpx( data ), resources=[resource] )
+	def load( self, path: Optional[Path] = None, data: Optional[Union[str, bytes]] = None ) -> Union[Dict, Any]:
+		data = self.load_raw( path ) if path else data
+		return parse_gpx( data ) if data else None
 
 	def save( self, path: Path, content: Union[Dict, Activity] ) -> None:
 		raise RuntimeError( 'not supported yet' )
+
+	def types( self ) -> List[str]:
+		return [ 'gpx' ]
+
+	def import_from( self, data: Any = None, path: Optional[Path] = None, **kwargs ) -> Activity:
+		activity = None
+		raw_data = kwargs.get( 'raw_data' )
+
+		if path:
+			raw_data = self.load_raw( path ) if not raw_data else raw_data
+			resources = [Resource( path=path.name, type=self.types()[0], raw_data=raw_data, source=path.as_uri(), status=100 )]
+			if not data:
+				data = self.load( data = raw_data )
+		else:
+			resources = []
+
+		if data:
+			activity = GPXActivity( raw=data, resources=resources )
+
+		return activity

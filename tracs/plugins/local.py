@@ -36,16 +36,15 @@ class Local( Service, Plugin ):
 	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
 		if path := kwargs.get( 'path' ):
 			if path.is_file():
-				activity = self.import_from_file( path )
-				return [activity]
+				return [self.import_from_file( path )]
 			elif path.is_dir():
 				pass
 
 		return []
 
 	def import_from_file( self, path: Path ):
-		if handler := Registry.document_handlers.get( path.suffix[1:] ):
-			return self._prototype( handler().load( path ) )
+		if importer := Registry.importer_for( path.suffix[1:] ):
+			return self._prototype( importer.import_from( path=path ) )
 		else:
 			return None
 

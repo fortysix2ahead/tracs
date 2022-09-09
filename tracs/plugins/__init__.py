@@ -15,7 +15,10 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import cast
 
+from ..base import Handler
+from ..base import Importer
 from ..base import Service
 from ..config import KEY_CLASSIFER
 
@@ -24,40 +27,52 @@ NS_PLUGINS = __name__
 
 class Registry:
 
-	accessors: Dict[str or Tuple[str, str], Callable ] = {}
 	classifier: str = KEY_CLASSIFER
 	document_classes: Dict[str, Type] = {}
-	document_handlers: Dict[str, Type] = {}
 	downloaders = {}
 	fetchers = {}
+	handlers: Dict[str, List[Handler]] = {}
+	importers: Dict[str, List[Importer]] = {}
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
-	transformers: Dict[str or Tuple[str, str], Callable ] = {}
-	writers: Dict[str or Tuple[str, str], Callable ] = {}
+
+	# handlers
 
 	@classmethod
-	def register_accessor( cls, key: str or Tuple[str, str], fn: Callable ) -> None:
-		cls.register_function( key, fn, cls.accessors )
+	def handler_for( cls, type: str ) -> Optional[Handler]:
+		handler_list = Registry.handlers.get( type ) or []
+		return handler_list[0] if len( handler_list ) > 0 else None
 
 	@classmethod
-	def register_accessors( cls, classifier: Optional[str], fns: Dict[str, Callable] ):
-		for key, fn in fns.items(): cls.register_function( (classifier, key), fn, cls.accessors )
+	def handlers_for( cls, type: str ):
+		return Registry.handlers.get( type ) or []
 
 	@classmethod
-	def register_transformer( cls, key: str or Tuple[str, str], fn: Callable ) -> None:
-		cls.register_function( key, fn, cls.transformers )
+	def register_handler( cls, handler: Handler, type: str ):
+		handler_list = Registry.handlers.get( type ) or []
+		if handler not in handler_list:
+			handler_list.append( handler )
+			Registry.handlers[type] = handler_list
+			log.debug( f'registered handler {handler.__class__} for type {type}' )
+
+	# importers
 
 	@classmethod
-	def register_transformers( cls, classifier: Optional[str], fns: Dict[str, Callable] ):
-		for key, fn in fns.items(): cls.register_function( (classifier, key), fn, cls.transformers )
+	def importer_for( cls, type: str ) -> Optional[Importer]:
+		importer_list = Registry.importers.get( type ) or []
+		return importer_list[0] if len( importer_list ) > 0 else None
 
 	@classmethod
-	def register_writer( cls, key: str or Tuple[str, str], fn: Callable ) -> None:
-		cls.register_function( key, fn, cls.writers )
+	def importers_for( cls, type: str ):
+		return Registry.importers.get( type ) or []
 
 	@classmethod
-	def register_writers( cls, classifier: Optional[str], fns: Dict[str, Callable] ):
-		for key, fn in fns.items(): cls.register_function( (classifier, key), fn, cls.writers )
+	def register_importer( cls, importer: Importer, type: str ):
+		importer_list = Registry.importers.get( type ) or []
+		if importer not in importer_list:
+			importer_list.append( importer )
+			Registry.importers[type] = importer_list
+			log.debug( f'registered importer {importer.__class__} for type {type}' )
 
 	@classmethod
 	def register_functions( cls, functions: Dict[Union[str, Tuple[str, str]], Callable], dictionary: Dict ) -> None:
@@ -73,68 +88,15 @@ class Registry:
 				key = key[1]
 			dictionary[key] = fn
 
-			# for logging/debugging only
-			dict_name = None
-			if dictionary is Registry.accessors:
-				dict_name = 'accessor'
-			elif dictionary is Registry.transformers:
-				dict_name = 'transformer'
-			elif dictionary is Registry.writers:
-				dict_name = 'writer'
-
-			log.debug( f'registered {dict_name} function {fn} for {key}' )
-
 		return fn
-
-	@classmethod
-	def unregister_accessor( cls, key: str or Tuple[str, str] ) -> None:
-		cls.unregister_function( key, cls.accessors )
-
-	@classmethod
-	def unregister_transformer( cls, key: str or Tuple[str, str] ) -> None:
-		cls.unregister_function( key, cls.transformers )
-
-	@classmethod
-	def unregister_writer( cls, key: str or Tuple[str, str] ) -> None:
-		cls.unregister_function( key, cls.writers )
-
-	@classmethod
-	def unregister_all( cls ) -> None:
-		cls.accessors.clear()
-		cls.transformers.clear()
-		cls.writers.clear()
 
 	@classmethod
 	def unregister_function( cls, key: str or Tuple[str, str], dictionary: Dict ) -> None:
 		del dictionary[key]
 
 	@classmethod
-	def accessor( cls, key: str or Tuple[str, str] ) -> Optional[Callable]:
-		return cls.function_for( key, Registry.accessors )
-
-	@classmethod
-	def transformer( cls, key: str or Tuple[str, str] ) -> Optional[Callable]:
-		return cls.function_for( key, Registry.transformers )
-
-	@classmethod
-	def writer( cls, key: str or Tuple[str, str] ) -> Optional[Callable]:
-		return cls.function_for( key, Registry.writers )
-
-	@classmethod
 	def function_for( cls, key: str or Tuple[str, str], dictionary: Mapping ) -> Optional[Callable]:
 		return dictionary.get( key )
-
-	@classmethod
-	def accessors_for( cls, key: Optional[str] ) -> Dict[str, Callable]:
-		return cls.functions_for( key, Registry.accessors )
-
-	@classmethod
-	def transformers_for( cls, key: Optional[str] ) -> Dict[str, Callable]:
-		return cls.functions_for( key, Registry.transformers )
-
-	@classmethod
-	def writers_for( cls, key: Optional[str] ) -> Dict[str, Callable]:
-		return cls.functions_for( key, Registry.writers )
 
 	@classmethod
 	def functions_for( cls, key: Optional[str], dictionary: Mapping ) -> Dict[str, Callable]:
@@ -170,24 +132,6 @@ def _spec( func: Callable ) -> Tuple[str, str]:
 	return module, name
 
 # decorators
-
-def accessor( *args, **kwargs ):
-	return _register( args, kwargs, Registry.accessors )
-
-def accessors( *args, **kwargs ):
-	return _register( args, kwargs, Registry.accessors, True )
-
-def transformer( *args, **kwargs ):
-	return _register( args, kwargs, Registry.transformers )
-
-def transformers( *args, **kwargs ):
-	return _register( args, kwargs, Registry.transformers, True )
-
-def writer( *args, **kwargs ):
-	return _register( args, kwargs, Registry.writers )
-
-def writers( *args, **kwargs ):
-	return _register( args, kwargs, Registry.writers, True )
 
 def _register( args, kwargs, dictionary, callable_fn = False ) -> Union[Type, Callable]:
 	"""
@@ -273,14 +217,32 @@ def document( *args, **kwargs ):
 def handler( *args, **kwargs ):
 	def handler_class( cls ):
 		if isclass( cls ):
-			Registry.document_handlers[kwargs['type']] = cls
-			log.debug( f"registered handler class {cls} for type {kwargs['type']}" )
+			instance = cast( Handler, cls() )
+			for t in instance.types():
+				Registry.register_handler( instance, t )
 			return cls
 		else:
 			raise RuntimeError( 'only classes can be decorated with the @handler decorator' )
 
-	if len( args ) == 0 and 'type' in kwargs:
+	if len( args ) == 0 and 'types' in kwargs:
 		return handler_class
+	elif len( args ) == 1:
+		handler_class( args[0] )
+
+def importer( *args, **kwargs ):
+	def importer_class( cls ):
+		if isclass( cls ):
+			instance = cast( Importer, cls() )
+			for t in kwargs['types']:
+				Registry.register_importer( instance, t )
+			return cls
+		else:
+			raise RuntimeError( 'only classes can be decorated with the @handler decorator' )
+
+	if len( args ) == 0 and 'types' in kwargs:
+		return importer_class
+	elif len( args ) == 1:
+		importer_class( args[0] )
 
 def fetch( fn ):
 	return Registry.register_function( _spec( fn ), fn, Registry.fetchers )

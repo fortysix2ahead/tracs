@@ -18,6 +18,7 @@ from tracs.config import ApplicationContext
 from tracs.config import GlobalConfig
 from tracs.config import KEY_PLUGINS
 from tracs.db import ActivityDb
+from tracs.plugins import Registry
 from tracs.plugins.bikecitizens import Bikecitizens
 from tracs.plugins.polar import Polar
 from tracs.service import Service
@@ -58,6 +59,12 @@ def db( request ) -> ActivityDb:
 		db = get_inmemory_db( library=library_template ) if library_template else get_inmemory_db( template=template )
 	else:
 		db = get_file_db( library=library_template, writable=writable ) if library_template else get_file_db( template=template, writable=writable )
+
+	# set base path in services
+	if library_template:
+		for name, instance in Registry.services.items():
+			# noinspection PyPropertyAccess
+			instance.base_path = Path( db.path, name )
 
 	yield db
 

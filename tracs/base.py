@@ -6,8 +6,10 @@ from abc import abstractmethod
 from enum import Enum
 from pathlib import Path
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Protocol
 from typing import Union
 
 class ResourceStatus( Enum ):
@@ -151,4 +153,61 @@ class Service( ABC ):
 	@property
 	@abstractmethod
 	def display_name( self ) -> str:
+		pass
+
+class Handler( Protocol ):
+	"""
+	A handler defines the protocol for loading and saving documents, transforming them into a dict-like structure.
+	Example: input can be a string, containing a GPX XML and the output is the parsed GPX structure.
+	"""
+
+	@abstractmethod
+	def load( self, path: Optional[Path] = None, data: Optional[Union[str, bytes]] = None ) -> Union[Dict, Any]:
+		"""
+		Loads data either from the given path or the given string/byte array.
+
+		:param path: path to load data from
+		:param data: data to be used for transformation into a dict
+		:return: loaded data (preferably a dict, but could also be any data structure)
+		"""
+		pass
+
+	# noinspection PyMethodMayBeStatic
+	def load_raw( self, path: Path ) -> Any:
+		with open( path, encoding='utf-8', mode='r', buffering=8192 ) as p:
+			return p.read()
+
+	@abstractmethod
+	def save( self, path: Path, data: Union[Dict, str, bytes] ) -> None:
+		pass
+
+	@abstractmethod
+	def types( self ) -> List[str]:
+		pass
+
+class Importer( Protocol ):
+	"""
+	An importer is used to transform a (preferably) dict-like data structure into an activity.
+	"""
+
+	@abstractmethod
+	def import_from( self, data: Any = None, path: Optional[Path] = None, **kwargs ) -> Activity:
+		"""
+		Transforms a data structure into an activity.
+
+		:param data: data structure to be transformed
+		:param path: instead of providing the data it's also possible to provide a path to read from
+		:param kwargs: additional parameters for the importer
+		:return:
+		"""
+		pass
+
+class Exporter( Protocol ):
+	"""
+	The opposite of an importer, used to transform an activity into a dict-like structure.
+	TODO: this protocol will be extended at a later point of time.
+	"""
+
+	@abstractmethod
+	def export( self, activity: Activity ) -> Dict:
 		pass

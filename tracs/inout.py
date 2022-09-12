@@ -52,15 +52,15 @@ def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 		if len( activities ) > 1:
 			log.warning( 'opening more than one activity at once is not yet supported, only opening the first ...' )
 
-		resource_type = 'gpx' # todo: make this configurable
+		resource_type = GPX_TYPE # todo: make this configurable
 
 		# todo: this is just a PoC!
 		for uid in activity.uids:
 			resources = db.find_resources( uid )
 			for r in resources:
 				if r.type == resource_type:
-					service, raw_id = r.uid.split( ':' )
-					path = Registry.services.get( service ).path_for( PolarActivity( raw_id=raw_id ) )
+					classifier, raw_id = r.classifier(), r.raw_id()
+					path = Registry.services.get( classifier ).path_for( PolarActivity( raw_id=raw_id ) )
 					path = Path( path, r.path )
 					system( 'open ' + path.as_posix() )
 

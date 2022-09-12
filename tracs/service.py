@@ -22,6 +22,7 @@ from .config import KEY_LAST_DOWNLOAD
 from .config import KEY_LAST_FETCH
 from .config import KEY_PLUGINS
 from .dataclasses import as_dict
+from .plugins import Registry
 from .utils import fmt
 
 log = getLogger( __name__ )
@@ -84,6 +85,18 @@ class Service( AbstractServiceClass ):
 	def db_dir( self ) -> Path:
 		return self._cfg['db_dir'].get()
 
+	@classmethod
+	def path_for_resource( cls, resource: Resource ) -> Optional[Path]:
+		classifier, raw_id = resource.classifier(), resource.raw_id()
+		if service := Registry.services.get( classifier ):
+			#return Path( service.path_for_id( raw_id, service.base_path ), resource.path )
+			return service.path_for( resource=resource )
+
+	def path_for_id( self, raw_id: int, base_path: Optional[Path] ) -> Path:
+		_id = str( raw_id )
+		rel_path = Path( _id[0], _id[1], _id[2], _id )
+		return Path( base_path, rel_path ) if base_path else rel_path
+
 	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
 		"""
 		Returns the path in the local file system where all artefacts of a provided activity are located.
@@ -93,12 +106,15 @@ class Service( AbstractServiceClass ):
 		:param ext: file extension for which the path should be returned, can be None
 		:return: path of the activity in the local file system
 		"""
-		_id = str( activity.raw_id ) if activity else resource.uid.split( ':', maxsplit=1 )[1]
-		path = Path( self.base_path, _id[0], _id[1], _id[2], _id )
-		if resource:
-			path = Path( path, resource.path )
-		elif ext:
-			path = Path( path, f'{id}.{ext}' )
+		if activity:
+			path = self.path_for_id( activity.raw_id, self.base_path )
+			if ext:
+				path = Path( path, f'{activity.raw_id}.{ext}' )
+		elif resource:
+			path = Path( self.path_for_id( resource.raw_id(), self.base_path ), resource.path )
+		else:
+			path = None
+
 		return path
 
 	def link_for( self, a: Activity, r: Resource, ext: Optional[str] = None ) -> Optional[Path]:
@@ -219,16 +235,16 @@ class Service( AbstractServiceClass ):
 			if status == 200:
 				path.parent.mkdir( parents=True, exist_ok=True )
 				path.write_bytes( content )
-				log.info( f"downloaded {resource.type} for activity {resource.uid} to {path}" )
+				log.info( f"downloaded resource of type {resource.type} for activity {resource.uid} to {path}" )
 
 			elif status == 204:
-				log.error( f"failed to download {resource.type} for activity {resource.uid}, service responded with HTTP 200, but without content" )
+				log.error( f"failed to download resource of type {resource.type} for activity {resource.uid}, service responded with HTTP 200, but without content" )
 
 			elif status == 404:
-				log.error( f"failed to download {resource.type} for activity {resource.uid}, service responded with HTTP 404 - not found" )
+				log.error( f"failed to download resource of type {resource.type} for activity {resource.uid}, service responded with HTTP 404 - not found" )
 
 			else:
-				log.error( f"failed to download {resource.type} for activity {resource.uid}, service responded with HTTP {resource.status}" )
+				log.error( f"failed to download resource of type {resource.type} for activity {resource.uid}, service responded with HTTP {resource.status}" )
 
 			resource.status = status
 

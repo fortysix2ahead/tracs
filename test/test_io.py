@@ -2,32 +2,32 @@
 from pathlib import Path
 from pytest import mark
 
+from tracs.config import ApplicationContext
+from tracs.inout import load_resource
 from tracs.inout import reimport_activities
-from tracs.plugins import Registry
-from tracs.plugins.groups import ActivityGroup
-from tracs.plugins.handlers import JSONHandler
+from tracs.plugins.handlers import GPXActivity
+from tracs.plugins.handlers import GPX_TYPE
+from tracs.plugins.polar import POLAR_FLOW_TYPE
 from tracs.plugins.polar import PolarActivity
-from tracs.plugins.strava import StravaActivity
 
 from .helpers import get_file_path
 
-@mark.db( lib='default', inmemory=True )
+@mark.db( library='default', inmemory=True )
+def test_load_resource( db ):
+	resources = db.find_resources( uid='polar:100001' )
+	for r in resources:
+		activity = load_resource( r )
+		if r.type == GPX_TYPE:
+			assert type( activity ) is GPXActivity
+		elif r.type == POLAR_FLOW_TYPE:
+			assert type( activity ) is PolarActivity
+
+@mark.db( library='default', inmemory=True )
 def test_reimport( db ):
-	json = JSONHandler().load( get_file_path( 'libraries/default/activities.json' ) )
-	pa = PolarActivity( data=json['_default']['1'], doc_id=1 )
-	sa = StravaActivity( data=json['_default']['2'], doc_id=2 )
-	ga = db.get( doc_id=10 )
+	ctx = ApplicationContext()
+	ctx.db = db
+	a = db.get( id = 3 )
 
-	Registry.services['polar'].base_path = Path( get_file_path( 'libraries/default/activities.json' ).parent, 'polar' )
-	Registry.services['strava'].base_path = Path( get_file_path( 'libraries/default/activities.json' ).parent, 'strava' )
-
-	assert pa.name == 'Berlin'
-	pa.name = 'Hamburg'
-	reimport_activities( None, [pa], db, from_raw=True, force=True )
-	assert pa.name == 'Berlin'
-
-	assert sa.name == 'Berlin'
-	reimport_activities( None, [sa], db, from_raw=True, force=True )
-	assert sa.name == 'Munich'
-
-	reimport_activities( None, [ga], db, from_raw=True, force=True )
+	assert a.name == 'Berlin'
+	reimport_activities( ctx, [a], include_recordings=False, force=True )
+	assert a.name == '00:25:34;0.0 km'

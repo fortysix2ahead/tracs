@@ -26,8 +26,10 @@ from . import Registry
 from . import document
 from . import importer
 from . import service
+from .handlers import GPX_TYPE
 from .handlers import JSON_TYPE
 from .handlers import ResourceHandler
+from .handlers import TCX_TYPE
 from .plugin import Plugin
 from ..activity import Activity
 from ..activity import Resource
@@ -275,9 +277,9 @@ class Strava( Service, Plugin ):
 		json_str = dump_json( json, option=ORJSON_OPTIONS )
 		uid = f'{self.name}:{json["id"]}'
 		resources = [
-			Resource( type='raw', path=f"{json['id']}.raw.json", status=200, uid=uid, raw_data=json_str ),
-			Resource( type='gpx', path=f"{json['id']}.gpx", status=100, uid=uid ),
-			Resource( type='tcx', path=f"{json['id']}.tcx", status=100, uid=uid )
+			Resource( type=STRAVA_TYPE, path=f"{json['id']}.raw.json", status=200, uid=uid, raw_data=json_str ),
+			Resource( type=GPX_TYPE, path=f"{json['id']}.gpx", status=100, uid=uid ),
+			Resource( type=TCX_TYPE, path=f"{json['id']}.tcx", status=100, uid=uid )
 		]
 		return StravaActivity( raw=json, resources=resources )
 

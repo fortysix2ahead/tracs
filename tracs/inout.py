@@ -59,9 +59,7 @@ def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 			resources = db.find_resources( uid )
 			for r in resources:
 				if r.type == resource_type:
-					classifier, raw_id = r.classifier(), r.raw_id()
-					path = Registry.services.get( classifier ).path_for( PolarActivity( raw_id=raw_id ) )
-					path = Path( path, r.path )
+					path = Service.path_for_resource( r )
 					system( 'open ' + path.as_posix() )
 
 		# os.system( "open " + shlex.quote( filename ) )  # MacOS/X

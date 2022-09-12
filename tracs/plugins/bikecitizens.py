@@ -23,6 +23,7 @@ from . import Registry
 from . import document
 from . import importer
 from . import service
+from .handlers import GPX_TYPE
 from .handlers import JSON_TYPE
 from .handlers import ResourceHandler
 from .plugin import Plugin
@@ -48,6 +49,7 @@ BASE_URL = 'https://my.bikecitizens.net'
 API_URL = 'https://api.bikecitizens.net'
 
 BIKECITIZENS_TYPE = 'application/json+bikecitizens'
+BIKECITIZENS_RECORDING_TYPE = 'application/json+bikecitizens-recording'
 
 HEADERS_TEMPLATE = {
 	'Accept-Encoding': 'gzip, deflate, br',
@@ -252,9 +254,9 @@ class Bikecitizens( Service, Plugin ):
 		json_str = dump_json( json, option=ORJSON_OPTIONS )
 		uid = f'{self.name}:{json["id"]}'
 		resources = [
-			Resource( type='raw', path=f'{json["id"]}.raw.json', status=200, uid=uid, raw_data=json_str ),
-			Resource( type='json', path=f"{json['id']}.json", status=100, uid=uid ),
-			Resource( type='gpx', path=f"{json['id']}.gpx", status=100, uid=uid )
+			Resource( type=BIKECITIZENS_TYPE, path=f'{json["id"]}.raw.json', status=200, uid=uid, raw_data=json_str ),
+			Resource( type=BIKECITIZENS_RECORDING_TYPE, path=f"{json['id']}.json", status=100, uid=uid ),
+			Resource( type=GPX_TYPE, path=f"{json['id']}.gpx", status=100, uid=uid )
 		]
 		return BikecitizensActivity( raw=json, resources=resources )
 

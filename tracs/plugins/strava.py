@@ -6,6 +6,7 @@ from typing import Optional
 from typing import Tuple
 from http.server import BaseHTTPRequestHandler
 from http.server import HTTPServer
+from typing import Union
 
 from bs4 import BeautifulSoup
 from click import echo
@@ -187,6 +188,12 @@ class Strava( Service, Plugin ):
 		per_page = FETCH_PAGE_SIZE  # we might make this configurable later ...
 		return f'{self._base_url}/api/v3/athlete/activities?before={before}&after={after}&page={page}&per_page={per_page}'
 
+	def url_for( self, id: Union[int,str], type: str ):
+		if type == GPX_TYPE:
+			return f'{self._activities_url}/{id}/export_gpx'
+		elif type == TCX_TYPE:
+			return f'{self._activities_url}/{id}/export_original'
+
 	def export_url_for( self, id: int, ext: str ) -> Optional[str]:
 		if ext == 'gpx':
 			return f'{self._activities_url}/{id}/export_gpx'
@@ -277,16 +284,21 @@ class Strava( Service, Plugin ):
 		json_str = dump_json( json, option=ORJSON_OPTIONS )
 		uid = f'{self.name}:{json["id"]}'
 		resources = [
-			Resource( type=STRAVA_TYPE, path=f"{json['id']}.raw.json", status=200, uid=uid, raw_data=json_str ),
-			Resource( type=GPX_TYPE, path=f"{json['id']}.gpx", status=100, uid=uid ),
-			Resource( type=TCX_TYPE, path=f"{json['id']}.tcx", status=100, uid=uid )
+			Resource( type=STRAVA_TYPE, path=f"{json['id']}.raw.json", status=200, uid=uid, raw_data=json_str, source=self.url_activity( json['id'] ) ),
+			Resource( type=GPX_TYPE, path=f"{json['id']}.gpx", status=100, uid=uid, source=self.url_for( json['id'], GPX_TYPE ) ),
+			Resource( type=TCX_TYPE, path=f"{json['id']}.tcx", status=100, uid=uid, source=self.url_for( json['id'], TCX_TYPE ) )
 		]
 		return StravaActivity( raw=json, resources=resources )
 
 	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
-		url = self.export_url_for( resource.raw_id(), resource.type )
-		response = self._session.get( url, headers=HEADERS_LOGIN, allow_redirects=True, stream=True )
-		return response.content, response.status_code
+		url = self.url_for( resource.raw_id(), resource.type )
+		if url:
+			log.debug( f'downloading resource from {url}' )
+			response = self._session.get( url, headers=HEADERS_LOGIN, allow_redirects=True, stream=True )
+			return response.content, response.status_code
+		else:
+			log.warning( f'unable to determine download url for resource {resource}' )
+			return None, 500
 
 	@property
 	def logged_in( self ) -> bool:

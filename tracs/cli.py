@@ -208,10 +208,11 @@ def rename( ctx, filters ):
 	rename_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.force, ctx.obj.pretend )
 
 @cli.command( help='reimports activities' )
+@option( '-r', '--include-recordings', is_flag=True, required=False, help='includes data from GPX, TCX etc. for reimporting' )
 @argument( 'filters', nargs=-1 )
 @pass_context
-def reimport( ctx, filters ):
-	reimport_activities( ctx.obj, list( ctx.obj.db.find( filters, True, True, True ) ), db=ctx.obj.db, from_raw=True, force=ctx.obj.force )
+def reimport( ctx, filters, include_recordings: bool = False ):
+	reimport_activities( ctx.obj, list( ctx.obj.db.find( filters ) ), include_recordings=include_recordings, force=ctx.obj.force )
 
 @cli.command( help='opens activities in an external application' )
 @argument( 'filters', nargs=-1 )

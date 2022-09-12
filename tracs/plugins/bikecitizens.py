@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from logging import getLogger
+from pathlib import Path
 from re import match
 from re import DOTALL
 from sys import exit as sysexit
 from typing import Any
 from typing import Iterable
+from typing import Optional
 from typing import Tuple
 
 from bs4 import BeautifulSoup
@@ -17,8 +19,12 @@ from requests import options
 from requests import Session
 from rich.prompt import Prompt
 
+from . import Registry
 from . import document
+from . import importer
 from . import service
+from .handlers import JSON_TYPE
+from .handlers import ResourceHandler
 from .plugin import Plugin
 from ..activity import Activity
 from ..activity import Resource
@@ -40,6 +46,8 @@ DISPLAY_NAME = 'Bike Citizens'
 
 BASE_URL = 'https://my.bikecitizens.net'
 API_URL = 'https://api.bikecitizens.net'
+
+BIKECITIZENS_TYPE = 'application/json+bikecitizens'
 
 HEADERS_TEMPLATE = {
 	'Accept-Encoding': 'gzip, deflate, br',
@@ -94,6 +102,19 @@ class BikecitizensActivity( Activity ):
 			self.uuid = self.raw.get( 'uuid' )
 
 		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
+
+@importer( type=BIKECITIZENS_TYPE )
+class BikecitizensImporter( ResourceHandler ):
+
+	json_handler = Registry.importer_for( JSON_TYPE )
+
+	def load_data( self, data: Any, **kwargs ) -> Any:
+		return BikecitizensImporter.json_handler.load( data=data )
+
+	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
+		resource = Resource( type=BIKECITIZENS_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
+		activity = BikecitizensActivity( raw=structured_data, resources=[resource] )
+		return activity
 
 @service
 class Bikecitizens( Service, Plugin ):

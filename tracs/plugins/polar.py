@@ -21,13 +21,21 @@ from dateutil.tz import UTC
 from orjson import dumps as dump_json, OPT_INDENT_2, OPT_APPEND_NEWLINE
 from rich.prompt import Prompt
 
+from . import Registry
 from . import document
+from . import importer
 from . import service
+from .handlers import GPX_TYPE
+from .handlers import JSON_TYPE
+from .handlers import TCX_TYPE
+from .handlers import JSONHandler
+from .handlers import ResourceHandler
 from .plugin import Plugin
 from ..activity import Activity
 from ..activity import Resource
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types
+from ..base import Importer
 from ..config import ApplicationConfig as cfg
 from ..config import console
 from ..config import APPNAME
@@ -42,6 +50,10 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'polar'
 DISPLAY_NAME = 'Polar Flow'
 ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
+
+POLAR_CSV_TYPE = 'text/csv+polar'
+POLAR_HRV_TYPE = 'text/csv+polar-hrv'
+POLAR_FLOW_TYPE = 'application/json+polar'
 
 BASE_URL = 'https://flow.polar.com'
 
@@ -125,6 +137,19 @@ class PolarActivity( Activity ):
 			self.calories = self.raw.get( 'calories' )
 
 		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
+
+@importer( type=POLAR_FLOW_TYPE )
+class PolarImporter( ResourceHandler ):
+
+	json_handler = Registry.importer_for( JSON_TYPE )
+
+	def load_data( self, data: Any, **kwargs ) -> Any:
+		return PolarImporter.json_handler.load( data=data )
+
+	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
+		resource = Resource( type=POLAR_FLOW_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
+		activity = PolarActivity( raw=structured_data, resources=[resource] )
+		return activity
 
 @service
 class Polar( Service, Plugin ):
@@ -230,11 +255,11 @@ class Polar( Service, Plugin ):
 		uid = f'{self.name}:{raw_id}'
 		json_str = dump_json( json, option=ORJSON_OPTIONS )
 		resources = [
-			Resource( type='raw', path=f"{raw_id}.raw.json", status=200, uid=uid, raw_data=json_str ),
-			Resource( type='csv', path=f'{raw_id}.csv', status=100, uid=uid ),
-			Resource( type='gpx', path=f'{raw_id}.gpx', status=100, uid=uid ),
-			Resource( type='tcx', path=f'{raw_id}.tcx', status=100, uid=uid ),
-			Resource( type='hrv', path=f'{raw_id}.hrv.csv', status=100, uid=uid )
+			Resource( type=POLAR_FLOW_TYPE, path=f"{raw_id}.raw.json", status=200, uid=uid, raw_data=json_str ),
+			Resource( type=POLAR_CSV_TYPE, path=f'{raw_id}.csv', status=100, uid=uid ),
+			Resource( type=GPX_TYPE, path=f'{raw_id}.gpx', status=100, uid=uid ),
+			Resource( type=TCX_TYPE, path=f'{raw_id}.tcx', status=100, uid=uid ),
+			Resource( type=POLAR_HRV_TYPE, path=f'{raw_id}.hrv.csv', status=100, uid=uid )
 		]
 		return PolarActivity( raw=json, resources=resources )
 

@@ -214,32 +214,33 @@ def document( *args, **kwargs ):
 	else:
 		raise RuntimeError( 'only classes can be used with the @document decorator' )
 
-def handler( *args, **kwargs ):
-	def handler_class( cls ):
-		if isclass( cls ):
-			instance = cast( Handler, cls() )
-			for t in instance.types():
-				Registry.register_handler( instance, t )
-			return cls
-		else:
-			raise RuntimeError( 'only classes can be decorated with the @handler decorator' )
-
-	if len( args ) == 0 and 'types' in kwargs:
-		return handler_class
-	elif len( args ) == 1:
-		handler_class( args[0] )
+# def handler( *args, **kwargs ):
+# 	def handler_class( cls ):
+# 		if isclass( cls ):
+# 			instance = cast( Handler, cls() )
+# 			for t in instance.types():
+# 				Registry.register_handler( instance, t )
+# 			return cls
+# 		else:
+# 			raise RuntimeError( 'only classes can be decorated with the @handler decorator' )
+#
+# 	if len( args ) == 0 and 'types' in kwargs:
+# 		return handler_class
+# 	elif len( args ) == 1:
+# 		handler_class( args[0] )
 
 def importer( *args, **kwargs ):
 	def importer_class( cls ):
 		if isclass( cls ):
-			instance = cast( Importer, cls() )
-			for t in kwargs['types']:
-				Registry.register_importer( instance, t )
+			instance: Importer = cast( Importer, cls() )
+			if kwargs['type'] not in instance.types:
+				instance.types.append( kwargs['type'] )
+			Registry.register_importer( instance, kwargs['type'] )
 			return cls
 		else:
 			raise RuntimeError( 'only classes can be decorated with the @handler decorator' )
 
-	if len( args ) == 0 and 'types' in kwargs:
+	if len( args ) == 0 and 'type' in kwargs:
 		return importer_class
 	elif len( args ) == 1:
 		importer_class( args[0] )

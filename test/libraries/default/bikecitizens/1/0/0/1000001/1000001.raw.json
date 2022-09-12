@@ -1,0 +1,13 @@
+{
+  "id": 1000001,
+  "average_speed": 3.71963,
+  "distance": 1570,
+  "duration": 422,
+  "start_time": "2020-05-09T05:03:11.000Z",
+  "postprocessed": true,
+  "postproc_cnt": 2,
+  "uuid": "00000000-0000-0000-0000-000000000000",
+  "cccode": "de-berlin",
+  "tags": [],
+  "ping_points": []
+}

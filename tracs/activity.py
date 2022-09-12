@@ -123,18 +123,24 @@ class Activity( BaseDocument ):
 		#if len( self.resources ) > 0 and all( type( r ) is dict for r in self.resources ):
 		#	self.resources = [ Resource( **r ) for r in self.resources ]
 
-	def init_from( self, other: Activity = None, raw: Dict = None ) -> Activity:
+	def init_from( self, other: Activity = None, raw: Dict = None, force: bool = False ) -> Activity:
 		"""
 		Initializes this activity with data from another activity/dictionary.
 
 		:param other: other activity
 		:param raw: raw data
+		:param force: flag to overwrite existing data from other, regardless of existing values (otherwise non-null values will be preferred
 		:return: self, for convenience
 		"""
 		if other:
 			for f in fields( self ):
 				if not f.metadata.get( PROTECTED, False ):
-					setattr( self, f.name, getattr( other, f.name ) )
+					other_value = getattr( other, f.name )
+					if force:
+						setattr( self, f.name, other_value )
+					else:
+						new_value = getattr( self, f.name ) or other_value
+						setattr( self, f.name, new_value )
 		elif raw:
 			self.raw = raw
 			self.__post_init__()

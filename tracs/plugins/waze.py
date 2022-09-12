@@ -23,6 +23,7 @@ from pathlib import Path
 from . import document
 from . import importer
 from . import service
+from .handlers import GPX_TYPE
 from .handlers import ResourceHandler
 from .plugin import Plugin
 from ..activity_types import ActivityTypes
@@ -132,8 +133,8 @@ class Waze( Service, Plugin ):
 		raw_id = int( raw[0][1].strftime( '%y%m%d%H%M%S' ) )
 		uid = f'{self.name}:{raw_id}'
 		resources = [
-			Resource( type='raw', path=f'{raw_id}.raw.txt', status= 200, uid=uid, raw_data=raw_data ),
-			Resource( type='gpx', path=f'{raw_id}.gpx', status= 100, uid=uid )
+			Resource( type=WAZE_TYPE, path=f'{raw_id}.raw.txt', status= 200, uid=uid, raw_data=raw_data ),
+			Resource( type=GPX_TYPE, path=f'{raw_id}.gpx', status= 100, uid=uid )
 		]
 		return WazeActivity( raw=raw, resources=resources )
 

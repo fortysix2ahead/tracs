@@ -14,8 +14,8 @@ def test_init_from_raw( json ):
 
 	assert sa.id == 0
 	assert sa.classifier == 'strava'
-	assert sa.uid == 'strava:200001'
-	assert sa.raw_id == 200001
+	assert sa.uid == 'strava:200002'
+	assert sa.raw_id == 200002
 	assert sa.type == ActivityTypes.run
 	assert sa.time == datetime( 2018, 12, 16, 13, 15, 12, tzinfo=timezone.utc )
 	assert sa.localtime == datetime( 2018, 12, 16, 14, 15, 12, tzinfo=timezone.utc )

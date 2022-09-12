@@ -21,7 +21,9 @@ from logging import getLogger
 from pathlib import Path
 
 from . import document
+from . import importer
 from . import service
+from .handlers import ResourceHandler
 from .plugin import Plugin
 from ..activity_types import ActivityTypes
 from ..activity import Activity
@@ -37,6 +39,7 @@ TAKEOUTS_DIRNAME = 'takeouts'
 ACTIVITY_FILE = 'account_activity_3.csv'
 SERVICE_NAME = 'waze'
 DISPLAY_NAME = 'Waze'
+WAZE_TYPE = 'application/text+waze'
 
 @document
 class WazeActivity( Activity ):
@@ -52,6 +55,17 @@ class WazeActivity( Activity ):
 		self.type = ActivityTypes.drive
 		self.classifier = f'{SERVICE_NAME}'
 		self.uid = f'{self.classifier}:{self.raw_id}'
+
+@importer( type=WAZE_TYPE )
+class WazeImporter( ResourceHandler ):
+
+	def load_data( self, data: Any, **kwargs ) -> Any:
+		return read_drive( data )
+
+	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
+		resource = Resource( type=WAZE_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
+		activity = WazeActivity( raw=structured_data, resources=[resource] )
+		return activity
 
 @service
 class Waze( Service, Plugin ):

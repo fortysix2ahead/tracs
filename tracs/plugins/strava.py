@@ -22,8 +22,12 @@ from webbrowser import open as open_url
 
 from rich.prompt import Prompt
 
+from . import Registry
 from . import document
+from . import importer
 from . import service
+from .handlers import JSON_TYPE
+from .handlers import ResourceHandler
 from .plugin import Plugin
 from ..activity import Activity
 from ..activity import Resource
@@ -41,11 +45,11 @@ log = getLogger( __name__ )
 
 SERVICE_NAME = 'strava'
 DISPLAY_NAME = 'Strava'
-ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
-
+STRAVA_TYPE = 'application/json+strava'
 BASE_URL = 'https://www.strava.com'
 
 FETCH_PAGE_SIZE = 200 # maximum possible size?
+ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
 
 HEADERS_LOGIN = {
 	'Accept': '*/*',
@@ -131,6 +135,19 @@ class StravaActivity( Activity ):
 
 		self.classifier = f'{SERVICE_NAME}'
 		self.uid = f'{self.classifier}:{self.raw_id}'
+
+@importer( type=STRAVA_TYPE )
+class StravaImporter( ResourceHandler ):
+
+	json_handler = Registry.importer_for( JSON_TYPE )
+
+	def load_data( self, data: Any, **kwargs ) -> Any:
+		return StravaImporter.json_handler.load( data=data )
+
+	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
+		resource = Resource( type=STRAVA_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
+		activity = StravaActivity( raw=structured_data, resources=[resource] )
+		return activity
 
 @service
 class Strava( Service, Plugin ):

@@ -10,6 +10,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Protocol
+from typing import Type
 from typing import Union
 
 class ResourceStatus( Enum ):
@@ -90,19 +91,29 @@ class Service( ABC ):
 	Abstract base class for a service being able to consume activities from external sources.
 	"""
 
+	@property
+	@abstractmethod
+	def base_path( self ) -> Path:
+		pass
+
 	@abstractmethod
 	def login( self ) -> bool:
 		pass
 
 	@abstractmethod
-	def path_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:
+	def path_for_id( self, raw_id: int, base_path: Optional[Path] ) -> Path:
+		pass
+
+	@abstractmethod
+	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
 		"""
 		Returns the path in the local file system where all artefacts of a provided activity are located.
 		The returned path must point to a directory.
 
-		:param a: activity
+		:param activity: activity
+		:param resource: resource
 		:param ext: file extension for which the path should be returned, can be None
-		:return: path of the activity in the local file system
+		:return: path of the activity/resource in the local file system
 		"""
 		pass
 
@@ -191,23 +202,27 @@ class Importer( Protocol ):
 	"""
 
 	@abstractmethod
-	def import_from( self, data: Any = None, path: Optional[Path] = None, **kwargs ) -> Activity:
-		"""
-		Transforms a data structure into an activity.
-
-		:param data: data structure to be transformed
-		:param path: instead of providing the data it's also possible to provide a path to read from
-		:param kwargs: additional parameters for the importer
-		:return:
-		"""
+	def load( self, data: Optional[Any] = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Any]:
 		pass
+
+	@property
+	def types( self ) -> List[str]:
+		pass
+
+	@property
+	def activity_cls( self ) -> Type[Activity]:
+		pass
+
+#	@abstractmethod
+#	@activity_cls.setter
+#	def activity_cls( self, cls: Type ) -> None:
+#		pass
 
 class Exporter( Protocol ):
 	"""
 	The opposite of an importer, used to transform an activity into a dict-like structure.
-	TODO: this protocol will be extended at a later point of time.
 	"""
 
 	@abstractmethod
-	def export( self, activity: Activity ) -> Dict:
+	def save( self, data: Union[Dict, str, bytes], path: Optional[Path] = None, url: Optional[str] = None ) -> None:
 		pass

@@ -16,29 +16,75 @@ from orjson import OPT_APPEND_NEWLINE
 from orjson import OPT_INDENT_2
 from orjson import OPT_SORT_KEYS
 
-from . import handler
 from . import importer
 from ..activity import Activity
 from ..activity import Resource
-from ..base import Handler
-from ..base import Importer
 from ..utils import seconds_to_time
 
-@handler( types=['json'] )
-class JSONHandler( Handler ):
+JSON_TYPE = 'application/json'
+GPX_TYPE = 'application/xml+gpx'
+TCX_TYPE = 'application/xml+tcx'
+
+class ResourceHandler:
+
+	def __init__( self ) -> None:
+		self._types: List[str] = []
+
+	def load( self, data: Optional[Any] = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Any]:
+		# try to load from url if provided
+		_loaded_data = self.load_url( url, **kwargs ) if url else None
+
+		# try to load from path if provided, but don't overwrite loaded data
+		_loaded_data = self.load_path( path, **kwargs ) if path and not _loaded_data else None
+
+		# try load/process either provided or loaded data
+		_structured_data = self.load_data( data or _loaded_data )
+
+		# transform into activity, if activity class is set
+		# noinspection PyArgumentList
+		#_data = self.activity_cls( raw = _structured_data ) if self.activity_cls and _structured_data else _structured_data
+		_data = self.postprocess_data( _structured_data, _loaded_data, path, url )
+
+		return _data
+
+	def load_data( self, data: Any, **kwargs ) -> Any:
+		pass
+
+	# noinspection PyMethodMayBeStatic
+	def load_path( self, path: Path, **kwargs ) -> Optional[Union[str, bytes]]:
+		with open( path, encoding='utf-8', mode='r', buffering=8192 ) as p:
+			return p.read()
+
+	def load_url( self, url: str, **kwargs ) -> Any:
+		pass
+
+	# noinspection PyMethodMayBeStatic
+	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
+		return structured_data
+
+	def save( self, data: Union[Dict, str, bytes], path: Optional[Path] = None, url: Optional[str] = None ) -> None:
+		with open( file=path, mode='w+', buffering=8192, encoding='UTF-8' ) as p:
+			if isinstance( data, dict ):
+				p.write( self.save_dict( data ) )
+
+	# noinspection PyMethodMayBeStatic
+	def save_dict( self, data: Dict ) -> Union[str, bytes]:
+		return str( data )
+
+	@property
+	def types( self ) -> List[str]:
+		return self._types
+
+@importer( type=JSON_TYPE )
+class JSONHandler( ResourceHandler ):
 
 	options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
-	def load( self, path: Optional[Path] = None, data: Optional[Union[str, bytes]] = None ) -> Union[Dict, Any]:
-		data = self.load_raw( path ) if path else data
-		return load_json( data ) if data else None
+	def load_data( self, data: Any, **kwargs ) -> Activity:
+		return load_json( data )
 
-	def save( self, path: Path, data: Union[Dict, str, bytes] ) -> None:
-		with open( file=path, mode='w+', buffering=8192, encoding='UTF-8' ) as p:
-			p.write( save_json( data, option=JSONHandler.options ).decode( 'UTF-8' ) )
-
-	def types( self ) -> List[str]:
-		return [ 'json' ]
+	def save_dict( self, data: Dict ) -> Union[str, bytes]:
+		return save_json( data, option=JSONHandler.options ).decode( 'UTF-8' )
 
 @dataclass
 class GPXActivity( Activity ):
@@ -53,33 +99,13 @@ class GPXActivity( Activity ):
 			self.duration = seconds_to_time( gpx.get_duration() ) if gpx.get_duration() else None
 			self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
 
-@handler( types=['gpx'] )
-@importer( types=['gpx'] )
-class GPXHandler( Handler, Importer ):
+@importer( type=GPX_TYPE )
+class GPXImporter( ResourceHandler ):
 
-	def load( self, path: Optional[Path] = None, data: Optional[Union[str, bytes]] = None ) -> Union[Dict, Any]:
-		data = self.load_raw( path ) if path else data
-		return parse_gpx( data ) if data else None
+	def load_data( self, data: Any, **kwargs ) -> Any:
+		return parse_gpx( data )
 
-	def save( self, path: Path, content: Union[Dict, Activity] ) -> None:
-		raise RuntimeError( 'not supported yet' )
-
-	def types( self ) -> List[str]:
-		return [ 'gpx' ]
-
-	def import_from( self, data: Any = None, path: Optional[Path] = None, **kwargs ) -> Activity:
-		activity = None
-		raw_data = kwargs.get( 'raw_data' )
-
-		if path:
-			raw_data = self.load_raw( path ) if not raw_data else raw_data
-			resources = [Resource( path=path.name, type=self.types()[0], raw_data=raw_data, source=path.as_uri(), status=100 )]
-			if not data:
-				data = self.load( data = raw_data )
-		else:
-			resources = []
-
-		if data:
-			activity = GPXActivity( raw=data, resources=resources )
-
+	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
+		resource = Resource( type=GPX_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
+		activity = GPXActivity( raw=structured_data, resources=[resource] )
 		return activity

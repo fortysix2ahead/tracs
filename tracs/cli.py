@@ -138,7 +138,7 @@ def fetch( restrict: str = None ):
 @cli.command( help='downloads activities' )
 @argument( 'filters', nargs=-1 )
 @pass_context
-def download( ctx, filters, all_ ):
+def download( ctx, filters ):
 	download_activities( ctx.obj.db.find( filters or [] ), force=ctx.obj.force, pretend=ctx.obj.pretend )
 
 @cli.command( help='creates links for downloaded resources of activities' )

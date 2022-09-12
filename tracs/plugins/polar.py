@@ -8,6 +8,7 @@ from typing import Iterable
 from typing import Mapping
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from requests import Session
 from sys import exit as sysexit
@@ -199,6 +200,16 @@ class Polar( Service, Plugin ):
 	def all_events_url( self ):
 		return f'{self._events_url}?start=1.1.1970&end=1.1.{datetime.utcnow().year + 1}'
 
+	def url_for( self, id: Union[int,str], type: str ):
+		if type == POLAR_CSV_TYPE:
+			return f'{self._export_url}/csv/{id}'
+		elif type == GPX_TYPE:
+			return f'{self._export_url}/gpx/{id}'
+		elif type == TCX_TYPE:
+			return f'{self._export_url}/tcx/{id}'
+		elif type == POLAR_HRV_TYPE:
+			return f'{self._export_url}/rr/csv/{id}'
+
 	def export_url_for( self, id: int, ext: str ) -> str:
 		return f'{self._export_url}/rr/csv/{id}' if ext == 'hrv' else f'{self._export_url}/{ext}/{id}'
 
@@ -255,20 +266,23 @@ class Polar( Service, Plugin ):
 		uid = f'{self.name}:{raw_id}'
 		json_str = dump_json( json, option=ORJSON_OPTIONS )
 		resources = [
-			Resource( type=POLAR_FLOW_TYPE, path=f"{raw_id}.raw.json", status=200, uid=uid, raw_data=json_str ),
-			Resource( type=POLAR_CSV_TYPE, path=f'{raw_id}.csv', status=100, uid=uid ),
-			Resource( type=GPX_TYPE, path=f'{raw_id}.gpx', status=100, uid=uid ),
-			Resource( type=TCX_TYPE, path=f'{raw_id}.tcx', status=100, uid=uid ),
-			Resource( type=POLAR_HRV_TYPE, path=f'{raw_id}.hrv.csv', status=100, uid=uid )
+			Resource( type=POLAR_FLOW_TYPE, path=f"{raw_id}.raw.json", status=200, uid=uid, raw_data=json_str, source=self.activity_url( raw_id ) ),
+			Resource( type=POLAR_CSV_TYPE, path=f'{raw_id}.csv', status=100, uid=uid, source=self.url_for( raw_id, POLAR_CSV_TYPE ) ),
+			Resource( type=GPX_TYPE, path=f'{raw_id}.gpx', status=100, uid=uid, source=self.url_for( raw_id, GPX_TYPE ) ),
+			Resource( type=TCX_TYPE, path=f'{raw_id}.tcx', status=100, uid=uid, source=self.url_for( raw_id, TCX_TYPE ) ),
+			Resource( type=POLAR_HRV_TYPE, path=f'{raw_id}.hrv.csv', status=100, uid=uid, source=self.url_for( raw_id, POLAR_HRV_TYPE ) )
 		]
 		return PolarActivity( raw=json, resources=resources )
 
 	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
-		url = self.export_url_for( int( resource.uid.split( ':', maxsplit=1 )[1] ), resource.type )
-		log.debug( f'attempting download from {url}' )
-
-		response = self._session.get( url, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )
-		return response.content, response.status_code
+		url = self.url_for( resource.raw_id(), resource.type )
+		if url:
+			log.debug( f'downloading resource from {url}' )
+			response = self._session.get( url, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )
+			return response.content, response.status_code
+		else:
+			log.warning( f'unable to determine download url for resource {resource}' )
+			return None, 500
 
 	def _download_multipart_file( self, pa: Activity, ext: str ) -> None:
 		if not (url := pa.export_file_url( ext )):  # skip download for csv files

@@ -214,17 +214,17 @@ def rename( ctx, filters ):
 def reimport( ctx, filters, include_recordings: bool = False ):
 	reimport_activities( ctx.obj, list( ctx.obj.db.find( filters ) ), include_recordings=include_recordings, force=ctx.obj.force )
 
-@cli.command( help='opens activities in an external application' )
+@cli.command( 'open', help='opens activities in an external application' )
 @argument( 'filters', nargs=-1 )
 @pass_context
-def open( ctx, filters ):
+def open_cmd( ctx, filters ):
 	open_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.db )
 
 @cli.command( 'import', hidden=True, help='imports activities' )
 @option( '-i', '--importer', required=False )
 @argument( 'sources', nargs=-1 )
 @pass_context
-def import_from( ctx, sources, importer = 'auto' ):
+def import_cmd( ctx, sources, importer = 'auto' ):
 	import_activities( ctx, sources, importer )
 
 @cli.command( help='export activities' )
@@ -247,6 +247,26 @@ def export( fmt: str, output: str, filters ):
 		export_kml( activities, output )
 	elif fmt == 'shp':
 		export_shp( activities, output )
+
+@cli.command( 'set', hidden=True, help='sets field values manually' )
+@argument( 'filters', nargs=-1 )
+def set_cmd( filters ):
+	pass
+
+@cli.command( hidden=True, help='unsets field values' )
+@argument( 'filters', nargs=-1 )
+def unset( filters ):
+	pass
+
+@cli.command( hidden=True, help='Tags activities' )
+@argument( 'filters', nargs=-1 )
+def tag( filters ):
+	pass
+
+@cli.command( hidden=True, help='Removes tags from activities' )
+@argument( 'filters', nargs=-1 )
+def untag( filters ):
+	pass
 
 @cli.command( help='application setup' )
 def setup():

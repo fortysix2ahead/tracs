@@ -221,9 +221,9 @@ def open_cmd( ctx, filters ):
 	open_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.db )
 
 @cli.command( 'import', hidden=True, help='imports activities' )
-@option( '-a', '--as-one', required=False, help='multiple resources will be imported as one single activity (dangerous!)' )
+@option( '-a', '--as-one', required=False, is_flag=True, help='multiple resources will be imported as one single activity (dangerous!)' )
 @option( '-i', '--importer', required=False, help='importer to use (default is auto)' )
-@option( '-m', '--move', required=False, help='move resources (dangerous, input files will be removed)' )
+@option( '-m', '--move', required=False, is_flag=True, help='move resources (dangerous, input files will be removed)' )
 @argument( 'sources', nargs=-1 )
 @pass_context
 def import_cmd( ctx, sources, importer = 'auto', as_one: bool = False, move: bool = False ):

@@ -6,7 +6,9 @@ from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE
 from tracs.plugins.bikecitizens import BikecitizensActivity
 from tracs.plugins.handlers import GPXActivity
 from tracs.plugins.handlers import XML_TYPE
+from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE
 from tracs.plugins.polar import PolarActivity
+from tracs.plugins.polar import PolarExerciseDataActivity
 from tracs.plugins.strava import STRAVA_TYPE
 from tracs.plugins.strava import StravaActivity
 from tracs.plugins.waze import WAZE_TYPE
@@ -45,11 +47,18 @@ def test_gpx_importer():
 def test_polar_importer():
 	path = get_file_path( 'libraries/default/polar/1/0/0/100001/100001.raw.json' )
 	importer = Registry.importer_for( 'application/json+polar' )
-
 	assert importer.types == ['application/json+polar']
 
 	activity = importer.load( path=path )
 	assert type( activity ) is PolarActivity and activity.uid == 'polar:100001'
+
+def test_polar_ped_importer():
+	path = get_file_path( 'templates/polar/personal_trainer/20160904.xml' )
+	importer = Registry.importer_for( POLAR_EXERCISE_DATA_TYPE )
+	assert importer.types == [POLAR_EXERCISE_DATA_TYPE]
+
+	activity = importer.load( path=path )
+	assert type( activity ) is PolarExerciseDataActivity and activity.uid == 'polar:160904124614'
 
 def test_strava_importer():
 	path = get_file_path( 'libraries/default/strava/2/0/0/200002/200002.raw.json' )

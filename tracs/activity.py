@@ -54,6 +54,11 @@ class Resource( BaseDocument ):
 		return classifier, raw_id
 
 @dataclass
+class ResourceGroup:
+
+	resources: List[Resource] = field( default_factory=list )
+
+@dataclass
 class ActivityRef:
 
 	id: str = field( default=None )

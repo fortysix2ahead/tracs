@@ -1,6 +1,7 @@
 
 from logging import getLogger
 from pathlib import Path
+from re import compile
 from typing import Any
 from typing import Iterable
 from typing import Tuple
@@ -34,19 +35,37 @@ class Local( Service, Plugin ):
 		return True
 
 	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
+		activities = []
 		if path := kwargs.get( 'path' ):
 			if path.is_file():
-				return [self.import_from_file( path )]
+				activities = [ self.import_from_file( path ) ]
 			elif path.is_dir():
-				pass
+				activities = [ self.import_from_file( f ) for f in path.iterdir() ]
 
-		return []
+		if kwargs.get( 'as_one', False ) and len( activities ) > 1:
+			activity = Activity()
+			for a in activities:
+				activity.init_from( other=a )
+				activity.resources.extend( a.resources )
+			activities = [activity]
 
-	def import_from_file( self, path: Path ):
-		if importer := Registry.importer_for( path.suffix[1:] ):
-			return self._prototype( importer.import_from( path=path ) )
-		else:
-			return None
+		if kwargs.get( 'move', False ):
+			pass # todo: implement move
+
+		return activities
+
+	# noinspection PyMethodMayBeStatic
+	def import_from_file( self, path: Path ) -> Any:
+		importers = Registry.importers_for_suffix( path.suffix[1:] )
+		imported_data = None
+		for i in importers:
+			try:
+				imported_data = i.load( path=path )
+				break
+			except AttributeError:
+				imported_data = None
+
+		return imported_data
 
 	# noinspection PyMethodMayBeStatic
 	def _prototype( self, activity ) -> Activity:

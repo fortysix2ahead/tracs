@@ -7,6 +7,7 @@ from inspect import isclass
 from importlib import import_module
 from logging import getLogger
 from pkgutil import walk_packages
+from re import match
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -63,8 +64,20 @@ class Registry:
 		return importer_list[0] if len( importer_list ) > 0 else None
 
 	@classmethod
-	def importers_for( cls, type: str ):
+	def importers_for( cls, type: str ) -> List[Importer]:
 		return Registry.importers.get( type ) or []
+
+	@classmethod
+	def importers_for_suffix( cls, suffix: str ) -> List[Importer]:
+		importers = []
+		for key, value in Registry.importers.items():
+			if m := match( f'^(\w+)/{suffix}(\+([\w-]+))?$', key ) or match( f'^(\w+)/(\w+)\+{suffix}$', key ):
+				# g1, g2, g3 = m.groups()
+				if '+' in key:
+					importers = value + importers
+				else:
+					importers.extend( value )
+		return importers
 
 	@classmethod
 	def register_importer( cls, importer: Importer, type: str ):

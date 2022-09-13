@@ -10,6 +10,7 @@ from typing import Union
 from dateutil.tz import UTC
 from gpxpy import parse as parse_gpx
 from gpxpy.gpx import GPX
+from lxml.etree import parse as parse_xml
 from orjson import loads as load_json
 from orjson import dumps as save_json
 from orjson import OPT_APPEND_NEWLINE
@@ -22,6 +23,7 @@ from ..activity import Resource
 from ..utils import seconds_to_time
 
 JSON_TYPE = 'application/json'
+XML_TYPE = 'application/xml'
 GPX_TYPE = 'application/xml+gpx'
 TCX_TYPE = 'application/xml+tcx'
 
@@ -48,7 +50,7 @@ class ResourceHandler:
 		return _data
 
 	def load_data( self, data: Any, **kwargs ) -> Any:
-		pass
+		return data
 
 	# noinspection PyMethodMayBeStatic
 	def load_path( self, path: Path, **kwargs ) -> Optional[Union[str, bytes]]:
@@ -85,6 +87,12 @@ class JSONHandler( ResourceHandler ):
 
 	def save_dict( self, data: Dict ) -> Union[str, bytes]:
 		return save_json( data, option=JSONHandler.options ).decode( 'UTF-8' )
+
+@importer( type=XML_TYPE )
+class XMLHandler( ResourceHandler ):
+
+	def load_path( self, path: Path, **kwargs ) -> Optional[Union[str, bytes]]:
+		return parse_xml( path )
 
 @dataclass
 class GPXActivity( Activity ):

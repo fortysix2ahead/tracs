@@ -5,6 +5,8 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
+from typing import Type
 from typing import Union
 
 from dateutil.tz import UTC
@@ -62,7 +64,16 @@ class ResourceHandler:
 
 	# noinspection PyMethodMayBeStatic
 	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
-		return structured_data
+		activity_cls, content_type = self._activity_cls_type()
+		if activity_cls and content_type:
+			resource = Resource( type=content_type, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
+			activity = activity_cls( raw=structured_data, resources=[resource] )
+			return activity
+		else:
+			return structured_data
+
+	def _activity_cls_type( self ) -> Tuple[Optional[Type], Optional[str]]:
+		return None, None
 
 	def save( self, data: Union[Dict, str, bytes], path: Optional[Path] = None, url: Optional[str] = None ) -> None:
 		with open( file=path, mode='w+', buffering=8192, encoding='UTF-8' ) as p:

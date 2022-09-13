@@ -8,6 +8,7 @@ from typing import Iterable
 from typing import Mapping
 from typing import Optional
 from typing import Tuple
+from typing import Type
 from typing import Union
 
 from requests import Session
@@ -31,6 +32,7 @@ from .handlers import JSON_TYPE
 from .handlers import TCX_TYPE
 from .handlers import JSONHandler
 from .handlers import ResourceHandler
+from .handlers import XML_TYPE
 from .plugin import Plugin
 from ..activity import Activity
 from ..activity import Resource
@@ -55,6 +57,8 @@ ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
 POLAR_CSV_TYPE = 'text/csv+polar'
 POLAR_HRV_TYPE = 'text/csv+polar-hrv'
 POLAR_FLOW_TYPE = 'application/json+polar'
+POLAR_EXERCISE_DATA_TYPE = 'application/xml+polar-ped'
+PED_NS = 'http://www.polarpersonaltrainer.com'
 
 BASE_URL = 'https://flow.polar.com'
 
@@ -139,6 +143,17 @@ class PolarActivity( Activity ):
 
 		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
 
+@document
+class PolarExerciseDataActivity( Activity ):
+	def __post_init__( self ):
+		super().__post_init__()
+
+		if self.raw:
+			self.classifier = 'polar'
+			self.time = datetime.strptime( self.raw.get( 'time' ), '%Y-%m-%d %H:%M:%S.%f' ).astimezone( UTC )  # 2016-09-15 16:50:27.0
+			self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
+			self.uid = f'{self.classifier}:{self.raw_id}'
+
 @importer( type=POLAR_FLOW_TYPE )
 class PolarImporter( ResourceHandler ):
 
@@ -151,6 +166,37 @@ class PolarImporter( ResourceHandler ):
 		resource = Resource( type=POLAR_FLOW_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
 		activity = PolarActivity( raw=structured_data, resources=[resource] )
 		return activity
+
+@importer( type=POLAR_EXERCISE_DATA_TYPE )
+class PersonalTrainerImporter( ResourceHandler ):
+
+	xml_handler = Registry.importer_for( XML_TYPE )
+
+	def load_path( self, path: Path, **kwargs ) -> Optional[Union[str, bytes]]:
+		return PersonalTrainerImporter.xml_handler.load( path=path, **kwargs )
+
+	def load_data( self, data: Any, **kwargs ) -> Any:
+		structured_data = {
+			'time': data.getroot().find( self._ns( 'calendar-items/exercise/time' ) ).text,
+			'type': data.getroot().find( self._ns( 'calendar-items/exercise/sport' ) ).text,
+			'result_type': data.getroot().find( self._ns( 'calendar-items/exercise/sport-results/sport-result/sport' ) ).text, # should be the same as type
+			'duration': data.getroot().find( self._ns( 'calendar-items/exercise/sport-results/sport-result/duration' ) ).text, # should be the same as type
+			'distance': data.getroot().find( self._ns( 'calendar-items/exercise/sport-results/sport-result/distance' ) ).text,
+			'calories': data.getroot().find( self._ns( 'calendar-items/exercise/sport-results/sport-result/calories' ) ).text,
+			'recording_rate': data.getroot().find( self._ns( 'calendar-items/exercise/sport-results/sport-result/recording-rate' ) ).text,
+		}
+		samples = data.getroot().findall( self._ns( 'calendar-items/exercise/sport-results/sport-result/samples/sample' ) )
+		for s in samples:
+			sample_type = s.find( self._ns( 'type' ) ).text
+			sample_values = s.find( self._ns( 'values' ) ).text
+			structured_data[('samples', sample_type)] = sample_values.split( ',' )
+		return structured_data
+
+	def _activity_cls_type( self ) -> Optional[Tuple[Type, str]]:
+		return PolarExerciseDataActivity, POLAR_EXERCISE_DATA_TYPE
+
+	def _ns( self, s: str ):
+		return f'{{{PED_NS}}}' + s.replace( '/', f'/{{{PED_NS}}}' )
 
 @service
 class Polar( Service, Plugin ):

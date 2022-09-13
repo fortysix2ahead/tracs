@@ -28,7 +28,6 @@ from .gpx import read_gpx
 from .plugins import Registry
 from .plugins.handlers import GPX_TYPE
 from .plugins.handlers import TCX_TYPE
-from .plugins.polar import PolarActivity
 from .service import Service
 from .ui import diff_table
 from .ui import InstantConfirm as Confirm
@@ -38,13 +37,13 @@ log = getLogger( __name__ )
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
 
-def import_activities( ctx: Optional[ApplicationContext], sources: List[str], importer: str ):
+def import_activities( ctx: Optional[ApplicationContext], sources: List[str], importer: str, as_one: bool = False, move: bool = False ):
 	for src in list( sources ):
 		path = Path( src )
 		if not path.is_absolute():
 			path = Path( getcwd(), src )
 
-		Registry.services.get( 'local' ).fetch( force=False, path=path )
+		Registry.services.get( 'local' ).fetch( force=False, path=path, importer=importer, as_one=as_one, move=move )
 
 def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 	if len( activities ) > 0:

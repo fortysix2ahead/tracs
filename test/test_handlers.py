@@ -5,6 +5,7 @@ from tracs.plugins import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE
 from tracs.plugins.bikecitizens import BikecitizensActivity
 from tracs.plugins.handlers import GPXActivity
+from tracs.plugins.handlers import XML_TYPE
 from tracs.plugins.polar import PolarActivity
 from tracs.plugins.strava import STRAVA_TYPE
 from tracs.plugins.strava import StravaActivity
@@ -19,6 +20,14 @@ def test_json_importer():
 
 	json = importer.load( path=path )
 	assert json is not None and len( json ) > 0
+
+def test_xml_importer():
+	path = get_file_path( 'templates/polar/empty.gpx' )
+	importer = Registry.importer_for( XML_TYPE )
+	assert importer.types == [XML_TYPE]
+
+	xml = importer.load( path=path )
+	assert xml is not None and xml.getroot() is not None
 
 def test_gpx_importer():
 	path = get_file_path( 'templates/gpx/mapbox.gpx' )

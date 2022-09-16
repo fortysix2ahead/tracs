@@ -37,6 +37,12 @@ class Registry:
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
 
+	@classmethod
+	def service_names( cls ) -> List[str]:
+		l = list( Registry.services.keys() )
+		l.remove( 'empty' )
+		return l
+
 	# handlers
 
 	@classmethod

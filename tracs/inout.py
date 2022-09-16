@@ -38,6 +38,9 @@ log = getLogger( __name__ )
 # also nice: https://github.com/luka1199/geo-heatmap
 
 def import_activities( ctx: Optional[ApplicationContext], sources: List[str], importer: str, as_one: bool = False, move: bool = False ):
+	# use all registered services if nothing is provided
+	sources = sources or Registry.service_names()
+
 	for src in list( sources ):
 		if src in Registry.services.keys():
 			log.info( f'importing from service {src}' )

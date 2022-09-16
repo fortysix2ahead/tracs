@@ -138,6 +138,9 @@ class BaseDocument( DataClass ):
 	id: int = field( default=0, metadata={ PERSIST: False, PROTECTED: True } )
 	"""id of the document, will not be persisted as it is calculated from doc_id"""
 
+	dirty: bool = field( default=False, repr=False, metadata={ PERSIST: False, PROTECTED: True } )
+	"""flag to indicate that the document contains changes to need to be persisted"""
+
 	def __post_init__( self ):
 		super().__post_init__()
 

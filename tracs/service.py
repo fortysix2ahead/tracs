@@ -301,6 +301,16 @@ class Service( ServiceProtocol ):
 				else:
 					self._ctx.db.insert_resource( r )
 
+		if activity.dirty and not pretend:
+			a_db = self._ctx.db.get( uid=activity.uid )
+			if a_db:  # todo: check if we can use db.upsert here
+				# self._ctx.db.update( activity ) # todo: what to do here?
+				pass
+			else:
+				new_activity = Activity().init_from( activity )
+				new_activity.uids = [activity.uid]
+				self._ctx.db.insert( new_activity )
+
 	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ):
 		self._ctx = kwargs.get( 'ctx', None )
 
@@ -310,30 +320,31 @@ class Service( ServiceProtocol ):
 			return
 
 		# fetch and check what is new/updated
-		# fetched = self._fetch( force=force, **kwargs )
 		fetched = self._fetch( force=force, **kwargs )
-		add, update, remove = self._filter_fetched( fetched, force )
+		added, updated, removed = self._filter_fetched( fetched, force )
 
-		for a in add:
+		for a in added:
 			self.download_activity( activity=a, force=force, pretend=pretend, **kwargs )
 			self.persist_activity( activity=a, force=force, pretend=pretend, **kwargs )
 			self.upsert_activity( activity=a, force=force, pretend=pretend, **kwargs )
 
 	def _filter_fetched( self, fetched: Iterable[Activity], force: bool ) -> Tuple[List, List, List]:
-		existing = list( gc.db.find_by_classifier( self.name ) )
+		existing = list( self._ctx.db.find_by_classifier( self.name ) )
 		# old_new = [ ( next( ( e for e in existing if f.uid in e.uids ), None ), f ) for f in fetched ]
 
-		to_add, to_update, to_remove = [], [], []
+		added, updated, removed = [], [], []
 
 		for f in fetched:
 			exists = next( (e for e in existing if f.uid in e.uids), None )
 			if exists:
 				if force:
-					to_update.append( ( f, exists ) )
+					updated.append( ( f, exists ) )
+					f.dirty = True
 			else:
-				to_add.append( f )
+				added.append( f )
+				f.dirty = True
 
-		return to_add, to_update, to_remove
+		return added, updated, removed
 
 	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
 		if resource.type in ['gpx', 'tcx'] and resource.status == 200: # todo: make linkable resources configurable

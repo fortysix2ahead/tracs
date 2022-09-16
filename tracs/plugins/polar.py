@@ -304,15 +304,15 @@ class Polar( Service, Plugin ):
 	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
 		events_url = self.all_events_url()
 		response = self._session.get( events_url, headers=HEADERS_API)
-		return [ self._prototype( json ) for json in response.json() ]
+		return [ self._prototype( response.content, json ) for json in response.json() ]
 
 	# noinspection PyMethodMayBeStatic
-	def _prototype( self, json ) -> PolarActivity:
+	def _prototype( self, content, json ) -> PolarActivity:
 		raw_id = _raw_id( json )
 		uid = f'{self.name}:{raw_id}'
-		json_str = dump_json( json, option=ORJSON_OPTIONS )
+		# json_str = dump_json( json, option=ORJSON_OPTIONS )
 		resources = [
-			Resource( type=POLAR_FLOW_TYPE, path=f"{raw_id}.raw.json", status=200, uid=uid, raw_data=json_str, source=self.activity_url( raw_id ) ),
+			Resource( type=POLAR_FLOW_TYPE, path=f"{raw_id}.raw.json", status=200, uid=uid, raw=json, raw_data=content, source=self.activity_url( raw_id ) ),
 			Resource( type=POLAR_CSV_TYPE, path=f'{raw_id}.csv', status=100, uid=uid, source=self.url_for( raw_id, POLAR_CSV_TYPE ) ),
 			Resource( type=GPX_TYPE, path=f'{raw_id}.gpx', status=100, uid=uid, source=self.url_for( raw_id, GPX_TYPE ) ),
 			Resource( type=TCX_TYPE, path=f'{raw_id}.tcx', status=100, uid=uid, source=self.url_for( raw_id, TCX_TYPE ) ),
@@ -320,7 +320,7 @@ class Polar( Service, Plugin ):
 		]
 		return PolarActivity( raw=json, resources=resources )
 
-	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
+	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		url = self.url_for( resource.raw_id(), resource.type )
 		if url:
 			log.debug( f'downloading resource from {url}' )

@@ -16,7 +16,8 @@ from dateutil.tz import UTC
 
 from .activity import Activity
 from .activity import Resource
-from .base import Service as AbstractServiceClass
+from .base import Service as ServiceProtocol
+from .config import ApplicationContext
 from .config import GlobalConfig as gc
 from .config import KEY_LAST_DOWNLOAD
 from .config import KEY_LAST_FETCH
@@ -29,7 +30,7 @@ log = getLogger( __name__ )
 
 # ---- base class for a service ----
 
-class Service( AbstractServiceClass ):
+class Service( ServiceProtocol ):
 
 	def __init__( self, **kwargs ):
 		self._name = kwargs.pop( 'name' ) if 'name' in kwargs else None
@@ -38,6 +39,9 @@ class Service( AbstractServiceClass ):
 		self._cfg = kwargs.pop( 'config' ) if 'config' in kwargs else gc.cfg
 		self._state = kwargs.pop( 'state' ) if 'state' in kwargs else gc.state
 		self._logged_in = False
+
+		# field for saving the current context, to access the context from sub-methods
+		self._ctx: Optional[ApplicationContext] = None
 
 		log.debug( f'service instance {self._name} created, with base path {self._base_path}' )
 
@@ -206,7 +210,7 @@ class Service( AbstractServiceClass ):
 		"""
 		pass
 
-	def download( self, resource: Resource = None, force: bool = False, pretend: bool = False ) -> None:
+	def download( self, activity: Optional[Activity], resource: Optional[Resource], force: bool, pretend: bool, **kwargs ) -> None:
 		if not self.login():
 			log.error( f"unable to login to service {self.display_name}, exiting ..." )
 			sysexit( -1 )
@@ -253,9 +257,83 @@ class Service( AbstractServiceClass ):
 		# update last_download in state
 		gc.state[KEY_PLUGINS][self.name][KEY_LAST_DOWNLOAD] = datetime.utcnow().astimezone( UTC ).isoformat()
 
+	def download_activity( self, activity: Activity, force: bool, pretend: bool, **kwargs ):
+		if not self.login():
+			log.error( f"unable to login to service {self.display_name}, exiting ..." )
+			return
+
+		for r in activity.resources:
+			# only download if data is not yet already there or file on local disk does not exist
+			if ( r.raw or r.raw_data or r.status == 200 or self.path_for_resource( r ).exists() ) and not force:
+				log.debug( f'skipping download of resource {r} as raw data or file is already present' )
+				continue
+
+			r.raw_data, r.status = self.download_resource( r )
+
 	@abstractmethod
-	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
+	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		pass
+
+	def persist_activity( self, activity: Activity, force: bool, pretend: bool, **kwargs ) -> None:
+		for r in activity.resources:
+			path = self.path_for_resource( r )
+			path.parent.mkdir( parents=True, exist_ok=True )
+			if r.raw_data and r.status == 200:
+				if not path.exists() or force:
+					if not pretend:
+						try:
+							if type( r.raw_data ) is bytes:
+								path.write_bytes( r.raw_data )
+							elif type( r.raw_data ) is str:
+								path.write_text( data=r.raw_data, encoding='UTF-8' )
+							r.dirty = True
+						except:
+							log.error( f'skipping write of resource data for resource {r.path}' )
+					else:
+						log.info( f'[pretend] writing resource data to {path}' )
+
+	def upsert_activity( self, activity: Activity, force: bool, pretend: bool, **kwargs ) -> None:
+		for r in activity.resources:
+			if r.dirty and not pretend:
+				r_db = self._ctx.db.find_resource( r.uid, r.path )
+				if r_db: # todo: check if we can use db.upsert here
+					self._ctx.db.update_resource( r )
+				else:
+					self._ctx.db.insert_resource( r )
+
+	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ):
+		self._ctx = kwargs.get( 'ctx', None )
+
+		# if necessary try to login or reuse an existing session
+		if not self.login():
+			log.error( f"unable to login to service {self.display_name}, exiting ..." )
+			return
+
+		# fetch and check what is new/updated
+		# fetched = self._fetch( force=force, **kwargs )
+		fetched = self._fetch( force=force, **kwargs )
+		add, update, remove = self._filter_fetched( fetched, force )
+
+		for a in add:
+			self.download_activity( activity=a, force=force, pretend=pretend, **kwargs )
+			self.persist_activity( activity=a, force=force, pretend=pretend, **kwargs )
+			self.upsert_activity( activity=a, force=force, pretend=pretend, **kwargs )
+
+	def _filter_fetched( self, fetched: Iterable[Activity], force: bool ) -> Tuple[List, List, List]:
+		existing = list( gc.db.find_by_classifier( self.name ) )
+		# old_new = [ ( next( ( e for e in existing if f.uid in e.uids ), None ), f ) for f in fetched ]
+
+		to_add, to_update, to_remove = [], [], []
+
+		for f in fetched:
+			exists = next( (e for e in existing if f.uid in e.uids), None )
+			if exists:
+				if force:
+					to_update.append( ( f, exists ) )
+			else:
+				to_add.append( f )
+
+		return to_add, to_update, to_remove
 
 	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
 		if resource.type in ['gpx', 'tcx'] and resource.status == 200: # todo: make linkable resources configurable

@@ -42,7 +42,6 @@ class Resource( BaseDocument ):
 
 	raw: Any = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # structured raw data making up this resource
 	raw_data: Union[str, bytes] = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # serialized version of raw, can be str or bytes
-	dirty: bool = field( default=False, repr=False, metadata={ PERSIST: False, PROTECTED: True } ) # flag to indicate that this resource needs to be persisted
 
 	def classifier( self ):
 		return self._uid()[0]

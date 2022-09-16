@@ -227,7 +227,7 @@ def open_cmd( ctx, filters ):
 @argument( 'sources', nargs=-1 )
 @pass_context
 def import_cmd( ctx, sources, importer = 'auto', as_one: bool = False, move: bool = False ):
-	import_activities( ctx, sources, importer, as_one, move )
+	import_activities( ctx.obj, sources, importer, as_one, move )
 
 @cli.command( help='export activities' )
 @option( '-f', '--format', 'fmt', required=True, type=Choice( ['csv', 'geojson', 'gpx', 'kml', 'shp'], case_sensitive=False ), metavar='FORMAT' )

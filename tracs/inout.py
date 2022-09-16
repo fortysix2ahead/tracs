@@ -3,11 +3,11 @@ from logging import getLogger
 
 from copy import deepcopy
 from csv import writer as csv_writer
-from os import getcwd
 from os import system
 from typing import Iterable
 from typing import List
 from typing import Optional
+from urllib.parse import urlparse as parse_url
 
 from geojson import dump as dump_geojson
 from geojson import Feature
@@ -39,11 +39,18 @@ log = getLogger( __name__ )
 
 def import_activities( ctx: Optional[ApplicationContext], sources: List[str], importer: str, as_one: bool = False, move: bool = False ):
 	for src in list( sources ):
-		path = Path( src )
-		if not path.is_absolute():
-			path = Path( getcwd(), src )
+		if src in Registry.services.keys():
+			log.info( f'importing from service {src}' )
+			Registry.services.get( src ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend )
 
-		Registry.services.get( 'local' ).fetch( force=False, path=path, importer=importer, as_one=as_one, move=move )
+		elif ( path := Path( src ).absolute() ) and path.exists():
+			Registry.services.get( 'local' ).fetch( force=False, path=path, importer=importer, as_one=as_one, move=move )
+
+		elif url := parse_url( src ):
+			pass
+
+		else:
+			log.error( f'unable to import from {src}' )
 
 def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 	if len( activities ) > 0:

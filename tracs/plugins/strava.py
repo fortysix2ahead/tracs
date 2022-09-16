@@ -274,23 +274,22 @@ class Strava( Service, Plugin ):
 		for page in range( 1, 999999 ):
 			response = self._oauth_session.get( self.all_events_url( page) )
 			for json in response.json():
-				fetched.append( self._prototype( json ) )
+				fetched.append( self._prototype( dump_json( json, option=ORJSON_OPTIONS ), json ) )
 			if len( response.json() ) == 0:
 				break
 		return fetched
 
 	# noinspection PyMethodMayBeStatic
-	def _prototype( self, json ) -> StravaActivity:
-		json_str = dump_json( json, option=ORJSON_OPTIONS )
+	def _prototype( self, content, json ) -> StravaActivity:
 		uid = f'{self.name}:{json["id"]}'
 		resources = [
-			Resource( type=STRAVA_TYPE, path=f"{json['id']}.raw.json", status=200, uid=uid, raw_data=json_str, source=self.url_activity( json['id'] ) ),
+			Resource( type=STRAVA_TYPE, path=f"{json['id']}.raw.json", status=100, uid=uid, raw=json, raw_data=content, source=self.url_activity( json['id'] ) ),
 			Resource( type=GPX_TYPE, path=f"{json['id']}.gpx", status=100, uid=uid, source=self.url_for( json['id'], GPX_TYPE ) ),
 			Resource( type=TCX_TYPE, path=f"{json['id']}.tcx", status=100, uid=uid, source=self.url_for( json['id'], TCX_TYPE ) )
 		]
 		return StravaActivity( raw=json, resources=resources )
 
-	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
+	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		url = self.url_for( resource.raw_id(), resource.type )
 		if url:
 			log.debug( f'downloading resource from {url}' )

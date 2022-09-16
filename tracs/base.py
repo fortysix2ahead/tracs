@@ -86,14 +86,19 @@ class Activity( ABC, dict ):
 	def resources( self ) -> List[Resource]:
 		pass
 
-class Service( ABC ):
+class Service( Protocol ):
 	"""
-	Abstract base class for a service being able to consume activities from external sources.
+	Protocol for a service being able to fetch activities/resource from (remote) sources.
 	"""
 
 	@property
 	@abstractmethod
 	def base_path( self ) -> Path:
+		"""
+		Local base path where data for this service is persisted.
+
+		:return: base path in the local file system
+		"""
 		pass
 
 	@abstractmethod
@@ -129,15 +134,19 @@ class Service( ABC ):
 		pass
 
 	@abstractmethod
-	def fetch( self, force: bool, **kwargs ) -> [Activity]:
+	def fetch( self, force: bool, **kwargs ) -> Union[List[Activity], List[Resource]]:
 		pass
 
 	@abstractmethod
-	def download( self, activity: Activity, force: bool, pretend: bool ) -> None:
+	def download( self, activity: Optional[Activity], resource: Optional[Resource], force: bool, pretend: bool, **kwargs ) -> None:
 		pass
 
 	@abstractmethod
-	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
+	def import_activities( self, force: bool, pretend: bool, **kwargs ):
+		pass
+
+	@abstractmethod
+	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool, **kwargs ) -> None:
 		pass
 
 	@abstractmethod
@@ -214,8 +223,8 @@ class Importer( Protocol ):
 		"""
 		pass
 
-	@abstractmethod
 	@property
+	@abstractmethod
 	def types( self ) -> List[str]:
 		"""
 		List of content types this importer supports.
@@ -224,8 +233,8 @@ class Importer( Protocol ):
 		"""
 		pass
 
-	@abstractmethod
 	@property
+	@abstractmethod
 	def activity_cls( self ) -> Type[Activity]:
 		pass
 

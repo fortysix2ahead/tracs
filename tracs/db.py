@@ -197,6 +197,9 @@ class ActivityDb:
 
 		return doc_ids if len( doc_ids ) > 1 else doc_ids[0]
 
+	def insert_resource( self, r: Resource ) -> int:
+		return self.resources.insert( r )
+
 	def update( self, a: Activity ) -> None:
 		self.activities.update( dict( a ), doc_ids=[a.doc_id] )
 
@@ -275,11 +278,17 @@ class ActivityDb:
 		_all = self.filter( _all, [Query().time.exists()] )
 		return max( _all, key=lambda x: x.get( 'time' ) ) if len( _all ) > 0 else None
 
+	def find_resource( self, uid: str, path: str = None ) -> Optional[Activity]:
+		return self.resources.get( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )
+
 	def find_resources( self, uid: str, path: str = None ) -> List:
 		if path:
 			return self.resources.search( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )
 		else:
 			return self.resources.search( Query()['uid'] == uid )
+
+	def contains_resource( self, uid: str, path: str ) -> bool:
+		return self.resources.contains( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )
 
 	# noinspection PyMethodMayBeStatic
 	def filter( self, activities: [Activity], queries: [Query] ) -> [Activity]:

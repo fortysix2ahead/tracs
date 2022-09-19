@@ -7,6 +7,7 @@ from logging import StreamHandler
 from logging import getLogger
 from pathlib import Path
 from sys import stderr
+from typing import List
 
 from click import argument
 from click import echo
@@ -129,11 +130,16 @@ def sync( all_: bool = False, restrict: str = None ):
 			s.link( activities )
 
 @cli.command( help='fetches activity ids' )
-@option( '-r', '--restrict', is_flag=False, required=False, help='restricts fetching to only one source', metavar='SERVICE' )
-def fetch( restrict: str = None ):
-	for name, service in Registry.services.items():
-		if restrict is None or restrict == name:
-			service.fetch( cfg['force'].get( bool ) )
+@argument( 'sources', nargs=-1 )
+@pass_context
+def fetch( ctx, sources: List[str] ):
+	# fetch from all sources if no sources are provided
+	sources = sources or Registry.service_names()
+	for s in sources:
+		if s in Registry.service_names():
+			Registry.services.get( s ).fetch( force=ctx.obj.force, pretend=ctx.obj.pretend )
+		else:
+			log.error( f'unable to fetch from service {s}: no such service' )
 
 @cli.command( help='downloads activities' )
 @argument( 'filters', nargs=-1 )

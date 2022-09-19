@@ -283,7 +283,7 @@ class Strava( Service, Plugin ):
 	def _prototype( self, content, json ) -> StravaActivity:
 		uid = f'{self.name}:{json["id"]}'
 		resources = [
-			Resource( type=STRAVA_TYPE, path=f"{json['id']}.raw.json", status=100, uid=uid, raw=json, raw_data=content, source=self.url_activity( json['id'] ) ),
+			Resource( type=STRAVA_TYPE, path=f"{json['id']}.raw.json", status=200, uid=uid, raw=json, raw_data=content, source=self.url_activity( json['id'] ) ),
 			Resource( type=GPX_TYPE, path=f"{json['id']}.gpx", status=100, uid=uid, source=self.url_for( json['id'], GPX_TYPE ) ),
 			Resource( type=TCX_TYPE, path=f"{json['id']}.tcx", status=100, uid=uid, source=self.url_for( json['id'], TCX_TYPE ) )
 		]

@@ -129,6 +129,16 @@ def sync( all_: bool = False, restrict: str = None ):
 			s.download( activities )
 			s.link( activities )
 
+@cli.command( 'import', hidden=True, help='imports activities' )
+@option( '-a', '--as-one', required=False, is_flag=True, help='multiple resources will be imported as one single activity (dangerous!)' )
+@option( '-d', '--skip-download', required=False, is_flag=True, help='skips download of activities' )
+@option( '-i', '--importer', required=False, help='importer to use (default is auto)' )
+@option( '-m', '--move', required=False, is_flag=True, help='move resources (dangerous, input files will be removed)' )
+@argument( 'sources', nargs=-1 )
+@pass_context
+def import_cmd( ctx, sources, skip_download: bool = False, importer = 'auto', as_one: bool = False, move: bool = False ):
+	import_activities( ctx.obj, sources=sources, skip_download=skip_download, importer=importer, as_one=as_one, move=move )
+
 @cli.command( help='fetches activity ids' )
 @argument( 'sources', nargs=-1 )
 @pass_context
@@ -137,7 +147,8 @@ def fetch( ctx, sources: List[str] ):
 	sources = sources or Registry.service_names()
 	for s in sources:
 		if s in Registry.service_names():
-			Registry.services.get( s ).fetch( force=ctx.obj.force, pretend=ctx.obj.pretend )
+			service = Registry.services.get( s )
+			service.import_activities( ctx=ctx.obj, force=ctx.obj.force, pretend=ctx.obj.pretend, skip_download=True )
 		else:
 			log.error( f'unable to fetch from service {s}: no such service' )
 
@@ -225,15 +236,6 @@ def reimport( ctx, filters, include_recordings: bool = False ):
 @pass_context
 def open_cmd( ctx, filters ):
 	open_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.db )
-
-@cli.command( 'import', hidden=True, help='imports activities' )
-@option( '-a', '--as-one', required=False, is_flag=True, help='multiple resources will be imported as one single activity (dangerous!)' )
-@option( '-i', '--importer', required=False, help='importer to use (default is auto)' )
-@option( '-m', '--move', required=False, is_flag=True, help='move resources (dangerous, input files will be removed)' )
-@argument( 'sources', nargs=-1 )
-@pass_context
-def import_cmd( ctx, sources, importer = 'auto', as_one: bool = False, move: bool = False ):
-	import_activities( ctx.obj, sources, importer, as_one, move )
 
 @cli.command( help='export activities' )
 @option( '-f', '--format', 'fmt', required=True, type=Choice( ['csv', 'geojson', 'gpx', 'kml', 'shp'], case_sensitive=False ), metavar='FORMAT' )

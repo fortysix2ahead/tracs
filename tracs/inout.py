@@ -37,17 +37,18 @@ log = getLogger( __name__ )
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
 
-def import_activities( ctx: Optional[ApplicationContext], sources: List[str], importer: str, as_one: bool = False, move: bool = False ):
+#def import_activities( ctx: Optional[ApplicationContext], sources: List[str], importer: str, as_one: bool = False, move: bool = False, **kwargs ):
+def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **kwargs ):
 	# use all registered services if nothing is provided
 	sources = sources or Registry.service_names()
 
 	for src in list( sources ):
 		if src in Registry.services.keys():
 			log.info( f'importing from service {src}' )
-			Registry.services.get( src ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend )
+			Registry.services.get( src ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
 
 		elif ( path := Path( src ).absolute() ) and path.exists():
-			Registry.services.get( 'local' ).fetch( force=False, path=path, importer=importer, as_one=as_one, move=move )
+			Registry.services.get( 'local' ).fetch( force=ctx.force, pretend=ctx.pretend, path=path )
 
 		elif url := parse_url( src ):
 			pass

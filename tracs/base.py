@@ -134,7 +134,7 @@ class Service( Protocol ):
 		pass
 
 	@abstractmethod
-	def fetch( self, force: bool, **kwargs ) -> Union[List[Activity], List[Resource]]:
+	def fetch( self, force: bool, pretend: bool, **kwargs ) -> Union[List[Activity], List[Resource]]:
 		pass
 
 	@abstractmethod

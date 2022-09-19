@@ -302,9 +302,18 @@ class Polar( Service, Plugin ):
 		return self._logged_in
 
 	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
+		activities = []
 		events_url = self.all_events_url()
-		response = self._session.get( events_url, headers=HEADERS_API)
-		return [ self._prototype( response.content, json ) for json in response.json() ]
+		response = self._session.get( events_url, headers=HEADERS_API )
+
+		if uid := kwargs.get( 'uid' ):
+			for json in response.json():
+				if f'{self.name}:{_raw_id( json )}' == uid:
+					activities.append( self._prototype( response.content, json ) )
+		else:
+			activities.extend( [ self._prototype( response.content, json ) for json in response.json() ] )
+
+		return activities
 
 	# noinspection PyMethodMayBeStatic
 	def _prototype( self, content, json ) -> PolarActivity:

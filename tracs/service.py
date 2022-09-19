@@ -137,65 +137,8 @@ class Service( ServiceProtocol ):
 			path = Path( path, f'{ts[8:]}.{self.name}.{ext}' )
 		return path
 
-	def fetch( self, force: bool = False, **kwargs ) -> List[Activity]:
-		if not self.logged_in:
-			self._logged_in = self.login()
-
-		if not self.logged_in:
-			log.error( f"unable to login to service {self.display_name}, exiting ..." )
-			sysexit( -1 )
-
-		new_activities = []
-		updated_activities = []
-		#fetched_activities = []
-
-		fetched = self._fetch( force=force, **kwargs )
-		existing = list( gc.db.find_by_classifier( self.name ) )
-		old_new = [ ( next( ( e for e in existing if f.uid in e.uids ), None ), f ) for f in fetched ]
-
-		for _old, _new in old_new:
-			# insert if no old activity exists
-			if not _old:
-				_new_activity = Activity().init_from( _new )
-				_new_activity.uids.append( _new.uid ) # todo: this might be moved to init_from
-				doc_id = gc.db.insert( _new_activity )
-				new_activities.append( _new_activity )
-				log.debug( f'created new activity {doc_id} (id {_new_activity.id}), time = {fmt( _new_activity.time )}')
-
-			# update if forced
-			elif _old and force:
-				_new.doc_id = _old.doc_id
-				gc.db.update( _new )
-				updated_activities.append( _new )
-				log.debug( f'updated activity {_old.doc_uid}, time = {fmt( _new.time )}')
-
-			# write raw data of resources
-			for r in _new.resources:
-				path = Path( self.path_for( _new ), r.path )
-				if not path.exists() or force:
-					path.parent.mkdir( parents=True, exist_ok=True )
-					if type( r.raw_data ) is bytes:
-						path.write_bytes( r.raw_data )
-					elif type( r.raw_data ) is str:
-						path.write_text( data=r.raw_data, encoding='UTF-8' )
-					else:
-						log.debug( f'skipping write of resource data for activity {_new.uid}, resource {r.path}, status {r.status}, type of data is neither str or bytes' )
-
-			# write resource information to resource db
-			new_resources = []
-			existing_resources = gc.db.find_resources( _new.uid )
-			for r in _new.resources:
-				if not next( (e for e in existing_resources if e.get( 'path' ) == r.path), None ):
-					new_resources.append( as_dict( r ) )
-
-			gc.db.resources.insert_multiple( new_resources )
-
-		log.info( f"fetched activities from {self.display_name}: {len( new_activities )} new, {len( updated_activities )} updated" )
-
-		# update last_fetch in state
-		gc.state[KEY_PLUGINS][self.name][KEY_LAST_FETCH] = datetime.utcnow().astimezone( UTC ).isoformat()
-
-		return new_activities
+	def fetch( self, force: bool = False, pretend: bool = False, **kwargs ) -> List[Activity]:
+		self.import_activities( force=force, pretend=pretend, skip_download=True )
 
 	@abstractmethod
 	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:

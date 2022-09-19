@@ -312,7 +312,8 @@ class Service( ServiceProtocol ):
 				self._ctx.db.insert( new_activity )
 
 	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ):
-		self._ctx = kwargs.get( 'ctx', None )
+		self._ctx: ApplicationContext = kwargs.get( 'ctx', None )
+		skip_download: bool = kwargs.get( 'skip_download', False )
 
 		# if necessary try to login or reuse an existing session
 		if not self.login():
@@ -323,8 +324,14 @@ class Service( ServiceProtocol ):
 		fetched = self._fetch( force=force, **kwargs )
 		added, updated, removed = self._filter_fetched( fetched, force )
 
+		# update fetch timestamp
+		self._ctx.state[KEY_PLUGINS][self.name][KEY_LAST_FETCH] = datetime.utcnow().astimezone( UTC ).isoformat()
+
 		for a in added:
-			self.download_activity( activity=a, force=force, pretend=pretend, **kwargs )
+			if not skip_download:
+				self.download_activity( activity=a, force=force, pretend=pretend, **kwargs )
+				self._ctx.state[KEY_PLUGINS][self.name][KEY_LAST_DOWNLOAD] = datetime.utcnow().astimezone( UTC ).isoformat()
+
 			self.persist_activity( activity=a, force=force, pretend=pretend, **kwargs )
 			self.upsert_activity( activity=a, force=force, pretend=pretend, **kwargs )
 

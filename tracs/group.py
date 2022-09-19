@@ -120,40 +120,13 @@ def _confirm_grouping(  gr: GroupResult ) -> bool:
 		table.add_row( *row )
 
 	console.print( table )
-
 	answer = Confirm.ask( f'Continue grouping?' )
-	if answer is None:
-		sysexit( -1 )
-	else:
-		return answer
 
-def _ask_for_name( children: [Activity], force: bool ) -> str:
-	if not force:
-		names = sorted( { *[c['name'] for c in children] } )
-		if len( names ) > 1:
-			answer = Choice.ask( "Select one of the following options:\n", choices=names )
-			if answer is None:
-				sysexit( -1 )
-			else:
-				return answer
-		else:
-			return names[0]
-	else:
-		return children[0]['name']
+	names = list( set( [member.name for member in [gr.target] + gr.members ] ) )
+	if answer and len( names ) > 1:
+		gr.target.name = Choice.ask( "Select a name for the new activity group:\n", choices=names )
 
-def _ask_for_type( children: [Activity], force: bool ) -> str:
-	if not force:
-		types = sorted( { *[c['type'] for c in children] } )
-		if len( types ) > 1:
-			answer = Choice.ask( "Select one of the following options:\n", choices=types )
-			if answer is None:
-				sysexit( -1 )
-			else:
-				return answer
-		else:
-			return types[0]
-	else:
-		return children[0]['type']
+	return answer
 
 # ---------------------
 

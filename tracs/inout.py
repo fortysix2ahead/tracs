@@ -4,6 +4,7 @@ from logging import getLogger
 from copy import deepcopy
 from csv import writer as csv_writer
 from os import system
+from re import match
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -47,7 +48,11 @@ def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **
 			log.info( f'importing from service {src}' )
 			Registry.services.get( src ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
 
+		elif ( m := match( '^([a-z]+):(\d+)$', src ) ) and m.groups()[0] in Registry.services.keys():
+			Registry.services.get( m.groups()[0] ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, uid=src, **kwargs )
+
 		elif ( path := Path( src ).absolute() ) and path.exists():
+			log.info( f'importing from path {path}' )
 			Registry.services.get( 'local' ).fetch( force=ctx.force, pretend=ctx.pretend, path=path )
 
 		elif url := parse_url( src ):

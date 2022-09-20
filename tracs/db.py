@@ -239,6 +239,15 @@ class ActivityDb:
 				return cast( Activity, a )
 		return None
 
+	def get_by_uid( self, uid: str, include_resources: bool = False ) -> Optional[Activity]:
+		activity = cast( Activity, next( a for a in self.activities.all() if uid_filter( uid )( a ) ) )
+		if activity and include_resources:
+			activity.resources = self.get_resources_by_uid( uid )
+		return  activity
+
+	def get_resources_by_uid( self, uid ) -> List[Resource]:
+		return cast( List[Resource], self.resources.search( Query()['uid'] == uid ) or [] )
+
 	def _create_filter( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None ) -> List[Filter]:
 		if id and id > 0:
 			return [ Filter( 'id', id ) ]

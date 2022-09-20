@@ -139,6 +139,11 @@ def test_get( db ):
 	assert db.get( id = 0, classifier='polar' ) is None
 
 @mark.db( template='default', inmemory=True )
+def test_get_by_uid( db ):
+	assert ( a := db.get_by_uid( 'polar:1234567890' ) ) is not None and 'polar:1234567890' in a.uids and a.resources == []
+	assert ( a := db.get_by_uid( 'polar:1234567890', include_resources=True ) ) is not None and len( a.resources ) > 0
+
+@mark.db( template='default', inmemory=True )
 def test_update( db ):
 	a = db.get( 1 )
 	assert a.name == 'Unknown Location'

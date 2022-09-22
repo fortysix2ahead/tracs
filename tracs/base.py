@@ -91,22 +91,8 @@ class Service( Protocol ):
 	Protocol for a service being able to fetch activities/resource from (remote) sources.
 	"""
 
-	@property
-	@abstractmethod
-	def base_path( self ) -> Path:
-		"""
-		Local base path where data for this service is persisted.
-
-		:return: base path in the local file system
-		"""
-		pass
-
 	@abstractmethod
 	def login( self ) -> bool:
-		pass
-
-	@abstractmethod
-	def path_for_id( self, raw_id: int, base_path: Optional[Path] ) -> Path:
 		pass
 
 	@abstractmethod
@@ -123,14 +109,23 @@ class Service( Protocol ):
 		pass
 
 	@abstractmethod
-	def link_for( self, a: Activity, ext: Optional[str] = None ) -> Optional[Path]:
-		"""
-		Returns the link path for an activity.
+	def path_for_id( self, raw_id: int, base_path: Optional[Path] ) -> Path:
+		pass
 
-		:param a: activity to link
-		:param ext: file extension
-		:return: link path for activity
+	@abstractmethod
+	def link_for( self, activity: Optional[Activity], resource: Optional[Resource], ext: Optional[str] = None ) -> Optional[Path]:
 		"""
+		Returns the link path for an activity or resource.
+
+		:param activity: activity to link
+		:param resource: resource to link
+		:param ext: file extension (deprecated)
+		:return: link path for activity or None if no path can be calculated
+		"""
+		pass
+
+	@abstractmethod
+	def import_activities( self, force: bool, pretend: bool, **kwargs ):
 		pass
 
 	@abstractmethod
@@ -138,11 +133,7 @@ class Service( Protocol ):
 		pass
 
 	@abstractmethod
-	def download( self, activity: Optional[Activity], resource: Optional[Resource], force: bool, pretend: bool, **kwargs ) -> None:
-		pass
-
-	@abstractmethod
-	def import_activities( self, force: bool, pretend: bool, **kwargs ):
+	def download( self, activity: Optional[Activity], summary: Optional[Resource], force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		pass
 
 	@abstractmethod
@@ -154,6 +145,26 @@ class Service( Protocol ):
 		pass
 
 	# define abstract properties
+
+	@property
+	@abstractmethod
+	def base_path( self ) -> Path:
+		"""
+		Local base path where data for this service is persisted.
+
+		:return: base path in the local file system
+		"""
+		pass
+
+	@property
+	@abstractmethod
+	def base_url( self ) -> str:
+		"""
+		Base URL from where data for this service is fetched.
+
+		:return: base url of this service
+		"""
+		pass
 
 	@property
 	@abstractmethod

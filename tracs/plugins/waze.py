@@ -38,17 +38,17 @@ log = getLogger( __name__ )
 
 TAKEOUTS_DIRNAME = 'takeouts'
 ACTIVITY_FILE = 'account_activity_3.csv'
+
 SERVICE_NAME = 'waze'
 DISPLAY_NAME = 'Waze'
+
 WAZE_TYPE = 'application/text+waze'
 
-@document
+@document( type=WAZE_TYPE )
 class WazeActivity( Activity ):
 
-	def __post_init__( self ):
-		super().__post_init__()
-
-		if self.raw and len( self.raw ) > 0:
+	def __raw_init__( self, raw: Any ) -> None:
+		if len( raw ) > 0:
 			self.raw_id = int( self.raw[0][1].strftime( '%y%m%d%H%M%S' ) )
 			self.time = self.raw[0][1]
 			self.localtime = as_datetime( self.time, tz=gettz() )
@@ -99,16 +99,16 @@ class Waze( Service, Plugin ):
 	def login( self ) -> bool:
 		return self._logged_in
 
-	def _fetch( self, takeouts_dir: Path = None, force: bool = False, **kwargs ) -> Iterable[Activity]:
+	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		_field_size_limit = self.cfg_value( 'field_size_limit' )
 		log.debug( f"Using {_field_size_limit} as field size limit for CSV parser in Waze service" )
 
-		takeouts_dir = takeouts_dir if takeouts_dir else Path( self._takeouts_dir )
+		takeouts_dir = Path( self._takeouts_dir )
 		log.debug( f"Fetching Waze activities from {takeouts_dir}" )
 
 		last_fetch = self.state_value( KEY_LAST_FETCH )
 
-		fetched = []
+		summaries = []
 
 		for file in sorted( takeouts_dir.rglob( ACTIVITY_FILE ) ):
 			log.info( f'Fetching activities from Waze takeout in {file}' )
@@ -122,23 +122,35 @@ class Waze( Service, Plugin ):
 
 			for tokens, raw_data in read_takeout( file, _field_size_limit ):
 				if len( tokens ) > 0:
-					fetched.append( self._prototype( tokens, raw_data ) )
+					summary = self._summary_resource( tokens, raw_data )
+					# summary.source = file.as_uri() # don't save the source right now
+					summaries.append( summary )
 
-		log.debug( f'Fetched {len( fetched )} Waze activities' )
+		log.debug( f'Fetched {len( summaries )} Waze activities' )
 
-		return fetched
+		return summaries
 
-	# noinspection PyMethodMayBeStatic
-	def _prototype( self, raw: List[Tuple[int, datetime, float, float]], raw_data: str ) -> WazeActivity:
-		raw_id = int( raw[0][1].strftime( '%y%m%d%H%M%S' ) )
-		uid = f'{self.name}:{raw_id}'
-		resources = [
-			Resource( type=WAZE_TYPE, path=f'{raw_id}.raw.txt', status= 200, uid=uid, raw_data=raw_data ),
-			Resource( type=GPX_TYPE, path=f'{raw_id}.gpx', status= 100, uid=uid )
-		]
-		return WazeActivity( raw=raw, resources=resources )
+	def _summary_resource( self, raw: List[Tuple[int, datetime, float, float]], raw_data: str ) -> Resource:
+		lid = int( raw[0][1].strftime( '%y%m%d%H%M%S' ) )
+		return Resource(
+			type=WAZE_TYPE,
+			path=f'{lid}.raw.txt',
+			status= 200,
+			uid=f'{self.name}:{lid}',
+			raw_data=raw_data,
+			summary=True,
+		)
 
-	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
+	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+		try:
+			r = Resource( type=GPX_TYPE, path=f"{summary.raw_id()}.gpx", status=100, uid=summary.uid )
+			r.raw_data, r.status = self.download_resource( r )
+			return [ r ]
+		except RuntimeError:
+			log.error( f'error fetching resources', exc_info=True )
+			return []
+
+	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		raw_path = Path( self.path_for( resource=resource ).parent, f'{resource.raw_id()}.raw.txt' )
 		with open( raw_path, mode='r', encoding='UTF-8' ) as p:
 			content = p.read()

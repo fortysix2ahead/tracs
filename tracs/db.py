@@ -28,6 +28,7 @@ from tinydb.table import Table
 
 from .activity import Activity
 from .activity import Resource
+from .activity import ResourceGroup
 from .config import CLASSIFIER
 from .config import KEY_GROUPS
 from .config import console
@@ -290,11 +291,16 @@ class ActivityDb:
 	def find_resource( self, uid: str, path: str = None ) -> Optional[Activity]:
 		return self.resources.get( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )
 
-	def find_resources( self, uid: str, path: str = None ) -> List:
+	def find_resources( self, uid: str, path: str = None ) -> List[Resource]:
 		if path:
-			return self.resources.search( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )
+			resources = self.resources.search( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )
 		else:
-			return self.resources.search( Query()['uid'] == uid )
+			resources = self.resources.search( Query()['uid'] == uid )
+
+		return cast( List[Resource], resources )
+
+	def find_resource_group( self, uid: str, path: str = None ) -> ResourceGroup:
+		return ResourceGroup( resources=self.find_resources( uid, path ) )
 
 	def contains_resource( self, uid: str, path: str ) -> bool:
 		return self.resources.contains( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )

@@ -1,20 +1,17 @@
-from dataclasses import dataclass
+
 from logging import getLogger
 from pathlib import Path
 from re import match
 from re import DOTALL
 from sys import exit as sysexit
 from typing import Any
-from typing import Iterable
+from typing import List
 from typing import Optional
 from typing import Tuple
 
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
-from orjson import dumps as dump_json
-from orjson import OPT_INDENT_2
-from orjson import OPT_APPEND_NEWLINE
 from requests import options
 from requests import Session
 from rich.prompt import Prompt
@@ -24,6 +21,7 @@ from . import document
 from . import importer
 from . import service
 from .handlers import GPX_TYPE
+from .handlers import JSONHandler
 from .handlers import JSON_TYPE
 from .handlers import ResourceHandler
 from .plugin import Plugin
@@ -39,8 +37,6 @@ from ..service import Service
 from ..utils import seconds_to_time
 
 log = getLogger( __name__ )
-
-ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
 
 SERVICE_NAME = 'bikecitizens'
 DISPLAY_NAME = 'Bike Citizens'
@@ -84,26 +80,21 @@ HEADERS_OPTIONS = { **HEADERS_TEMPLATE, **{
 	}
 }
 
-@document
-@dataclass
+@document( type=BIKECITIZENS_TYPE )
 class BikecitizensActivity( Activity ):
 
-	def __post_init__( self ):
-		super().__post_init__()
-
-		if self.raw:
-			self.raw_id = self.raw.get( 'id', 0 )
-			self.type = ActivityTypes.bike
-			self.average_speed = self.raw.get( 'average_speed' )
-			self.cccode = self.raw.get( 'cccode' )
-			self.distance = self.raw.get( 'distance' )
-			self.duration = seconds_to_time( self.raw.get( 'duration' ) )
-			self.time = parse( self.raw['start_time'] )
-			self.localtime = parse( self.raw['start_time'] ).astimezone( tzlocal() )
-			self.tags = self.raw.get( 'tags' )
-			self.uuid = self.raw.get( 'uuid' )
-
+	def __raw_init__( self, raw: Any ) -> None:
+		self.raw_id = self.raw.get( 'id', 0 )
 		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
+		self.type = ActivityTypes.bike
+		self.average_speed = self.raw.get( 'average_speed' )
+		self.cccode = self.raw.get( 'cccode' )
+		self.distance = self.raw.get( 'distance' )
+		self.duration = seconds_to_time( self.raw.get( 'duration' ) )
+		self.time = parse( self.raw['start_time'] )
+		self.localtime = parse( self.raw['start_time'] ).astimezone( tzlocal() )
+		self.tags = self.raw.get( 'tags' )
+		self.uuid = self.raw.get( 'uuid' )
 
 @importer( type=BIKECITIZENS_TYPE )
 class BikecitizensImporter( ResourceHandler ):
@@ -239,28 +230,44 @@ class Bikecitizens( Service, Plugin ):
 		self._logged_in = True
 		return self._logged_in
 
-	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
-		# noinspection PyUnusedLocal
-		response = options( url=self.user_tracks_url, headers=HEADERS_OPTIONS )
-		response = self._session.get( self.user_tracks_url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } } )
-		if response.status_code == 200:
-			return [ self._prototype( json ) for json in response.json() ]
-		else:
-			log.error( f'service {self.name} responded with status code {response.status_code}' )
+	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
+		if not self.login():
 			return []
 
-	# noinspection PyMethodMayBeStatic
-	def _prototype( self, json ) -> BikecitizensActivity:
-		json_str = dump_json( json, option=ORJSON_OPTIONS )
-		uid = f'{self.name}:{json["id"]}'
-		resources = [
-			Resource( type=BIKECITIZENS_TYPE, path=f'{json["id"]}.raw.json', status=200, uid=uid, raw_data=json_str ),
-			Resource( type=BIKECITIZENS_RECORDING_TYPE, path=f"{json['id']}.json", status=100, uid=uid ),
-			Resource( type=GPX_TYPE, path=f"{json['id']}.gpx", status=100, uid=uid )
-		]
-		return BikecitizensActivity( raw=json, resources=resources )
+		json_importer: JSONHandler = Registry.importer_for( JSON_TYPE )
 
-	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
+		try:
+			response = options( url=self.user_tracks_url, headers=HEADERS_OPTIONS )
+			response = self._session.get( self.user_tracks_url, headers={**HEADERS_OPTIONS, **{'X-API-Key': self._api_key}} )
+
+			resources = []
+			for json in response.json():
+				uid = f'{self.name}:{json["id"]}'
+				content = json_importer.save_dict( json )
+				resources.append( Resource( type=BIKECITIZENS_TYPE, path=f"{json['id']}.raw.json", status=200, uid=uid, raw=json, raw_data=content, summary=True ) )
+			return resources
+
+		except RuntimeError:
+			log.error( f'error fetching activity ids', exc_info=True )
+			return []
+
+	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+		try:
+			resources = [
+				Resource( type=BIKECITIZENS_RECORDING_TYPE, path=f"{summary.raw_id()}.json", status=100, uid=summary.uid ),
+				Resource( type=GPX_TYPE, path=f"{summary.raw_id()}.gpx", status=100, uid=summary.uid )
+			]
+
+			for r in resources:
+				r.raw_data, r.status = self.download_resource( r )
+
+			return resources
+
+		except RuntimeError:
+			log.error( f'error fetching resources', exc_info=True )
+			return []
+
+	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		url = self.export_url( resource.raw_id(), resource.type )
 		# noinspection PyUnusedLocal
 		response = options( url, headers=HEADERS_OPTIONS )
@@ -268,13 +275,13 @@ class Bikecitizens( Service, Plugin ):
 		return response.content, response.status_code
 
 	# noinspection PyMethodMayBeStatic
-	def export_url( self, raw_id: int, ext: str ) -> str:
-		if ext == 'gpx':
+	def export_url( self, raw_id: int, type: str ) -> str:
+		if type == GPX_TYPE:
 			url = f"https://api.bikecitizens.net/api/v1/tracks/{raw_id}/gpx"
-		elif ext == 'json':
+		elif type == BIKECITIZENS_RECORDING_TYPE:
 			url = f"https://api.bikecitizens.net/api/v1/tracks/{raw_id}/points"
 		else:
-			raise RuntimeError( 'unsupported resource type' )
+			raise RuntimeError( f'unable to create export url: unsupported resource type {type}' )
 		return url
 
 	def setup( self ) -> None:

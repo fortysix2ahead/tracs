@@ -1,7 +1,8 @@
 
 from re import match
 from typing import Any
-from typing import Iterable
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
 from http.server import BaseHTTPRequestHandler
@@ -14,7 +15,6 @@ from datetime import datetime
 from dateutil.tz import UTC
 from logging import getLogger
 from oauthlib.oauth2 import InvalidGrantError # package name is not oauthlib
-from orjson import dumps as dump_json, OPT_INDENT_2, OPT_APPEND_NEWLINE
 from pathlib import Path
 from requests import Session
 from requests_oauthlib import OAuth2Session
@@ -28,6 +28,7 @@ from . import document
 from . import importer
 from . import service
 from .handlers import GPX_TYPE
+from .handlers import JSONHandler
 from .handlers import JSON_TYPE
 from .handlers import ResourceHandler
 from .handlers import TCX_TYPE
@@ -37,9 +38,7 @@ from ..activity import Resource
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types
 from ..config import console
-from ..config import GlobalConfig as gc
 from ..config import APPNAME
-from ..config import KEY_PLUGINS
 from ..service import Service
 from ..utils import seconds_to_time as stt
 from ..utils import to_isotime
@@ -49,12 +48,16 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'strava'
 DISPLAY_NAME = 'Strava'
 STRAVA_TYPE = 'application/json+strava'
+
 BASE_URL = 'https://www.strava.com'
+OAUTH_REDIRECT_URL = 'http://localhost:40004'
 
 FETCH_PAGE_SIZE = 200 # maximum possible size?
-ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
 
-HEADERS_LOGIN = {
+HEADERS_TEMPLATE = {
+}
+
+HEADERS_LOGIN = { **HEADERS_TEMPLATE, **{
 	'Accept': '*/*',
 	'Accept-Encoding': 'gzip, deflate, br',
 	'Accept-Language': 'en-US,en;q=0.5',
@@ -69,7 +72,7 @@ HEADERS_LOGIN = {
 	'TE': 'Trailers',
 	'Upgrade-Insecure-Requests': '1',
 	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0',
-}
+} }
 
 TYPES = {
 	'AlpineSki': Types.ski,
@@ -111,30 +114,27 @@ TYPES = {
 	'Yoga': Types.yoga,
 }
 
-@document
+@document( type=STRAVA_TYPE )
 class StravaActivity( Activity ):
 
-	def __post_init__( self ):
-		super().__post_init__()
-
-		if self.raw:
-			self.raw_id = self.raw.get( 'id', 0 )
-			self.name = self.raw.get( 'name' )
-			self.type = TYPES.get( self.raw.get( 'type' ), ActivityTypes.unknown )
-			self.time = to_isotime( self.raw.get( 'start_date' ) )
-			self.localtime = to_isotime( self.raw.get( 'start_date_local' ) )
-			self.distance = self.raw.get( 'distance' )
-			self.speed = self.raw.get( 'average_speed' )
-			self.speed_max = self.raw.get( 'max_speed' )
-			self.ascent = self.raw.get( 'total_elevation_gain' )
-			self.descent = self.raw.get( 'total_elevation_gain' )
-			self.elevation_max = self.raw.get( 'elev_high' )
-			self.elevation_min = self.raw.get( 'elev_low' )
-			self.duration = stt( self.raw.get( 'elapsed_time' ) ) if self.raw.get( 'elapsed_time' ) else None
-			self.duration_moving = stt( self.raw.get( 'moving_time' ) ) if self.raw.get( 'moving_time' ) else None
-			self.heartrate = float( self.raw.get( 'average_heartrate' ) ) if self.raw.get( 'average_heartrate' ) else None
-			self.heartrate_max = float( self.raw.get( 'max_heartrate' ) ) if self.raw.get( 'max_heartrate' ) else None
-			self.location_country = self.raw.get( 'location_country' )
+	def __raw_init__( self, raw: Any ) -> None:
+		self.raw_id = self.raw.get( 'id', 0 )
+		self.name = self.raw.get( 'name' )
+		self.type = TYPES.get( self.raw.get( 'type' ), ActivityTypes.unknown )
+		self.time = to_isotime( self.raw.get( 'start_date' ) )
+		self.localtime = to_isotime( self.raw.get( 'start_date_local' ) )
+		self.distance = self.raw.get( 'distance' )
+		self.speed = self.raw.get( 'average_speed' )
+		self.speed_max = self.raw.get( 'max_speed' )
+		self.ascent = self.raw.get( 'total_elevation_gain' )
+		self.descent = self.raw.get( 'total_elevation_gain' )
+		self.elevation_max = self.raw.get( 'elev_high' )
+		self.elevation_min = self.raw.get( 'elev_low' )
+		self.duration = stt( self.raw.get( 'elapsed_time' ) ) if self.raw.get( 'elapsed_time' ) else None
+		self.duration_moving = stt( self.raw.get( 'moving_time' ) ) if self.raw.get( 'moving_time' ) else None
+		self.heartrate = float( self.raw.get( 'average_heartrate' ) ) if self.raw.get( 'average_heartrate' ) else None
+		self.heartrate_max = float( self.raw.get( 'max_heartrate' ) ) if self.raw.get( 'max_heartrate' ) else None
+		self.location_country = self.raw.get( 'location_country' )
 
 		self.classifier = f'{SERVICE_NAME}'
 		self.uid = f'{self.classifier}:{self.raw_id}'
@@ -158,6 +158,7 @@ class Strava( Service, Plugin ):
 	def __init__( self, base_url=None, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 		self.base_url = base_url
+		self.json_importer: JSONHandler = Registry.importer_for( JSON_TYPE )
 
 	@property
 	def base_url( self ) -> str:
@@ -172,7 +173,7 @@ class Strava( Service, Plugin ):
 		self._auth_url = f'{self.base_url}/oauth/authorize'
 		self._token_url = f'{self.base_url}/oauth/token'
 		self._scope = 'activity:read_all'
-		self._redirect_url = 'http://localhost:40004'
+		self._redirect_url = OAUTH_REDIRECT_URL
 		self._session = None
 		self._oauth_session = None
 
@@ -269,25 +270,53 @@ class Strava( Service, Plugin ):
 		if self._oauth_session and self._session:
 			return True
 
-	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
-		fetched = []  # to be inserted
-		for page in range( 1, 999999 ):
-			response = self._oauth_session.get( self.all_events_url( page) )
-			for json in response.json():
-				fetched.append( self._prototype( dump_json( json, option=ORJSON_OPTIONS ), json ) )
-			if len( response.json() ) == 0:
-				break
-		return fetched
+	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
+		if not self.login():
+			return []
 
-	# noinspection PyMethodMayBeStatic
-	def _prototype( self, content, json ) -> StravaActivity:
-		uid = f'{self.name}:{json["id"]}'
-		resources = [
-			Resource( type=STRAVA_TYPE, path=f"{json['id']}.raw.json", status=200, uid=uid, raw=json, raw_data=content, source=self.url_activity( json['id'] ) ),
-			Resource( type=GPX_TYPE, path=f"{json['id']}.gpx", status=100, uid=uid, source=self.url_for( json['id'], GPX_TYPE ) ),
-			Resource( type=TCX_TYPE, path=f"{json['id']}.tcx", status=100, uid=uid, source=self.url_for( json['id'], TCX_TYPE ) )
-		]
-		return StravaActivity( raw=json, resources=resources )
+		try:
+			resources = []
+			for page in range( 1, 999999 ):
+				response = self._oauth_session.get( self.all_events_url( page ) )
+
+				for json in response.json():
+					resources.append( self._summary_resource( json ) )
+
+				if len( response.json() ) == 0:
+					break
+
+			return resources
+		except RuntimeError:
+			log.error( f'error fetching activity ids', exc_info=True )
+			return []
+
+	def _summary_resource( self, json: Dict ) -> Resource:
+		return Resource(
+			type=STRAVA_TYPE,
+			path=f"{json['id']}.raw.json",
+			status=200,
+			uid=f"{self.name}:{json['id']}",
+			raw=json,
+			raw_data=self.json_importer.save_dict( json ),
+			source=self.url_activity( json['id'] ),
+			summary=True
+		)
+
+	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+		try:
+			resources = [
+				Resource( type=GPX_TYPE, path=f"{summary.raw_id()}.gpx", status=100, uid=summary.uid, source=self.url_for( summary.raw_id(), GPX_TYPE ) ),
+				Resource( type=TCX_TYPE, path=f"{summary.raw_id()}.tcx", status=100, uid=summary.uid, source=self.url_for( summary.raw_id(), TCX_TYPE ) )
+			]
+
+			for r in resources:
+				r.raw_data, r.status = self.download_resource( r )
+
+			return resources
+
+		except RuntimeError:
+			log.error( f'error fetching resources', exc_info=True )
+			return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		url = self.url_for( resource.raw_id(), resource.type )

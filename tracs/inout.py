@@ -49,14 +49,14 @@ def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **
 			Registry.services.get( src ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
 
 		elif ( m := match( '^([a-z]+):(\d+)$', src ) ) and m.groups()[0] in Registry.services.keys():
-			Registry.services.get( m.groups()[0] ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, uid=src, **kwargs )
+			Registry.services.get( m.groups()[0] ).import_activities( ctx=ctx, uid=src, force=ctx.force, pretend=ctx.pretend, **kwargs )
 
 		elif ( path := Path( src ).absolute() ) and path.exists():
 			log.info( f'importing from path {path}' )
 			Registry.services.get( 'local' ).fetch( force=ctx.force, pretend=ctx.pretend, path=path )
 
 		elif url := parse_url( src ):
-			pass
+			raise NotImplementedError
 
 		else:
 			log.error( f'unable to import from {src}' )

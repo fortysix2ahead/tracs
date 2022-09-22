@@ -4,6 +4,9 @@ from pathlib import Path
 from re import compile
 from typing import Any
 from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Optional
 from typing import Tuple
 
 from . import Registry
@@ -31,10 +34,27 @@ class Local( Service, Plugin ):
 	def __init__( self, **kwargs  ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 
+	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
+		"""
+		Returns the path for an activity.
+
+		:param activity: activity for which the path shall be calculated
+		:param resource: resource
+		:param ext: file extension
+		:return: path for activity
+		"""
+		_id = str( activity.raw_id ) if activity else resource.raw_id()
+		path = Path( self.base_path, _id[0:2], _id[2:4], _id[4:6], _id )
+		if resource:
+			path = Path( path, resource.path )
+		elif ext:
+			path = Path( path, f'{id}.{ext}' )
+		return path
+
 	def login( self ) -> bool:
 		return True
 
-	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
+	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		activities = []
 		if path := kwargs.get( 'path' ):
 			if path.is_file():
@@ -42,41 +62,38 @@ class Local( Service, Plugin ):
 			elif path.is_dir():
 				activities = [ self.import_from_file( f ) for f in path.iterdir() ]
 
-		if kwargs.get( 'as_one', False ) and len( activities ) > 1:
-			activity = Activity()
-			for a in activities:
-				activity.init_from( other=a )
-				activity.resources.extend( a.resources )
-			activities = [activity]
+		# if kwargs.get( 'as_one', False ) and len( activities ) > 1:
+		# 	activity = Activity()
+		# 	for a in activities:
+		# 		activity.init_from( other=a )
+		# 		activity.resources.extend( a.resources )
+		# 	activities = [activity]
+		#
+		# if kwargs.get( 'move', False ):
+		# 	pass # todo: implement move
 
-		if kwargs.get( 'move', False ):
-			pass # todo: implement move
+		resources = []
+		for a in activities:
+			for r in a.resources:
+				r.uid = f'{self.name}:{a.time.strftime( "%y%m%d%H%M%S" )}'
+			resources.extend( a.resources )
+		return resources
 
-		return activities
+	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
+		activity.uid = activity.resources[0].uid # todo: always correct?
 
 	# noinspection PyMethodMayBeStatic
 	def import_from_file( self, path: Path ) -> Any:
 		importers = Registry.importers_for_suffix( path.suffix[1:] )
-		imported_data = None
-		for i in importers:
-			try:
+		try:
+			imported_data = None
+			for i in importers:
 				imported_data = i.load( path=path )
 				break
-			except AttributeError:
-				imported_data = None
+		except AttributeError:
+			imported_data = None
 
 		return imported_data
-
-	# noinspection PyMethodMayBeStatic
-	def _prototype( self, activity ) -> Activity:
-		activity.uid = f'{self.name}:{activity.raw_id}'
-		activity.resources[0].path = f'{activity.raw_id}.{activity.resources[0].type}'
-		activity.resources[0].status = 200
-		activity.resources[0].uid = activity.uid
-		return activity
-
-	def download_resource( self, resource: Resource ) -> Tuple[Any, int]:
-		return [], 200
 
 	def setup( self ) -> None:
 		pass

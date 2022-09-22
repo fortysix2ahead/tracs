@@ -189,6 +189,10 @@ class Service( ServiceProtocol ):
 					else:
 						log.info( f'pretending to write resource data to {path}' )
 
+
+	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
+		pass
+
 	def upsert_activity( self, activity: Activity, force: bool, pretend: bool, **kwargs ) -> None:
 		for r in activity.resources:
 			if r.dirty and not pretend:
@@ -238,6 +242,8 @@ class Service( ServiceProtocol ):
 			# create an activity out of the downloaded resources
 			if activity_cls := Registry.document_types.get( summary.type ):
 				activity = activity_cls( raw=summary.raw, resources=[summary, *recordings] )
+
+				self.postprocess( activity, activity.resources ) # post process
 
 				# persist all information
 				if activity:

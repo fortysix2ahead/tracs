@@ -20,6 +20,8 @@ from click import echo
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
 from dateutil.tz import UTC
+from fs import open_fs
+from fs.zipfs import ReadZipFS
 from rich.prompt import Prompt
 
 from . import Registry
@@ -357,27 +359,10 @@ class Polar( Service, Plugin ):
 			log.warning( f'unable to determine download url for resource {resource}' )
 			return None, 500
 
-	def _download_multipart_file( self, pa: Activity, ext: str ) -> None:
-		if not (url := pa.export_file_url( ext )):  # skip download for csv files
-			return
-
-		response = self._session.get( url, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )
-
-		if response.status_code == 200:
-			if len( response.content ) > 0:
-				zipfile = self._path( pa, ext )
-				zipfile.parent.mkdir( parents=True, exist_ok=True )
-				zipfile.write_bytes( response.content )
-				pa.metadata[ext] = 200
-				log.info( f"downloaded {ext} for polar multipart activity {pa.id}" )
-			else:
-				pa.metadata[ext] = 204
-				log.error( f"failed to download {ext} for polar multipart activity {pa.id}, service responded with 204" )
-		else:
-			pa.metadata[ext] = 404
-			log.error( f"failed to download {ext} for polar multipart activity {pa.id}, service responded with 404" )
-
-		self._db.update( self.name, dict( pa ), pa.doc_id )
+	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
+		for r in list( resources ):
+			if r.type in [POLAR_ZIP_GPX_TYPE, POLAR_ZIP_TCX_TYPE]:
+				activity.resources.extend( decompress_resources( r ) )
 
 	def setup( self ) -> None:
 		console.print( f'For Polar Flow we will use their inofficial Web API to download activity data, that\'s why your credentials are needed.' )
@@ -424,3 +409,18 @@ def _multipart_str( self ) -> str:
 		return '\u2705'
 	else:
 		return '\u2716'
+
+def decompress_resources( r: Resource ) -> List[Resource]:
+	mem_fs = open_fs('mem://')
+	mem_fs.writebytes( '/archive.zip', r.raw_data )
+	resources = []
+
+	with mem_fs.openbin( '/archive.zip' ) as zip_file:
+		with ReadZipFS( zip_file ) as zip_fs:
+			for f in zip_fs.listdir( '/' ):
+				if f.endswith( '.gpx' ):
+					resources.append( Resource( path=f, raw_data=zip_fs.readtext( f'/{f}' ), type=GPX_TYPE, status=200, uid=r.uid, source=r.path ) )
+				elif f.endswith( '.tcx' ):
+					resources.append( Resource( path=f, raw_data=zip_fs.readtext( f'/{f}' ), type=TCX_TYPE, status=200, uid=r.uid, source=r.path ) )
+
+	return resources

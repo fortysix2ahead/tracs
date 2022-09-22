@@ -137,6 +137,10 @@ class Service( Protocol ):
 		pass
 
 	@abstractmethod
+	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
+		pass
+
+	@abstractmethod
 	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool, **kwargs ) -> None:
 		pass
 

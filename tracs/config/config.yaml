@@ -43,6 +43,11 @@ plugins:
     username:
     password:
 
+  empty:
+    enabled: false
+
+  local:
+
   polar:
     username:
     password:

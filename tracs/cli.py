@@ -136,7 +136,7 @@ def sync( all_: bool = False, restrict: str = None ):
 @option( '-m', '--move', required=False, is_flag=True, help='move resources (dangerous, input files will be removed)' )
 @argument( 'sources', nargs=-1 )
 @pass_context
-def import_cmd( ctx, sources, skip_download: bool = False, importer = 'auto', as_one: bool = False, move: bool = False ):
+def imprt( ctx, sources, skip_download: bool = False, importer = 'auto', as_one: bool = False, move: bool = False ):
 	import_activities( ctx.obj, sources=sources, skip_download=skip_download, importer=importer, as_one=as_one, move=move )
 
 @cli.command( help='fetches activity ids' )

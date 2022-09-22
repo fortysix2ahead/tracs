@@ -4,14 +4,14 @@ from logging import getLogger
 from pathlib import Path
 from re import match
 from typing import Any
-from typing import Iterable
+from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
 
-from requests import Session
+from requests_cache import CachedSession
 from sys import exit as sysexit
 from time import time as current_time
 
@@ -20,7 +20,6 @@ from click import echo
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
 from dateutil.tz import UTC
-from orjson import dumps as dump_json, OPT_INDENT_2, OPT_APPEND_NEWLINE
 from rich.prompt import Prompt
 
 from . import Registry
@@ -28,9 +27,9 @@ from . import document
 from . import importer
 from . import service
 from .handlers import GPX_TYPE
+from .handlers import JSONHandler
 from .handlers import JSON_TYPE
 from .handlers import TCX_TYPE
-from .handlers import JSONHandler
 from .handlers import ResourceHandler
 from .handlers import XML_TYPE
 from .plugin import Plugin
@@ -38,7 +37,6 @@ from ..activity import Activity
 from ..activity import Resource
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types
-from ..base import Importer
 from ..config import ApplicationConfig as cfg
 from ..config import console
 from ..config import APPNAME
@@ -52,52 +50,54 @@ log = getLogger( __name__ )
 
 SERVICE_NAME = 'polar'
 DISPLAY_NAME = 'Polar Flow'
-ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2
 
 POLAR_CSV_TYPE = 'text/csv+polar'
 POLAR_HRV_TYPE = 'text/csv+polar-hrv'
 POLAR_FLOW_TYPE = 'application/json+polar'
 POLAR_EXERCISE_DATA_TYPE = 'application/xml+polar-ped'
+POLAR_ZIP_GPX_TYPE = 'application/zip+polar-gpx'
+POLAR_ZIP_TCX_TYPE = 'application/zip+polar-tcx'
 PED_NS = 'http://www.polarpersonaltrainer.com'
+
+# polar icon ids for identifying multipart activities: there does not seem to be any other way to identify those
+ICON_ID_TRIATHLON = '003304795bc33d808ee8e6ab8bf45d1f-2015-10-20_13_45_17' # triathlon
+ICON_ID_MULTISPORT ='20951a7d8b02def8265f5231f57f4ed9-2015-10-20_13_45_40' # multisport
 
 BASE_URL = 'https://flow.polar.com'
 
-HEADERS_LOGIN = {
-	'Accept': '*/*',
+HEADERS_TEMPLATE = {
 	'Accept-Encoding': 'gzip, deflate, br',
 	'Accept-Language': 'en-US,en;q=0.5',
-	'Cache-Control': 'no-cache',
 	'Connection': 'keep-alive',
-	'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
 	'DNT': '1',
+	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0',
+}
+
+HEADERS_LOGIN = { **HEADERS_TEMPLATE, **{
+	'Accept': '*/*',
+	'Cache-Control': 'no-cache',
+	'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
 	'Host': 'flow.polar.com',
 	'Origin': 'https://flow.polar.com',
 	'Pragma': 'no-cache',
 	'Referer': 'https://flow.polar.com/',
 	'TE': 'Trailers',
-	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0',
 	# 'X-Requested-With': 'XMLHttpRequest'
-}
-HEADERS_API = {
+} }
+
+HEADERS_API = { **HEADERS_TEMPLATE, **{
 	'Accept': 'application/json',
-	'Accept-Encoding': 'gzip, deflate, br',
-	'Cache-Control': 'no-cache',
-	'Connection': 'keep-alive',
-	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0'
-}
-HEADERS_DOWNLOAD = {
+	# 'Cache-Control': 'no-cache',
+} }
+
+HEADERS_DOWNLOAD = { **HEADERS_TEMPLATE, **{
 	'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-	'Accept-Encoding': 'gzip, deflate, br',
-	'Accept-Language': 'de,en;q=0.7,en-US;q=0.3',
-	'Cache-Control': 'no-cache',
-	'Connection': 'keep-alive',
-	'DNT': '1',
+	# 'Cache-Control': 'no-cache',
 	'Host': 'flow.polar.com',
 	# 'Referer': 'https://flow.polar.com/training/analysis/{polar_id}',
 	'TE': 'Trailers',
-	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0',
 	# 'X-Requested-With': 'XMLHttpRequest'
-}
+} }
 
 # all types: https://www.polar.com/accesslink-api/#detailed-sport-info-values-in-exercise-entity
 # this maps the last part of the icon URL to Polar sports types, there's no other way to find the actual type
@@ -125,34 +125,29 @@ TYPES = {
 	'f4197b0c1a4d65962b9e45226c77d4d5-2015-10-20_13_45_26': Types.swim,
 }
 
-@document
+@document( type=POLAR_FLOW_TYPE )
 class PolarActivity( Activity ):
 
-	def __post_init__( self ):
-		super().__post_init__()
-
-		if self.raw:
-			self.raw_id = _raw_id( self.raw )
-			self.name = self.raw.get( 'title' )
-			self.type = _type_of( self.raw )
-			self.time = parse( self.raw['datetime'], ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC )
-			self.localtime = parse( self.raw['datetime'], ignoretz=True ).replace( tzinfo=tzlocal() )
-			self.distance = self.raw.get( 'distance' )
-			self.duration = stt( self.raw['duration'] / 1000 ) if self.raw.get( 'duration' ) else None
-			self.calories = self.raw.get( 'calories' )
-
+	def __raw_init__( self, raw: Any ) -> None:
+		self.raw_id = _raw_id( self.raw )
 		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
+
+		self.name = self.raw.get( 'title' )
+		self.type = _type_of( self.raw )
+		self.time = parse( self.raw['datetime'], ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC )
+		self.localtime = parse( self.raw['datetime'], ignoretz=True ).replace( tzinfo=tzlocal() )
+		self.distance = self.raw.get( 'distance' )
+		self.duration = stt( self.raw['duration'] / 1000 ) if self.raw.get( 'duration' ) else None
+		self.calories = self.raw.get( 'calories' )
 
 @document
 class PolarExerciseDataActivity( Activity ):
-	def __post_init__( self ):
-		super().__post_init__()
 
-		if self.raw:
-			self.classifier = 'polar'
-			self.time = datetime.strptime( self.raw.get( 'time' ), '%Y-%m-%d %H:%M:%S.%f' ).astimezone( UTC )  # 2016-09-15 16:50:27.0
-			self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
-			self.uid = f'{self.classifier}:{self.raw_id}'
+	def __raw_init__( self, raw: Any ) -> None:
+		self.classifier = 'polar'
+		self.time = datetime.strptime( self.raw.get( 'time' ), '%Y-%m-%d %H:%M:%S.%f' ).astimezone( UTC )  # 2016-09-15 16:50:27.0
+		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
+		self.uid = f'{self.classifier}:{self.raw_id}'
 
 @importer( type=POLAR_FLOW_TYPE )
 class PolarImporter( ResourceHandler ):
@@ -164,8 +159,7 @@ class PolarImporter( ResourceHandler ):
 
 	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
 		resource = Resource( type=POLAR_FLOW_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
-		activity = PolarActivity( raw=structured_data, resources=[resource] )
-		return activity
+		return PolarActivity( raw=structured_data, resources=[resource] )
 
 @importer( type=POLAR_EXERCISE_DATA_TYPE )
 class PersonalTrainerImporter( ResourceHandler ):
@@ -203,8 +197,9 @@ class Polar( Service, Plugin ):
 
 	def __init__( self, base_url=None, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
-		self.base_url = base_url
+		self.base_url = base_url # use setter in order to update all internal fields
 		self._session = None
+		self._logged_in = False
 
 	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
 		return super().path_for( activity, resource, ext )
@@ -255,19 +250,20 @@ class Polar( Service, Plugin ):
 			return f'{self._export_url}/tcx/{id}'
 		elif type == POLAR_HRV_TYPE:
 			return f'{self._export_url}/rr/csv/{id}'
-
-	def export_url_for( self, id: int, ext: str ) -> str:
-		return f'{self._export_url}/rr/csv/{id}' if ext == 'hrv' else f'{self._export_url}/{ext}/{id}'
+		elif type == POLAR_ZIP_GPX_TYPE:
+			return f'{self._export_url}/gpx/{id}?compress=true'
+		elif type == POLAR_ZIP_TCX_TYPE:
+			return f'{self._export_url}/tcx/{id}?compress=true'
 
 	def activity_url( self, id: int ) -> str:
 		return f'{self._activity_url}/{id}'
 
 	def login( self ) -> bool:
-		if self.logged_in and self._session:
-			return self.logged_in
+		if self._logged_in and self._session:
+			return self._logged_in
 
 		if not self._session:
-			self._session = Session()
+			self._session = CachedSession( backend='memory' )
 
 		# noinspection PyUnusedLocal
 		response = self._session.get( self.base_url )
@@ -299,35 +295,57 @@ class Polar( Service, Plugin ):
 		response = self._session.post( self._login_url, headers=HEADERS_LOGIN, data=data )
 
 		self._logged_in = True
+
 		return self._logged_in
 
-	def _fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
-		activities = []
-		events_url = self.all_events_url()
-		response = self._session.get( events_url, headers=HEADERS_API )
+	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
+		if not self.login():
+			return []
 
-		if uid := kwargs.get( 'uid' ):
+		json_importer: JSONHandler = Registry.importer_for( JSON_TYPE )
+
+		try:
+			response = self._session.get( self.all_events_url(), headers=HEADERS_API )
+			resources = []
+
 			for json in response.json():
-				if f'{self.name}:{_raw_id( json )}' == uid:
-					activities.append( self._prototype( response.content, json ) )
-		else:
-			activities.extend( [ self._prototype( response.content, json ) for json in response.json() ] )
+				lid = _local_id( json )
+				uid = f'{self.name}:{lid}'
+				content = json_importer.save_dict( json )
+				resources.append( Resource( type=POLAR_FLOW_TYPE, path=f"{lid}.raw.json", status=200, uid=uid, raw=json, raw_data=content, source=self.activity_url( lid ), summary=True ) )
 
-		return activities
+			return resources
 
-	# noinspection PyMethodMayBeStatic
-	def _prototype( self, content, json ) -> PolarActivity:
-		raw_id = _raw_id( json )
-		uid = f'{self.name}:{raw_id}'
-		# json_str = dump_json( json, option=ORJSON_OPTIONS )
-		resources = [
-			Resource( type=POLAR_FLOW_TYPE, path=f"{raw_id}.raw.json", status=200, uid=uid, raw=json, raw_data=content, source=self.activity_url( raw_id ) ),
-			Resource( type=POLAR_CSV_TYPE, path=f'{raw_id}.csv', status=100, uid=uid, source=self.url_for( raw_id, POLAR_CSV_TYPE ) ),
-			Resource( type=GPX_TYPE, path=f'{raw_id}.gpx', status=100, uid=uid, source=self.url_for( raw_id, GPX_TYPE ) ),
-			Resource( type=TCX_TYPE, path=f'{raw_id}.tcx', status=100, uid=uid, source=self.url_for( raw_id, TCX_TYPE ) ),
-			Resource( type=POLAR_HRV_TYPE, path=f'{raw_id}.hrv.csv', status=100, uid=uid, source=self.url_for( raw_id, POLAR_HRV_TYPE ) )
-		]
-		return PolarActivity( raw=json, resources=resources )
+		except RuntimeError:
+			log.error( f'error fetching activity ids' )
+			return []
+
+	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+		try:
+			lid = summary.raw_id()
+			uid = summary.uid
+
+			if _is_multipart_id( summary.raw.get( 'iconUrl' ) ):
+				resources = [
+					Resource( type=POLAR_ZIP_GPX_TYPE, path=f'{lid}.gpx.zip', status=100, uid=uid, source=self.url_for( lid, POLAR_ZIP_GPX_TYPE ) ),
+					Resource( type=POLAR_ZIP_TCX_TYPE, path=f'{lid}.tcx.zip', status=100, uid=uid, source=self.url_for( lid, POLAR_ZIP_TCX_TYPE ) ),
+				]
+			else:
+				resources = [
+					Resource( type=POLAR_CSV_TYPE, path=f'{lid}.csv', status=100, uid=uid, source=self.url_for( lid, POLAR_CSV_TYPE ) ),
+					Resource( type=GPX_TYPE, path=f'{lid}.gpx', status=100, uid=uid, source=self.url_for( lid, GPX_TYPE ) ),
+					Resource( type=TCX_TYPE, path=f'{lid}.tcx', status=100, uid=uid, source=self.url_for( lid, TCX_TYPE ) ),
+					Resource( type=POLAR_HRV_TYPE, path=f'{lid}.hrv.csv', status=100, uid=uid, source=self.url_for( lid, POLAR_HRV_TYPE ) )
+				]
+
+			for r in resources:
+				r.raw_data, r.status = self.download_resource( r )
+
+			return resources
+
+		except RuntimeError:
+			log.error( f'error fetching resources' )
+			return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		url = self.url_for( resource.raw_id(), resource.type )
@@ -378,6 +396,9 @@ class Polar( Service, Plugin ):
 
 # --- helper
 
+def _local_id( r: Mapping ) -> int:
+	return _raw_id( r )
+
 def _raw_id( r: Mapping ) -> int:
 	r = r or {}
 	eventType = r.get( 'eventType' )
@@ -395,12 +416,8 @@ def _type_of( r: Mapping ) -> ActivityTypes:
 	id = r.get( 'iconUrl' ).rsplit( '/', 1 )[1]
 	return TYPES.get( id, Types.unknown )
 
-def _is_multipart( self ) -> bool:
-	# polar icons for identifying multipart activities: there does not seem to be any other way to identify those
-	POLAR_TRIATHLON = '003304795bc33d808ee8e6ab8bf45d1f-2015-10-20_13_45_17'
-	POLAR_MULTISPORT = '20951a7d8b02def8265f5231f57f4ed9-2015-10-20_13_45_40'
-	iconUrl = self.get( 'iconUrl', '' )
-	return True if iconUrl.endswith( POLAR_TRIATHLON ) or iconUrl.endswith( POLAR_MULTISPORT ) else False
+def _is_multipart_id( icon_url: str ) -> bool:
+	return True if icon_url.endswith( ICON_ID_TRIATHLON ) or icon_url.endswith( ICON_ID_MULTISPORT ) else False
 
 def _multipart_str( self ) -> str:
 	if self.multipart:

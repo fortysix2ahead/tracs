@@ -38,6 +38,7 @@ class Resource( BaseDocument ):
 	path: str = field( default=None )
 	source: str = field( default=None )
 	status: int = field( default=None )
+	summary: bool = field( default=False )
 	uid: str = field( default=None )
 
 	raw: Any = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # structured raw data making up this resource
@@ -57,6 +58,12 @@ class Resource( BaseDocument ):
 class ResourceGroup:
 
 	resources: List[Resource] = field( default_factory=list )
+
+	def summary( self ) -> Optional[Resource]:
+		return next( ( r for r in self.resources if r.summary ), None )
+
+	def recordings( self ) -> List[Resource]:
+		return [ r for r in self.resources if not r.summary ]
 
 @dataclass
 class ActivityRef:
@@ -81,6 +88,8 @@ class Activity( BaseDocument ):
 	raw_id: int = field( default=None, metadata= { PROTECTED: True } )  # raw id as raw data might not contain all data necessary
 	raw_name: str = field( default=None, metadata={ PERSIST: False, PROTECTED: True } )  # same as raw id
 	raw_data: Union[str, bytes] = field( default=None, metadata={ PERSIST: False, PROTECTED: True } )  # serialized version of raw, can be i.e. str or bytes
+
+	# local_id: int = field( default=None, metadata= { PROTECTED: True } )  # same as raw_id
 
 	name: str = field( default=None ) # activity name
 	type: ActivityTypes = field( default=None ) # activity type
@@ -125,6 +134,16 @@ class Activity( BaseDocument ):
 	def __post_init__( self ):
 		super().__post_init__()
 
+		if self.raw:
+			self.__raw_init__( self.raw )
+
+	def __raw_init__( self, raw: Any ) -> None:
+		"""
+		Called from __post_init__ with raw data as parameter and can be overridden in subclasses. Will not be called when raw is None.
+		:return:
+		"""
+		pass
+
 		#if len( self.resources ) > 0 and all( type( r ) is dict for r in self.resources ):
 		#	self.resources = [ Resource( **r ) for r in self.resources ]
 
@@ -151,6 +170,9 @@ class Activity( BaseDocument ):
 			self.__post_init__()
 
 		return self
+	
+	def resource_group( self ) -> ResourceGroup:
+		return ResourceGroup( resources=self.resources )
 
 @dataclass
 class MultipartActivity( Activity ):

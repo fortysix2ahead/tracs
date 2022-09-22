@@ -19,6 +19,7 @@ from orjson import OPT_APPEND_NEWLINE
 from orjson import OPT_INDENT_2
 from orjson import OPT_SORT_KEYS
 
+from . import document
 from . import importer
 from ..activity import Activity
 from ..activity import Resource
@@ -105,19 +106,17 @@ class XMLHandler( ResourceHandler ):
 	def load_path( self, path: Path, **kwargs ) -> Optional[Union[str, bytes]]:
 		return parse_xml( path )
 
-@dataclass
+@document( type=GPX_TYPE )
 class GPXActivity( Activity ):
 
-	def __post_init__( self ):
-		super().__post_init__()
-
-		if self.raw:
-			gpx: GPX = self.raw
-			self.name = gpx.name
-			self.time = gpx.get_time_bounds().start_time.astimezone( UTC )
-			self.distance = round( gpx.length_2d(), 1 )
-			self.duration = seconds_to_time( gpx.get_duration() ) if gpx.get_duration() else None
-			self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
+	def __raw_init__( self, raw: Any ) -> None:
+		gpx: GPX = self.raw
+		self.name = gpx.name
+		self.time = gpx.get_time_bounds().start_time.astimezone( UTC )
+		self.distance = round( gpx.length_2d(), 1 )
+		self.duration = seconds_to_time( gpx.get_duration() ) if gpx.get_duration() else None
+		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
+		# self.uid = f'{self.classifier}:{self.raw_id}'
 
 @importer( type=GPX_TYPE )
 class GPXImporter( ResourceHandler ):

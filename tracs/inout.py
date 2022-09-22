@@ -53,7 +53,9 @@ def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **
 
 		elif ( path := Path( src ).absolute() ) and path.exists():
 			log.info( f'importing from path {path}' )
-			Registry.services.get( 'local' ).fetch( force=ctx.force, pretend=ctx.pretend, path=path )
+			kwargs['skip_download'] = True
+			kwargs['path'] = path
+			Registry.services.get( 'local' ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
 
 		elif url := parse_url( src ):
 			raise NotImplementedError

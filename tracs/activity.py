@@ -44,6 +44,10 @@ class Resource( BaseDocument ):
 	raw: Any = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # structured raw data making up this resource
 	raw_data: Union[str, bytes] = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # serialized version of raw, can be str or bytes
 
+	# fields are not yet used, but shall replace raw_data in the future, following the fields of requests.response
+	content: bytes = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # raw content, as bytes
+	text: str = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # decoded content as string
+
 	def classifier( self ):
 		return self._uid()[0]
 

@@ -1,4 +1,11 @@
 
+from dataclasses import InitVar
+from dataclasses import dataclass
+from dataclasses import field
+from dataclasses import fields
+from datetime import datetime
+from typing import ClassVar
+
 from pytest import raises
 
 from tracs.dataclasses import as_dict
@@ -132,3 +139,49 @@ def test_as_dict():
 		'doc_id'    : 0,
 		'id'        : 0
 	}
+
+# just some additional tests to get used to dataclass features
+
+class DatetimeDescriptor:
+
+	def __init__( self, *, default ):
+		self._default = default
+
+	def __set_name__( self, owner, name ):
+		self._name = "_" + name
+
+	def __get__( self, obj, type ):
+		if obj is None:
+			return self._default
+		return getattr( obj, self._name, self._default )
+
+	def __set__( self, obj, value ):
+		setattr( obj, self._name, datetime.fromisoformat( value ) if value else None )
+
+@dataclass
+class TestDataClass:
+
+	decoder: ClassVar[str] = field( default='json' )
+	# initializer: InitVar[str] = field( default='nothing' )
+	initializer: InitVar[str] = 'nothing'
+	internal: str = field( default=None )
+
+	# this enables auto-conversions ...
+	time: DatetimeDescriptor = DatetimeDescriptor( default=None )
+
+	def __post_init__( self, initializer ):
+		if initializer:
+			self.internal = initializer.lower()
+
+def test_tdc():
+
+	tdc = TestDataClass()
+	assert 'decoder' not in fields( tdc )
+	assert TestDataClass.decoder == 'json'
+
+	tdc = TestDataClass( initializer='INIT' )
+	assert tdc.internal == 'init'
+	assert tdc.initializer == 'nothing' # not sure why the field is accessible
+
+	tdc.time = datetime.utcnow().isoformat()
+	assert type( tdc.time ) is datetime

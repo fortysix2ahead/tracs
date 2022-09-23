@@ -76,6 +76,7 @@ class Local( Service, Plugin ):
 		for a in activities:
 			for r in a.resources:
 				r.uid = f'{self.name}:{a.time.strftime( "%y%m%d%H%M%S" )}'
+				r.path = f'{r.raw_id()}.{r.path.rsplit( ".", 1 )[1]}'
 			resources.extend( a.resources )
 		return resources
 

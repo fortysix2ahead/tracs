@@ -297,17 +297,22 @@ class Polar( Service, Plugin ):
 		if not self.login():
 			return []
 
-		json_importer: JSONHandler = Registry.importer_for( JSON_TYPE )
+		polar_importer: PolarImporter = Registry.importer_for( POLAR_FLOW_TYPE )
 
 		try:
 			response = self._session.get( self.all_events_url(), headers=HEADERS_API )
 			resources = []
 
 			for json in response.json():
-				lid = _local_id( json )
-				uid = f'{self.name}:{lid}'
-				content = json_importer.save_dict( json )
-				resources.append( Resource( type=POLAR_FLOW_TYPE, path=f"{lid}.raw.json", status=200, uid=uid, raw=json, raw_data=content, source=self.activity_url( lid ), summary=True ) )
+				resource = polar_importer.load( data=json, as_resource=True )
+				local_id = _local_id( json )
+				resource.uid = f'{self.name}:{local_id}'
+				resource.path = f'{local_id}.raw.json'
+				resource.status = 200
+				resource.source = self.activity_url( local_id )
+				resource.summary = True
+
+				resources.append( resource )
 
 			return resources
 

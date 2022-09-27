@@ -34,6 +34,8 @@ class ResourceHandler:
 		self._type: Optional[str] = type
 
 	def load( self, data: Optional[Any] = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Union[Activity, Resource]]:
+		as_resource = kwargs.get( 'as_resource', False ) # flag to force to return a resource even when an activity class is available
+
 		# try to load from url if provided
 		_content = self.load_url( url, **kwargs ) if url else None
 
@@ -44,7 +46,7 @@ class ResourceHandler:
 		_text = self.load_text( _content, **kwargs ) if _content else None
 
 		# try load/process either provided or loaded data
-		_data = self.load_data( data or _text or _content )
+		_data = self.load_data( _text or _content ) if not data else data
 
 		# postprocess data
 		_data = self.postprocess_data( _data, _text, _content, path, url )
@@ -53,7 +55,7 @@ class ResourceHandler:
 		resource = self.create_resource( _data, _text, _content, path, url )
 
 		# create an activity
-		activity = self.create_activity( resource )
+		activity = self.create_activity( resource ) if not as_resource else None
 
 		return activity or resource
 
@@ -75,7 +77,15 @@ class ResourceHandler:
 		return data
 
 	def create_resource( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Resource:
-		return Resource( type=self.type, path=path.name, source=path.as_uri(), status=200, raw=data, text=text, content=content )
+		return Resource(
+			type=self.type,
+			path=path.name if path else None,
+			source=path.as_uri() if path else None,
+			status=200,
+			raw=data,
+			text=text,
+			content=content
+		)
 
 	def create_activity( self, resource: Resource ) -> Optional[Activity]:
 		return self.activity_cls( raw=resource.raw, resources=[ resource ] ) if self.activity_cls else None

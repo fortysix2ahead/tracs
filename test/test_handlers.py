@@ -25,7 +25,7 @@ def test_json_importer():
 	assert rsrc.type == JSON_TYPE
 	assert type( rsrc.content ) is bytes and len( rsrc.content ) > 0
 	assert type( rsrc.text ) is str and len( rsrc.text ) > 0
-	assert type( rsrc.raw_data ) is list
+	assert type( rsrc.raw ) is list
 
 def test_xml_importer():
 	path = get_file_path( 'templates/polar/empty.gpx' )
@@ -35,7 +35,7 @@ def test_xml_importer():
 	assert rsrc.type == XML_TYPE
 	assert type( rsrc.content ) is bytes and len( rsrc.content ) > 0
 	assert type( rsrc.text ) is str and len( rsrc.text ) > 0
-	assert rsrc.raw_data.getroot() is not None
+	assert rsrc.raw.getroot() is not None
 
 def test_gpx_importer():
 	path = get_file_path( 'templates/gpx/mapbox.gpx' )
@@ -46,7 +46,7 @@ def test_gpx_importer():
 	assert activity.time is not None and type( activity.time ) is datetime
 	assert activity.raw_id is not None
 	assert activity.resources[0].path is not None
-	assert activity.resources[0].raw_data is not None
+	assert activity.resources[0].raw is not None
 
 def test_polar_importer():
 	path = get_file_path( 'libraries/default/polar/1/0/0/100001/100001.raw.json' )

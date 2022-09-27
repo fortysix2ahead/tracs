@@ -75,10 +75,10 @@ class ResourceHandler:
 		return data
 
 	def create_resource( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Resource:
-		return Resource( type=self.type, path=path.name, source=path.as_uri(), status=200, raw_data=data, text=text, content=content )
+		return Resource( type=self.type, path=path.name, source=path.as_uri(), status=200, raw=data, text=text, content=content )
 
 	def create_activity( self, resource: Resource ) -> Optional[Activity]:
-		return self.activity_cls( raw=resource.raw_data, resources=[ resource ] ) if self.activity_cls else None
+		return self.activity_cls( raw=resource.raw, resources=[ resource ] ) if self.activity_cls else None
 
 	@property
 	def type( self ) -> Optional[str]:

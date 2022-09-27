@@ -140,17 +140,10 @@ class StravaActivity( Activity ):
 		self.uid = f'{self.classifier}:{self.raw_id}'
 
 @importer( type=STRAVA_TYPE )
-class StravaImporter( ResourceHandler ):
+class StravaImporter( JSONHandler ):
 
-	json_handler = Registry.importer_for( JSON_TYPE )
-
-	def load_data( self, data: Any, **kwargs ) -> Any:
-		return StravaImporter.json_handler.load( data=data )
-
-	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
-		resource = Resource( type=STRAVA_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
-		activity = StravaActivity( raw=structured_data, resources=[resource] )
-		return activity
+	def __init__( self ) -> None:
+		super().__init__( type=STRAVA_TYPE, activity_cls=StravaActivity )
 
 @service
 class Strava( Service, Plugin ):

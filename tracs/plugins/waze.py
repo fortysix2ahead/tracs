@@ -5,7 +5,6 @@ from datetime import datetime
 from os.path import getmtime
 from re import match
 from typing import Any
-from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -60,13 +59,11 @@ class WazeActivity( Activity ):
 @importer( type=WAZE_TYPE )
 class WazeImporter( ResourceHandler ):
 
+	def __init__( self ) -> None:
+		super().__init__( type=WAZE_TYPE, activity_cls=WazeActivity )
+
 	def load_data( self, data: Any, **kwargs ) -> Any:
 		return read_drive( data )
-
-	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
-		resource = Resource( type=WAZE_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
-		activity = WazeActivity( raw=structured_data, resources=[resource] )
-		return activity
 
 @service
 class Waze( Service, Plugin ):

@@ -258,8 +258,6 @@ def importer( *args, **kwargs ):
 	def importer_class( cls ):
 		if isclass( cls ):
 			instance: Importer = cast( Importer, cls() )
-			if kwargs['type'] not in instance.types:
-				instance.types.append( kwargs['type'] )
 			Registry.register_importer( instance, kwargs['type'] )
 			return cls
 		else:

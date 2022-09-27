@@ -62,6 +62,7 @@ def test_asdict():
 	}
 
 	assert as_dict( a, remove_persist=False ) == {
+		'dirty'    : False,
 		'doc_id'   : 0,
 		'id'       : 0,
 		'metadata' : {},

@@ -227,7 +227,7 @@ class Bikecitizens( Service, Plugin ):
 		if not self.login():
 			return []
 
-		json_importer: JSONHandler = Registry.importer_for( JSON_TYPE )
+		bikecitizens_importer: BikecitizensImporter = Registry.importer_for( BIKECITIZENS_TYPE )
 
 		try:
 			response = options( url=self.user_tracks_url, headers=HEADERS_OPTIONS )
@@ -235,9 +235,14 @@ class Bikecitizens( Service, Plugin ):
 
 			resources = []
 			for json in response.json():
-				uid = f'{self.name}:{json["id"]}'
-				content = json_importer.save_dict( json )
-				resources.append( Resource( type=BIKECITIZENS_TYPE, path=f"{json['id']}.raw.json", status=200, uid=uid, raw=json, raw_data=content, summary=True ) )
+				resource = bikecitizens_importer.load( data=json, as_resource=True )
+				resource.uid = f'{self.name}:{json["id"]}'
+				resource.path = f'{json["id"]}.raw.json'
+				resource.status = 200
+				resource.summary = True
+
+				resources.append( resource )
+
 			return resources
 
 		except RuntimeError:

@@ -97,17 +97,10 @@ class BikecitizensActivity( Activity ):
 		self.uuid = self.raw.get( 'uuid' )
 
 @importer( type=BIKECITIZENS_TYPE )
-class BikecitizensImporter( ResourceHandler ):
+class BikecitizensImporter( JSONHandler ):
 
-	json_handler = Registry.importer_for( JSON_TYPE )
-
-	def load_data( self, data: Any, **kwargs ) -> Any:
-		return BikecitizensImporter.json_handler.load( data=data )
-
-	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
-		resource = Resource( type=BIKECITIZENS_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
-		activity = BikecitizensActivity( raw=structured_data, resources=[resource] )
-		return activity
+	def __init__( self ) -> None:
+		super().__init__( type=BIKECITIZENS_TYPE, activity_cls=BikecitizensActivity )
 
 @service
 class Bikecitizens( Service, Plugin ):

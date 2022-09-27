@@ -33,6 +33,7 @@ from .handlers import JSONHandler
 from .handlers import JSON_TYPE
 from .handlers import TCX_TYPE
 from .handlers import ResourceHandler
+from .handlers import XMLHandler
 from .handlers import XML_TYPE
 from .plugin import Plugin
 from ..activity import Activity
@@ -152,45 +153,37 @@ class PolarExerciseDataActivity( Activity ):
 		self.uid = f'{self.classifier}:{self.raw_id}'
 
 @importer( type=POLAR_FLOW_TYPE )
-class PolarImporter( ResourceHandler ):
+class PolarImporter( JSONHandler ):
 
-	json_handler = Registry.importer_for( JSON_TYPE )
-
-	def load_data( self, data: Any, **kwargs ) -> Any:
-		return PolarImporter.json_handler.load( data=data )
-
-	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
-		resource = Resource( type=POLAR_FLOW_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
-		return PolarActivity( raw=structured_data, resources=[resource] )
+	def __init__( self ) -> None:
+		super().__init__( type=POLAR_FLOW_TYPE, activity_cls=PolarActivity )
 
 @importer( type=POLAR_EXERCISE_DATA_TYPE )
-class PersonalTrainerImporter( ResourceHandler ):
+class PersonalTrainerImporter( XMLHandler ):
 
-	xml_handler = Registry.importer_for( XML_TYPE )
+	def __init__( self ) -> None:
+		super().__init__( type=POLAR_EXERCISE_DATA_TYPE, activity_cls=PolarExerciseDataActivity )
 
-	def load_path( self, path: Path, **kwargs ) -> Optional[Union[str, bytes]]:
-		return PersonalTrainerImporter.xml_handler.load( path=path, **kwargs )
-
-	def load_data( self, data: Any, **kwargs ) -> Any:
-		structured_data = {
-			'time': data.getroot().find( self._ns( 'calendar-items/exercise/time' ) ).text,
-			'type': data.getroot().find( self._ns( 'calendar-items/exercise/sport' ) ).text,
-			'result_type': data.getroot().find( self._ns( 'calendar-items/exercise/sport-results/sport-result/sport' ) ).text, # should be the same as type
-			'duration': data.getroot().find( self._ns( 'calendar-items/exercise/sport-results/sport-result/duration' ) ).text, # should be the same as type
-			'distance': data.getroot().find( self._ns( 'calendar-items/exercise/sport-results/sport-result/distance' ) ).text,
-			'calories': data.getroot().find( self._ns( 'calendar-items/exercise/sport-results/sport-result/calories' ) ).text,
-			'recording_rate': data.getroot().find( self._ns( 'calendar-items/exercise/sport-results/sport-result/recording-rate' ) ).text,
+	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
+		xml = super().postprocess_data( data, text, content, path, url )
+		root = xml.getroot()
+		data = {
+			'time': root.find( self._ns( 'calendar-items/exercise/time' ) ).text,
+			'type': root.find( self._ns( 'calendar-items/exercise/sport' ) ).text,
+			'result_type': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/sport' ) ).text, # should be the same as type
+			'duration': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/duration' ) ).text, # should be the same as type
+			'distance': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/distance' ) ).text,
+			'calories': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/calories' ) ).text,
+			'recording_rate': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/recording-rate' ) ).text,
 		}
-		samples = data.getroot().findall( self._ns( 'calendar-items/exercise/sport-results/sport-result/samples/sample' ) )
+		samples = root.findall( self._ns( 'calendar-items/exercise/sport-results/sport-result/samples/sample' ) )
 		for s in samples:
 			sample_type = s.find( self._ns( 'type' ) ).text
 			sample_values = s.find( self._ns( 'values' ) ).text
-			structured_data[('samples', sample_type)] = sample_values.split( ',' )
-		return structured_data
+			data[('samples', sample_type)] = sample_values.split( ',' )
+		return data
 
-	def _activity_cls_type( self ) -> Optional[Tuple[Type, str]]:
-		return PolarExerciseDataActivity, POLAR_EXERCISE_DATA_TYPE
-
+	# noinspection PyMethodMayBeStatic
 	def _ns( self, s: str ):
 		return f'{{{PED_NS}}}' + s.replace( '/', f'/{{{PED_NS}}}' )
 

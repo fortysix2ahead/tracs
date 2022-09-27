@@ -19,7 +19,7 @@ class ResourceStatus( Enum ):
 	NO_CONTENT = 204
 	NOT_FOUND = 404
 
-class Resource( ABC ):
+class Resource( Protocol ):
 
 	@property
 	@abstractmethod
@@ -44,6 +44,21 @@ class Resource( ABC ):
 	@property
 	@abstractmethod
 	def path( self ) -> str:
+		pass
+
+	@property
+	@abstractmethod
+	def content( self ) -> Optional[bytes]:
+		pass
+
+	@property
+	@abstractmethod
+	def text( self ) -> Optional[str]:
+		pass
+
+	@property
+	@abstractmethod
+	def data( self ) -> Any:
 		pass
 
 class Activity( ABC, dict ):
@@ -222,11 +237,11 @@ class Handler( Protocol ):
 
 class Importer( Protocol ):
 	"""
-	An importer is used to transform a (preferably) dict-like data structure into an activity.
+	An importer is used to transform a (preferably) dict-like data structure into an activity or resource.
 	"""
 
 	@abstractmethod
-	def load( self, data: Optional[Any] = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Any]:
+	def load( self, data: Optional[Any] = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Union[Activity, Resource]]:
 		"""
 		Loads data from a (remove) source as transforms this data into either an activity or at least into some kind of structured data.
 
@@ -240,17 +255,23 @@ class Importer( Protocol ):
 
 	@property
 	@abstractmethod
-	def types( self ) -> List[str]:
+	def type( self ) -> str:
 		"""
-		List of content types this importer supports.
+		Content type this importer supports.
 
-		:return: list of content types
+		:return: content type
 		"""
 		pass
 
 	@property
 	@abstractmethod
-	def activity_cls( self ) -> Type[Activity]:
+	def activity_cls( self ) -> Optional[Type[Activity]]:
+		"""
+		Optional activity class this importer creates when loading resources.
+		If this property is not None an activity will be returned when calling the load method.
+
+		:return:
+		"""
 		pass
 
 class Exporter( Protocol ):

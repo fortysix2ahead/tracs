@@ -1,11 +1,8 @@
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -32,49 +29,64 @@ TCX_TYPE = 'application/xml+tcx'
 
 class ResourceHandler:
 
-	def __init__( self ) -> None:
-		self._types: List[str] = []
+	def __init__( self, type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
+		self._activity_cls: Optional[Type] = activity_cls
+		self._type: Optional[str] = type
 
-	def load( self, data: Optional[Any] = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Any]:
+	def load( self, data: Optional[Any] = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Union[Activity, Resource]]:
 		# try to load from url if provided
-		_loaded_data = self.load_url( url, **kwargs ) if url else None
+		_content = self.load_url( url, **kwargs ) if url else None
 
 		# try to load from path if provided, but don't overwrite loaded data
-		_loaded_data = self.load_path( path, **kwargs ) if path and not _loaded_data else None
+		_content = self.load_path( path, **kwargs ) if path and not _content else None
+
+		# decode the content into a string
+		_text = self.load_text( _content, **kwargs ) if _content else None
 
 		# try load/process either provided or loaded data
-		_structured_data = self.load_data( data or _loaded_data )
+		_data = self.load_data( data or _text or _content )
 
-		# transform into activity, if activity class is set
-		# noinspection PyArgumentList
-		#_data = self.activity_cls( raw = _structured_data ) if self.activity_cls and _structured_data else _structured_data
-		_data = self.postprocess_data( _structured_data, _loaded_data, path, url )
+		# postprocess data
+		_data = self.postprocess_data( _data, _text, _content, path, url )
 
-		return _data
+		# transform into activity, if activity class is set otherwise return as structured data
+		resource = self.create_resource( _data, _text, _content, path, url )
 
-	def load_data( self, data: Any, **kwargs ) -> Any:
-		return data
+		# create an activity
+		activity = self.create_activity( resource )
 
-	# noinspection PyMethodMayBeStatic
-	def load_path( self, path: Path, **kwargs ) -> Optional[Union[str, bytes]]:
-		with open( path, encoding='utf-8', mode='r', buffering=8192 ) as p:
-			return p.read()
+		return activity or resource
 
-	def load_url( self, url: str, **kwargs ) -> Any:
+
+	def load_url( self, url: str, **kwargs ) -> Optional[bytes]:
 		pass
 
-	# noinspection PyMethodMayBeStatic
-	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
-		activity_cls, content_type = self._activity_cls_type()
-		if activity_cls and content_type:
-			resource = Resource( type=content_type, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
-			activity = activity_cls( raw=structured_data, resources=[resource] )
-			return activity
-		else:
-			return structured_data
+	def load_path( self, path: Path, **kwargs ) -> Optional[bytes]:
+		return path.read_bytes()
 
-	def _activity_cls_type( self ) -> Tuple[Optional[Type], Optional[str]]:
-		return None, None
+	# noinspection PyMethodMayBeStatic
+	def load_text( self, content: bytes, **kwargs ) -> Optional[str]:
+		return content.decode( 'UTF-8' )
+
+	def load_data( self, text: Any, **kwargs ) -> Any:
+		return text
+
+	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
+		return data
+
+	def create_resource( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Resource:
+		return Resource( type=self.type, path=path.name, source=path.as_uri(), status=200, raw_data=data, text=text, content=content )
+
+	def create_activity( self, resource: Resource ) -> Optional[Activity]:
+		return self.activity_cls( raw=resource.raw_data, resources=[ resource ] ) if self.activity_cls else None
+
+	@property
+	def type( self ) -> Optional[str]:
+		return self._type
+
+	@property
+	def activity_cls( self ) -> Optional[Type]:
+		return self._activity_cls
 
 	def save( self, data: Union[Dict, str, bytes], path: Optional[Path] = None, url: Optional[str] = None ) -> None:
 		with open( file=path, mode='w+', buffering=8192, encoding='UTF-8' ) as p:
@@ -85,17 +97,16 @@ class ResourceHandler:
 	def save_dict( self, data: Dict ) -> Union[str, bytes]:
 		return str( data )
 
-	@property
-	def types( self ) -> List[str]:
-		return self._types
-
 @importer( type=JSON_TYPE )
 class JSONHandler( ResourceHandler ):
 
 	options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
-	def load_data( self, data: Any, **kwargs ) -> Activity:
-		return load_json( data )
+	def __init__( self, type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
+		super().__init__( type=type or JSON_TYPE, activity_cls=activity_cls )
+
+	def load_data( self, text: str, **kwargs ) -> Any:
+		return load_json( text )
 
 	def save_dict( self, data: Dict ) -> Union[str, bytes]:
 		return save_json( data, option=JSONHandler.options ).decode( 'UTF-8' )
@@ -103,7 +114,10 @@ class JSONHandler( ResourceHandler ):
 @importer( type=XML_TYPE )
 class XMLHandler( ResourceHandler ):
 
-	def load_path( self, path: Path, **kwargs ) -> Optional[Union[str, bytes]]:
+	def __init__( self, type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
+		super().__init__( type=type or XML_TYPE, activity_cls=activity_cls )
+
+	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
 		return parse_xml( path )
 
 @document( type=GPX_TYPE )
@@ -121,10 +135,8 @@ class GPXActivity( Activity ):
 @importer( type=GPX_TYPE )
 class GPXImporter( ResourceHandler ):
 
-	def load_data( self, data: Any, **kwargs ) -> Any:
-		return parse_gpx( data )
+	def __init__( self ) -> None:
+		super().__init__( type=XML_TYPE, activity_cls=GPXActivity )
 
-	def postprocess_data( self, structured_data: Any, loaded_data: Any, path: Optional[Path], url: Optional[str] ) -> Any:
-		resource = Resource( type=GPX_TYPE, path=path.name, source=path.as_uri(), status=200, raw=structured_data, raw_data=loaded_data )
-		activity = GPXActivity( raw=structured_data, resources=[resource] )
-		return activity
+	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
+		return parse_gpx( content )

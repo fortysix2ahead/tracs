@@ -3,6 +3,7 @@ from datetime import date
 from datetime import datetime
 from datetime import time
 from datetime import timezone
+from zoneinfo import ZoneInfoNotFoundError
 
 from dateutil.tz import gettz
 from dateutil.tz import tzlocal
@@ -12,7 +13,6 @@ from tracs.utils import as_datetime
 from tracs.utils import fmt
 from tracs.utils import seconds_to_time
 from tracs.utils import fromisoformat
-from tracs.utils import fromtimezone
 from tracs.utils import toisoformat
 
 def test_fmt():
@@ -108,12 +108,3 @@ def test_as_time():
 
 	assert as_datetime( None ) is None
 	assert as_datetime( '' ) is None
-
-def test_fromtimezone():
-	tz1 = gettz()
-	print( tz1 )
-	tz2 = gettz( 'Europe/Berlin' )
-	print( tz2 )
-	tz3 = tzlocal()
-	print( tz3 )
-	assert fromtimezone( None ) == tzlocal()

@@ -1,6 +1,8 @@
+
 from datetime import datetime
 from dateutil.tz import UTC
 from dateutil.tz import tzlocal
+from tzlocal import get_localzone_name
 
 from pytest import mark
 
@@ -53,11 +55,13 @@ def test_asdict():
 	a = Activity()
 	assert a.asdict() == {
 		'tags'     : [],
+		'timezone' : get_localzone_name(),
 		'uids'     : []
 	}
 
 	assert as_dict( a ) == {
 		'tags'     : [],
+		'timezone' : get_localzone_name(),
 		'uids'     : []
 	}
 
@@ -68,6 +72,7 @@ def test_asdict():
 		'metadata' : {},
 		'resources': [],
 		'tags'     : [],
+		'timezone' : get_localzone_name(),
 		'uids'     : []
 	}
 
@@ -103,6 +108,7 @@ def test_asdict():
 		'raw_id'    : 1,
 		'tags'      : [],
 		'time'      : datetime( 2020, 1, 1, 10, 0, 0, tzinfo=UTC ),
+		'timezone'  : get_localzone_name(),
 		'type'      : ActivityTypes.run,
 		'uid'       : 'test:1',
 		'uids'      : []

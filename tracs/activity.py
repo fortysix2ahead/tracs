@@ -14,6 +14,8 @@ from logging import getLogger
 from typing import List
 from typing import Optional
 
+from tzlocal import get_localzone_name
+
 from .activity_types import ActivityTypes
 from .dataclasses import BaseDocument
 from .dataclasses import PERSIST
@@ -41,18 +43,22 @@ class Resource( BaseDocument ):
 	summary: bool = field( default=False )
 	uid: str = field( default=None )
 
-	raw: Any = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # structured raw data making up this resource
-	raw_data: Union[str, bytes] = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # serialized version of raw, can be str or bytes
-
-	# fields are not yet used, but shall replace raw_data in the future, following the fields of requests.response
-	content: bytes = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # raw content, as bytes
+	# additional field holding data of a resource, used when loading, but won't be persisted in db
+	raw: Any = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # structured data making up this resource
 	text: str = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # decoded content as string
+	content: bytes = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # raw content, as bytes
 
-	def classifier( self ):
+	@property
+	def classifier( self ) -> str:
 		return self._uid()[0]
 
-	def raw_id( self ):
-		return self._uid()[1]
+	@property
+	def local_id( self ) -> int:
+		return int( self._uid()[1] )
+
+	@property # property should be deprecated in favour of local id
+	def raw_id( self ) -> int:
+		return self.local_id
 
 	def _uid( self ) -> Tuple[str, str]:
 		classifier, raw_id = self.uid.split( ':', maxsplit=1 )
@@ -107,7 +113,7 @@ class Activity( BaseDocument ):
 
 	time: datetime = field( default=None ) # activity time (UTC)
 	localtime: datetime = field( default=None ) # activity time (local)
-	timezone: str = field( default=None ) #
+	timezone: str = field( default=get_localzone_name() ) # timezone of the activity, local timezone by default
 	duration: time = field( default=None ) #
 	duration_moving: time = field( default=None ) #
 

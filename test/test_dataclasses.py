@@ -119,23 +119,27 @@ def test_as_dict():
 	bd.data= { 'k': 'v' }
 
 	assert as_dict( bd, remove_persist=False, remove_data=True ) == {
+		'dirty': False,
 		'doc_id': 0,
 		'id': 0,
 	}
 
 	assert as_dict( bd, remove_persist=False, remove_data=False ) == {
 		'data': {'k': 'v'},
+		'dirty': False,
 		'doc_id': 0,
 		'id': 0
 	}
 
 	assert as_dict( bd, remove_persist=False, remove_null=False, remove_data=True ) == {
+		'dirty'     : False,
 		'doc_id'    : 0,
 		'id'        : 0
 	}
 
 	assert as_dict( bd, remove_persist=False, remove_null=False, remove_data=False ) == {
 		'data'      : {'k': 'v'},
+		'dirty'     : False,
 		'doc_id'    : 0,
 		'id'        : 0
 	}

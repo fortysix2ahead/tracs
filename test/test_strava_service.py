@@ -5,6 +5,7 @@ from typing import List
 from pytest import mark
 
 from tracs.activity import Activity
+from tracs.activity import Resource
 from tracs.config import GlobalConfig as gc
 from tracs.plugins.strava import Strava
 from tracs.plugins.strava import StravaActivity
@@ -41,8 +42,7 @@ def test_constructor():
 	assert strava._auth_url == f'{TEST_BASE_URL}/oauth/authorize'
 	assert strava._token_url == f'{TEST_BASE_URL}/oauth/token'
 
-@mark.service( (Strava, TEST_BASE_URL) )
-@mark.service_config( ('test/configurations/default/config.yaml', 'test/configurations/default/state_test.yaml' ) )
+@mark.service( cls=Strava, base_url=TEST_BASE_URL, config='test/configurations/default/config.yaml', state='test/configurations/default/state.yaml' )
 def test_service( strava_server, service ):
 	from tracs.config import ApplicationConfig
 	from tracs.config import ApplicationState
@@ -54,7 +54,7 @@ def test_service( strava_server, service ):
 	# assert strava_service.logged_in
 
 	# fetch
-	fetched: List[Activity] = list( service._fetch() )
+	fetched: List[Resource] = list( service.fetch( False, False ) )
 
 	assert len( fetched ) == 3
 	a = fetched[0]

@@ -151,7 +151,7 @@ class Strava( Service, Plugin ):
 	def __init__( self, base_url=None, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 		self.base_url = base_url
-		self.json_importer: JSONHandler = Registry.importer_for( JSON_TYPE )
+		self.importer: StravaImporter = Registry.importer_for( STRAVA_TYPE )
 
 	@property
 	def base_url( self ) -> str:
@@ -273,7 +273,14 @@ class Strava( Service, Plugin ):
 				response = self._oauth_session.get( self.all_events_url( page ) )
 
 				for json in response.json():
-					resources.append( self._summary_resource( json ) )
+					resource = self.importer.load( data=json, as_resource=True )
+					resource.uid = f"{self.name}:{json['id']}"
+					resource.path = f"{json['id']}.raw.json"
+					resource.source = self.url_activity( json['id'] )
+					resource.status = 200
+					resource.summary = True
+
+					resources.append( resource )
 
 				if len( response.json() ) == 0:
 					break
@@ -282,18 +289,6 @@ class Strava( Service, Plugin ):
 		except RuntimeError:
 			log.error( f'error fetching activity ids', exc_info=True )
 			return []
-
-	def _summary_resource( self, json: Dict ) -> Resource:
-		return Resource(
-			type=STRAVA_TYPE,
-			path=f"{json['id']}.raw.json",
-			status=200,
-			uid=f"{self.name}:{json['id']}",
-			raw=json,
-			raw_data=self.json_importer.save_dict( json ),
-			source=self.url_activity( json['id'] ),
-			summary=True
-		)
 
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:

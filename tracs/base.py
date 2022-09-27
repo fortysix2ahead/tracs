@@ -48,12 +48,22 @@ class Resource( Protocol ):
 
 	@property
 	@abstractmethod
+	def uid( self ) -> str:
+		pass
+
+	@property
+	@abstractmethod
 	def content( self ) -> Optional[bytes]:
 		pass
 
 	@property
 	@abstractmethod
 	def text( self ) -> Optional[str]:
+		pass
+
+	@property
+	@abstractmethod
+	def raw( self ) -> Any:
 		pass
 
 	@property

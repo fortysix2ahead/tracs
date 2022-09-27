@@ -92,8 +92,7 @@ class Service( ServiceProtocol ):
 
 	@classmethod
 	def path_for_resource( cls, resource: Resource ) -> Optional[Path]:
-		classifier, raw_id = resource.classifier(), resource.raw_id()
-		if service := Registry.services.get( classifier ):
+		if service := Registry.services.get( resource.classifier ):
 			#return Path( service.path_for_id( raw_id, service.base_path ), resource.path )
 			return service.path_for( resource=resource )
 
@@ -116,7 +115,7 @@ class Service( ServiceProtocol ):
 			if ext:
 				path = Path( path, f'{activity.raw_id}.{ext}' )
 		elif resource:
-			path = Path( self.path_for_id( resource.raw_id(), self.base_path ), resource.path )
+			path = Path( self.path_for_id( resource.local_id, self.base_path ), resource.path )
 		else:
 			path = None
 

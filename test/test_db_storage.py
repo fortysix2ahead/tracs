@@ -1,3 +1,4 @@
+
 from copy import deepcopy
 from datetime import datetime
 from datetime import time
@@ -20,7 +21,6 @@ from tracs.db_storage import OrJSONStorage
 from tracs.plugins.polar import PolarActivity
 
 from .helpers import get_db_path
-from .helpers import get_writable_db_path
 
 unserialized_data = {
 	"_default": {
@@ -92,16 +92,13 @@ serialized_file_data = {
 }
 
 @mark.db( template='default' )
-def test_read( json ):
-	# read from default db template
-	path, db_path, meta_path = get_db_path( 'default', writable=False )
-
+def test_read( db ):
 	# read without deserializers
-	data = OrJSONStorage( path=db_path, access_mode='r' ).read()
+	data = OrJSONStorage( path=db.db_path, access_mode='r' ).read()
 	assert type( data['_default']['1']['time'] ) is str
 	assert type( data['_default']['1']['type'] ) is str
 
-	data = OrJSONStorage( path=db_path, access_mode='r', deserializers=DataClassStorage.deserializers ).read()
+	data = OrJSONStorage( path=db.db_path, access_mode='r', deserializers=DataClassStorage.deserializers ).read()
 
 	assert type( data['_default']['1']['time'] ) is datetime
 	assert type( data['_default']['1']['localtime'] ) is datetime
@@ -114,52 +111,41 @@ def test_read( json ):
 	storage = DataClassStorage( path=None, use_memory_storage=True )
 	assert storage.memory_storage.memory is None
 
-	storage = DataClassStorage( path=db_path, use_memory_storage=True )
+	storage = DataClassStorage( path=db.db_path, use_memory_storage=True )
 	assert storage.memory_storage.memory is not None
 	data = storage.read()
 	assert data is not None and len( data.items() ) == 1 and len( data['_default'].items() ) > 0
 
-	storage = DataClassStorage( path=db_path, use_memory_storage=True, passthrough=False )
+	storage = DataClassStorage( path=db.db_path, use_memory_storage=True, passthrough=False )
 	assert storage.memory_storage.memory is not None
 	data = storage.read()
 	assert data is not None and len( data.items() ) == 1 and len( data['_default'].items() ) > 0
 	assert type( data['_default']['1'] ) is Activity
 
-@mark.db( template='default' )
-def test_write( json ):
-	path, db_path, meta_path = get_db_path( 'empty', writable=True )
-	storage = OrJSONStorage( path=db_path, access_mode='r+' )
+@mark.db( template='empty', inmemory=False, writable=True )
+def test_write( db ):
+	storage = OrJSONStorage( path=db.db_path, access_mode='r+' )
 	storage.write( serialized_file_data )
 
 	data = storage.read()
 	assert type( data['_default']['1'] ) is not None
 
-	path, db_path, meta_path = get_db_path( 'empty', writable=False )
-	storage = DataClassStorage( path=db_path, use_memory_storage=True )
-	storage.write( json )
-
-	data = storage.memory_storage.memory
-	assert data is not None and len( data.items() ) == 1 and len( data['_default'].items() ) > 0
-
-	# setup transformation map
+	storage = DataClassStorage( path=db.db_path, use_memory_storage=True )
 	storage.write( deepcopy( unserialized_data ) )
 	written_data = storage.memory_storage.memory
-	assert written_data == serialized_memory_data
+	assert written_data == unserialized_data
 
-	path, db_path, meta_path = get_writable_db_path( 'empty' )
-	storage = DataClassStorage( path=db_path, use_memory_storage=False, document_factory=document_cls )
+	storage = DataClassStorage( path=db.db_path, use_memory_storage=False, use_serializers=True )
 	storage.write( deepcopy( unserialized_data ) )
-
-	with open( db_path, 'r' ) as f:
+	with open( db.db_path, 'r' ) as f:
 		written_data = load_json( f.read() )
 		assert written_data == serialized_file_data
 
-@mark.db( template='polar' )
-def test_cache( json ):
-	path, db_path, meta_path = get_db_path( 'polar', True )
-
+# todo: this test case needs an update
+@mark.db( template='default', inmemory=False, writable=True )
+def test_cache( db ):
 	# create storage and read
-	storage = DataClassStorage( path=db_path, use_memory_storage=False, cache=False, document_factory=document_cls )
+	storage = DataClassStorage( path=db.db_path, use_memory_storage=False, use_cache=False, use_serializers=True )
 	data = storage.read()
 	assert type( data['_default']['1'] ) is PolarActivity
 	assert data['_default']['1']['name'] == 'Some Location'
@@ -208,11 +194,13 @@ def test_cache( json ):
 	storage.write( data )
 	assert _get_activity_name( db_path ) == 'Far Location'
 
-@mark.db( template='polar' )
-def test_passthrough( json ):
-	storage = DataClassStorage( path=None, use_memory_storage=True, cache=False, document_factory=document_cls )
+# todo: this test case needs an update
+@mark.db( template='default', inmemory=False, writable=True )
+def test_passthrough( db ):
+	storage = DataClassStorage( path=None, use_memory_storage=True, use_cache=False, use_serializers=True )
 	storage.write( deepcopy( unserialized_data ) )
-	assert type( storage.memory.memory['_default']['1'] ) is dict
+	assert type( storage.memory_storage.memory['_default']['1'] ) is dict
+
 	# data is None as this read is considered the initial one, this should not happen in live operation (always read before first write)
 	data = storage.read()
 	storage.write( deepcopy( unserialized_data ) ) # write and read again

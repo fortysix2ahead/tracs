@@ -85,7 +85,7 @@ class Waze( Service, Plugin ):
 		:param ext: file extension
 		:return: path for activity
 		"""
-		_id = str( activity.raw_id ) if activity else resource.raw_id()
+		_id = str( activity.raw_id ) if activity else str( resource.raw_id )
 		path = Path( self.base_path, _id[0:2], _id[2:4], _id[4:6], _id )
 		if resource:
 			path = Path( path, resource.path )

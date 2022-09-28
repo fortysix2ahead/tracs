@@ -240,6 +240,7 @@ class Bikecitizens( Service, Plugin ):
 				resource.path = f'{json["id"]}.raw.json'
 				resource.status = 200
 				resource.summary = True
+				resource.text = self.importer.save_data( json )
 
 				resources.append( resource )
 

@@ -279,6 +279,7 @@ class Strava( Service, Plugin ):
 					resource.source = self.url_activity( json['id'] )
 					resource.status = 200
 					resource.summary = True
+					resource.text = self.importer.save_data( json )
 
 					resources.append( resource )
 

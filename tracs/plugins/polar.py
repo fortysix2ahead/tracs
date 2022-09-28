@@ -311,6 +311,7 @@ class Polar( Service, Plugin ):
 				resource.status = 200
 				resource.source = self.activity_url( local_id )
 				resource.summary = True
+				resource.text = self.importer.save_data( json )
 
 				resources.append( resource )
 

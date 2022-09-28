@@ -98,14 +98,22 @@ class ResourceHandler:
 	def activity_cls( self ) -> Optional[Type]:
 		return self._activity_cls
 
-	def save( self, data: Union[Dict, str, bytes], path: Optional[Path] = None, url: Optional[str] = None ) -> None:
-		with open( file=path, mode='w+', buffering=8192, encoding='UTF-8' ) as p:
-			if isinstance( data, dict ):
-				p.write( self.save_dict( data ) )
+	# noinspection PyMethodMayBeStatic
+	def save_content( self, content: bytes, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> None:
+		if path:
+			path.write_bytes( content )
 
 	# noinspection PyMethodMayBeStatic
-	def save_dict( self, data: Dict ) -> Union[str, bytes]:
-		return str( data )
+	def save_text( self, text: str, **kwargs ) -> bytes:
+		return text.encode( encoding = 'UTF-8' )
+
+	def save_data( self, data: Any, **kwargs ) -> str:
+		pass
+
+	def save( self, data: Any = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> None:
+		_text = self.save_data( data )
+		_content = self.save_text( _text )
+		self.save_content( _content, path, url, **kwargs )
 
 @importer( type=JSON_TYPE )
 class JSONHandler( ResourceHandler ):
@@ -118,8 +126,11 @@ class JSONHandler( ResourceHandler ):
 	def load_data( self, text: str, **kwargs ) -> Any:
 		return load_json( text )
 
-	def save_dict( self, data: Dict ) -> Union[str, bytes]:
+	def save_data( self, data: Any, **kwargs ) -> str:
 		return save_json( data, option=JSONHandler.options ).decode( 'UTF-8' )
+
+	def save( self, data: Any = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> None:
+		self.save_content( content=save_json( data, option=JSONHandler.options ), path=path, url=url, **kwargs )
 
 @importer( type=XML_TYPE )
 class XMLHandler( ResourceHandler ):

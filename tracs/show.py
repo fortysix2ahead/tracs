@@ -11,6 +11,7 @@ from .activity import Activity
 from .config import ApplicationContext
 from .config import console
 from .dataclasses import as_dict
+from .plugins import Registry
 from .utils import fmt
 
 def show_activity( activities: [Activity], ctx: ApplicationContext, frmt: str = None, display_raw: bool = False ) -> None:
@@ -22,7 +23,7 @@ def show_activity( activities: [Activity], ctx: ApplicationContext, frmt: str = 
 				echo( "KeyError: invalid format string, check if provided fields really exist" )
 
 		else:
-			table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
+			table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 
 			if display_raw:
 				table.add_column( '[blue]field' )
@@ -41,8 +42,8 @@ def show_activity( activities: [Activity], ctx: ApplicationContext, frmt: str = 
 								table.add_row( field, pp( value ) )
 
 			else:
-				table.add_column( '[blue]field' )
-				table.add_column( '[blue]value' )
+				#table.add_column( '[blue]field' )
+				#table.add_column( '[blue]value' )
 				rows = [
 					[ 'ID', a.id ],
 					[ 'Name', a.name ],
@@ -64,20 +65,34 @@ def show_activity( activities: [Activity], ctx: ApplicationContext, frmt: str = 
 					[ 'Heart Rate (max)', a.heartrate_max ],
 					[ 'Heart Rate (min)', a.heartrate_min ],
 					[ 'Calories', a.calories ],
-					[ 'Raw ID', a.raw_id ],
 					[ 'UID', a.uid ],
+					[ 'UIDs', a.uids ],
 				]
 
 				for row in rows:
-					if row[1] is None or row[1] == '':
-						continue
-					else:
+					if row[1] is not None and row[1] != '':
 						if type( row[1] ) is str:
-							table.add_row( row[0], row[1] )
-						elif type( row[1] ) in [int, float]:
-							table.add_row( row[0], pp( row[1] ) )
+							fmt_str = row[1]
+						elif type( row[1] ) in [int, float, list]:
+							fmt_str = pp( row[1] )
 						else:
-							table.add_row( row[0], fmt( row[1] ) )
+							fmt_str = fmt( row[1] )
+
+						table.add_row( row[0], fmt_str, '' )
+
+				table.add_row( '', '', '' )
+				table.add_row( 'URLs:', '', '' )
+				# for uid in a.uids:
+				#	Registry.services.get( uid.split( ':', 1 )[0] ).url_for
+
+				table.add_row( '', '', '' )
+				table.add_row( 'Resources:', '', '' )
+				for uid in a.uids:
+					resources = ctx.db.find_resources( uid ) if ctx else []
+					for r in resources:
+						resource_path = Registry.services.get( r.classifier ).path_for( resource=r )
+						path_exists = '\u2705' if resource_path.exists() else '\u274c'
+						table.add_row( '', f'{r.path} [{path_exists}]', f'{r.type}' )
 
 			console.print( table )
 			console.print( '\u00b9 Proper timezone support is currently missing, local timezone is displayed' )

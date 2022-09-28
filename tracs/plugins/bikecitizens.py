@@ -112,7 +112,7 @@ class Bikecitizens( Service, Plugin ):
 		self.api_url = api_url if api_url else API_URL
 		self.base_url = base_url if base_url else BASE_URL
 
-	# service urls
+		self.importer: BikecitizensImporter = Registry.importer_for( BIKECITIZENS_TYPE )
 
 	@property
 	def base_url( self ) -> str:
@@ -227,15 +227,13 @@ class Bikecitizens( Service, Plugin ):
 		if not self.login():
 			return []
 
-		bikecitizens_importer: BikecitizensImporter = Registry.importer_for( BIKECITIZENS_TYPE )
-
 		try:
 			response = options( url=self.user_tracks_url, headers=HEADERS_OPTIONS )
 			response = self._session.get( self.user_tracks_url, headers={**HEADERS_OPTIONS, **{'X-API-Key': self._api_key}} )
 
 			resources = []
 			for json in response.json():
-				resource = bikecitizens_importer.load( data=json, as_resource=True )
+				resource = self.importer.load( data=json, as_resource=True )
 				resource.uid = f'{self.name}:{json["id"]}'
 				resource.path = f'{json["id"]}.raw.json'
 				resource.status = 200

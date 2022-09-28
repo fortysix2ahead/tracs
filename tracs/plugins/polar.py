@@ -196,6 +196,8 @@ class Polar( Service, Plugin ):
 		self._session = None
 		self._logged_in = False
 
+		self.importer: PolarImporter = Registry.importer_for( POLAR_FLOW_TYPE )
+
 	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
 		return super().path_for( activity, resource, ext )
 		# if a.is_multipart: # todo: add multipart support
@@ -297,14 +299,12 @@ class Polar( Service, Plugin ):
 		if not self.login():
 			return []
 
-		polar_importer: PolarImporter = Registry.importer_for( POLAR_FLOW_TYPE )
-
 		try:
 			response = self._session.get( self.all_events_url(), headers=HEADERS_API )
 			resources = []
 
 			for json in response.json():
-				resource = polar_importer.load( data=json, as_resource=True )
+				resource = self.importer.load( data=json, as_resource=True )
 				local_id = _local_id( json )
 				resource.uid = f'{self.name}:{local_id}'
 				resource.path = f'{local_id}.raw.json'

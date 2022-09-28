@@ -171,23 +171,26 @@ class Service( ServiceProtocol ):
 		pass
 
 	def persist_resource_data( self, activity: Activity, force: bool, pretend: bool, **kwargs ) -> None:
+		if pretend:
+			log.info( f'pretending to write resources of activity {activity.uid}' )
+			return
+
 		for r in activity.resources:
 			path = self.path_for_resource( r )
 			path.parent.mkdir( parents=True, exist_ok=True )
-			if r.raw_data and r.status == 200:
-				if not path.exists() or force:
-					if not pretend:
-						try:
-							if type( r.raw_data ) is bytes:
-								path.write_bytes( r.raw_data )
-							elif type( r.raw_data ) is str:
-								path.write_text( data=r.raw_data, encoding='UTF-8' )
-							r.dirty = True
-						except:
-							log.error( f'skipping write of resource data for resource {r.path}' )
-					else:
-						log.info( f'pretending to write resource data to {path}' )
 
+			if ( r.text or r.content ) and r.status == 200:
+				if not path.exists() or force:
+
+					try:
+						path.write_text( r.text )
+						r.dirty = True
+					except TypeError:
+						try:
+							path.write_bytes( r.content )
+							r.dirty = True
+						except TypeError:
+							log.error( f'skipping write of resource data for resource {r.path}', exc_info=True )
 
 	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
 		pass

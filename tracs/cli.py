@@ -114,7 +114,7 @@ def db( ctx, backup: bool, fields: bool, migrate: str, restore: bool, status: bo
 	elif restore:
 		restore_db( app.db.db, app.db_file, app.backup_dir, app.cfg['force'].get() )
 	elif status:
-		status_db( app.db, app.services )
+		status_db( ctx.obj.db )
 
 @cli.command( help='prints the current configuration' )
 def config():

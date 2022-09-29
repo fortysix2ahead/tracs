@@ -91,8 +91,8 @@ def show_activity( activities: [Activity], ctx: ApplicationContext, frmt: str = 
 					resources = ctx.db.find_resources( uid ) if ctx else []
 					for r in resources:
 						resource_path = Registry.services.get( r.classifier ).path_for( resource=r )
-						path_exists = '\u2705' if resource_path.exists() else '\u274c'
-						table.add_row( '', f'{r.path} [{path_exists}]', f'{r.type}' )
+						path_exists = '[bright_green]\u2713[/bright_green]' if resource_path.exists() else '[bright_red]\u2716[/bright_red]'
+						table.add_row( '', f'{r.path} {path_exists}', f'{r.type}' )
 
 			console.print( table )
 			console.print( '\u00b9 Proper timezone support is currently missing, local timezone is displayed' )

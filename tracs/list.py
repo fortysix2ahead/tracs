@@ -13,6 +13,8 @@ from .activity import Activity
 from .config import ApplicationConfig as cfg
 from .config import GlobalConfig as gc
 from .config import console
+from .dataclasses import PERSIST
+from .dataclasses import PROTECTED
 from .plugins import Registry
 from .utils import fmt
 from .utils import red
@@ -63,71 +65,19 @@ def list_activities( activities: [Activity], sort: str, format_name: str ) -> No
 	if len( table.rows ) > 0:
 		console.print( table )
 
-def inspect_activities( activities: [Activity], display_table: bool = False ) -> None:
+def inspect_activities( activities: [Activity] ) -> None:
 	for a in activities:
-		if not display_table:
-			table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
+		table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 
-			table.add_row( '[blue]field', '[blue]type', '[blue]value' )
+		table.add_row( '[blue]field[/blue]', '[blue]type[/blue]', '[blue]value[/blue]', '[blue]protected[/blue]', '[blue]persist[/blue]' )
 
-			for field, value in a.items():
-				if not field.startswith( '_' ):
-					table.add_row( field, _type( value ), pp( value ) )
+		for f in Activity.fields():
+			table.add_row( f.name, f.type, pp( getattr( a, f.name ) ), pp( f.metadata.get( PROTECTED, False ) ), pp( f.metadata.get( PERSIST, True ) ) )
 
-			table.add_row( '[blue]calculated field', '[blue]type', '[blue]value' )
-			for key, fn in Activity.get_accessors().items():
-				classifier, field = key if type( key ) == tuple else (None, key)
-				if classifier is None:
-					table.add_row( f'*{field}*', _type( fn( a, a.doc_id ) ), pp( fn( a, a.doc_id ) ) )
-				elif classifier == a.classifier:
-					table.add_row( field, _type( fn( a, a.doc_id ) ), pp( fn( a, a.doc_id ) ) )
+		console.print( table )
 
-			table.add_row( '[blue]raw field', '[blue]type', '[blue]value' )
-			for field, value in a.raw.items():
-				table.add_row( field, _type( value ), pp( shorten( value ) ) )
-
-			table.add_row( '[blue]metadata field', '[blue]type', '[blue]value' )
-			for field, value in a.metadata.items():
-				table.add_row( field, _type( value ), pp( shorten( value ) ) )
-
-			console.print( table )
-
-		else:
-			table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
-			table.add_column( '[blue]field' )
-			table.add_column( '[blue]value' )
-			table.add_column( '[blue]lambda()' )
-			table.add_column( '[blue]default_lambda()' )
-			table.add_column( '[blue]get()' )
-
-			data_dict = {}
-
-			for field, value in a.items():
-				if not field.startswith( '_' ):
-					# this accesses the field via a[field]
-					# data_dict[field] = [None, None, None, value]
-					data_dict[field] = [a[field], None, None, a.get( field )]
-
-			for key, fn in Activity.get_accessors().items():
-				classifier, field = key if type( key ) == tuple else (None, key)
-				if classifier is None:
-					if field not in data_dict:
-						data_dict[field] = [None, None, None, None]
-					data_dict[field][2] = fn( a, a.doc_id )
-					data_dict[field][0] = a[field]
-				elif classifier == a.classifier:
-					if field not in data_dict:
-						data_dict[field] = [None, None, None, None]
-					data_dict[field][1] = fn( a, a.doc_id )
-					data_dict[field][0] = a[field]
-
-			fields = sorted( data_dict.keys() )
-			for field in fields:
-				_value, _service_value, _base_value, _raw_value = data_dict.get( field )
-				if _value or _service_value or _base_value or _raw_value:
-					table.add_row( pp( field ), pp( _value ), pp( _service_value ), pp( _base_value ), pp( _raw_value ) )
-
-			console.print( table )
+def inspect_resources() -> None:
+	raise NotImplementedError
 
 def inspect_registry() -> None:
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )

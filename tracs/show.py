@@ -14,32 +14,30 @@ from .dataclasses import as_dict
 from .plugins import Registry
 from .utils import fmt
 
-def show_activity( activities: [Activity], ctx: ApplicationContext, frmt: str = None, display_raw: bool = False ) -> None:
+def show_activity( activities: [Activity], ctx: ApplicationContext, display_raw: bool = False, verbose: bool = True ) -> None:
 	for a in activities:
-		if frmt is not None:
-			try:
-				echo( frmt.format_map( a ) )
-			except KeyError:
-				echo( "KeyError: invalid format string, check if provided fields really exist" )
-
-		else:
 			table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 
 			if display_raw:
-				table.add_column( '[blue]field' )
-				table.add_column( '[blue]value' )
-				for field, value in as_dict( a, remove_persist=False, remove_null=False ).items():
-					if field not in ['metadata', 'resources']:
-						table.add_row( field, pp( value ) )
+				table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
+				table.add_row( '[blue]field[/blue]', '[blue]value[/blue]' )
 
-				if ctx:
-					table.add_row( '[blue]resources', '' )
-					for uid in a.uids:
-						resources = ctx.db.find_resources( uid )
-						for r in resources:
-							table.add_row( '', '' )
-							for field, value in as_dict( r, remove_persist=False, remove_null=False ).items():
-								table.add_row( field, pp( value ) )
+				for f in sorted( Activity.fields(), key=lambda field: field.name ):
+					table.add_row( f.name, pp( getattr( a, f.name ) ) )
+
+				console.print( table )
+
+				table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
+				table.add_row( '[bold bright_blue]Resources[/bold bright_blue]' )
+				table.add_row( '[blue]id[/blue]', '[blue]name[/blue]', '[blue]path[/blue]', '[blue]exists[/blue]', '[blue]type[/blue]', '[blue]uid[/blue]', '[blue]status[/blue]', '[blue]source[/blue]' )
+				for uid in a.uids:
+					resources = ctx.db.find_resources( uid )
+					for r in resources:
+						resource_path = Registry.services.get( r.classifier ).path_for( resource=r )
+						path_exists = '[bright_green]\u2713[/bright_green]' if resource_path.exists() else '[bright_red]\u2716[/bright_red]'
+						table.add_row( pp( r.doc_id ), r.name, r.path, path_exists, r.type, r.uid, pp( r.status ), r.source )
+
+				console.print( table )
 
 			else:
 				#table.add_column( '[blue]field' )
@@ -94,5 +92,5 @@ def show_activity( activities: [Activity], ctx: ApplicationContext, frmt: str = 
 						path_exists = '[bright_green]\u2713[/bright_green]' if resource_path.exists() else '[bright_red]\u2716[/bright_red]'
 						table.add_row( '', f'{r.path} {path_exists}', f'{r.type}' )
 
-			console.print( table )
-			console.print( '\u00b9 Proper timezone support is currently missing, local timezone is displayed' )
+				console.print( table )
+				console.print( '\u00b9 Proper timezone support is currently missing, local timezone is displayed' )

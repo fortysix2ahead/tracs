@@ -5,6 +5,7 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from . import document
 from . import service
@@ -29,6 +30,12 @@ class Empty( Service, Plugin ):
 
 	def __init__( self, **kwargs  ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
+
+	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
+		return None
+
+	def url_for_resource_type( self, local_id: Union[int, str], type: str ) -> Optional[str]:
+		return None
 
 	def login( self ) -> bool:
 		return True

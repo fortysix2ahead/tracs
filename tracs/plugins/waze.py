@@ -8,6 +8,7 @@ from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from click import echo
 from dateutil.tz import UTC
@@ -92,6 +93,12 @@ class Waze( Service, Plugin ):
 		elif ext:
 			path = Path( path, f'{id}.{ext}' )
 		return path
+
+	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
+		return None
+
+	def url_for_resource_type( self, local_id: Union[int, str], type: str ) -> Optional[str]:
+		return None
 
 	def login( self ) -> bool:
 		return self._logged_in

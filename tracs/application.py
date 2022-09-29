@@ -93,6 +93,7 @@ class Application( object ):
 		# ---- evaluate provided parameters (configuration/command line) ------------
 		ctx.force = force if force is not None else ctx.config['force'].get()
 		ctx.pretend = pretend if pretend is not None else ctx.config['pretend'].get()
+		ctx.verbose = verbose if verbose is not None else ctx.config['verbose'].get()
 
 		# todo: remove when application context support is fully implemented
 		if force is not None:
@@ -142,6 +143,11 @@ class Application( object ):
 		# announce library paths to services
 		for name, service in Registry.services.items():
 			service.base_path = Path( self._db_dir, name )
+
+		# announce paths to application context
+		ctx.cfg_dir = self.cfg_dir
+		ctx.db_dir = self.db_dir
+		ctx.lib_dir = self.lib_dir
 
 		# ---- announce fields to global config
 		gc.cfg_dir = self.cfg_dir

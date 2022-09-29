@@ -130,37 +130,25 @@ def inspect_activities( activities: [Activity], display_table: bool = False ) ->
 			console.print( table )
 
 def inspect_registry() -> None:
-	console.print( 'Services:' )
-	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
-	table.add_column( '[blue]name' )
-	table.add_column( '[blue]display name' )
-	table.add_column( '[blue]class' )
-	table.add_column( '[blue]enabled' )
+	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 
+	table.add_row( '[bold bright_blue]Services[/bold bright_blue]' )
+	table.add_row( '[blue]name[/blue]', '[blue]display name[/blue]', '[blue]class[/blue]', '[blue]enabled[/blue]' )
 	for key, value in Registry.services.items():
 		table.add_row( value.name, value.display_name, pp( value.__class__ ), pp( value.enabled ) )
 
-	console.print( table )
-
-	console.print( 'Document Classes:' )
-	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
-	table.add_column( '[blue]type' )
-	table.add_column( '[blue]class' )
+	table.add_row( '[bold bright_blue]Document Classes[/bold bright_blue]' )
+	table.add_row( '[blue]type[/blue]', '[blue][/blue]', '[blue]class[/blue]' )
 
 	for key, value in Registry.document_classes.items():
-		table.add_row( key, pp( f'{value.__module__}.{value.__name__}' ) )
+		table.add_row( key, '', pp( f'{value.__module__}.{value.__name__}' ) )
 
-	console.print( table )
+	table.add_row( '[bold bright_blue]Importers[/bold bright_blue]' )
+	table.add_row( '[blue]type[/blue]', '[blue][/blue]', '[blue]class[/blue]' )
 
-	# document handlers
-
-	console.print( 'Document Handlers:' )
-	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
-	table.add_column( '[blue]type' )
-	table.add_column( '[blue]class' )
-
-	for key, value in Registry.document_handlers.items():
-		table.add_row( key, pp( f'{value.__module__}.{value.__name__}' ) )
+	for key, value in Registry.importers.items():
+		for v in value:
+			table.add_row( key, '', pp( v.__class__ ) )
 
 	console.print( table )
 

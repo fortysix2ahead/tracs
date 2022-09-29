@@ -18,6 +18,7 @@ from click import Choice
 from click import Path as ClickPath
 from click_shell import shell
 
+from tracs.edit import modify_activities
 from tracs.inout import import_activities
 from tracs.inout import open_activities
 from tracs.list import inspect_registry
@@ -212,6 +213,14 @@ def part( filters, revert: bool ):
 		unpart_activities( gc.db.find( filters ), cfg['force'].get() )
 	else:
 		part_activities( gc.db.find( filters, True, False, True ), cfg['force'].get() )
+
+@cli.command( help='modifies activities' )
+@option( '-f', '--field', is_flag=False, required=True, help='field to modify' )
+@option( '-v', '--value', is_flag=False, required=True, help='new field value' )
+@argument( 'filters', nargs=-1 )
+@pass_context
+def modify( ctx, filters, field, value ):
+	modify_activities( activities=ctx.obj.db.find( filters ), field=field, value=value, ctx = ctx.obj, force=ctx.obj.force, pretend=ctx.obj.pretend )
 
 @cli.command( hidden=True, help='edits activities' )
 @argument( 'filters', nargs=-1 )

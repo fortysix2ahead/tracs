@@ -276,12 +276,12 @@ class Bikecitizens( Service, Plugin ):
 		return f'https://api.bikecitizens.net/api/v1/tracks/{local_id}'
 
 	def url_for_resource_type( self, local_id: Union[int, str], type: str ) -> Optional[str]:
+		url = None
+
 		if type == GPX_TYPE:
 			url = f'{self.url_for_id( local_id )}/gpx'
 		elif type == BIKECITIZENS_RECORDING_TYPE:
 			url = f'{self.url_for_id( local_id )}/points'
-		else:
-			raise RuntimeError( f'unable to create export url: unsupported resource type {type}' )
 
 		return url
 

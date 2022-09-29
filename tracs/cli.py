@@ -22,6 +22,7 @@ from tracs.edit import modify_activities
 from tracs.inout import import_activities
 from tracs.inout import open_activities
 from tracs.list import inspect_registry
+from tracs.list import inspect_resources
 from .activity import Activity
 from .application import Application
 from .config import ApplicationConfig as cfg
@@ -298,14 +299,16 @@ def init():
 
 @cli.command( hidden=True, help='inspects activities/resources/internal registry' )
 @option( '-g', '--registry', is_flag=True, required=False, help='inspects the internal registry, filter will be ignored' )
-@option( '-t', '--table', is_flag=True, required=False, help='displays fields in a table-like manner' )
+@option( '-r', '--resource', is_flag=True, required=False, help='applies the provided filters to resources instead of activities' )
 @argument( 'filters', nargs=-1 )
 @pass_context
-def inspect( ctx, filters, table, registry ):
+def inspect( ctx, filters, registry, resource ):
 	if registry:
 		inspect_registry()
+	elif resource:
+		inspect_resources()
 	else:
-		inspect_activities( ctx.obj.db.find( filters ), display_table=table )
+		inspect_activities( ctx.obj.db.find( filters ) )
 
 @cli.command( hidden=True, help='Performs some validation and sanity tasks.' )
 @argument( 'filters', nargs=-1 )

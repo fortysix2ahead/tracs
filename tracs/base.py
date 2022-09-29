@@ -149,6 +149,16 @@ class Service( Protocol ):
 		"""
 		pass
 
+	def url_for( self, activity: Optional[Activity], resource: Optional[Resource], local_id: Optional[int] ) -> Optional[str]:
+		"""
+		Return the URL either for the provided activity or resource.
+
+		:param activity: activity to retrieve the URL for
+		:param resource: resource to retrieve the URL for
+		:param local_id: local id to retrieve the URL for
+		:return: URL or None if URL cannot be determined
+		"""
+
 	@abstractmethod
 	def import_activities( self, force: bool, pretend: bool, **kwargs ):
 		pass

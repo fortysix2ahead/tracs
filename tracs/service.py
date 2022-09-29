@@ -9,6 +9,7 @@ from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from dateutil.tz import UTC
 
@@ -90,11 +91,29 @@ class Service( ServiceProtocol ):
 	def db_dir( self ) -> Path:
 		return self._cfg['db_dir'].get()
 
+	# some helper class methods
+
+	@classmethod
+	def path_for_uid( cls, uid: str ) -> Optional[Path]:
+		classifier, local_id = uid.split( ':', 1 )
+		if service := Registry.services.get( classifier ):
+			return Path( service.name, service.path_for_id( local_id, None ) )
+		else:
+			return None
+
 	@classmethod
 	def path_for_resource( cls, resource: Resource ) -> Optional[Path]:
 		if service := Registry.services.get( resource.classifier ):
 			#return Path( service.path_for_id( raw_id, service.base_path ), resource.path )
 			return service.path_for( resource=resource )
+
+	@classmethod
+	def url_for_uid( cls, uid: str ) -> Optional[str]:
+		classifier, local_id = uid.split( ':', 1 )
+		if service := Registry.services.get( classifier ):
+			return service.url_for( local_id=local_id )
+		else:
+			return None
 
 	def path_for_id( self, raw_id: int, base_path: Optional[Path] ) -> Path:
 		_id = str( raw_id )
@@ -129,6 +148,31 @@ class Service( ServiceProtocol ):
 		elif ext:
 			path = Path( path, f'{ts[8:]}.{self.name}.{ext}' )
 		return path
+
+	def url_for( self, activity: Optional[Activity] = None, resource: Optional[Resource] = None, local_id: Optional[int] = None ) -> Optional[str]:
+		url = None
+
+		if local_id:
+			url = self.url_for_id( local_id )
+		elif resource and resource.classifier == self.name:
+			url = self.url_for_resource_type( resource.local_id, resource.type )
+		elif activity:
+			try:
+				classifier, local_id = activity.uid.split( ':', 1 )
+				if classifier == self.name:
+					url = self.url_for_id( local_id )
+			except KeyError:
+				pass
+
+		return url
+
+	@abstractmethod
+	def url_for_id( self, local_id: Union[int, str] ) -> str:
+		pass
+
+	@abstractmethod
+	def url_for_resource_type( self, local_id: Union[int, str], type: str ):
+		pass
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		"""

@@ -182,19 +182,14 @@ class Strava( Service, Plugin ):
 		per_page = FETCH_PAGE_SIZE  # we might make this configurable later ...
 		return f'{self._base_url}/api/v3/athlete/activities?before={before}&after={after}&page={page}&per_page={per_page}'
 
-	def url_for( self, id: Union[int,str], type: str ):
-		if type == GPX_TYPE:
-			return f'{self._activities_url}/{id}/export_gpx'
-		elif type == TCX_TYPE:
-			return f'{self._activities_url}/{id}/export_original'
+	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
+		return f'{self._activities_url}/{local_id}'
 
-	def export_url_for( self, id: int, ext: str ) -> Optional[str]:
-		if ext == 'gpx':
-			return f'{self._activities_url}/{id}/export_gpx'
-		elif ext == 'tcx':
-			return f'{self._activities_url}/{id}/export_original'
-		else:
-			return None
+	def url_for_resource_type( self, local_id: Union[int, str], type: str ) -> Optional[str]:
+		if type == GPX_TYPE:
+			return f'{self._activities_url}/{local_id}/export_gpx'
+		elif type == TCX_TYPE:
+			return f'{self._activities_url}/{local_id}/export_original'
 
 	def _link_path( self, activity: Activity, ext: str ) -> Path or None:
 		#		if activity.id:
@@ -205,9 +200,6 @@ class Strava( Service, Plugin ):
 		#				return Path( parent, f'{utc.strftime( "%H%M%S" )} - {a.name}.strava.{ext}' )  # fully qualified path
 		#			else:
 		return Path( parent, f'{utc.strftime( "%H%M%S" )}.{self.name}.{ext}' )  # fully qualified path
-
-	def url_activity( self, id: int ) -> str:
-		return f'{self._activities_url}/{id}'
 
 	def weblogin( self ):
 		if not self._session:

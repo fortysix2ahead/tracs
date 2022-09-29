@@ -8,6 +8,7 @@ from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
@@ -265,20 +266,23 @@ class Bikecitizens( Service, Plugin ):
 			return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
-		url = self.export_url( resource.raw_id(), resource.type )
+		url = self.url_for_resource_type( resource.raw_id, resource.type )
 		# noinspection PyUnusedLocal
 		response = options( url, headers=HEADERS_OPTIONS )
 		response = self._session.get( url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } } )
 		return response.content, response.status_code
 
-	# noinspection PyMethodMayBeStatic
-	def export_url( self, raw_id: int, type: str ) -> str:
+	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
+		return f'https://api.bikecitizens.net/api/v1/tracks/{local_id}'
+
+	def url_for_resource_type( self, local_id: Union[int, str], type: str ) -> Optional[str]:
 		if type == GPX_TYPE:
-			url = f"https://api.bikecitizens.net/api/v1/tracks/{raw_id}/gpx"
+			url = f'{self.url_for_id( local_id )}/gpx'
 		elif type == BIKECITIZENS_RECORDING_TYPE:
-			url = f"https://api.bikecitizens.net/api/v1/tracks/{raw_id}/points"
+			url = f'{self.url_for_id( local_id )}/points'
 		else:
 			raise RuntimeError( f'unable to create export url: unsupported resource type {type}' )
+
 		return url
 
 	def setup( self ) -> None:

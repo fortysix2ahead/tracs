@@ -67,6 +67,8 @@ class ApplicationContext:
 	#state_default: Configuration = field( default=None )
 	#state_user: Configuration = field( default=None )
 
+	cfg_dir: Path = field( default=None )
+
 	db: Any = field( default=None )
 	db_dir: Path = field( default=None )
 	db_file: Path = field( default=None )

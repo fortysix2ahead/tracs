@@ -8,7 +8,6 @@ from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Tuple
-from typing import Type
 from typing import Union
 
 from requests_cache import CachedSession
@@ -30,11 +29,8 @@ from . import importer
 from . import service
 from .handlers import GPX_TYPE
 from .handlers import JSONHandler
-from .handlers import JSON_TYPE
 from .handlers import TCX_TYPE
-from .handlers import ResourceHandler
 from .handlers import XMLHandler
-from .handlers import XML_TYPE
 from .plugin import Plugin
 from ..activity import Activity
 from ..activity import Resource
@@ -238,22 +234,26 @@ class Polar( Service, Plugin ):
 	def all_events_url( self ):
 		return f'{self._events_url}?start=1.1.1970&end=1.1.{datetime.utcnow().year + 1}'
 
-	def url_for( self, id: Union[int,str], type: str ):
-		if type == POLAR_CSV_TYPE:
-			return f'{self._export_url}/csv/{id}'
-		elif type == GPX_TYPE:
-			return f'{self._export_url}/gpx/{id}'
-		elif type == TCX_TYPE:
-			return f'{self._export_url}/tcx/{id}'
-		elif type == POLAR_HRV_TYPE:
-			return f'{self._export_url}/rr/csv/{id}'
-		elif type == POLAR_ZIP_GPX_TYPE:
-			return f'{self._export_url}/gpx/{id}?compress=true'
-		elif type == POLAR_ZIP_TCX_TYPE:
-			return f'{self._export_url}/tcx/{id}?compress=true'
+	def url_for_id( self, local_id: Union[int, str] ) -> str:
+		return f'{self._activity_url}/{local_id}'
 
-	def activity_url( self, id: int ) -> str:
-		return f'{self._activity_url}/{id}'
+	def url_for_resource_type( self, local_id: Union[int, str], type: str ):
+		url = None
+
+		if type == POLAR_CSV_TYPE:
+			url = f'{self._export_url}/csv/{local_id}'
+		elif type == GPX_TYPE:
+			url = f'{self._export_url}/gpx/{local_id}'
+		elif type == TCX_TYPE:
+			url = f'{self._export_url}/tcx/{local_id}'
+		elif type == POLAR_HRV_TYPE:
+			url = f'{self._export_url}/rr/csv/{local_id}'
+		elif type == POLAR_ZIP_GPX_TYPE:
+			url = f'{self._export_url}/gpx/{local_id}?compress=true'
+		elif type == POLAR_ZIP_TCX_TYPE:
+			url = f'{self._export_url}/tcx/{local_id}?compress=true'
+
+		return url
 
 	def login( self ) -> bool:
 		if self._logged_in and self._session:
@@ -309,7 +309,7 @@ class Polar( Service, Plugin ):
 				resource.uid = f'{self.name}:{local_id}'
 				resource.path = f'{local_id}.raw.json'
 				resource.status = 200
-				resource.source = self.activity_url( local_id )
+				resource.source = self.url_for_id( local_id )
 				resource.summary = True
 				resource.text = self.importer.save_data( json )
 
@@ -328,15 +328,15 @@ class Polar( Service, Plugin ):
 
 			if _is_multipart_id( summary.raw.get( 'iconUrl' ) ):
 				resources = [
-					Resource( type=POLAR_ZIP_GPX_TYPE, path=f'{lid}.gpx.zip', status=100, uid=uid, source=self.url_for( lid, POLAR_ZIP_GPX_TYPE ) ),
-					Resource( type=POLAR_ZIP_TCX_TYPE, path=f'{lid}.tcx.zip', status=100, uid=uid, source=self.url_for( lid, POLAR_ZIP_TCX_TYPE ) ),
+					Resource( type=POLAR_ZIP_GPX_TYPE, path=f'{lid}.gpx.zip', status=100, uid=uid, source=self.url_for_resource_type( lid, POLAR_ZIP_GPX_TYPE ) ),
+					Resource( type=POLAR_ZIP_TCX_TYPE, path=f'{lid}.tcx.zip', status=100, uid=uid, source=self.url_for_resource_type( lid, POLAR_ZIP_TCX_TYPE ) ),
 				]
 			else:
 				resources = [
-					Resource( type=POLAR_CSV_TYPE, path=f'{lid}.csv', status=100, uid=uid, source=self.url_for( lid, POLAR_CSV_TYPE ) ),
-					Resource( type=GPX_TYPE, path=f'{lid}.gpx', status=100, uid=uid, source=self.url_for( lid, GPX_TYPE ) ),
-					Resource( type=TCX_TYPE, path=f'{lid}.tcx', status=100, uid=uid, source=self.url_for( lid, TCX_TYPE ) ),
-					Resource( type=POLAR_HRV_TYPE, path=f'{lid}.hrv.csv', status=100, uid=uid, source=self.url_for( lid, POLAR_HRV_TYPE ) )
+					Resource( type=POLAR_CSV_TYPE, path=f'{lid}.csv', status=100, uid=uid, source=self.url_for_resource_type( lid, POLAR_CSV_TYPE ) ),
+					Resource( type=GPX_TYPE, path=f'{lid}.gpx', status=100, uid=uid, source=self.url_for_resource_type( lid, GPX_TYPE ) ),
+					Resource( type=TCX_TYPE, path=f'{lid}.tcx', status=100, uid=uid, source=self.url_for_resource_type( lid, TCX_TYPE ) ),
+					Resource( type=POLAR_HRV_TYPE, path=f'{lid}.hrv.csv', status=100, uid=uid, source=self.url_for_resource_type( lid, POLAR_HRV_TYPE ) )
 				]
 
 			for r in resources:
@@ -349,7 +349,7 @@ class Polar( Service, Plugin ):
 			return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
-		url = self.url_for( resource.raw_id(), resource.type )
+		url = self.url_for_resource_type( resource.raw_id(), resource.type )
 		if url:
 			log.debug( f'downloading resource from {url}' )
 			response = self._session.get( url, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )

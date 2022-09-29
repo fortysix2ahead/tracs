@@ -71,7 +71,7 @@ def inspect_activities( activities: [Activity] ) -> None:
 
 		table.add_row( '[blue]field[/blue]', '[blue]type[/blue]', '[blue]value[/blue]', '[blue]protected[/blue]', '[blue]persist[/blue]' )
 
-		for f in Activity.fields():
+		for f in sorted( Activity.fields(), key=lambda field: field.name ):
 			table.add_row( f.name, f.type, pp( getattr( a, f.name ) ), pp( f.metadata.get( PROTECTED, False ) ), pp( f.metadata.get( PERSIST, True ) ) )
 
 		console.print( table )

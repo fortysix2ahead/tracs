@@ -1,5 +1,5 @@
 {
-  "_default": {
+	"_default": {
 		"1": {
 			"metadata": {},
 			"name": "Frankfurt",
@@ -7,6 +7,7 @@
 			"localtime": "2012-10-24T22:29:40+01:00",
 			"time": "2012-10-24T23:29:40+00:00",
 			"type": "run",
+			"uid": "activity:121042232940",
 			"uids": ["polar:100001", "strava:200002"]
 		},
 		"2": {
@@ -21,7 +22,29 @@
 			"name": "Berlin",
 			"resources": [2],
 			"time": "2012-10-24T23:29:40+00:00",
-			"uids": [ "polar:100001" ]
+			"uids": ["polar:100001"]
+		},
+		"100": {
+			"name": "Combined Waze Drive",
+			"parts": [101, 102],
+			"parts2": ["waze:200712074743", "waze:200712102429"],
+			"parts3": [
+				["waze:200712074743"], ["waze:200712102429"]
+			],
+			"time": "2020-07-12T07:47:43+00:00",
+			"type": "drive"
+		},
+		"101": {
+			"name": "Waze One",
+			"time": "2020-07-12T07:47:43+00:00",
+			"type": "drive",
+			"uids": ["waze:200712074743"]
+		},
+		"102": {
+			"name": "Waze Two",
+			"time": "2020-07-12T10:24:29+00:00",
+			"type": "drive",
+			"uids": ["waze:200712102429"]
 		}
 	}
 }

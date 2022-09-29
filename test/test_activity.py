@@ -118,6 +118,9 @@ def test_asdict():
 		'uids'      : []
 	}
 
+def test_activity_parts():
+	activity = Activity()
+
 def test_resource():
 	some_string = 'some string value'
 	r = Resource( content=some_string.encode( encoding='UTF-8' ) )

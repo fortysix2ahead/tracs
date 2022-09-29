@@ -90,14 +90,24 @@ class Activity( BaseDocument ):
 
 	metadata: Dict = field( init=False, default_factory=dict, metadata={ PROTECTED: True, PERSIST: False } )
 	resources: List[Resource] = field( init=True, default_factory=list, metadata={ PROTECTED: True, PERSIST: False } )
+	parts: List = field( init=True, default_factory=list, metadata={ PROTECTED: True } )
 
-	#parent: Activity = field( default=None, metadata={ PERSIST: False, PROTECTED: True } )
-	#parent_ref: ActivityRef = field( default=None, metadata={ PERSIST: False, PROTECTED: True } )
 	#parent_id: int = field( default=None, metadata={ PROTECTED: True } )
 	#parent_uid: str = field( default=None, metadata={ PROTECTED: True } )
 
 	#is_group: bool = field( init=False, default=False, metadata={ PERSIST: False } ) # todo: for backward compatibility
-	#is_multipart: bool = field( init=False, default=False, metadata={ PERSIST: False } ) # todo: for backward compatibility
+
+	@property
+	def parent( self ) -> Optional[Activity]:
+		return None
+
+	@property
+	def parent_ref( self ) -> int:
+		return 0
+
+	@property
+	def is_multipart( self ) -> bool:
+		return False
 
 	@property
 	def abbreviated_type( self ) -> str:

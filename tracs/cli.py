@@ -296,8 +296,8 @@ def init():
 	from .plugins import load as load_plugins
 	load_plugins()
 
-@cli.command( hidden=True, help='inspects activities' )
-@option( '-r', '--registry', is_flag=True, required=False, help='inspects the internal registry, activity filter will be ignored' )
+@cli.command( hidden=True, help='inspects activities/resources/internal registry' )
+@option( '-g', '--registry', is_flag=True, required=False, help='inspects the internal registry, filter will be ignored' )
 @option( '-t', '--table', is_flag=True, required=False, help='displays fields in a table-like manner' )
 @argument( 'filters', nargs=-1 )
 @pass_context
@@ -305,7 +305,7 @@ def inspect( ctx, filters, table, registry ):
 	if registry:
 		inspect_registry()
 	else:
-		inspect_activities( gc.db.find( filters, True, True, True ), display_table=table )
+		inspect_activities( ctx.obj.db.find( filters ), display_table=table )
 
 @cli.command( hidden=True, help='Performs some validation and sanity tasks.' )
 @argument( 'filters', nargs=-1 )

@@ -3,14 +3,17 @@ from __future__ import annotations
 
 from collections.abc import MutableMapping
 from dataclasses import Field
+from dataclasses import Field
 from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import fields
 from typing import Any
+from typing import Any
 from typing import Dict
 from typing import Iterator
 from typing import Optional
+from typing import Tuple
 from typing import Tuple
 
 # constants
@@ -55,6 +58,16 @@ def as_dict( instance: DataClass, remove_persist: bool = True, remove_null: bool
 
 @dataclass( init=True )
 class DataClass( MutableMapping ):
+
+	# class methods as helpers
+
+	@classmethod
+	def fields( cls ) -> tuple[Field, ...]:
+		return fields( cls )
+
+	@classmethod
+	def field( cls, name: str ) -> Optional[Field]:
+		return next( ( f for f in fields( cls ) if f.name == name ), None )
 
 	def __post_init__( self ):
 		pass # do nothing here

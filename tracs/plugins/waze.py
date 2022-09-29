@@ -77,6 +77,13 @@ class Waze( Service, Plugin ):
 	def _takeouts_dir( self ) -> Path:
 		return Path( gc.db_dir, self.name, TAKEOUTS_DIRNAME )
 
+	def path_for_id( self, local_id: int, base_path: Optional[Path] ) -> Path:
+		_id = str( local_id )
+		path = Path( _id[0:2], _id[2:4], _id[4:6], _id )
+		if base_path:
+			path = Path( base_path, path )
+		return path
+
 	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
 		"""
 		Returns the path for an activity.

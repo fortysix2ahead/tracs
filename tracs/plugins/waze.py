@@ -20,9 +20,11 @@ from gpxpy.gpx import GPXTrackSegment
 from logging import getLogger
 from pathlib import Path
 
+from . import Registry
 from . import document
 from . import importer
 from . import service
+from .handlers import CSVHandler
 from .handlers import GPX_TYPE
 from .handlers import ResourceHandler
 from .plugin import Plugin
@@ -43,6 +45,7 @@ SERVICE_NAME = 'waze'
 DISPLAY_NAME = 'Waze'
 
 WAZE_TYPE = 'application/text+waze'
+WAZE_TAKEOUT_TYPE = 'application/csv+waze'
 
 @document( type=WAZE_TYPE )
 class WazeActivity( Activity ):
@@ -66,12 +69,43 @@ class WazeImporter( ResourceHandler ):
 	def load_data( self, data: Any, **kwargs ) -> Any:
 		return read_drive( data )
 
+@importer( type=WAZE_TAKEOUT_TYPE )
+class WazeTakeoutImporter( CSVHandler ):
+
+	def __init__( self ) -> None:
+		super().__init__( type=WAZE_TAKEOUT_TYPE )
+
+	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
+		parse_mode = False
+		drives = []
+		for row in data:
+			if len( row ) == 3 and row[0] == 'Location details (date':
+				parse_mode = True
+
+			elif parse_mode and row:
+				try:
+					drives.append( (read_drive( row[0] ), row[0]) )
+				except RuntimeError:
+					log.error( 'Error parsing row' )
+
+			elif parse_mode and not row:
+				parse_mode = False
+
+		return drives
+
 @service
 class Waze( Service, Plugin ):
 
 	def __init__( self, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 		self._logged_in = True
+
+		self.field_size_limit = self.cfg_value( 'field_size_limit' )
+		self.takeout_importer: WazeTakeoutImporter = Registry.importer_for( WAZE_TAKEOUT_TYPE )
+		self.takeout_importer.field_size_limit = self.field_size_limit
+		log.debug( f"using {self.field_size_limit} as field size limit for CSV parser in Waze service" )
+
+		self.importer: WazeImporter = Registry.importer_for( WAZE_TYPE )
 
 	@property
 	def _takeouts_dir( self ) -> Path:
@@ -111,63 +145,64 @@ class Waze( Service, Plugin ):
 		return self._logged_in
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		_field_size_limit = self.cfg_value( 'field_size_limit' )
-		log.debug( f"Using {_field_size_limit} as field size limit for CSV parser in Waze service" )
-
 		takeouts_dir = Path( self._takeouts_dir )
-		log.debug( f"Fetching Waze activities from {takeouts_dir}" )
+		log.debug( f"fetching Waze activities from {takeouts_dir}" )
 
 		last_fetch = self.state_value( KEY_LAST_FETCH )
 
 		summaries = []
 
 		for file in sorted( takeouts_dir.rglob( ACTIVITY_FILE ) ):
-			log.info( f'Fetching activities from Waze takeout in {file}' )
+			log.debug( f'fetching activities from Waze takeout in {file}' )
 
 			# rel_path = file.relative_to( takeouts_dir )
 			mtime = datetime.fromtimestamp( getmtime( file ), UTC )
 
 			if last_fetch and datetime.fromisoformat( last_fetch ) >= mtime and not force:
-				log.info( f"Skipping Waze takeout in {file} as it is older than the last_fetch timestamp, consider --force to ignore timestamps"  )
+				log.debug( f"skipping Waze takeout in {file} as it is older than the last_fetch timestamp, consider --force to ignore timestamps"  )
 				continue
 
-			for tokens, raw_data in read_takeout( file, _field_size_limit ):
-				if len( tokens ) > 0:
-					summary = self._summary_resource( tokens, raw_data )
-					# summary.source = file.as_uri() # don't save the source right now
-					summaries.append( summary )
+			takeout_resource = self.takeout_importer.load( path=file, as_resource=True )
+			for drive in takeout_resource.raw:
+				local_id = int( drive[0][1][1].strftime( '%y%m%d%H%M%S' ) )
+				summary = self.importer.load( data=drive[0], as_resource=True )
+				summary.path = f'{local_id}.raw.txt'
+				summary.status = 200
+				summary.text = drive[1]
+				# summary.source = file.as_uri() # don't save the source right now
+				summary.summary = True
+				summary.uid = f'{self.name}:{local_id}'
 
-		log.debug( f'Fetched {len( summaries )} Waze activities' )
+				summaries.append( summary )
+
+		log.debug( f'fetched {len( summaries )} Waze activities' )
 
 		return summaries
 
-	def _summary_resource( self, raw: List[Tuple[int, datetime, float, float]], raw_data: str ) -> Resource:
-		lid = int( raw[0][1].strftime( '%y%m%d%H%M%S' ) )
-		return Resource(
-			type=WAZE_TYPE,
-			path=f'{lid}.raw.txt',
-			status= 200,
-			uid=f'{self.name}:{lid}',
-			raw_data=raw_data,
-			summary=True,
-		)
-
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
-			r = Resource( type=GPX_TYPE, path=f"{summary.raw_id()}.gpx", status=100, uid=summary.uid )
-			r.raw_data, r.status = self.download_resource( r )
-			return [ r ]
+			local_id, uid = summary.raw_id, summary.uid
+			resource = Resource( type=GPX_TYPE, path=f'{local_id}.gpx', status=100, uid=uid )
+			resource.raw_data, resource.status = self.download_resource( resource, text=summary.text ), 200
+			return [ resource ]
+
 		except RuntimeError:
-			log.error( f'error fetching resources', exc_info=True )
+			log.error( f'error fetching resources',exc_info=True )
 			return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
-		raw_path = Path( self.path_for( resource=resource ).parent, f'{resource.raw_id()}.raw.txt' )
-		with open( raw_path, mode='r', encoding='UTF-8' ) as p:
-			content = p.read()
-			drive = read_drive( content )
-			gpx = to_gpx( drive )
-			return gpx, 200 # return always 200
+		# todo: better to transform this into an importer
+		if text := kwargs.get( 'text' ):
+			resource.raw, resource.content = to_gpx( read_drive( text ) )
+			return resource.content, 200
+
+		else:
+			raw_path = Path( self.path_for( resource=resource ).parent, f'{resource.raw_id}.raw.txt' )
+			with open( raw_path, mode='r', encoding='UTF-8' ) as p:
+				content = p.read()
+				drive = read_drive( content )
+				gpx = to_gpx( drive )
+				return gpx, 200 # return always 200
 
 	# nothing to do for now ...
 	def setup( self ):
@@ -223,7 +258,7 @@ def read_drive( s: str ) -> List[Tuple[int, datetime, float, float]]:
 
 	return points
 
-def to_gpx( tokens: List[Tuple[int, datetime, float, float]] ):
+def to_gpx( tokens: List[Tuple[int, datetime, float, float]] ) -> Tuple[GPX, bytes]:
 	# create GPX object for track
 	gpx = GPX()
 	track = GPXTrack()
@@ -237,4 +272,4 @@ def to_gpx( tokens: List[Tuple[int, datetime, float, float]] ):
 		point = GPXTrackPoint( time=time, latitude=latitude, longitude=longitude )
 		segment.points.append( point )
 
-	return bytes( gpx.to_xml(), 'UTF-8' )
+	return gpx, bytes( gpx.to_xml(), 'UTF-8' )

@@ -1,7 +1,8 @@
 
+from csv import field_size_limit
+from csv import reader as csv_reader
 from pathlib import Path
 from typing import Any
-from typing import Dict
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -22,6 +23,7 @@ from ..activity import Activity
 from ..activity import Resource
 from ..utils import seconds_to_time
 
+CSV_TYPE = 'application/csv'
 JSON_TYPE = 'application/json'
 XML_TYPE = 'application/xml'
 GPX_TYPE = 'application/xml+gpx'
@@ -35,6 +37,9 @@ class ResourceHandler:
 
 	def load( self, data: Optional[Any] = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Union[Activity, Resource]]:
 		as_resource = kwargs.get( 'as_resource', False ) # flag to force to return a resource even when an activity class is available
+		as_string = kwargs.get( 'as_string', False ) # flag to signal to read binary data only
+		as_binary = kwargs.get( 'as_binary', False ) # flag to signal to return only a string
+		encoding = kwargs.get( 'encoding', 'UTF-8' ) # encoding to use when converting from bytes to str
 
 		# try to load from url if provided
 		_content = self.load_url( url, **kwargs ) if url else None
@@ -114,6 +119,18 @@ class ResourceHandler:
 		_text = self.save_data( data )
 		_content = self.save_text( _text )
 		self.save_content( _content, path, url, **kwargs )
+
+@importer( type=CSV_TYPE )
+class CSVHandler( ResourceHandler ):
+
+	def __init__( self, type: Optional[str] = None, activity_cls: Optional[Type] = None, **kwargs ) -> None:
+		super().__init__( type=type or JSON_TYPE, activity_cls=activity_cls )
+
+		self._field_size_limit = kwargs.get( 'field_size_limit', 131072 ) # keep this later use
+		field_size_limit( self._field_size_limit )
+
+	def load_data( self, text: str, **kwargs ) -> Any:
+		return [ r for r in csv_reader( text.splitlines() ) ]
 
 @importer( type=JSON_TYPE )
 class JSONHandler( ResourceHandler ):

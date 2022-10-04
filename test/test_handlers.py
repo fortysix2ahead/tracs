@@ -1,9 +1,12 @@
 
 from datetime import datetime
 
+from pytest import mark
+
 from tracs.plugins import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE
 from tracs.plugins.bikecitizens import BikecitizensActivity
+from tracs.plugins.handlers import CSV_TYPE
 from tracs.plugins.handlers import GPXActivity
 from tracs.plugins.handlers import JSON_TYPE
 from tracs.plugins.handlers import XML_TYPE
@@ -16,6 +19,13 @@ from tracs.plugins.strava import StravaActivity
 from tracs.plugins.waze import WAZE_TYPE
 from tracs.plugins.waze import WazeActivity
 from .helpers import get_file_path
+
+@mark.file( 'templates/waze/account_activity_3.csv' )
+def test_csv_handler( path ):
+	importer = Registry.importer_for( CSV_TYPE )
+	resource = importer.load( path=path )
+
+	assert type( resource.raw ) is list and len( resource.raw ) == 25
 
 def test_json_importer():
 	path = get_file_path( 'templates/polar/2020.json' )

@@ -6,26 +6,28 @@ from dateutil.tz import gettz
 from pytest import mark
 
 from tracs.activity_types import ActivityTypes
+from tracs.plugins import Registry
+from tracs.plugins.waze import WAZE_TAKEOUT_TYPE
+from tracs.plugins.waze import WAZE_TYPE
+from tracs.plugins.waze import WazeImporter
+from tracs.plugins.waze import WazeTakeoutImporter
 from tracs.plugins.waze import read_drive
-from tracs.plugins.waze import read_takeout
 from tracs.plugins.waze import Waze
 from tracs.plugins.waze import WazeActivity
 
 from .helpers import get_file_path
 
-def test_read_drive():
-	path = get_file_path( 'templates/waze/200712_074743.json' )
-	points = read_drive( path.read_bytes().decode('UTF-8') )
-	assert len( points ) == 137
-
-	path = get_file_path( 'templates/waze/200712_102429.json' )
-	points = read_drive( path.read_bytes().decode('UTF-8') )
-	assert len( points ) == 166
+@mark.file( 'templates/waze/200712_074743.json' )
+def test_read_drive( path ):
+	importer: WazeImporter = Registry.importer_for( WAZE_TYPE )
+	resource = importer.load( path=path, as_resource=True )
+	assert len( resource.raw ) == 137
 
 @mark.file( 'templates/waze/account_activity_3.csv' )
 def test_read_takeout( path ):
-	takeouts = read_takeout( path )
-	assert len( takeouts ) == 2
+	importer: WazeTakeoutImporter = Registry.importer_for( WAZE_TAKEOUT_TYPE )
+	resource = importer.load( path=path, as_resource=True )
+	assert len( resource.raw ) == 2
 
 @mark.file( 'libraries/default/waze/20/07/12/200712074743/200712074743.raw.txt' )
 def test_activity_from_raw( path ):

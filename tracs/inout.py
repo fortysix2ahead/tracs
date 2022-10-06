@@ -126,6 +126,12 @@ def _confirm_init( source: Activity, target: Activity, console: Console ) -> boo
 		answer = False
 	return answer
 
+def export_activities( activities: Iterable[Activity], force: bool = False, pretend: bool = False, **kwargs ):
+	pass
+
+def export_resources( resources: Iterable[Activity], force: bool = False, pretend: bool = False, **kwargs ):
+	pass
+
 def export_csv( activities: Iterable[Activity], output: Path ):
 	csv = [['longitude', 'latitude']]
 

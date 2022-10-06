@@ -20,13 +20,14 @@ from click import Path as ClickPath
 from click_shell import shell
 
 from tracs.edit import modify_activities
+from tracs.inout import export_activities
+from tracs.inout import export_resources
 from tracs.inout import import_activities
 from tracs.inout import open_activities
 from tracs.list import inspect_registry
 from tracs.list import inspect_resources
 from .activity import Activity
 from .application import Application
-from .config import ApplicationConfig as cfg
 from .config import ApplicationContext
 from .config import GlobalConfig as gc
 from .config import APPNAME
@@ -253,26 +254,20 @@ def reimport( ctx, filters, include_recordings: bool = False ):
 def open_cmd( ctx, filters ):
 	open_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.db )
 
-@cli.command( help='export activities' )
-@option( '-f', '--format', 'fmt', required=True, type=Choice( ['csv', 'geojson', 'gpx', 'kml', 'shp'], case_sensitive=False ), metavar='FORMAT' )
+@cli.command( help='export activities/resources (experimental)' )
+@option( '-f', '--format', 'fmt', required=False, type=Choice( ['csv', 'geojson', 'gpx', 'kml', 'shp'], case_sensitive=False ), metavar='FORMAT' )
+@option( '-g', '--aggregate', required=False, is_flag=True )
+@option( '-l', '--overlay', required=False, is_flag=True, hidden=True )
 @option( '-o', '--output', required=False, type=ClickPath(), metavar='PATH' )
+@option( '-r', '--resource', required=False, is_flag=True )
+@option( '-t', '--type', required=False, is_flag=False )
 @argument( 'filters', nargs=-1 )
-def export( fmt: str, output: str, filters ):
-	app = Application.instance()
-	if not output:
-		output = prompt( "Enter path to output file" )
-
-	activities = app.db.find( filters )
-	if fmt == 'csv':
-		export_csv( activities, Path( output ) )
-	elif fmt == 'geojson':
-		export_geojson( activities, Path( output ) )
-	elif fmt == 'gpx':
-		export_gpx( activities, Path( output ) )
-	elif fmt == 'kml':
-		export_kml( activities, output )
-	elif fmt == 'shp':
-		export_shp( activities, output )
+@pass_obj
+def export( ctx: ApplicationContext, fmt: str, output: str, aggregate: bool, overlay: bool, resource: bool, type: str, filters: List[str] ):
+	if resource:
+		export_resources( ctx.db.find_resources( filters ) )
+	else:
+		export_activities( ctx.db.find( filters ), type=type, force=ctx.force, pretend=ctx.pretend )
 
 @cli.command( 'set', hidden=True, help='sets field values manually' )
 @argument( 'filters', nargs=-1 )

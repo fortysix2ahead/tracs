@@ -24,6 +24,7 @@ DB_FILENAME = 'db.json'
 LOG_DIRNAME = 'logs'
 LOG_FILENAME = f'{APPNAME}.log'
 OVERLAY_DIRNAME = 'overlay'
+TAKEOUT_DIRNAME = 'takeout'
 TMP_DIRNAME = '.tmp'
 
 CONFIG_FILENAME = 'config.yaml'
@@ -79,6 +80,7 @@ class ApplicationContext:
 	lib_dir: Path = field( default=None )
 
 	overlay_dir: Path = field( default=None )
+	takeout_dir: Path = field( default=None )
 
 	force: bool = field( default=False )
 	verbose: bool = field( default=False )

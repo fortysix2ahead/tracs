@@ -23,6 +23,7 @@ DB_DIRNAME = 'db'
 DB_FILENAME = 'db.json'
 LOG_DIRNAME = 'logs'
 LOG_FILENAME = f'{APPNAME}.log'
+OVERLAY_DIRNAME = 'overlay'
 TMP_DIRNAME = '.tmp'
 
 CONFIG_FILENAME = 'config.yaml'
@@ -76,6 +77,8 @@ class ApplicationContext:
 	meta: Any = field( default=None )
 
 	lib_dir: Path = field( default=None )
+
+	overlay_dir: Path = field( default=None )
 
 	force: bool = field( default=False )
 	verbose: bool = field( default=False )

@@ -26,10 +26,9 @@ from .config import DB_FILENAME
 from .config import GlobalConfig as gc
 from .config import LOG_DIRNAME
 from .config import LOG_FILENAME
+from .config import OVERLAY_DIRNAME
 from .config import STATE_FILENAME
 from .db import ActivityDb
-from .db import ACTIVITIES_NAME
-from .db import METADATA_NAME
 from .plugins import Registry
 from .service import Service
 
@@ -129,16 +128,19 @@ class Application( object ):
 		if lib_dir:
 			self._lib_dir = lib_dir
 
-		# ---- file logging setup: only possible after library configuration -----
+		# ---- file logging setup: only possible after library configuration --------
 		self._setup_file_logging()
 
-		# ---- open db from config_dir -------------------------------------------
+		# ---- open db from config_dir ----------------------------------------------
 		cache = self._cfg['db']['cache'].get()
 		self._db_dir = Path( self._lib_dir, DB_DIRNAME )
 		self._db = ActivityDb( path=self._db_dir, cache=cache )
 		self._db_file = self._db.db_path
 		self._meta_file = self._db.metadata_path
 		gc.db = self._db
+
+		# ---- configure overlay from db_dir ----------------------------------------
+		self._overlay_dir = Path( self.db_dir, OVERLAY_DIRNAME )
 
 		# announce library paths to services
 		for name, service in Registry.services.items():
@@ -148,6 +150,7 @@ class Application( object ):
 		ctx.cfg_dir = self.cfg_dir
 		ctx.db_dir = self.db_dir
 		ctx.lib_dir = self.lib_dir
+		ctx.overlay_dir = self.overlay_dir
 
 		# ---- announce fields to global config
 		gc.cfg_dir = self.cfg_dir
@@ -203,11 +206,21 @@ class Application( object ):
 	def __setitem__( self, key, value ):
 		self._cfg[key] = value
 
+	# ---- context ---------------------------------------------------------------
+
+	@property
+	def ctx( self ) -> ApplicationContext:
+		return self._ctx
+
 	# ---- path-related properties ----
 
 	@property
 	def lib_dir( self ) -> Path:
 		return self._lib_dir
+
+	@property
+	def overlay_dir( self ) -> Path:
+		return self._overlay_dir
 
 	@property
 	def cfg_dir( self ) -> Path:

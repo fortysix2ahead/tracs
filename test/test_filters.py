@@ -1,4 +1,5 @@
 
+from re import match
 from sys import float_info
 from typing import List
 
@@ -16,8 +17,10 @@ from tracs.activity_types import ActivityTypes
 from tracs.filters import false
 from tracs.filters import invalid
 from tracs.filters import parse
+from tracs.filters import resource_pattern
 from tracs.filters import true
 from tracs.filters import Filter
+from tracs.filters import filter_pattern2
 
 from .helpers import ids
 
@@ -30,6 +33,33 @@ def test_predefined_filters():
 
 	assert invalid().callable is not None
 	assert invalid().valid == False
+
+def test_filter_pattern():
+	assert not match( filter_pattern2, '^' )
+	assert not match( filter_pattern2, '1000' )
+	assert not match( filter_pattern2, '^1000' )
+
+	assert not match( filter_pattern2, '1000,1001,1002' )
+	assert not match( filter_pattern2, '^1000,1001,1002' )
+
+	assert match( filter_pattern2, 'id:1000' )
+	assert match( filter_pattern2, '^id:1000' )
+	assert match( filter_pattern2, 'ID:1000' )
+
+	assert match( filter_pattern2, 'local_id:1000' )
+	assert match( filter_pattern2, '^local_id:1000' )
+
+	assert match( filter_pattern2, 'id:1000,1001,1002' )
+	assert match( filter_pattern2, 'id:1000..1002' )
+
+	assert match( filter_pattern2, 'date:2020-01-15..2021-09-01' )
+
+	assert match( filter_pattern2, 'location:berlin' )
+
+	assert match( resource_pattern, 'polar:1000#1' )
+	assert match( resource_pattern, 'polar:1000#gpx' )
+	assert match( resource_pattern, 'polar:1001#application/xml+gpx' )
+	assert match( resource_pattern, 'polar:1001#application/xml+gpx-polar' )
 
 def test_parse():
 	# special cases first

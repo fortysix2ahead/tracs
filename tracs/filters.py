@@ -53,6 +53,9 @@ class Filter( QueryLike ):
 	range_from: Any = datafield( default=None )
 	range_to: Any = datafield( default=None )
 
+	# fragment, only valid for resources
+	fragment: Any = datafield( default=None )
+
 	# indicator that value does not contain the exact value to match, but a regular expression
 	regex: bool = datafield( default=False )
 	# when true value is expected to be part of a list (opposite of 'values' from above)
@@ -247,6 +250,9 @@ filter_pattern = '^{field}{colon}{expr}$'.format( **{
 	'colon' : '(?P<colon>::?)',
 	'expr'  : '(?P<expr>.*)',
 } )
+
+filter_pattern2 = r'^(?P<caret>\^?)(?P<field>\w+)(?P<colon>::?)(?P<expr>[\w,-\.]+)$'
+resource_pattern = r'^(?P<field>\w+):(?P<expr>\d+)(#(?P<fragment>[\w+-/]+))?$'
 
 int_pattern = '^(?P<value>\d+)$'
 int_list_pattern = '^(?P<values>(\d+,)+(\d+))$'

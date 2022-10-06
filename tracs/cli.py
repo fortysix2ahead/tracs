@@ -13,6 +13,7 @@ from click import argument
 from click import echo
 from click import option
 from click import pass_context
+from click import pass_obj
 from click import prompt
 from click import Choice
 from click import Path as ClickPath
@@ -188,7 +189,7 @@ def _filter_activities( all_, filters ) -> [Activity]:
 def ls( ctx, sort, format_name, filters ):
 	list_activities( ctx.obj.db.find( filters ), sort, format_name )
 
-@cli.command( help='shows details about activities' )
+@cli.command( help='shows details about activities and resources' )
 #@option( '-f', '--format', 'frmt', is_flag=False, required=False, type=str, hidden=True, help='uses the provided format string when printing', metavar='FORMAT' )
 @option( '-r', '--raw', is_flag=True, required=False, help='display raw data' )
 @argument('filters', nargs=-1)
@@ -197,23 +198,28 @@ def show( ctx, filters, raw ):
 	show_activity( ctx.obj.db.find( filters ), ctx=ctx.obj, display_raw=raw, verbose=ctx.obj.verbose )
 
 @cli.command( help='groups activities' )
-@option( '-r', '--revert', is_flag=True, required=False, help='splits up groups and creates separate activities again' )
 @argument( 'filters', nargs=-1 )
-@pass_context
-def group( ctx, filters, revert: bool ):
-	if revert:
-		ungroup_activities( gc.db.find( filters ), cfg['force'].get() )
-	else:
-		group_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.force, ctx.obj.pretend )
+@pass_obj
+def group( ctx: ApplicationContext, filters: List[str] ):
+	group_activities( list( ctx.db.find( filters ) ), force=ctx.force, pretend=ctx.pretend )
+
+@cli.command( help='reverts activity groupings' )
+@argument( 'filters', nargs=-1 )
+@pass_obj
+def ungroup( ctx: ApplicationContext, filters: List[str] ):
+	ungroup_activities( ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend )
 
 @cli.command( hidden=True, help='groups activities to multipart activities' )
-@option( '-r', '--revert', is_flag=True, required=False, help='splits up multipart groups and creates separate activities again' )
 @argument( 'filters', nargs=-1 )
-def part( filters, revert: bool ):
-	if revert:
-		unpart_activities( gc.db.find( filters ), cfg['force'].get() )
-	else:
-		part_activities( gc.db.find( filters, True, False, True ), cfg['force'].get() )
+@pass_obj
+def part( ctx: ApplicationContext, filters: List[str] ):
+	part_activities( ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend )
+
+@cli.command( hidden=True, help='reverts multipart activities' )
+@argument( 'filters', nargs=-1 )
+@pass_obj
+def unpart( ctx: ApplicationContext, filters: List[str] ):
+	unpart_activities( ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend )
 
 @cli.command( help='modifies activities' )
 @option( '-f', '--field', is_flag=False, required=True, help='field to modify' )

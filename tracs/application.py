@@ -28,6 +28,7 @@ from .config import LOG_DIRNAME
 from .config import LOG_FILENAME
 from .config import OVERLAY_DIRNAME
 from .config import STATE_FILENAME
+from .config import TAKEOUT_DIRNAME
 from .db import ActivityDb
 from .plugins import Registry
 from .service import Service
@@ -141,6 +142,7 @@ class Application( object ):
 
 		# ---- configure overlay from db_dir ----------------------------------------
 		self._overlay_dir = Path( self.db_dir, OVERLAY_DIRNAME )
+		self._takeout_dir = Path( self.db_dir, TAKEOUT_DIRNAME )
 
 		# announce library paths to services
 		for name, service in Registry.services.items():
@@ -151,6 +153,7 @@ class Application( object ):
 		ctx.db_dir = self.db_dir
 		ctx.lib_dir = self.lib_dir
 		ctx.overlay_dir = self.overlay_dir
+		ctx.takeout_dir = self.takeout_dir
 
 		# ---- announce fields to global config
 		gc.cfg_dir = self.cfg_dir
@@ -221,6 +224,10 @@ class Application( object ):
 	@property
 	def overlay_dir( self ) -> Path:
 		return self._overlay_dir
+
+	@property
+	def takeout_dir( self ) -> Path:
+		return self._takeout_dir
 
 	@property
 	def cfg_dir( self ) -> Path:

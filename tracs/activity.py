@@ -180,7 +180,15 @@ class Activity( BaseDocument ):
 			self.__post_init__()
 
 		return self
-	
+
+	def tag( self, tag: str ):
+		if tag not in self.tags:
+			self.tags.append( tag )
+			self.tags = sorted( self.tags )
+
+	def untag( self, tag: str ):
+		self.tags.remove( tag )
+
 	def resource_group( self ) -> ResourceGroup:
 		return ResourceGroup( resources=self.resources )
 

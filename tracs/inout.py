@@ -124,10 +124,12 @@ def reimport_activities( ctx: ApplicationContext, activities: List[Activity], in
 
 		if offset_delta:
 			activity.time = activity.time + offset_delta
+			activity.tag( 'offset_correction' )
 
 		if timezone:
 			activity.timezone = timezone.tzname( datetime.utcnow() )
 			activity.localtime = activity.time.astimezone( timezone )
+			activity.tag( 'timezone_correction' )
 		else:
 			activity.timezone = get_localzone_name()
 			activity.localtime = activity.time.astimezone( gettz( activity.timezone ) )

@@ -14,7 +14,6 @@ from click import echo
 from click import option
 from click import pass_context
 from click import pass_obj
-from click import prompt
 from click import Choice
 from click import Path as ClickPath
 from click_shell import shell
@@ -39,11 +38,6 @@ from .group import group_activities
 from .group import ungroup_activities
 from .group import part_activities
 from .group import unpart_activities
-from .inout import export_csv
-from .inout import export_geojson
-from .inout import export_gpx
-from .inout import export_kml
-from .inout import export_shp
 from .inout import reimport_activities
 from .list import inspect_activities
 from .list import list_activities
@@ -243,10 +237,12 @@ def rename( ctx, filters ):
 
 @cli.command( help='reimports activities' )
 @option( '-r', '--include-recordings', is_flag=True, required=False, help='includes data from GPX, TCX etc. for reimporting' )
+@option( '-os', '--offset', is_flag=False, required=False, help='offset for correcting value for time' )
+@option( '-tz', '--timezone', is_flag=False, required=False, help='timezone for calculating value for local time' )
 @argument( 'filters', nargs=-1 )
-@pass_context
-def reimport( ctx, filters, include_recordings: bool = False ):
-	reimport_activities( ctx.obj, list( ctx.obj.db.find( filters ) ), include_recordings=include_recordings, force=ctx.obj.force )
+@pass_obj
+def reimport( ctx: ApplicationContext, filters, include_recordings: bool = False, offset: str = None, timezone: str = None ):
+	reimport_activities( ctx, list( ctx.db.find( filters ) ), include_recordings=include_recordings, offset=offset, timezone=timezone, force=ctx.force )
 
 @cli.command( 'open', help='opens activities in an external application' )
 @argument( 'filters', nargs=-1 )

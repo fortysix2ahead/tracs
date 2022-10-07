@@ -1,4 +1,6 @@
-
+from datetime import datetime
+from datetime import time
+from datetime import timedelta
 from logging import getLogger
 
 from copy import deepcopy
@@ -10,6 +12,7 @@ from typing import List
 from typing import Optional
 from urllib.parse import urlparse as parse_url
 
+from dateutil.tz import gettz
 from geojson import dump as dump_geojson
 from geojson import Feature
 from geojson import FeatureCollection
@@ -18,6 +21,7 @@ from gpxpy.gpx import GPX
 from pathlib import Path
 
 from rich.console import Console
+from tzlocal import get_localzone_name
 
 from .activity import Activity
 from .activity import Resource
@@ -82,8 +86,23 @@ def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 		# os.system( "open " + shlex.quote( filename ) )  # MacOS/X
 		# os.system( "start " + filename )  # windows
 
-def reimport_activities( ctx: ApplicationContext, activities: List[Activity], include_recordings: bool = False, force: bool = False ):
+def reimport_activities( ctx: ApplicationContext, activities: List[Activity], include_recordings: bool = False, offset: str = None, timezone: str = None, force: bool = False ):
 	log.debug( f'reimporting {len( activities )} activities, with force={force}' )
+
+	try:
+		if offset.startswith( '-' ):
+			offset = time.fromisoformat( offset.lstrip( '-' ) )
+			offset_delta = timedelta( hours=-offset.hour, minutes=-offset.minute, seconds=-offset.second, microseconds=-offset.microsecond )
+		else:
+			offset = time.fromisoformat( offset.lstrip( '+' ) )
+			offset_delta = timedelta( hours=offset.hour, minutes=offset.minute, seconds=offset.second, microseconds=offset.microsecond )
+
+		timezone = gettz( timezone ) if timezone else None
+
+	except (AttributeError, ValueError):
+		log.error( 'unable to parse offset/timezone', exc_info=True )
+		offset_delta = None
+		timezone = None
 
 	for activity in activities:
 		activity_source = deepcopy( activity )
@@ -102,6 +121,16 @@ def reimport_activities( ctx: ApplicationContext, activities: List[Activity], in
 					log.debug( f'importing resource of type {r}' )
 					imported_activity = load_resource( r )
 					activity.init_from( other=imported_activity )
+
+		if offset_delta:
+			activity.time = activity.time + offset_delta
+
+		if timezone:
+			activity.timezone = timezone.tzname( datetime.utcnow() )
+			activity.localtime = activity.time.astimezone( timezone )
+		else:
+			activity.timezone = get_localzone_name()
+			activity.localtime = activity.time.astimezone( gettz( activity.timezone ) )
 
 		if force or _confirm_init( activity_source, activity, ctx.console ):
 			ctx.db.update( activity )

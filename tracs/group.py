@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
-from sys import exit as sysexit
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -25,6 +24,8 @@ from .utils import colored_diff
 from .utils import fmt
 
 log = getLogger( __name__ )
+
+DELTA = 60
 
 @dataclass
 class GroupResult:
@@ -63,8 +64,8 @@ def group_activities( activities: List[Activity], force: bool = False, pretend: 
 			# check if we find a matching target group for the ungrouped activity ua
 			target = None  # target group
 			for t in bucket.targets:
-				delta_res, delta_time, delta_ask = _delta( t.target.time, src.time )
-				if delta_res:
+				delta_result, delta_time = _delta( t.target.time, src.time )
+				if delta_result:
 					target = t
 					break
 
@@ -177,18 +178,12 @@ def validate_parts( activities: [Activity], force: bool ) -> bool:
 
 # helper functions
 
-def _delta( target_time: datetime, src_time: datetime ) -> Tuple[bool, float, bool]:
+def _delta( target_time: datetime, src_time: datetime ) -> Tuple[bool, float]:
 	delta = (src_time - target_time).total_seconds()
-	# delta 2/3: assume that one activity reports localtime as UTC
-	delta2 = (src_time - target_time.replace( tzinfo=tzlocal() ).astimezone( UTC )).total_seconds()
-	delta3 = (src_time.replace( tzinfo=tzlocal() ).astimezone( UTC ) - target_time).total_seconds()
-	if -60 < delta < 60:
-		return True, delta, False
-	elif (-60 < delta2 < 60) or (-60 < delta3 < 60):
-		delta = delta2 if abs( delta2 ) < abs( delta3 ) else delta3
-		return True, delta, True
+	if -DELTA < delta < DELTA:
+		return True, delta
 	else:
-		return False, delta, False
+		return False, delta
 
 def _new_group( children: [Activity] ) -> ActivityGroup:
 	ids = list( [c.doc_id for c in children] )

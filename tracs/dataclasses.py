@@ -3,17 +3,15 @@ from __future__ import annotations
 
 from collections.abc import MutableMapping
 from dataclasses import Field
-from dataclasses import Field
 from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import fields
 from typing import Any
-from typing import Any
 from typing import Dict
 from typing import Iterator
+from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Tuple
 
 # constants
@@ -64,6 +62,10 @@ class DataClass( MutableMapping ):
 	@classmethod
 	def fields( cls ) -> tuple[Field, ...]:
 		return fields( cls )
+
+	@classmethod
+	def fieldnames( cls ) -> List[str]:
+		return [ f.name for f in cls.fields() ]
 
 	@classmethod
 	def field( cls, name: str ) -> Optional[Field]:

@@ -2,6 +2,7 @@ from dataclasses import fields
 from pathlib import Path
 from re import match
 from re import split
+from typing import List
 
 from confuse.exceptions import NotFoundError
 from logging import getLogger
@@ -26,16 +27,16 @@ FILE_MISSING = '\u2716' # file is missing (does not exist on server)
 FILE_NEEDS_DOWNLOAD = '\u25EF' # file is missing, but might exist on the server
 FILE_NEEDS_DOWNLOAD = '\u21A9' # file is missing, but might exist on the server
 
-def list_activities( activities: [Activity], sort: str, format_name: str ) -> None:
-	# sort list before printing
-	if sort == 'id':
-		activities.sort( key=lambda x: x.doc_id )
-	elif sort == 'name':
-		activities.sort( key=lambda x: x.name )
-	elif sort == 'date':
-		activities.sort( key=lambda x: x.time )
-	elif sort == 'type':
-		activities.sort( key=lambda x: x.type )
+def list_activities( activities: List[Activity], sort: str = False, reverse: bool = False, format_name: str = False ) -> None:
+	sort = sort or 'time'
+
+	if sort in Activity.fieldnames():
+		activities.sort( key=lambda act: getattr( act, sort, None ) )
+	else:
+		log.warning( f'ignoring unknown sort field "{sort}", falling back to "time"' )
+
+	if reverse:
+		activities.reverse()
 
 	try:
 		list_format = cfg['formats']['list'][format_name].get()

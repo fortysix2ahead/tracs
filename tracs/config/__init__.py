@@ -24,7 +24,7 @@ DB_FILENAME = 'db.json'
 LOG_DIRNAME = 'logs'
 LOG_FILENAME = f'{APPNAME}.log'
 OVERLAY_DIRNAME = 'overlay'
-TAKEOUT_DIRNAME = 'takeout'
+TAKEOUT_DIRNAME = 'takeouts'
 TMP_DIRNAME = '.tmp'
 
 CONFIG_FILENAME = 'config.yaml'

@@ -323,7 +323,7 @@ class Polar( Service, Plugin ):
 
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
-			lid = summary.raw_id()
+			lid = summary.raw_id
 			uid = summary.uid
 
 			if _is_multipart_id( summary.raw.get( 'iconUrl' ) ):
@@ -349,7 +349,7 @@ class Polar( Service, Plugin ):
 			return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
-		url = self.url_for_resource_type( resource.raw_id(), resource.type )
+		url = self.url_for_resource_type( resource.raw_id, resource.type )
 		if url:
 			log.debug( f'downloading resource from {url}' )
 			response = self._session.get( url, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )
@@ -411,15 +411,15 @@ def _multipart_str( self ) -> str:
 
 def decompress_resources( r: Resource ) -> List[Resource]:
 	mem_fs = open_fs('mem://')
-	mem_fs.writebytes( '/archive.zip', r.raw_data )
+	mem_fs.writebytes( '/archive.zip', r.content )
 	resources = []
 
 	with mem_fs.openbin( '/archive.zip' ) as zip_file:
 		with ReadZipFS( zip_file ) as zip_fs:
 			for f in zip_fs.listdir( '/' ):
 				if f.endswith( '.gpx' ):
-					resources.append( Resource( path=f, raw_data=zip_fs.readtext( f'/{f}' ), type=GPX_TYPE, status=200, uid=r.uid, source=r.path ) )
+					resources.append( Resource( path=f, text=zip_fs.readtext( f'/{f}' ), type=GPX_TYPE, status=200, uid=r.uid, source=r.path ) )
 				elif f.endswith( '.tcx' ):
-					resources.append( Resource( path=f, raw_data=zip_fs.readtext( f'/{f}' ), type=TCX_TYPE, status=200, uid=r.uid, source=r.path ) )
+					resources.append( Resource( path=f, text=zip_fs.readtext( f'/{f}' ), type=TCX_TYPE, status=200, uid=r.uid, source=r.path ) )
 
 	return resources

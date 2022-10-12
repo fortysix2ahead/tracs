@@ -268,7 +268,7 @@ class Strava( Service, Plugin ):
 					resource = self.importer.load( data=json, as_resource=True )
 					resource.uid = f"{self.name}:{json['id']}"
 					resource.path = f"{json['id']}.raw.json"
-					resource.source = self.url_activity( json['id'] )
+					resource.source = self.url_for_id( json['id'] )
 					resource.status = 200
 					resource.summary = True
 					resource.text = self.importer.save_data( json )
@@ -286,12 +286,12 @@ class Strava( Service, Plugin ):
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
 			resources = [
-				Resource( type=GPX_TYPE, path=f"{summary.raw_id()}.gpx", status=100, uid=summary.uid, source=self.url_for( summary.raw_id(), GPX_TYPE ) ),
-				Resource( type=TCX_TYPE, path=f"{summary.raw_id()}.tcx", status=100, uid=summary.uid, source=self.url_for( summary.raw_id(), TCX_TYPE ) )
+				Resource( type=GPX_TYPE, path=f"{summary.raw_id}.gpx", status=100, uid=summary.uid, source=self.url_for_resource_type( summary.raw_id, GPX_TYPE ) ),
+				Resource( type=TCX_TYPE, path=f"{summary.raw_id}.tcx", status=100, uid=summary.uid, source=self.url_for_resource_type( summary.raw_id, TCX_TYPE ) )
 			]
 
 			for r in resources:
-				r.raw_data, r.status = self.download_resource( r )
+				self.download_resource( r )
 
 			return resources
 
@@ -300,10 +300,13 @@ class Strava( Service, Plugin ):
 			return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
-		url = self.url_for( resource.raw_id(), resource.type )
+		url = self.url_for_resource_type( resource.raw_id, resource.type )
 		if url:
 			log.debug( f'downloading resource from {url}' )
 			response = self._session.get( url, headers=HEADERS_LOGIN, allow_redirects=True, stream=True )
+			resource.content = response.content
+			resource.text = response.text
+			resource.status = response.status_code
 			return response.content, response.status_code
 		else:
 			log.warning( f'unable to determine download url for resource {resource}' )

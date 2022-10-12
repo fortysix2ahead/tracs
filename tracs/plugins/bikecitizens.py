@@ -252,12 +252,12 @@ class Bikecitizens( Service, Plugin ):
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
 			resources = [
-				Resource( type=BIKECITIZENS_RECORDING_TYPE, path=f"{summary.raw_id()}.json", status=100, uid=summary.uid ),
-				Resource( type=GPX_TYPE, path=f"{summary.raw_id()}.gpx", status=100, uid=summary.uid )
+				Resource( type=BIKECITIZENS_RECORDING_TYPE, path=f"{summary.raw_id}.json", status=100, uid=summary.uid ),
+				Resource( type=GPX_TYPE, path=f"{summary.raw_id}.gpx", status=100, uid=summary.uid )
 			]
 
 			for r in resources:
-				r.raw_data, r.status = self.download_resource( r )
+				self.download_resource( r )
 
 			return resources
 
@@ -270,6 +270,7 @@ class Bikecitizens( Service, Plugin ):
 		# noinspection PyUnusedLocal
 		response = options( url, headers=HEADERS_OPTIONS )
 		response = self._session.get( url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } } )
+		resource.content, resource.text, resource.status = response.content, response.text, response.status_code
 		return response.content, response.status_code
 
 	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:

@@ -21,6 +21,7 @@ from gpxpy.gpx import GPX
 from pathlib import Path
 
 from rich.console import Console
+from rich.prompt import Confirm
 from tzlocal import get_localzone_name
 
 from .activity import Activity
@@ -35,9 +36,11 @@ from .plugins.handlers import GPX_TYPE
 from .plugins.handlers import TCX_TYPE
 from .service import Service
 from .ui import diff_table
-from .ui import InstantConfirm as Confirm
 
 log = getLogger( __name__ )
+
+TAG_OFFSET_CORRECTION = 'offset'
+TAG_TIMEZONE_CORRECTION = 'timezone'
 
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
@@ -124,12 +127,12 @@ def reimport_activities( ctx: ApplicationContext, activities: List[Activity], in
 
 		if offset_delta:
 			activity.time = activity.time + offset_delta
-			activity.tag( 'offset_correction' )
+			activity.tag( TAG_OFFSET_CORRECTION )
 
 		if timezone:
 			activity.timezone = timezone.tzname( datetime.utcnow() )
 			activity.localtime = activity.time.astimezone( timezone )
-			activity.tag( 'timezone_correction' )
+			activity.tag( TAG_TIMEZONE_CORRECTION )
 		else:
 			activity.timezone = get_localzone_name()
 			activity.localtime = activity.time.astimezone( gettz( activity.timezone ) )

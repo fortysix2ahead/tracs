@@ -1,3 +1,4 @@
+
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
@@ -12,13 +13,15 @@ from typing import Dict
 from typing import Optional
 from typing import Tuple
 
+from pytest import mark
 from tinydb.table import Document
 
 from tracs.db import ActivityDb
 
 DATABASES = 'databases'
 LIBRARIES = 'libraries'
-VAR = 'var/run'
+VAR = 'var'
+VAR_RUN = 'var/run'
 
 @dataclass
 class DbPath:
@@ -147,6 +150,16 @@ def get_file_path( rel_path: str ) -> Path:
 	with path( 'test', '__init__.py' ) as test_path:
 		return Path( test_path.parent, rel_path )
 
+def get_var_path( rel_path: str ) -> Path:
+	"""
+	Provides a path relative to $PROJECT_DIR/var.
+
+	:param rel_path: relative path
+	:return: path relative to the var directory
+	"""
+	with path( 'test', '__init__.py' ) as test_path:
+		return Path( test_path.parent.parent, VAR, rel_path )
+
 def var_run_path( file_name = None ) -> Path:
 	"""
 	Creates a new directory/file in var/run directory. If the file_name is missing, the directory will be created and
@@ -157,10 +170,10 @@ def var_run_path( file_name = None ) -> Path:
 	"""
 	with path( 'test', '__init__.py' ) as test_pkg_path:
 		if file_name:
-			run_path = Path( test_pkg_path.parent.parent, VAR, f'{datetime.now().strftime( "%H%M%S_%f" )}', file_name )
+			run_path = Path( test_pkg_path.parent.parent, VAR_RUN, f'{datetime.now().strftime( "%H%M%S_%f" )}', file_name )
 			run_path.parent.mkdir( parents=True, exist_ok=True )
 		else:
-			run_path = Path( test_pkg_path.parent.parent, VAR, f'{datetime.now().strftime( "%H%M%S_%f" )}' )
+			run_path = Path( test_pkg_path.parent.parent, VAR_RUN, f'{datetime.now().strftime( "%H%M%S_%f" )}' )
 			run_path.mkdir( parents=True, exist_ok=True )
 		return run_path
 
@@ -170,3 +183,7 @@ def clean( db_dir: Path = None, db_path: Path = None ) -> None:
 
 def ids( doc_list: [Document] ) -> []:
 	return [a.doc_id for a in doc_list]
+
+skip_live = mark.skipif(
+	not ( get_var_path( 'config_live.yaml' ).exists() and get_var_path( 'state_live.yaml' ).exists() ), reason="live test not enabled as configuration is missing"
+)

@@ -232,9 +232,9 @@ def edit( identifier ):
 
 @cli.command( help='renames activities' )
 @argument( 'filters', nargs=-1 )
-@pass_context
-def rename( ctx, filters ):
-	rename_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.force, ctx.obj.pretend )
+@pass_obj
+def rename( ctx: ApplicationContext, filters: str ):
+	rename_activities( list( ctx.db.find( filters ) ), ctx, ctx.force, ctx.pretend )
 
 @cli.command( help='reimports activities' )
 @option( '-r', '--include-recordings', is_flag=True, required=False, help='includes data from GPX, TCX etc. for reimporting' )

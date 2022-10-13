@@ -1,14 +1,16 @@
 
-from dataclasses import fields
 from logging import getLogger
 from typing import Any
 from typing import List
 
-from rich.prompt import Prompt
-
 from .activity import Activity
-from .config import GlobalConfig as gc
+from .config import ApplicationContext
 from .dataclasses import PROTECTED
+from .inout import load_all_resources
+from .inout import open_activities
+from .ui import Choice
+
+MSG_OPEN_APPLICATION = '<open/view GPX/TCX in default application>'
 
 log = getLogger( __name__ )
 
@@ -27,10 +29,26 @@ def modify_activities( activities: List[Activity], field: str, value: Any, **kwa
 	else:
 		log.error( f'unable to set {field} to {value}: field does not exist or is protected' )
 
-def rename_activities( activities: [Activity], force: bool = False, pretend: bool = False ) -> None:
+def rename_activities( activities: [Activity], ctx: ApplicationContext, force: bool = False, pretend: bool = False ) -> None:
 	for a in activities:
-		answer = Prompt.ask( f'Enter new name for activity {a.id}', default=a['name'] )
-		if answer != a.name:
-			a['name'] = answer
-			gc.db.update( a )
-			log.debug( f'renamed activity {a.id} to {answer}' )
+		ctx.console.print( f'renaming activity [{a.id}]' )
+		ctx.console.print( f'  name                   : {a.name}' )
+		ctx.console.print( f'  place, city (country)  : {a.location_place}, {a.location_city} ({a.location_country})' )
+
+		load_all_resources( ctx.db, a )
+
+		headline = 'select a choice from the list below, press enter to use the default value or enter a new name directly:'
+		choices = [ a.name, MSG_OPEN_APPLICATION ]
+		choices_display = [ str( index + 1 ) for index in range( len( choices ) ) ]
+
+		while True:
+			answer = Choice.ask( default=a.name, headline=headline, choices=choices, choices_display=choices_display, allow_free_text=True )
+			if answer == a.name or answer is None:
+				break
+			elif answer == MSG_OPEN_APPLICATION:
+				open_activities( [a], ctx.db )
+			else:
+				a.name = answer
+				ctx.db.update( a )
+				log.debug( f'renamed activity {a.id} to {answer}' )
+				break

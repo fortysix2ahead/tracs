@@ -1,11 +1,17 @@
 
 from platform import system
 from sys import exit as sysexit
+from typing import Any
+from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import TextIO
 from typing import Tuple
+from typing import Union
+from typing import overload
 
+from rich.console import Console
 from rich.pretty import Pretty
 from rich.prompt import Confirm
 from rich.prompt import DefaultType
@@ -46,41 +52,99 @@ def diff_table( left: Dict, right: Dict, header: Tuple[str, str, str] = None, so
 
 	return table
 
+def diff_table2( result: Dict, sources: List[Dict], headers: Tuple[str, str, str] = None, sort_entries: bool = False ) -> Table:
+	table = Table( box=None, show_header=False, show_footer=False )
+
+	return table
+
 class Choice( Prompt ):
 
 	FREE_TEXT_OPTION = 'None of the above, enter free text'
+
+	def __init__( self, prompt: TextType = '',
+	              *,
+	              console: Optional[Console] = None,
+	              password: bool = False,
+	              headline: str = None,
+	              choices: Optional[List[str]] = None,
+	              choices_display: Optional[List[str]] = None,
+	              show_default: bool = True,
+	              show_choices: bool = True,
+								use_index: bool = False,
+	              allow_free_text: bool ) -> None:
+
+		super().__init__( prompt, console=console, password=password, choices=choices, show_default=show_default, show_choices=show_choices )
+		self.headline = headline
+		self.choices_display = choices_display
+		self.use_index = use_index
+		if self.use_index:
+			self.choices_display = [ str( index + 1 ) for index in range( len( self.choices ) ) ]
+		self.allow_free_text = allow_free_text
+
+	@classmethod
+	def ask(
+			cls,
+			prompt: TextType = "",
+			*,
+			console: Optional[Console] = None,
+			password: bool = False,
+			headline: str = None,
+			choices: Optional[List[str]] = None,
+			choices_display: Optional[List[str]] = None,
+			show_default: bool = True,
+			show_choices: bool = True,
+			use_index: bool = False,
+			allow_free_text: bool = False,
+			default: Any = ...,
+			stream: Optional[TextIO] = None,
+	) -> Any:
+
+		_choice = cls(
+			prompt,
+			console=console,
+			password=password,
+			headline=headline,
+			choices=choices,
+			choices_display=choices_display,
+			show_default=show_default,
+			show_choices=show_choices,
+			use_index=use_index,
+			allow_free_text=allow_free_text,
+		)
+		return _choice( default=default, stream=stream )
 
 	def make_prompt( self, default: DefaultType ) -> Text:
 		prompt = self.prompt.copy()
 		prompt.end = ''
 
-		if self.show_choices and self.choices:
-			for index in range( len( self.choices ) ):
-				prompt.append( f' [{index + 1}] {self.choices[index]}\n', 'prompt.choices' )
-			prompt.append( f' [{len( self.choices ) + 1}] {Choice.FREE_TEXT_OPTION}\n', 'prompt.choices' )
-			prompt.append( 'Enter option' )
+		headline = f'{self.headline}\n' if self.headline else 'choices:\n'
+		prompt.append( headline )
 
-		prompt.append( self.prompt_suffix )
+		for index in range( len( self.choices ) ):
+			if self.choices_display:
+				prompt.append( f'  [{self.choices_display[index]}] {self.choices[index]}\n', 'prompt.choices' )
+			else:
+				prompt.append( f'  {self.choices[index]}\n', 'prompt.choices' )
 
+		prompt.append( 'enter choice' + self.prompt_suffix )
 		return prompt
 
 	def process_response( self, value: str ) -> PromptType:
 
 		try:
-			index = int( value.strip() )
-			if 0 < index <= len( self.choices ):
-				selected_value = self.choices[index - 1]
-			elif index == len( self.choices ) + 1:
-				selected_value = Choice.FREE_TEXT_OPTION
+			value = value.strip()
+			if self.choices_display and value in self.choices_display:
+				selected_value = self.choices[self.choices_display.index( value )]
+			elif not self.choices_display and value in self.choices:
+				selected_value = self.choices.index( value )
+			elif self.allow_free_text and value != '':
+				selected_value = value
 			else:
-				selected_value = ''
+				selected_value = None
 		except ValueError:
-			selected_value = ''
+			selected_value = None
 
-		return super().process_response( selected_value )
-
-	def check_choice( self, value: str ) -> bool:
-		return value in self.choices or value == Choice.FREE_TEXT_OPTION
+		return selected_value
 
 class InstantConfirm( Confirm ):
 

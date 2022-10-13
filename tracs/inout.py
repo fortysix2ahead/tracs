@@ -140,6 +140,13 @@ def reimport_activities( ctx: ApplicationContext, activities: List[Activity], in
 		if force or _confirm_init( activity_source, activity, ctx.console ):
 			ctx.db.update( activity )
 
+def load_all_resources( db: ActivityDb, activity: Activity ) -> None:
+	all_resources = []
+	for uid in activity.uids:
+		all_resources.extend( db.find_resources( uid ) )
+
+	activity.resources = all_resources
+
 def load_resource( resource: Resource ) -> Optional[Activity]:
 	importers = Registry.importers_for( resource.type )
 	path = Service.path_for_resource( resource )

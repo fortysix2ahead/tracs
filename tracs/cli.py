@@ -197,13 +197,13 @@ def show( ctx, filters, raw ):
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def group( ctx: ApplicationContext, filters: List[str] ):
-	group_activities( list( ctx.db.find( filters ) ), force=ctx.force, pretend=ctx.pretend )
+	group_activities( ctx, list( ctx.db.find( filters ) ), force=ctx.force, pretend=ctx.pretend )
 
 @cli.command( help='reverts activity groupings' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def ungroup( ctx: ApplicationContext, filters: List[str] ):
-	ungroup_activities( ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend )
+	ungroup_activities( ctx, ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend )
 
 @cli.command( hidden=True, help='groups activities to multipart activities' )
 @argument( 'filters', nargs=-1 )

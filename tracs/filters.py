@@ -131,7 +131,7 @@ class Filter( QueryLike ):
 		elif self.values:
 			self.callable = Query()[self.field].test( lambda v: True if v in self.values else False )
 		elif self.range_from is not None and self.range_to is not None:
-			self.callable = Query()[self.field].test( lambda v: True if v and self.range_from <= v < self.range_to else False )
+			self.callable = Query()[self.field].test( lambda v: True if v and self.range_from <= v <= self.range_to else False )
 
 	def _freeze_str( self ) -> None:
 		if self.value:

@@ -16,6 +16,10 @@ from typing import Tuple
 from pytest import mark
 from tinydb.table import Document
 
+from tracs.config import ApplicationContext
+from tracs.config import CONFIG_FILENAME
+from tracs.config import DB_DIRNAME
+from tracs.config import STATE_FILENAME
 from tracs.db import ActivityDb
 
 DATABASES = 'databases'
@@ -63,6 +67,20 @@ def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: st
 	lib_path = run_dir
 
 	return cfg_path, lib_path
+
+def prepare_context( cfg_name: str, lib_name: str ) -> ApplicationContext:
+	with path( 'test', '__init__.py' ) as test_path:
+		run_path = var_run_path()
+		config_path = Path( test_path.parent, 'configurations', cfg_name )
+		lib_path = Path( test_path.parent, 'libraries', lib_name )
+
+		copy( Path( config_path, CONFIG_FILENAME ), run_path )
+		copy( Path( config_path, STATE_FILENAME ), run_path )
+		copytree( lib_path, Path( run_path, DB_DIRNAME ) )
+
+		context = ApplicationContext( cfg_dir=run_path )
+
+		return context
 
 def get_config_path( name: str, writable: bool = False ) -> Path:
 	with path( 'test', '__init__.py' ) as test_path:
@@ -147,6 +165,12 @@ def get_file_as_json( rel_path: str ) -> Dict:
 	return load_json( open( json_path, 'r', encoding='utf8' ) )
 
 def get_file_path( rel_path: str ) -> Path:
+	"""
+	Provides a path relative to $PROJECT_DIR/test.
+
+	:param rel_path: relative path
+	:return: path relative to the /var/run directory
+	"""
 	with path( 'test', '__init__.py' ) as test_path:
 		return Path( test_path.parent, rel_path )
 
@@ -159,6 +183,16 @@ def get_var_path( rel_path: str ) -> Path:
 	"""
 	with path( 'test', '__init__.py' ) as test_path:
 		return Path( test_path.parent.parent, VAR, rel_path )
+
+def get_var_run_path( rel_path: str ) -> Path:
+	"""
+	Provides a path relative to $PROJECT_DIR/var/run.
+
+	:param rel_path: relative path
+	:return: path relative to the var/run directory
+	"""
+	with path( 'test', '__init__.py' ) as test_path:
+		return Path( test_path.parent.parent, VAR_RUN, rel_path )
 
 def var_run_path( file_name = None ) -> Path:
 	"""
@@ -177,9 +211,9 @@ def var_run_path( file_name = None ) -> Path:
 			run_path.mkdir( parents=True, exist_ok=True )
 		return run_path
 
-def clean( db_dir: Path = None, db_path: Path = None ) -> None:
-	if db_dir and db_dir.parent.name == 'run' and db_dir.parent.parent.name == 'var': # sanity check: only remove when in test/var/run
-		rmtree( db_dir, ignore_errors=True )
+def cleanup( dir: Path = None, db_path: Path = None ) -> None:
+	if dir and dir.parent.name == 'run' and dir.parent.parent.name == 'var': # sanity check: only remove when in test/var/run
+		rmtree( dir, ignore_errors=True )
 
 def ids( doc_list: [Document] ) -> []:
 	return [a.doc_id for a in doc_list]

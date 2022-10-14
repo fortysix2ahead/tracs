@@ -15,7 +15,6 @@ from yaml import load as load_yaml
 from tracs.config import ApplicationConfig as cfg
 from tracs.config import ApplicationConfig as state
 from tracs.config import ApplicationContext
-from tracs.config import GlobalConfig
 from tracs.config import KEY_PLUGINS
 from tracs.db import ActivityDb
 from tracs.plugins import Registry
@@ -25,12 +24,13 @@ from tracs.service import Service
 
 from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
-from .helpers import clean
+from .helpers import cleanup
 from .helpers import get_db_as_json
 from .helpers import get_file_as_json
 from .helpers import get_file_db
 from .helpers import get_file_path
 from .helpers import get_inmemory_db
+from .helpers import prepare_context
 from .polar_server import polar_server
 from .polar_server import polar_server_thread
 from .polar_server import TEST_BASE_URL as POLAR_TEST_BASE_URL
@@ -69,10 +69,34 @@ def db( request ) -> ActivityDb:
 	yield db
 
 	if cleanup and not inmemory and writable:
-		clean( db_dir=db.path )
+		cleanup( db_dir=db.path )
 
-def ctx( request ) -> ApplicationContext:
-	pass
+@fixture
+def config( request ) -> None:
+	if marker := request.node.get_closest_marker( 'config' ):
+		template = marker.kwargs.get( 'template' )
+		writable = marker.kwargs.get( 'writable', False )
+		cleanup = marker.kwargs.get( 'cleanup', True )
+	else:
+		return None
+
+@fixture
+def ctx( request ) -> Optional[ApplicationContext]:
+	try:
+		marker = request.node.get_closest_marker( 'context' )
+		lib_template = marker.kwargs.get( 'library' )
+		cfg_template = marker.kwargs.get( 'config' )
+		do_cleanup = marker.kwargs.get( 'cleanup' )
+
+		context: ApplicationContext = prepare_context( cfg_template, lib_template )
+
+		yield context
+
+		if do_cleanup:
+			cleanup( dir=context.cfg_dir )
+
+	except ValueError:
+		log.error( 'unable to run fixture context', exc_info=True )
 
 @fixture
 def json( request ) -> Optional[Dict]:
@@ -108,29 +132,33 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 	return config_dict, state_dict
 
 @fixture
-def service( request ) -> Optional[Service]:
-	if marker := request.node.get_closest_marker( 'service' ):
+def service( request, ctx ) -> Optional[Service]:
+	try:
+		marker = request.node.get_closest_marker( 'service' )
 		service_class = marker.kwargs.get( 'cls' )
-		base_url = marker.kwargs.get( 'base_url' )
-		service_config = marker.kwargs.get( 'config' )
-		service_state = marker.kwargs.get( 'state' )
 		service_class_name = service_class.__name__.lower()
-	else:
-		return None
+		base_url = marker.kwargs.get( 'base_url' )
 
-	config, state = None, None
-	with resource_path( 'test', '__init__.py' ) as test_pkg_path:
-		config_path = Path( test_pkg_path.parent.parent, service_config )
-		if config_path.exists():
+		if ctx:
+			service_config = ctx.cfg_file
+			service_state = ctx.state_file
+		else:
+			service_config = marker.kwargs.get( 'config' )
+			service_state = marker.kwargs.get( 'state' )
+
+		with resource_path( 'test', '__init__.py' ) as test_pkg_path:
+			config_path = Path( test_pkg_path.parent.parent, service_config )
 			config = Configuration( f'test.{service_class_name}', __name__, read=False )
 			config.set_file( config_path )
 
-		state_path = Path( test_pkg_path.parent.parent, service_state )
-		if state_path.exists():
+			state_path = Path( test_pkg_path.parent.parent, service_state )
 			state = Configuration( f'test.{service_class_name}', __name__, read=False )
 			state.set_file( state_path )
 
-	return service_class( base_url=base_url, config=config, state=state )
+			return service_class( ctx=ctx, base_url=base_url, config=config, state=state )
+
+	except ValueError:
+		log.error( 'unable to run fixture service', exc_info=True )
 
 # bikecitizens specific fixtures
 

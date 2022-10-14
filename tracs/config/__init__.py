@@ -7,6 +7,7 @@ from importlib import import_module
 from importlib.resources import path as pkg_path
 from pathlib import Path
 from typing import Any
+from typing import List
 from typing import Tuple
 
 from confuse import Configuration
@@ -69,8 +70,12 @@ class ApplicationContext:
 	#state_default: Configuration = field( default=None )
 	#state_user: Configuration = field( default=None )
 
+	# configuration
 	cfg_dir: Path = field( default=None )
+	cfg_file: Path = field( default=None )
+	state_file: Path = field( default=None )
 
+	# database
 	db: Any = field( default=None )
 	db_dir: Path = field( default=None )
 	db_file: Path = field( default=None )
@@ -81,6 +86,9 @@ class ApplicationContext:
 
 	overlay_dir: Path = field( default=None )
 	takeout_dir: Path = field( default=None )
+	plugins_dir: List[Path] = field( default_factory=list )
+
+	log_dir: Path = field( default=None )
 
 	force: bool = field( default=False )
 	verbose: bool = field( default=False )
@@ -90,6 +98,24 @@ class ApplicationContext:
 	console: Console = field( default=Console() )
 
 	def __post_init__( self ):
+
+		# initialize paths, if not already done
+
+		# directories depending on cfg_dir
+		if self.cfg_dir:
+			self.cfg_file = Path( self.cfg_dir, CONFIG_FILENAME ) if not self.cfg_file else self.cfg_file
+			self.state_file = Path( self.cfg_dir, STATE_FILENAME ) if not self.state_file else self.state_file
+
+			self.db_dir = Path( self.cfg_dir, DB_DIRNAME ) if not self.db_dir else self.db_dir
+			self.log_dir = Path( self.cfg_dir, LOG_DIRNAME ) if not self.log_dir else self.log_dir
+
+		# directories that depend on db_dir
+		if self.db_dir:
+			self.overlay_dir = Path( self.db_dir, OVERLAY_DIRNAME ) if not self.overlay_dir else self.overlay_dir
+			self.takeout_dir = Path( self.db_dir, TAKEOUT_DIRNAME ) if not self.takeout_dir else self.takeout_dir
+
+		# configuration
+
 		# read internal config
 		self.config = Configuration( APPNAME, __name__, read=False )
 		with pkg_path( self.__module__, CONFIG_FILENAME ) as p:
@@ -99,8 +125,6 @@ class ApplicationContext:
 		self.state = Configuration( f'{APPNAME}.state', __name__, read=False )
 		with pkg_path( self.__module__, STATE_FILENAME ) as p:
 			self.state.set_file( p )
-
-# configuration
 
 ApplicationConfig = Configuration( APPNAME, __name__, read=False )
 ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )

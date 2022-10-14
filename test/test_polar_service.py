@@ -1,13 +1,11 @@
-from os import getenv
-from typing import List
 
+from typing import List
 from pytest import mark
 
 from tracs.activity import Resource
-from tracs.config import GlobalConfig as gc
 from tracs.plugins.polar import BASE_URL
 from tracs.plugins.polar import Polar
-from .conftest import ENABLE_LIVE_TESTS
+from .helpers import skip_live
 
 from .polar_server import TEST_BASE_URL
 
@@ -51,21 +49,12 @@ def test_workflow( polar_server, service, db ):
 	fetched = service.fetch( True, False )
 	assert len( fetched ) == 3
 
-@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
-@mark.service( cls=Polar, url=BASE_URL, config='var/config_live.yaml', state='var/state_live.yaml' )
-@mark.db( template='empty', inmemory=True, update_gc=True )
-@mark.db_inmemory( True )
-def test_live_workflow( service, db, config_state ):
-	gc.db = db
-	gc.db_dir = db.path.parent
-	gc.db_file = db.path
-
+@skip_live
+@mark.context( library='empty', config='live', cleanup=True )
+@mark.service( cls=Polar, url=BASE_URL )
+def test_live_workflow( service ):
 	service.login()
 	assert service.logged_in
 
-	fetched = service.fetch( False )
+	fetched = service.fetch( force=False, pretend=False )
 	assert len( fetched ) > 0
-
-	limit = 1 # don't download everything
-	for i in range( limit ):
-		service.download( fetched[i], force=True, pretend=False )

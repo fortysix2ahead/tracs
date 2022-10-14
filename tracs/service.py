@@ -30,6 +30,9 @@ log = getLogger( __name__ )
 class Service( ServiceProtocol ):
 
 	def __init__( self, **kwargs ):
+		# field for saving the current context, to access the context from sub-methods
+		self._ctx: ApplicationContext = kwargs.get( 'ctx' )
+
 		self._name = kwargs.pop( 'name' ) if 'name' in kwargs else None
 		self._display_name = kwargs.pop( 'display_name' ) if 'display_name' in kwargs else None
 		self._base_path = kwargs.pop( 'base_path' ) if 'base_path' in kwargs else None
@@ -37,9 +40,6 @@ class Service( ServiceProtocol ):
 		self._cfg = kwargs.pop( 'config' ) if 'config' in kwargs else gc.cfg
 		self._state = kwargs.pop( 'state' ) if 'state' in kwargs else gc.state
 		self._logged_in = False
-
-		# field for saving the current context, to access the context from sub-methods
-		self._ctx: Optional[ApplicationContext] = None
 
 		log.debug( f'service instance {self._name} created, with base path {self._base_path}' )
 

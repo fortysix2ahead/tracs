@@ -8,28 +8,26 @@ from typing import Optional
 from typing import Tuple
 
 from click import echo
-from dateutil.tz import tzlocal
-from dateutil.tz import UTC
 from logging import getLogger
 from rich.prompt import Confirm
-from rich.table import Table
 
 from .activity import Activity
+from .config import ApplicationContext
 from .config import KEY_GROUPS as GROUPS
-from .config import GlobalConfig as gc
 from .config import console
+from .dataclasses import as_dict
 from .plugins.groups import ActivityGroup
 from .ui import Choice
-from .utils import colored_diff
-from .utils import fmt
+from .ui import diff_table2
 
 log = getLogger( __name__ )
 
-DELTA = 60
+DELTA = 180
 
 @dataclass
 class GroupResult:
 
+	time: datetime = field( default=None )
 	target: Activity = field( default=None )
 	members: List[Activity] = field( default_factory=list )
 
@@ -40,7 +38,7 @@ class Bucket:
 	queue: List[Activity] = field( default_factory=list )
 	targets: List[GroupResult] = field( default_factory=list )
 
-def group_activities( activities: List[Activity], force: bool = False, pretend: bool = False ) -> List[Tuple[Activity, List[Activity]]]:
+def group_activities( ctx: ApplicationContext, activities: List[Activity], force: bool = False, pretend: bool = False ) -> None:
 	log.debug( f'attempting to group {len( activities )} activities' )
 
 	changes: List[Activity] = []
@@ -64,7 +62,7 @@ def group_activities( activities: List[Activity], force: bool = False, pretend: 
 			# check if we find a matching target group for the ungrouped activity ua
 			target = None  # target group
 			for t in bucket.targets:
-				delta_result, delta_time = _delta( t.target.time, src.time )
+				delta_result, delta_time = _delta( t.time, src.time )
 				if delta_result:
 					target = t
 					break
@@ -73,77 +71,60 @@ def group_activities( activities: List[Activity], force: bool = False, pretend: 
 			if target:
 				target.members.append( src )
 			else:
-				bucket.targets.append( GroupResult( target=src ) )
+				bucket.targets.append( GroupResult( time=src.time, members=[ src ] ) )
 
 	# now perform the actual (interactive) grouping
 	for key, bucket in buckets.items():
 		for t in bucket.targets:
-			if t.target and len( t.members ) > 0:
+			if len( t.members ) > 0:
+				t.target = Activity()
+				for m in t.members:
+					t.target.init_from( m )
+					t.target.uids.extend( m.uids )
+
 				if force or _confirm_grouping( t ):
-					for m in t.members:
-						t.target.init_from( m )
-						t.target.uids.extend( m.uids )
-						changes.append( t.target )
+					changes.append( t.members[0] )
+					for m in t.members[1:]:
+						t.members[0].init_from( m )
+						t.members[0].uids.extend( m.uids )
 						removals.append( m )
 
 	if not pretend:
-		for c in changes: gc.db.update( c )
-		for r in removals: gc.db.remove( r )
+		for c in changes: ctx.db.update( c )
+		for r in removals: ctx.db.remove( r )
 
-def _confirm_grouping(  gr: GroupResult ) -> bool:
+def _confirm_grouping( gr: GroupResult ) -> bool:
 	echo( f"Attempting to group activities:" )
-	left = {
-		'Name': gr.target.name,
-		'Type': fmt( gr.target.type ),
-		'Localtime': fmt( gr.target.localtime ),
-		'Time': fmt( gr.target.time ),
-		'Elapsed Time': fmt( gr.target.duration ),
-		'Distance': fmt( gr.target.distance ),
-	}
-	rights = []
-	for m in gr.members:
-		right = {
-				'Name': m.name,
-				'Type': fmt( m.type ),
-				'Localtime': fmt( m.localtime ),
-				'Time': fmt( m.time ),
-				'Elapsed Time': fmt( m.duration ),
-				'Distance': fmt( m.distance ),
-			}
-		rights.append( right )
 
-	table = Table( box=None, show_header=False, show_footer=False )
-	for key, value in left.items():
-		row = [ key, value ]
-		for r in rights:
-			left, right = colored_diff( value, r.get( key ) )
-			row.append( right )
-		table.add_row( *row )
-
+	table = diff_table2( result = as_dict( gr.target ), sources = [ as_dict( m ) for m in gr.members] )
 	console.print( table )
+
 	answer = Confirm.ask( f'Continue grouping?' )
 
 	names = list( set( [member.name for member in [gr.target] + gr.members ] ) )
 	if answer and len( names ) > 1:
-		gr.target.name = Choice.ask( "Select a name for the new activity group:\n", choices=names )
+		headline = 'Select a name for the new activity group:'
+		choices = names
+		gr.members[0].name = Choice.ask( headline=headline, choices=choices, use_index=True, allow_free_text=True )
 
 	return answer
 
 # ---------------------
 
-def ungroup_activities( activities: [Activity], force: bool, persist_changes = True ) -> Optional[Tuple[List[Activity], List[Activity]]]:
+def ungroup_activities( ctx: ApplicationContext, activities: List[Activity], force: bool = False, pretend: bool = False ) -> Optional[Tuple[List[Activity], List[Activity]]]:
 	"""
 	Ungroups activities
+	:param ctx: context
 	:param activities: groups to be ungrouped
 	:param force: do not ask for permission
-	:param persist_changes: when true does not persist changes to db, instead return changed activities
+	:param pretend: when true does not persist changes to db
 	:return:
 	"""
 	ungrouped_parents = []
 	ungrouped_children = []
 	for a in activities:
 		if a.is_group:
-			grouped = [ gc.db.get( doc_id=id ) for id in a.group_for ]
+			grouped = [ ctx.db.get( doc_id=id ) for id in a.group_for ]
 			if not force:
 				answer = Confirm.ask( f'Ungroup activity {a.id} ({a.name})?' )
 			else:
@@ -156,11 +137,11 @@ def ungroup_activities( activities: [Activity], force: bool, persist_changes = T
 				log.debug( f'ungrouped activity {a.id}' )
 
 	# persist changes
-	if persist_changes:
+	if not pretend:
 		for a in ungrouped_parents:
-			gc.db.remove( a )
+			ctx.db.remove( a )
 		for a in ungrouped_children:
-			gc.db.remove_field( a, GROUPS )
+			ctx.db.remove_field( a, GROUPS )
 	else:
 		return ungrouped_parents, ungrouped_children
 

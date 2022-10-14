@@ -22,6 +22,7 @@ from rich.text import Text
 from rich.text import TextType
 
 from tracs.utils import colored_diff
+from tracs.utils import fmt
 from .config import console as cs
 
 def diff_table( left: Dict, right: Dict, header: Tuple[str, str, str] = None, sort_entries: bool = False ) -> Table:
@@ -52,8 +53,33 @@ def diff_table( left: Dict, right: Dict, header: Tuple[str, str, str] = None, so
 
 	return table
 
-def diff_table2( result: Dict, sources: List[Dict], headers: Tuple[str, str, str] = None, sort_entries: bool = False ) -> Table:
-	table = Table( box=None, show_header=False, show_footer=False )
+def diff_table2( result: Dict, sources: List[Dict], sort_entries: bool = True, show_equals: bool = False ) -> Table:
+	table = Table( box=None, show_header=True, show_footer=False )
+
+	field_header = 'Field'
+	result_header = 'Value after Grouping'
+	source_headers = [ f'Source {i + 1}' for i in range( len( sources ) ) ]
+
+	table.add_column( field_header, justify="left", no_wrap=True )
+	table.add_column( result_header, justify="left", no_wrap=True )
+	for header in source_headers:
+		table.add_column( header, justify="left", no_wrap=True )
+
+	keys = result.keys()
+	for source in sources:
+		keys = keys | source.keys()
+	keys = sorted( list( keys ) ) if sort_entries else list( keys )
+
+	for k in keys:
+		row = [ f'{k}', fmt( result.get( k ) ) ]
+		for source in sources:
+			row.append( fmt( source.get( k ) ) )
+
+		if len( set( row[1:] ) ) > 1 or show_equals:
+			for index in range( 2, len( row ) ):
+				left, row[index] = colored_diff( row[1], row[index] )
+
+			table.add_row( *row )
 
 	return table
 

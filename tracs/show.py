@@ -7,6 +7,7 @@ from rich.pretty import Pretty as pp
 from rich.table import Table
 
 from .activity import Activity
+from .activity import Resource
 from .config import ApplicationContext
 from .config import console
 from .plugins import Registry

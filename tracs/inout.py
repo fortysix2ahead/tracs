@@ -42,6 +42,8 @@ log = getLogger( __name__ )
 TAG_OFFSET_CORRECTION = 'offset'
 TAG_TIMEZONE_CORRECTION = 'timezone'
 
+MAXIMUM_OPEN = 8
+
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
 
@@ -71,20 +73,24 @@ def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **
 			log.error( f'unable to import from {src}' )
 
 def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
-	if len( activities ) > 0:
-		activity = activities[0]
-		if len( activities ) > 1:
-			log.warning( 'opening more than one activity at once is not yet supported, only opening the first ...' )
+	if len( activities ) > MAXIMUM_OPEN:
+		log.warning( f'limit of number of activities to open is {MAXIMUM_OPEN}, ignoring the rest of provided {len( activities )} activities' )
+		activities = activities[:MAXIMUM_OPEN]
 
-		resource_type = GPX_TYPE # todo: make this configurable
+	resource_type = GPX_TYPE # todo: make this configurable
 
-		# todo: this is just a PoC!
-		for uid in activity.uids:
+	paths = []
+
+	for a in activities:
+		for uid in a.uids:
 			resources = db.find_resources( uid )
 			for r in resources:
 				if r.type == resource_type:
-					path = Service.path_for_resource( r )
-					system( 'open ' + path.as_posix() )
+					paths.append( Service.path_for_resource( r ) )
+					break
+
+	paths = [ str( p ) for p in paths ]
+	system( 'open ' + ' '.join( paths ) )
 
 		# os.system( "open " + shlex.quote( filename ) )  # MacOS/X
 		# os.system( "start " + filename )  # windows

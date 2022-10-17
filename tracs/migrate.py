@@ -28,7 +28,7 @@ def migrate_application( ctx: ApplicationContext, function_name: str = None, for
 
 	next_db_file = Path( current_db_file.parent, current_db_file.name.replace( '.json', f'.migration_{timestring()}.json' ) )
 	copy( current_db_file, next_db_file )
-	next_db = TinyDB( storage=DataClassStorage, path=next_db_file, use_memory_storage=True, cache=True, document_factory=document_cls )
+	next_db = TinyDB( storage=DataClassStorage, path=next_db_file, use_memory_storage=True, use_cache=True )
 
 	if function_name and function_name in dir( modules[ __name__ ] ):
 		if force or Confirm.ask( f'migration function {function_name} found, would you like to execute the migration?' ):
@@ -40,6 +40,23 @@ def migrate_application( ctx: ApplicationContext, function_name: str = None, for
 
 def _migrate_11_12( current_db, next_db ):
 	pass
+
+def consolidate_ids( current_db, next_db ):
+	json = JSONHandler().load( path=current_db.activities_path )
+
+	activity_list = []
+	for doc_id, a in json.raw['_default'].items():
+		activity_list.append( ( doc_id, None, a ) )
+
+	activity_list = sorted( activity_list, key = lambda t: t[2]['time'] )
+
+	new_dict = {}
+	for index in range( len( activity_list ) ):
+		new_index = str( index + 1 )
+		new_dict[new_index] = activity_list[index][2]
+	new_dict = { '_default': new_dict }
+
+	JSONHandler().save( data = new_dict, path=Path( current_db.activities_path.parent, 'activities_consolidated.json' ) )
 
 def migrate_resources( current_db, next_db ):
 	json = JSONHandler().load( current_db.activities_path )

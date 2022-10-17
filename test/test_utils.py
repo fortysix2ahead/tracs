@@ -3,10 +3,9 @@ from datetime import date
 from datetime import datetime
 from datetime import time
 from datetime import timezone
-from zoneinfo import ZoneInfoNotFoundError
+from urllib.parse import urlparse
 
 from dateutil.tz import gettz
-from dateutil.tz import tzlocal
 
 from tracs.activity_types import ActivityTypes
 from tracs.utils import as_datetime
@@ -108,3 +107,22 @@ def test_as_time():
 
 	assert as_datetime( None ) is None
 	assert as_datetime( '' ) is None
+
+def test_uri_parsing():
+	result = urlparse( 'polar:1001' )
+	assert result.scheme == 'polar' and result.path == '1001'
+
+	# we might use fragment or query as resource identifier ...
+	result = urlparse( 'polar:1001?1001.gpx' )
+	assert result.query == '1001.gpx'
+
+	result = urlparse( 'polar:1001#1001.gpx' )
+	assert result.fragment == '1001.gpx'
+
+	# querying we might use a shorter version, might not be unique, but in most cases having the id two times is redundant
+	result = urlparse( 'polar:1001?gpx' )
+	assert result.query == 'gpx'
+
+	# a resource might also be addressed even shorter:
+	result = urlparse( '1001?gpx' )
+	assert result.path == '1001' and result.query == 'gpx'

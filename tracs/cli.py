@@ -99,19 +99,19 @@ def cli( ctx, configuration, debug, force, library, verbose, pretend ):
 @option( '-m', '--migrate', is_flag=False, required=False, type=str, help='performs a database migration', metavar='FUNCTION' )
 @option( '-r', '--restore', is_flag=True, required=False, help='restores the last version of the database from the backup' )
 @option( '-s', '--status', is_flag=True, required=False, help='prints some db status information' )
-@pass_context
-def db( ctx, backup: bool, fields: bool, migrate: str, restore: bool, status: bool ):
+@pass_obj
+def db( ctx: ApplicationContext, backup: bool, fields: bool, migrate: str, restore: bool, status: bool ):
 	app = Application.instance()
 	if backup:
 		backup_db( app.db_file, app.backup_dir )
 	elif fields:
 		show_fields()
 	elif migrate:
-		migrate_application( ctx.obj, function_name=migrate, force=app.cfg['force'].get() )
+		migrate_application( ctx, function_name=migrate, force=ctx.force )
 	elif restore:
 		restore_db( app.db.db, app.db_file, app.backup_dir, app.cfg['force'].get() )
 	elif status:
-		status_db( ctx.obj.db )
+		status_db( ctx.db )
 
 @cli.command( help='prints the current configuration' )
 def config():

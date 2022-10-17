@@ -105,7 +105,7 @@ class Service( ServiceProtocol ):
 	def path_for_resource( cls, resource: Resource ) -> Optional[Path]:
 		if service := Registry.services.get( resource.classifier ):
 			#return Path( service.path_for_id( raw_id, service.base_path ), resource.path )
-			return service.path_for( resource=resource )
+			return service.path_for( resource=resource ).resolve()
 
 	@classmethod
 	def url_for_uid( cls, uid: str ) -> Optional[str]:

@@ -33,4 +33,4 @@ def test_live_workflow( service ):
 	assert service.logged_in
 
 	fetched = list( service.fetch( False, False ) )
-	assert len( fetched ) == 0
+	assert len( fetched ) == 2

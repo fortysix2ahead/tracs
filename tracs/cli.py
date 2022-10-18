@@ -114,8 +114,9 @@ def db( ctx: ApplicationContext, backup: bool, fields: bool, migrate: str, resto
 		status_db( ctx.db )
 
 @cli.command( help='prints the current configuration' )
-def config():
-	show_config()
+@pass_obj
+def config( ctx: ApplicationContext ):
+	show_config( ctx )
 
 @cli.command( help='prints information about fields that can be used for filtering' )
 def fields():
@@ -293,14 +294,14 @@ def init():
 @option( '-g', '--registry', is_flag=True, required=False, help='inspects the internal registry, filter will be ignored' )
 @option( '-r', '--resource', is_flag=True, required=False, help='applies the provided filters to resources instead of activities' )
 @argument( 'filters', nargs=-1 )
-@pass_context
-def inspect( ctx, filters, registry, resource ):
+@pass_obj
+def inspect( ctx: ApplicationContext, filters, registry: bool, resource: bool ):
 	if registry:
 		inspect_registry()
 	elif resource:
 		inspect_resources()
 	else:
-		inspect_activities( ctx.obj.db.find( filters ) )
+		inspect_activities( ctx.db.find( filters ) )
 
 @cli.command( hidden=True, help='Performs some validation and sanity tasks.' )
 @argument( 'filters', nargs=-1 )

@@ -1,6 +1,6 @@
+
 from dataclasses import fields
 from pathlib import Path
-from re import match
 from re import split
 from typing import List
 
@@ -12,7 +12,7 @@ from rich.table import Table
 
 from .activity import Activity
 from .config import ApplicationConfig as cfg
-from .config import GlobalConfig as gc
+from .config import ApplicationContext
 from .config import console
 from .dataclasses import FILTERABLE
 from .dataclasses import FILTER_ALIAS
@@ -109,25 +109,38 @@ def show_fields():
 
 	console.print( table )
 
-def show_config():
+def show_config( ctx: ApplicationContext ):
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 	table.add_column( justify='left', no_wrap=True )
 	table.add_column( justify='left', no_wrap=True )
 
-	table.add_row( 'configuration file', pp( gc.app.cfg_file ) )
-	table.add_row( 'state file', pp( gc.app.state_file ) )
-	table.add_row( 'library', pp( gc.app.lib_dir ) )
-	table.add_row( 'database file', pp( gc.app.db_file ) )
-	table.add_row( 'database backup', pp( gc.app.backup_dir ) )
+	table.add_row( 'configuration dir', pp( ctx.cfg_dir ) )
+	table.add_row( 'configuration file', pp( ctx.cfg_file ) )
+	table.add_row( 'state file', pp( ctx.state_file ) )
 
-	for s in gc.app.services.values():
-		table.add_row( f'{s.display_name} activities:', pp( Path( gc.app.db_dir, s.name ) ) )
+	table.add_section()
+
+	table.add_row( 'library', pp( ctx.lib_dir ) )
+	table.add_row( 'database dir', pp( ctx.db_dir ) )
+
+	table.add_section()
+
+	for s in Registry.services.values():
+		table.add_row( f'{s.display_name} activities:', pp( Path( ctx.db_dir, s.name ) ) )
+
+	table.add_section()
+
+	table.add_row( 'plugins dir', pp( ctx.plugins_dir ) )
+	table.add_row( 'overlay dir', pp( ctx.overlay_dir ) )
 
 	console.print( 'Locations', style='bold' )
 	console.print( table )
 
 	console.print( 'Configuration', style='bold' )
-	console.print( gc.app.cfg.dump() )
+	console.print( ctx.config.dump() )
+
+	console.print( 'State', style='bold' )
+	console.print( ctx.state.dump() )
 
 def shorten( s: str ) -> str:
 	max_length = 120

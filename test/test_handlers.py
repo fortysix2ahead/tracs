@@ -7,7 +7,7 @@ from tracs.plugins import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE
 from tracs.plugins.bikecitizens import BikecitizensActivity
 from tracs.plugins.handlers import CSV_TYPE
-from tracs.plugins.handlers import GPXActivity
+from tracs.plugins.gpx import GPXActivity
 from tracs.plugins.handlers import JSON_TYPE
 from tracs.plugins.handlers import XML_TYPE
 from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE

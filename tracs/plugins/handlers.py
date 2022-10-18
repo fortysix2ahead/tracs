@@ -7,9 +7,6 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
-from dateutil.tz import UTC
-from gpxpy import parse as parse_gpx
-from gpxpy.gpx import GPX
 from lxml.etree import parse as parse_xml
 from orjson import loads as load_json
 from orjson import dumps as save_json
@@ -17,16 +14,13 @@ from orjson import OPT_APPEND_NEWLINE
 from orjson import OPT_INDENT_2
 from orjson import OPT_SORT_KEYS
 
-from . import document
 from . import importer
 from ..activity import Activity
 from ..activity import Resource
-from ..utils import seconds_to_time
 
 CSV_TYPE = 'application/csv'
 JSON_TYPE = 'application/json'
 XML_TYPE = 'application/xml'
-GPX_TYPE = 'application/xml+gpx'
 TCX_TYPE = 'application/xml+tcx'
 
 class ResourceHandler:
@@ -158,23 +152,3 @@ class XMLHandler( ResourceHandler ):
 	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
 		return parse_xml( path )
 
-@document( type=GPX_TYPE )
-class GPXActivity( Activity ):
-
-	def __raw_init__( self, raw: Any ) -> None:
-		gpx: GPX = self.raw
-		self.name = gpx.name
-		self.time = gpx.get_time_bounds().start_time.astimezone( UTC )
-		self.distance = round( gpx.length_2d(), 1 )
-		self.duration = seconds_to_time( gpx.get_duration() ) if gpx.get_duration() else None
-		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
-		# self.uid = f'{self.classifier}:{self.raw_id}'
-
-@importer( type=GPX_TYPE )
-class GPXImporter( ResourceHandler ):
-
-	def __init__( self ) -> None:
-		super().__init__( type=XML_TYPE, activity_cls=GPXActivity )
-
-	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
-		return parse_gpx( content )

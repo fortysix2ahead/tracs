@@ -1,7 +1,6 @@
 
 from re import match
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -27,10 +26,8 @@ from . import Registry
 from . import document
 from . import importer
 from . import service
-from .handlers import GPX_TYPE
+from tracs.plugins.gpx import GPX_TYPE
 from .handlers import JSONHandler
-from .handlers import JSON_TYPE
-from .handlers import ResourceHandler
 from .handlers import TCX_TYPE
 from .plugin import Plugin
 from ..activity import Activity

@@ -149,7 +149,7 @@ class Filter( QueryLike ):
 			if self.regex:
 				self.callable = Query()[self.field].matches( self.value, flags=IGNORECASE )
 			else:
-				self.callable = Query()[self.field].test( lambda v: True if self.value.lower() in v.lower() else False )
+				self.callable = Query()[self.field].test( lambda v: True if v and self.value.lower() in v.lower() else False )
 		elif self.values:
 			pass
 

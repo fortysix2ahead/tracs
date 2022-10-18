@@ -107,6 +107,7 @@ class Activity( BaseDocument ):
 	type: ActivityTypes = field( default=None, metadata={ FILTERABLE: True } ) # activity type
 	description: str = field( default=None, metadata={ FILTERABLE: True } ) # description
 	tags: List[str] = field( default_factory=list, metadata={ FILTERABLE: True } ) # list of tags
+	equipment: List[str] = field( default_factory=list, metadata={ FILTERABLE: True } ) # list of equipment tags
 	location_country: str = field( default=None, metadata={ FILTERABLE: True, FILTER_ALIAS: [ 'country' ] } ) #
 	location_state: str = field( default=None, metadata={ FILTERABLE: True, FILTER_ALIAS: [ 'state' ] } ) #
 	location_city: str = field( default=None, metadata={ FILTERABLE: True, FILTER_ALIAS: [ 'city' ] } ) #

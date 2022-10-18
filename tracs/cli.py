@@ -18,7 +18,9 @@ from click import Choice
 from click import Path as ClickPath
 from click_shell import shell
 
+from tracs.edit import equip_activities
 from tracs.edit import modify_activities
+from tracs.edit import unequip_activities
 from tracs.inout import export_activities
 from tracs.inout import export_resources
 from tracs.inout import import_activities
@@ -280,6 +282,20 @@ def tag( filters ):
 @argument( 'filters', nargs=-1 )
 def untag( filters ):
 	pass
+
+@cli.command( hidden=True, help='Add equipment to an activity' )
+@option( '-e', '--equipment', is_flag=False, required=True, multiple=True, help='equipment to add to an activity' )
+@argument( 'filters', nargs=-1 )
+@pass_obj
+def equip( ctx: ApplicationContext, filters, equipment ):
+	equip_activities( list( ctx.db.find( filters ) ), equipment=equipment, ctx=ctx )
+
+@cli.command( hidden=True, help='Removes equipment from activities' )
+@option( '-e', '--equipment', is_flag=False, required=True, multiple=True, help='equipment to add to an activity' )
+@argument( 'filters', nargs=-1 )
+@pass_obj
+def unequip( ctx: ApplicationContext, filters, equipment ):
+	unequip_activities( list( ctx.db.find( filters ) ), equipment=equipment, ctx=ctx )
 
 @cli.command( help='application setup' )
 def setup():

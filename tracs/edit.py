@@ -2,6 +2,7 @@
 from logging import getLogger
 from typing import Any
 from typing import List
+from typing import Tuple
 
 from .activity import Activity
 from .config import ApplicationContext
@@ -52,3 +53,18 @@ def rename_activities( activities: [Activity], ctx: ApplicationContext, force: b
 				ctx.db.update( a )
 				log.debug( f'renamed activity {a.id} to {answer}' )
 				break
+
+def equip_activities( activities: List[Activity], equipment: Tuple[str], force: bool = False, pretend: bool = False, ctx: ApplicationContext = None ) -> None:
+	for a in activities:
+		if equipment:
+			a.equipment.extend( equipment )
+			a.equipment = sorted( list( set( a.equipment ) ) )
+			ctx.db.update( a )
+
+def unequip_activities( activities: List[Activity], equipment: Tuple[str], force: bool = False, pretend: bool = False, ctx: ApplicationContext = None ) -> None:
+	for a in activities:
+		if equipment:
+			for e in equipment:
+				a.equipment.remove( e )
+			a.equipment = sorted( list( set( a.equipment ) ) )
+			ctx.db.update( a )

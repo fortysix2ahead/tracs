@@ -23,7 +23,7 @@ formats:
   time: medium # allowed values: short, medium, long, full
   timedelta: short  # allowed values: narrow, short, long
   list:
-    default: id name time type service raw_id uid
+    default: id name type localtime uids
 
 # experimental: allow predefined filters
 

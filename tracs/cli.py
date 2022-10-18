@@ -20,7 +20,9 @@ from click_shell import shell
 
 from tracs.edit import equip_activities
 from tracs.edit import modify_activities
+from tracs.edit import tag_activities
 from tracs.edit import unequip_activities
+from tracs.edit import untag_activities
 from tracs.inout import export_activities
 from tracs.inout import export_resources
 from tracs.inout import import_activities
@@ -273,25 +275,29 @@ def set_cmd( filters ):
 def unset( filters ):
 	pass
 
-@cli.command( hidden=True, help='Tags activities' )
+@cli.command( help='Tags activities' )
+@option( '-t', '--tag', is_flag=False, required=True, multiple=True, help='tag to add to an activity' )
 @argument( 'filters', nargs=-1 )
-def tag( filters ):
-	pass
+@pass_obj
+def tag( ctx: ApplicationContext, filters, tag ):
+	tag_activities( list( ctx.db.find( filters ) ), tags=tag, ctx=ctx )
 
-@cli.command( hidden=True, help='Removes tags from activities' )
+@cli.command( help='Removes tags from activities' )
+@option( '-t', '--tag', is_flag=False, required=True, multiple=True, help='tag to remove from an activity' )
 @argument( 'filters', nargs=-1 )
-def untag( filters ):
-	pass
+@pass_obj
+def untag( ctx: ApplicationContext, filters, tag ):
+	untag_activities( list( ctx.db.find( filters ) ), tags=tag, ctx=ctx )
 
-@cli.command( hidden=True, help='Add equipment to an activity' )
+@cli.command( help='Add equipment to an activity' )
 @option( '-e', '--equipment', is_flag=False, required=True, multiple=True, help='equipment to add to an activity' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def equip( ctx: ApplicationContext, filters, equipment ):
 	equip_activities( list( ctx.db.find( filters ) ), equipment=equipment, ctx=ctx )
 
-@cli.command( hidden=True, help='Removes equipment from activities' )
-@option( '-e', '--equipment', is_flag=False, required=True, multiple=True, help='equipment to add to an activity' )
+@cli.command( help='Removes equipment from activities' )
+@option( '-e', '--equipment', is_flag=False, required=True, multiple=True, help='equipment to remove from an activity' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def unequip( ctx: ApplicationContext, filters, equipment ):

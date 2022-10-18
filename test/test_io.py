@@ -1,16 +1,13 @@
-
-from pathlib import Path
 from pytest import mark
 
 from tracs.config import ApplicationContext
 from tracs.inout import load_resource
 from tracs.inout import reimport_activities
-from tracs.plugins.handlers import GPXActivity
-from tracs.plugins.handlers import GPX_TYPE
+from tracs.plugins.gpx import GPXActivity
+from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.polar import POLAR_FLOW_TYPE
 from tracs.plugins.polar import PolarActivity
 
-from .helpers import get_file_path
 
 @mark.db( library='default', inmemory=True )
 def test_load_resource( db ):

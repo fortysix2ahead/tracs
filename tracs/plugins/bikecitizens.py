@@ -1,6 +1,5 @@
 
 from logging import getLogger
-from pathlib import Path
 from re import match
 from re import DOTALL
 from sys import exit as sysexit
@@ -21,10 +20,8 @@ from . import Registry
 from . import document
 from . import importer
 from . import service
-from .handlers import GPX_TYPE
+from tracs.plugins.gpx import GPX_TYPE
 from .handlers import JSONHandler
-from .handlers import JSON_TYPE
-from .handlers import ResourceHandler
 from .plugin import Plugin
 from ..activity import Activity
 from ..activity import Resource

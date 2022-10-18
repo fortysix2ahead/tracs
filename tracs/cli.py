@@ -241,13 +241,13 @@ def rename( ctx: ApplicationContext, filters: str ):
 	rename_activities( list( ctx.db.find( filters ) ), ctx, ctx.force, ctx.pretend )
 
 @cli.command( help='reimports activities' )
-@option( '-r', '--include-recordings', is_flag=True, required=False, help='includes data from GPX, TCX etc. for reimporting' )
-@option( '-os', '--offset', is_flag=False, required=False, help='offset for correcting value for time' )
+@option( '-r', '--recordings', is_flag=True, required=False, help='includes data from GPX, TCX etc. for reimporting' )
+@option( '-o', '--offset', is_flag=False, required=False, help='offset for correcting value for time' )
 @option( '-tz', '--timezone', is_flag=False, required=False, help='timezone for calculating value for local time' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
-def reimport( ctx: ApplicationContext, filters, include_recordings: bool = False, offset: str = None, timezone: str = None ):
-	reimport_activities( ctx, list( ctx.db.find( filters ) ), include_recordings=include_recordings, offset=offset, timezone=timezone, force=ctx.force )
+def reimport( ctx: ApplicationContext, filters, recordings: bool = False, offset: str = None, timezone: str = None ):
+	reimport_activities( list( ctx.db.find( filters ) ), include_recordings=recordings, offset=offset, timezone=timezone, ctx=ctx )
 
 @cli.command( 'open', help='opens activities in an external application' )
 @argument( 'filters', nargs=-1 )

@@ -95,7 +95,8 @@ def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 		# os.system( "open " + shlex.quote( filename ) )  # MacOS/X
 		# os.system( "start " + filename )  # windows
 
-def reimport_activities( ctx: ApplicationContext, activities: List[Activity], include_recordings: bool = False, offset: str = None, timezone: str = None, force: bool = False ):
+def reimport_activities( activities: List[Activity], include_recordings: bool = False, offset: str = None, timezone: str = None, ctx: ApplicationContext = None ):
+	force = ctx.force
 	log.debug( f'reimporting {len( activities )} activities, with force={force}' )
 
 	try:
@@ -109,7 +110,7 @@ def reimport_activities( ctx: ApplicationContext, activities: List[Activity], in
 		timezone = gettz( timezone ) if timezone else None
 
 	except (AttributeError, ValueError):
-		log.error( 'unable to parse offset/timezone', exc_info=True )
+		log.debug( 'unable to parse offset/timezone', exc_info=True )
 		offset_delta = None
 		timezone = None
 

@@ -172,7 +172,7 @@ class Filter( QueryLike ):
 				regex = re_compile( self.value )
 				self.callable = Query()[self.field].test( lambda v: True if any( regex.match( item ) for item in v ) else False )
 			else:
-				self.callable = Query()[self.field].test( lambda v: True if self.value in v else False )
+				self.callable = Query()[self.field].test( lambda v: True if any( self.value.lower() in s.lower() for s in v ) else False )
 
 	def _freeze_datetime( self ) -> None:
 		if self.value and type( self.value ) is time:
@@ -340,7 +340,7 @@ def parse_expr( filter: str, expr: str, f: Filter ) -> None:
 	elif field_type == 'float':
 		parse_function = parse_number
 
-	elif field_type == 'str':
+	elif field_type in [ 'str', 'List[str]' ]:
 		parse_function = parse_str
 
 	elif field_type == 'datetime':
@@ -362,7 +362,6 @@ def parse_expr( filter: str, expr: str, f: Filter ) -> None:
 		f.value, f.values, f.range_from, f.range_to, f.valid = parse_function( filter, expr )
 	else:
 		f.valid = False
-
 
 #	if filter in Registry.services.keys():
 #		f.value, f.values, f.range_from, f.range_to, f.valid = parse_int( filter, expr )
@@ -527,7 +526,7 @@ def postprocess( f: Filter ) -> None:
 		f.valid = False
 		return
 
-	if TYPES[f.filter] == 'str':
+	if TYPES[f.filter] in [ 'str', 'List[str]' ]:
 		f.value = f.value.lower() if f.value else f.value
 		f.values = list( map( lambda s: s.lower(), f.values ) ) if f.values else f.values
 

@@ -117,6 +117,10 @@ def db( ctx: ApplicationContext, backup: bool, fields: bool, migrate: str, resto
 def config():
 	show_config()
 
+@cli.command( help='prints information about fields that can be used for filtering' )
+def fields():
+	show_fields()
+
 @cli.command( help='synchronizes fitness data' )
 @option( '-a', '--all', 'all_', is_flag=True, required=False, help='synchonizes all activities (instead of recent ones)' )
 @option( '-r', '--restrict', is_flag=False, required=False, help='restricts sync to only one source', metavar='SERVICE' )

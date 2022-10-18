@@ -14,6 +14,8 @@ from .activity import Activity
 from .config import ApplicationConfig as cfg
 from .config import GlobalConfig as gc
 from .config import console
+from .dataclasses import FILTERABLE
+from .dataclasses import FILTER_ALIAS
 from .dataclasses import PERSIST
 from .dataclasses import PROTECTED
 from .plugins import Registry
@@ -104,8 +106,16 @@ def inspect_registry() -> None:
 	console.print( table )
 
 def show_fields():
+	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
+	table.add_column( 'field' )
+	table.add_column( 'type' )
+	table.add_column( 'supports filters' )
+	table.add_column( 'aliases' )
+
 	for f in fields( Activity ):
-		console.print( f'{f.name} <{f.type}>' )
+		table.add_row( f.name, f.type, pp( f.metadata.get( FILTERABLE, False ) ), pp( f.metadata.get( FILTER_ALIAS, None ) ) )
+
+	console.print( table )
 
 def show_config():
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )

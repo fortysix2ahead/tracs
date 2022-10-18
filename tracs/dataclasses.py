@@ -15,6 +15,8 @@ from typing import Optional
 from typing import Tuple
 
 # constants
+FILTERABLE = 'filterable'
+FILTER_ALIAS = 'filter_alias'
 PERSIST = 'persist'
 PERSIST_AS = 'persist_as'
 PROTECTED = 'protected'
@@ -150,11 +152,11 @@ class BaseDocument( DataClass ):
 	doc_id: int = field( default=0, metadata={ PERSIST: False, PROTECTED: True } )
 	"""doc_id for tinydb compatibility"""
 
-	id: int = field( default=0, metadata={ PERSIST: False, PROTECTED: True } )
+	id: int = field( default=0, metadata={ PERSIST: False, PROTECTED: True, FILTERABLE: True } )
 	"""id of the document, will not be persisted as it is calculated from doc_id"""
 
 	dirty: bool = field( default=False, repr=False, metadata={ PERSIST: False, PROTECTED: True } )
-	"""flag to indicate that the document contains changes to need to be persisted"""
+	"""flag to indicate that the document contains changes that need to be persisted"""
 
 	def __post_init__( self ):
 		super().__post_init__()

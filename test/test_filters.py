@@ -216,8 +216,9 @@ def test_filters_on_activities( db ):
 	assert not Filter( field='id', values=[0, 2, 4] )( m[1] )
 
 	# range of ids
-	assert Filter( field='id', range_from=0, range_to=2 )( m[1] )
-	assert not Filter( field='id', range_from=0, range_to=1 )( m[1] )
+	assert Filter( field='id', range_from=1, range_to=2 )( m[1] )
+	assert Filter( field='id', range_from=1, range_to=2 )( m[2] )
+	assert not Filter( field='id', range_from=1, range_to=2 )( m[3] )
 
 	# strings
 	assert Filter( 'name', 'unknown' )( m[1] )
@@ -280,8 +281,8 @@ def test_filters_on_list( db ):
 
 	assert flt( Filter( 'calories', 2904 ) ) == [2]
 
-	assert flt( Filter( 'heartrate', range_from=110, range_to=150 ) ) == [3, 4]
-	assert flt( Filter( 'heartrate', range_from=~maxsize, range_to=140 ) ) == [4]
+	assert flt( Filter( 'heartrate', range_from=110, range_to=150 ) ) == [2, 3, 4]
+	assert flt( Filter( 'heartrate', range_from=~maxsize, range_to=140 ) ) == [3, 4]
 	assert flt( Filter( 'heartrate', range_from=140, range_to=maxsize ) ) == [2, 3]
 
 	assert flt( Filter( 'time', range_from=datetime( 2021, 1, 10, tzinfo=UTC ), range_to=datetime( 2021, 1, 12, tzinfo=UTC ) ) ) == [4]
@@ -298,7 +299,7 @@ def test_prepared_filters( db ):
 
 	assert flt( '1' ) == [1]
 	assert flt( 'id:1' ) == [1]
-	assert flt( 'id:1..4' ) == [1, 2, 3]
+	assert flt( 'id:1..4' ) == [1, 2, 3, 4]
 
 	assert flt( 'name:run' ) == [3]
 	assert flt( 'name:unknown' ) == [1, 4]
@@ -307,8 +308,8 @@ def test_prepared_filters( db ):
 
 	assert flt( 'calories:2904' ) == [2]
 
-	assert flt( 'heartrate:110..150' ) == [3, 4]
-	assert flt( 'heartrate:..140' ) == [4]
+	assert flt( 'heartrate:110..150' ) == [2, 3, 4]
+	assert flt( 'heartrate:..140' ) == [3, 4]
 	assert flt( 'heartrate:130..' ) == [2, 3, 4]
 
 	assert flt( 'date:2021-01-10..2021-01-12' ) == [4]

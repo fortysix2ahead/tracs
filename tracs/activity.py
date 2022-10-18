@@ -94,7 +94,7 @@ class Activity( BaseDocument ):
 
 	classifier: str = field( default=None, metadata={ PROTECTED: True, FILTERABLE: True, FILTER_ALIAS: [ 'service', 'source' ] } ) # classifier of this activity, only used in subclasses
 	uid: str = field( default=None, metadata={ PROTECTED: True, FILTERABLE: True } ) # unique id of this activity in the form of <classifier:number>, only used in subclasses
-	uids: List[str] = field( default_factory=list, metadata={ PROTECTED: True } ) # uids of activities which belong to this activity
+	uids: List[str] = field( default_factory=list, metadata={ PROTECTED: True, FILTERABLE: True } ) # uids of activities which belong to this activity
 
 	raw: Any = field( default=None, metadata={ PERSIST: False, PROTECTED: True } )  # structured raw data used for initialization from external data
 	raw_id: int = field( default=None, metadata= { PROTECTED: True, FILTERABLE: True } )  # raw id as raw data might not contain all data necessary
@@ -113,7 +113,7 @@ class Activity( BaseDocument ):
 	location_place: str = field( default=None, metadata={ FILTERABLE: True, FILTER_ALIAS: [ 'place' ] } ) #
 	route: str = field( default=None, metadata={ FILTERABLE: True } ) #
 
-	time: datetime = field( default=None, metadata={ FILTERABLE: True } ) # activity time (UTC)
+	time: datetime = field( default=None, metadata={ FILTERABLE: True, FILTER_ALIAS: [ 'date', 'datetime' ] } ) # activity time (UTC)
 	time_end: datetime = field( default=None, metadata={ FILTERABLE: True } ) # activity end time (UTC)
 	localtime: datetime = field( default=None, metadata={ FILTERABLE: True } ) # activity time (local)
 	localtime_end: datetime = field( default=None, metadata={ FILTERABLE: True } ) # activity end time (local)

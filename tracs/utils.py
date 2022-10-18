@@ -90,6 +90,9 @@ def fmt( value, locale = None ) -> str:
 	elif isinstance( value, Enum ):
 		_rval = value.value
 
+	if type( value ) is list:
+		_rval = ', '.join( [ fmt( e ) for e in value ] )
+
 	return _rval
 
 def fmtl( activity_list: List ) -> str:

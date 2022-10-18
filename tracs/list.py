@@ -46,24 +46,16 @@ def list_activities( activities: List[Activity], sort: str = False, reverse: boo
 		list_format = cfg['formats']['list']['default'].get()
 	list_fields = list_format.split()
 
-	headers = []
-
-	for f in list_fields:
-		if m := match( '^(\w+)\.(\w+)$', f ):
-			headers.append( f'{m.groups()[1].capitalize()} [{m.groups()[0].capitalize()}]' )
-		else:
-			headers.append( f.capitalize() )
-
+	headers = [ f for f in list_fields ]
 	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
 
-	table.add_column( '[blue]id' )
-	table.add_column( '[blue]name' )
-	table.add_column( '[blue]type' )
-	table.add_column( '[blue]local time' )
-	table.add_column( '[blue]uid' )
+	for h in headers:
+		table.add_column( f'[blue]{h}' )
 
 	for a in activities:
-		table.add_row( pp( a.doc_id ), a.name, fmt( a.type ), fmt( a.localtime ), pp( a.uids ) )
+		row = [ fmt( getattr( a, f ) ) for f in list_fields ]
+		table.add_row( *row )
+		# table.add_row( pp( a.doc_id ), a.name, fmt( a.type ), fmt( a.localtime ), pp( a.uids ) )
 
 	if len( table.rows ) > 0:
 		console.print( table )

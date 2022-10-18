@@ -26,6 +26,7 @@ class GPXActivity( Activity ):
 		gpx: GPX = self.raw
 		self.name = gpx.name
 		self.time = gpx.get_time_bounds().start_time.astimezone( UTC )
+		self.time_end = gpx.get_time_bounds().end_time.astimezone( UTC )
 		self.distance = round( gpx.length_2d(), 1 )
 		self.duration = seconds_to_time( gpx.get_duration() ) if gpx.get_duration() else None
 		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )

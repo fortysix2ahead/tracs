@@ -121,16 +121,6 @@ def config():
 def fields():
 	show_fields()
 
-@cli.command( help='synchronizes fitness data' )
-@option( '-a', '--all', 'all_', is_flag=True, required=False, help='synchonizes all activities (instead of recent ones)' )
-@option( '-r', '--restrict', is_flag=False, required=False, help='restricts sync to only one source', metavar='SERVICE' )
-def sync( all_: bool = False, restrict: str = None ):
-	for s in Application.instance().services.values():
-		if restrict is None or restrict.lower() == s.name:
-			activities = s.fetch( fetch_all=all_ )
-			s.download( activities )
-			s.link( activities )
-
 @cli.command( 'import', hidden=True, help='imports activities' )
 @option( '-a', '--as-one', required=False, is_flag=True, help='multiple resources will be imported as one single activity (dangerous!)' )
 @option( '-d', '--skip-download', required=False, is_flag=True, help='skips download of activities' )

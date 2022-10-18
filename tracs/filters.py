@@ -28,15 +28,26 @@ from dateutil.tz import UTC
 from tinydb.queries import Query
 from tinydb.queries import QueryLike
 
-from .fields import field_types
-from .fields import filter_types
+from .activity import Activity
+from .dataclasses import FILTERABLE
+from .dataclasses import FILTER_ALIAS
 from .plugins import Registry
 
 log = getLogger( __name__ )
 
-# add service names as valid field types
+TYPES = {}
+ALIASES = {}
+
+for f in Activity.fields():
+	if f.metadata.get( FILTERABLE, False ):
+		TYPES[f.name] = f.type
+		for alias in f.metadata.get( FILTER_ALIAS, [] ):
+			TYPES[alias] = f.type
+			ALIASES[alias] = f.name
+
+# add service names as valid filter types
 for s in Registry.services.keys():
-	filter_types[s] = int
+	TYPES[s] = 'int'
 
 @dataclass
 class Filter( QueryLike ):
@@ -98,22 +109,22 @@ class Filter( QueryLike ):
 #			self.callable = invalid() # create invalid callable if flag valid is false
 #			return self
 
-		if field_types.get( self.field ) in [int, float]:
+		if TYPES.get( self.field ) in ['int', 'float']:
 			self._freeze_number()
 
-		elif field_types.get( self.field ) is str:
+		elif TYPES.get( self.field ) == 'str':
 			self._freeze_str()
 
-		elif field_types.get( self.field ) is Enum:
+		elif TYPES.get( self.field ) == 'ActivityTypes':
 			self._freeze_enum()
 
-		elif field_types.get( self.field ) == list[str]:
+		elif TYPES.get( self.field ) == 'List[str]':
 			self._freeze_list()
 
-		elif field_types.get( self.field ) == datetime:
+		elif TYPES.get( self.field ) == 'datetime':
 			self._freeze_datetime()
 
-		elif field_types.get( self.field ) == time:
+		elif TYPES.get( self.field ) == 'time':
 			self._freeze_time()
 
 		# all values/ranges are null -> check for existence of field
@@ -318,31 +329,40 @@ def parse( flt: Union[Filter, str] ) -> Filter:
 	return f.freeze()
 
 def parse_expr( filter: str, expr: str, f: Filter ) -> None:
-	field_type = filter_types.get( filter )
+	# get field type, depending on being an alias
+	field_type = TYPES.get( ALIASES.get( filter, filter ) )
 
-	if field_type is int:
-		f.value, f.values, f.range_from, f.range_to, f.valid = parse_int( filter, expr )
+	# select parse function
 
-	elif field_type is float:
-		f.value, f.values, f.range_from, f.range_to, f.valid = parse_number( filter, expr )
+	if field_type == 'int':
+		parse_function = parse_int
 
-	elif field_type is str:
-		f.value, f.values, f.range_from, f.range_to, f.valid = parse_str( filter, expr )
+	elif field_type == 'float':
+		parse_function = parse_number
 
-	elif field_type is date:
-		f.value, f.values, f.range_from, f.range_to, f.valid = parse_date( filter, expr )
+	elif field_type == 'str':
+		parse_function = parse_str
 
-	elif field_type is time:
-		f.value, f.values, f.range_from, f.range_to, f.valid = parse_time( filter, expr )
+	elif field_type == 'datetime':
+		# special treatment of date/time filter
+		if filter == 'date':
+			parse_function = parse_date
+		elif filter == 'time':
+			parse_function = parse_time
+		else:
+			parse_function = None
 
-	elif field_type is datetime:
-		pass  # not yet supported
-
-	elif field_type is Enum:
-		f.value, f.values, f.range_from, f.range_to, f.valid = parse_enum( filter, expr )
+	elif field_type == 'ActivityTypes':
+		parse_function = parse_enum
 
 	else:
+		parse_function = None
+
+	if parse_function:
+		f.value, f.values, f.range_from, f.range_to, f.valid = parse_function( filter, expr )
+	else:
 		f.valid = False
+
 
 #	if filter in Registry.services.keys():
 #		f.value, f.values, f.range_from, f.range_to, f.valid = parse_int( filter, expr )
@@ -501,13 +521,13 @@ def postprocess( f: Filter ) -> None:
 	if not f.valid: # do nothing when filter is already invalid
 		return
 
-	if f.filter in filter_types: # mark filter field as field by default, otherwise it's invalid
+	if f.filter in TYPES: # mark filter field as field by default, otherwise it's invalid
 		f.field = f.filter
 	else:
 		f.valid = False
 		return
 
-	if filter_types[f.filter] is str:
+	if TYPES[f.filter] == 'str':
 		f.value = f.value.lower() if f.value else f.value
 		f.values = list( map( lambda s: s.lower(), f.values ) ) if f.values else f.values
 

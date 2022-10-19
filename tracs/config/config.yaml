@@ -24,6 +24,9 @@ formats:
   timedelta: short  # allowed values: narrow, short, long
   list:
     default: id name type localtime uids
+  show:
+    default: id name type localtime timezone duration distance
+    all:
 
 # experimental: allow predefined filters
 

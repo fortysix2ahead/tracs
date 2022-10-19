@@ -185,12 +185,12 @@ def ls( ctx, sort, reverse, format_name, filters ):
 	list_activities( list( ctx.obj.db.find( filters ) ), sort, reverse, format_name )
 
 @cli.command( help='shows details about activities and resources' )
-#@option( '-f', '--format', 'frmt', is_flag=False, required=False, type=str, hidden=True, help='uses the provided format string when printing', metavar='FORMAT' )
+@option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )
 @option( '-r', '--raw', is_flag=True, required=False, help='display raw data' )
 @argument('filters', nargs=-1)
-@pass_context
-def show( ctx, filters, raw ):
-	show_activity( ctx.obj.db.find( filters ), ctx=ctx.obj, display_raw=raw, verbose=ctx.obj.verbose )
+@pass_obj
+def show( ctx: ApplicationContext, filters, raw, format_name ):
+	show_activity( list( ctx.db.find( filters ) ), ctx=ctx, display_raw=raw, verbose=ctx.verbose, format_name=format_name )
 
 @cli.command( help='groups activities' )
 @argument( 'filters', nargs=-1 )

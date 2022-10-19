@@ -6,6 +6,7 @@ from inspect import getmembers
 from inspect import isclass
 from importlib import import_module
 from logging import getLogger
+from pathlib import Path
 from pkgutil import walk_packages
 from re import match
 from typing import Callable
@@ -43,9 +44,11 @@ class Registry:
 	@classmethod
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
 		_ctx = ctx if ctx else Registry.ctx
+		base_path = kwargs.pop( 'base_path' ) if 'base_path' in kwargs else None
 		for name, service_type in Registry.service_classes.items():
-			log.debug( f'attempting to create service instance {name}' )
-			Registry.services[name] = service_type( ctx=ctx, **kwargs )
+			service_base_path = Path( base_path, name )
+			log.debug( f'attempting to create service instance {name}, with base path {service_base_path}' )
+			Registry.services[name] = service_type( ctx=ctx, base_path=service_base_path, **kwargs )
 
 	@classmethod
 	def service_names( cls ) -> List[str]:

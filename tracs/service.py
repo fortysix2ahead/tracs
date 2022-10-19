@@ -11,6 +11,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+from confuse import Configuration
 from dateutil.tz import UTC
 
 from .activity import Activity
@@ -32,13 +33,13 @@ class Service( ServiceProtocol ):
 	def __init__( self, **kwargs ):
 		# field for saving the current context, to access the context from sub-methods
 		self._ctx: ApplicationContext = kwargs.get( 'ctx' )
+		self._cfg: Configuration = self._ctx.config if self._ctx else None
+		self._state: Configuration = self._ctx.state if self._ctx else None
 
 		self._name = kwargs.pop( 'name' ) if 'name' in kwargs else None
 		self._display_name = kwargs.pop( 'display_name' ) if 'display_name' in kwargs else None
 		self._base_path = kwargs.pop( 'base_path' ) if 'base_path' in kwargs else None
 		self._base_url = kwargs.pop( 'base_url' ) if 'base_url' in kwargs else None
-		self._cfg = kwargs.pop( 'config' ) if 'config' in kwargs else gc.cfg
-		self._state = kwargs.pop( 'state' ) if 'state' in kwargs else gc.state
 		self._logged_in = False
 
 		log.debug( f'service instance {self._name} created, with base path {self._base_path}' )
@@ -354,7 +355,7 @@ class Service( ServiceProtocol ):
 		return []
 
 	@abstractmethod
-	def setup( self ) -> None:
+	def setup( self, ctx: ApplicationContext ) -> None:
 		pass
 
 # ------------------------------------------------------------------------------

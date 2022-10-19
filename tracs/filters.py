@@ -55,33 +55,37 @@ class Filter( QueryLike ):
 	# field to filter for
 	field: Optional[Union[str, List[str]]] = datafield( default=None )
 
-	# value which needs to match, example: calories = 100 matches doc['calories'] = 100
-	value: Any = datafield( default=None )
-	# list of values, example: location = [Berlin, Frankfurt, Hamburg] matches doc[location] = Berlin
-	values: List[Any] = datafield( default=None )
+	# value which needs to match, i.e. calories = 100 matches doc['calories'] = 100
+	value: Union[str, int, float, List, Tuple, time] = datafield( default=None )
+	"""
+	Value is considered as the parameter which is to be searched for while doing the filtering.
+	It may be a str/float/int, which means a comparison is done, in case of a list several options
+	might be valid when compared to the db values and a tuple, which is considered a range.
+	"""
 
-	# indicate ranges: range_from = 0, range_to = 10 matches doc['calories'] = 5
-	range_from: Any = datafield( default=None )
-	range_to: Any = datafield( default=None )
-
-	# fragment, only valid for resources
+	# fragments/queries, only valid for resources
 	fragment: Any = datafield( default=None )
+	query: str = datafield( default=None )
 
 	# indicator that value does not contain the exact value to match, but a regular expression
 	regex: bool = datafield( default=False )
-	# when true value is expected to be part of a list (opposite of 'values' from above)
+	# when true value is expected to be part of a list (opposite of value being a list from above)
 	value_in_list: bool = datafield( default=False )
 	# negates the filter
 	negate: bool = datafield( default=False )
 
 	# filter field (result of parsing the filter, used to store parse result)
 	filter: Optional[str] = datafield( default=None, repr=False, compare=False )
+
 	# filter expression (result of parsing the filter, used to store parse result)
 	expr: Optional[str] = datafield( default=None, repr=False, compare=False )
+
 	# callable to be executed during filter evaluation
 	callable: Optional[Union[Callable, QueryLike]] = datafield( default=None, repr=False, compare=False )
+
 	# indicator that the filter is invalid
 	valid: bool = datafield( default=True, repr=False, compare=False )
+
 	# indicator that freeze is to be skipped upon instance creation
 	freeze_on_init: bool = datafield( default=True, repr=False, compare=False )
 
@@ -128,7 +132,7 @@ class Filter( QueryLike ):
 			self._freeze_time()
 
 		# all values/ranges are null -> check for existence of field
-		if ( self.value or self.values or self.range_from or self.range_to ) is None:
+		if self.value is None:
 			self.callable = Query()[self.field].test( lambda v: True if v != '' and v is not None and v != [] else False )
 
 		if self.valid and self.negate:
@@ -137,20 +141,20 @@ class Filter( QueryLike ):
 		return self
 
 	def _freeze_number( self ) -> None:
-		if self.value:
+		if type( self.value ) in [int, float]:
 			self.callable = Query()[self.field] == self.value
-		elif self.values:
-			self.callable = Query()[self.field].test( lambda v: True if v in self.values else False )
-		elif self.range_from is not None and self.range_to is not None:
-			self.callable = Query()[self.field].test( lambda v: True if v and self.range_from <= v <= self.range_to else False )
+		elif type( self.value ) is list:
+			self.callable = Query()[self.field].test( lambda v: True if v in self.value else False )
+		elif type( self.value ) == tuple:
+			self.callable = Query()[self.field].test( lambda v: True if v and self.value[0] <= v <= self.value[1] else False )
 
 	def _freeze_str( self ) -> None:
-		if self.value:
+		if type( self.value ) == str:
 			if self.regex:
 				self.callable = Query()[self.field].matches( self.value, flags=IGNORECASE )
 			else:
 				self.callable = Query()[self.field].test( lambda v: True if v and self.value.lower() in v.lower() else False )
-		elif self.values:
+		elif type( self.value ) is list:
 			pass
 
 #		if self.value_in_list:
@@ -177,11 +181,11 @@ class Filter( QueryLike ):
 	def _freeze_datetime( self ) -> None:
 		if self.value and type( self.value ) is time:
 			self.callable = Query()[self.field].test( lambda v: True if v.time() == self.value else False )
-		elif self.range_from and self.range_to:
-			if type( self.range_from ) is datetime and type( self.range_to ) is datetime:
-				self.callable = Query()[self.field].test( lambda v: True if v and self.range_from <= v <= self.range_to else False )
-			elif type( self.range_from ) is time and type( self.range_to ) is time:
-				self.callable = Query()[self.field].test( lambda v: True if v and self.range_from <= v.time() <= self.range_to else False )
+		elif type( self.value ) is tuple:
+			if type( self.value[0] ) is datetime and type( self.value[1] ) is datetime:
+				self.callable = Query()[self.field].test( lambda v: True if v and self.value[0] <= v <= self.value[1] else False )
+			elif type( self.value[0] ) is time and type( self.value[1] ) is time:
+				self.callable = Query()[self.field].test( lambda v: True if v and self.value[0] <= v.time() <= self.value[1] else False )
 
 	def _freeze_time( self ) -> None:
 		pass
@@ -359,7 +363,7 @@ def parse_expr( filter: str, expr: str, f: Filter ) -> None:
 		parse_function = None
 
 	if parse_function:
-		f.value, f.values, f.range_from, f.range_to, f.valid = parse_function( filter, expr )
+		f.value, f.valid = parse_function( filter, expr )
 	else:
 		f.valid = False
 
@@ -369,13 +373,13 @@ def parse_expr( filter: str, expr: str, f: Filter ) -> None:
 #		valid = False
 
 def parse_int( field: str, expr: str ) -> Tuple:
-	value, values, range_from, range_to, valid = (None, None, None, None, True)
+	value, valid = None, True
 
 	if m := match( int_pattern, expr ): # single integer
 		value = int( m.groupdict().get( 'value' ) )
 
 	elif m := match( int_list_pattern, expr ): # list of integers
-		values = list( map( lambda s: int( s ), m.groupdict().get( 'values' ).split( ',' ) ) )
+		value = list( map( lambda s: int( s ), m.groupdict().get( 'values' ).split( ',' ) ) )
 
 	elif m := match( int_range_pattern, expr ):  # range of integers
 		range_from = m.groupdict().get( 'range_from' )
@@ -385,11 +389,12 @@ def parse_int( field: str, expr: str ) -> Tuple:
 			range_to = int( range_to ) if range_to else maxsize
 		else:
 			valid = False
+		value = (range_from, range_to)
 
-	return value, values, range_from, range_to, valid
+	return value, valid
 
 def parse_number( field: str, expr: str ) -> Tuple:
-	value, values, range_from, range_to, valid = (None, None, None, None, True)
+	value, valid = None, True
 
 	if m := match( number_pattern, expr ):  # single number
 		value = float( m.groupdict().get( 'value' ) )
@@ -402,54 +407,55 @@ def parse_number( field: str, expr: str ) -> Tuple:
 			range_to = float( range_to ) if range_to else float_info.max
 		else:
 			valid = False
+		value = (range_from, range_to)
 
-	return value, values, range_from, range_to, valid
+	return value, valid
 
 def parse_str( field: str, expr: str ) -> Tuple:
-	value, values, range_from, range_to, valid = (None, None, None, None, True)
+	value, valid = None, True
 
 	if m := match( word_pattern, expr ) or match( word_quote_pattern, expr ): # words, either standalone or quoted
 		value = m.groupdict().get( 'value' )
 
 	elif m := match( word_list_pattern, expr ): # word list, quotes are not yet supported
-		values = m.groupdict().get( 'expr' ).split( ',' )
+		value = m.groupdict().get( 'expr' ).split( ',' )
 
-	return value, values, range_from, range_to, valid
+	return value, valid
 
 def parse_enum( field: str, expr: str ) -> Tuple:
-	value, values, range_from, range_to, valid = (None, None, None, None, True)
+	value, valid = None, True
 
 	if m := match( word_pattern, expr ): # words only
 		value = m.groupdict().get( 'value' )
 
-	return value, values, range_from, range_to, valid
+	return value, valid
 
 def parse_date( field: str, expr: str ) -> Tuple:
-	value, values, range_from, range_to, valid = (None, None, None, None, True)
+	value, valid = None, True
 
 	if m := match( date_pattern, expr ):
 		year, month, day = unpack_date( **m.groupdict() )
 		year, month, day = int( year ), int( month ) if month else None, int( day ) if day else None
-		range_from, range_to = _floor( year, month, day ), _ceil( year, month, day )
+		value = (_floor( year, month, day ), _ceil( year, month, day ))
 
 	elif m := match( date_range_pattern, expr ):
 		year_from, month_from, day_from, year_to, month_to, day_to = unpack_date_range( **m.groupdict() )
 		year_from, month_from, day_from = int( year_from ) if year_from else None, int( month_from ) if month_from else None, int( day_from ) if day_from else None
 		year_to, month_to, day_to = int( year_to ) if year_to else None, int( month_to ) if month_to else None, int( day_to ) if day_to else None
-		range_from, range_to = _floor( year_from, month_from, day_from ), _ceil( year_to, month_to, day_to )
+		value = (_floor( year_from, month_from, day_from ), _ceil( year_to, month_to, day_to ))
 
 	elif m := match( date_range_keyword, expr ):
-		range_from, range_to = _range_of_date_keyword( m.groupdict().get( 'value' ) )
-		if not range_from and not range_to:
+		value = _range_of_date_keyword( m.groupdict().get( 'value' ) )
+		if value == (None, None):
 			valid = False
 
 	else:
 		valid = False
 
-	return value, values, range_from, range_to, valid
+	return value, valid
 
 def parse_time( field: str, expr: str ) -> Tuple:
-	value, values, range_from, range_to, valid = (None, None, None, None, True)
+	value, valid = None, True
 
 	if m := match( time_pattern, expr ):
 		hour, minute, second = unpack_time( **m.groupdict() )
@@ -462,16 +468,17 @@ def parse_time( field: str, expr: str ) -> Tuple:
 		hour_to, minute_to, second_to = int( hour_to ) if hour_to else 0, int( minute_to ) if minute_to else 0, int( second_to ) if second_to else 0
 		range_from = time( hour_from, minute_from, second_from )
 		range_to = time( hour_to, minute_to, second_to )
+		value = range_from, range_to
 
 	elif m := match( time_range_keyword, expr ):
-		range_from, range_to = _range_of_time_keyword( m.groupdict().get( 'value' ) )
-		if not range_from and not range_to:
+		value = _range_of_time_keyword( m.groupdict().get( 'value' ) )
+		if value == (None, None):
 			valid = False
 
 	else:
 		valid = False
 
-	return value, values, range_from, range_to, valid
+	return value, valid
 
 def normalize( flt: str ) -> str:
 	"""
@@ -527,8 +534,10 @@ def postprocess( f: Filter ) -> None:
 		return
 
 	if TYPES[f.filter] in [ 'str', 'List[str]' ]:
-		f.value = f.value.lower() if f.value else f.value
-		f.values = list( map( lambda s: s.lower(), f.values ) ) if f.values else f.values
+		if type( f.value ) is str:
+			f.value = f.value.lower()
+		elif type( f.value ) is list:
+			f.value = list( map( lambda s: s.lower(), f.value ) )
 
 	# allow queries for <service>:<id>
 	if f.filter in Registry.services.keys() and type( f.value ) is int:  # allow queries like <service>:<id>

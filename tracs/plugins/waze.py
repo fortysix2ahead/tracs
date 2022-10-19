@@ -146,11 +146,11 @@ class Waze( Service, Plugin ):
 		return self._logged_in
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		takeouts_dir = Path( self._takeouts_dir )
+		ctx = kwargs.get( 'ctx' )
+		takeouts_dir = Path( ctx.takeout_dir, self.name )
 		log.debug( f"fetching Waze activities from {takeouts_dir}" )
 
 		last_fetch = self.state_value( KEY_LAST_FETCH )
-
 		summaries = []
 
 		for file in sorted( takeouts_dir.rglob( ACTIVITY_FILE ) ):

@@ -1,3 +1,4 @@
+
 from datetime import timedelta
 from logging import getLogger
 from re import match
@@ -27,11 +28,9 @@ from .plugin import Plugin
 from ..activity import Activity
 from ..activity import Resource
 from ..activity_types import ActivityTypes
-from ..config import ApplicationConfig as cfg
-from ..config import ApplicationConfig as state
+from ..config import ApplicationContext
 from ..config import console
 from ..config import APPNAME
-from ..config import KEY_PLUGINS
 from ..service import Service
 from ..utils import seconds_to_time
 
@@ -195,8 +194,8 @@ class Bikecitizens( Service, Plugin ):
 
 		# status should be 200, need to check what is returned if credentials are wrong
 		if response.status_code == 200:
-			state[KEY_PLUGINS][SERVICE_NAME]['session'] = self._session.cookies['_dashboard_session']
-			state[KEY_PLUGINS][SERVICE_NAME]['api_key'] = self._session.cookies['api_key']
+			self.set_state_value( 'session', self._session.cookies['_dashboard_session'] )
+			self.set_state_value( 'api_key', self._session.cookies['api_key'] )
 		else:
 			log.error( f'Login to {self.name} failed' )
 			return False
@@ -286,14 +285,14 @@ class Bikecitizens( Service, Plugin ):
 
 		return url
 
-	def setup( self ) -> None:
+	def setup( self, ctx: ApplicationContext ) -> None:
 		console.print( f'For Bikecitizens we will use their Web API to download activity data, that\'s why your credentials are needed.' )
 
 		user = Prompt.ask( 'Enter your user name', default=self.cfg_value( 'username' ) or '' )
 		pwd = Prompt.ask( 'Enter your password', default=self.cfg_value( 'password' ) or '', password=True )
 
-		cfg[KEY_PLUGINS][self._name]['username'] = user
-		cfg[KEY_PLUGINS][self._name]['password'] = pwd
+		self.set_cfg_value( 'username', user )
+		self.set_cfg_value( 'password', pwd )
 
 	def setup_complete( self ) -> bool:
 		pass

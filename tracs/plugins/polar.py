@@ -4,6 +4,7 @@ from logging import getLogger
 from pathlib import Path
 from re import match
 from typing import Any
+from typing import cast
 from typing import List
 from typing import Mapping
 from typing import Optional
@@ -36,10 +37,9 @@ from ..activity import Activity
 from ..activity import Resource
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types
-from ..config import ApplicationConfig as cfg
+from ..config import ApplicationContext
 from ..config import console
 from ..config import APPNAME
-from ..config import KEY_PLUGINS
 from ..service import Service
 from ..utils import seconds_to_time as stt
 
@@ -192,7 +192,7 @@ class Polar( Service, Plugin ):
 		self._session = None
 		self._logged_in = False
 
-		self.importer: PolarImporter = Registry.importer_for( POLAR_FLOW_TYPE )
+		self.importer: PolarImporter = cast( PolarImporter, Registry.importer_for( POLAR_FLOW_TYPE ) )
 
 	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
 		return super().path_for( activity, resource, ext )
@@ -363,14 +363,14 @@ class Polar( Service, Plugin ):
 			if r.type in [POLAR_ZIP_GPX_TYPE, POLAR_ZIP_TCX_TYPE]:
 				activity.resources.extend( decompress_resources( r ) )
 
-	def setup( self ) -> None:
+	def setup( self, ctx: ApplicationContext ) -> None:
 		console.print( f'For Polar Flow we will use their inofficial Web API to download activity data, that\'s why your credentials are needed.' )
 
 		user = Prompt.ask( 'Enter your user name', default=self.cfg_value( 'username' ) or '' )
 		pwd = Prompt.ask( 'Enter your password', default=self.cfg_value( 'password' ) or '', password=True )
 
-		cfg[KEY_PLUGINS][SERVICE_NAME]['username'] = user
-		cfg[KEY_PLUGINS][SERVICE_NAME]['password'] = pwd
+		self.set_cfg_value( 'username', user )
+		self.set_cfg_value( 'password', pwd )
 
 	def setup_complete( self ) -> bool:
 		if self.cfg_value( 'username' ) and self.cfg_value( 'password' ):

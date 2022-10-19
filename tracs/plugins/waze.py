@@ -5,6 +5,7 @@ from datetime import datetime
 from os.path import getmtime
 from re import match
 from typing import Any
+from typing import cast
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -31,7 +32,7 @@ from .plugin import Plugin
 from ..activity_types import ActivityTypes
 from ..activity import Activity
 from ..activity import Resource
-from ..config import GlobalConfig as gc
+from ..config import ApplicationContext
 from ..config import KEY_LAST_FETCH
 from ..service import Service
 from ..utils import as_datetime
@@ -100,16 +101,11 @@ class Waze( Service, Plugin ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 		self._logged_in = True
 
-		self.field_size_limit = self.cfg_value( 'field_size_limit' )
-		self.takeout_importer: WazeTakeoutImporter = Registry.importer_for( WAZE_TAKEOUT_TYPE )
-		self.takeout_importer.field_size_limit = self.field_size_limit
-		log.debug( f"using {self.field_size_limit} as field size limit for CSV parser in Waze service" )
+		self.takeout_importer: WazeTakeoutImporter = cast( WazeTakeoutImporter, Registry.importer_for( WAZE_TAKEOUT_TYPE ) )
+		self.takeout_importer.field_size_limit = self.cfg_value( 'field_size_limit' )
+		log.debug( f'using {self.takeout_importer.field_size_limit} as field size limit for CSV parser in Waze service' )
 
-		self.importer: WazeImporter = Registry.importer_for( WAZE_TYPE )
-
-	@property
-	def _takeouts_dir( self ) -> Path:
-		return Path( gc.db_dir, self.name, TAKEOUTS_DIRNAME )
+		self.importer: WazeImporter = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
 
 	def path_for_id( self, local_id: int, base_path: Optional[Path] ) -> Path:
 		_id = str( local_id )
@@ -145,11 +141,11 @@ class Waze( Service, Plugin ):
 		return self._logged_in
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		takeouts_dir = Path( self._takeouts_dir )
+		ctx = kwargs.get( 'ctx' )
+		takeouts_dir = Path( ctx.takeout_dir, self.name )
 		log.debug( f"fetching Waze activities from {takeouts_dir}" )
 
 		last_fetch = self.state_value( KEY_LAST_FETCH )
-
 		summaries = []
 
 		for file in sorted( takeouts_dir.rglob( ACTIVITY_FILE ) ):
@@ -205,7 +201,7 @@ class Waze( Service, Plugin ):
 				return gpx, 200 # return always 200
 
 	# nothing to do for now ...
-	def setup( self ):
+	def setup( self, ctx: ApplicationContext ):
 		echo( 'Skipping setup for Waze ... nothing to configure at the moment' )
 
 	# noinspection PyMethodMayBeStatic

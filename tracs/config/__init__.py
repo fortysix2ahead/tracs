@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from importlib import import_module
 from importlib.resources import path as pkg_path
+from logging import getLogger
 from pathlib import Path
 from typing import Any
 from typing import List
@@ -57,6 +58,8 @@ NAMESPACE_SERVICES = f'{NAMESPACE_BASE}.services'
 
 # application context
 
+log = getLogger( __name__ )
+
 @dataclass
 class ApplicationContext:
 
@@ -89,6 +92,7 @@ class ApplicationContext:
 	plugins_dir: List[Path] = field( default_factory=list )
 
 	log_dir: Path = field( default=None )
+	log_file: Path = field( default=None )
 
 	force: bool = field( default=False )
 	verbose: bool = field( default=False )
@@ -106,15 +110,18 @@ class ApplicationContext:
 			self.cfg_file = Path( self.cfg_dir, CONFIG_FILENAME ) if not self.cfg_file else self.cfg_file
 			self.state_file = Path( self.cfg_dir, STATE_FILENAME ) if not self.state_file else self.state_file
 
-			self.db_dir = Path( self.cfg_dir, DB_DIRNAME ) if not self.db_dir else self.db_dir
 			self.log_dir = Path( self.cfg_dir, LOG_DIRNAME ) if not self.log_dir else self.log_dir
+			self.log_file = Path( self.log_dir, LOG_FILENAME ) if not self.log_file else self.log_file
+
+		if self.lib_dir:
+			self.db_dir = Path( self.lib_dir, DB_DIRNAME ) if not self.db_dir else self.db_dir
 
 		# directories that depend on db_dir
 		if self.db_dir:
 			self.overlay_dir = Path( self.db_dir, OVERLAY_DIRNAME ) if not self.overlay_dir else self.overlay_dir
 			self.takeout_dir = Path( self.db_dir, TAKEOUT_DIRNAME ) if not self.takeout_dir else self.takeout_dir
 
-		# configuration
+		# internal configuration/state
 
 		# read internal config
 		self.config = Configuration( APPNAME, __name__, read=False )
@@ -125,6 +132,26 @@ class ApplicationContext:
 		self.state = Configuration( f'{APPNAME}.state', __name__, read=False )
 		with pkg_path( self.__module__, STATE_FILENAME ) as p:
 			self.state.set_file( p )
+
+	def dump_config_state( self ) -> None:
+		self.dump_config()
+		self.dump_state()
+
+	def dump_config( self ) -> None:
+		if not self.pretend:
+			with open( self.cfg_file, 'w+' ) as cf:
+				#cf.write( dump_yaml( load_yaml( self._cfg.dump( full=True ), Loader=FullLoader ), sort_keys=True ) )
+				cf.write( self.config.dump( full=True ) )
+		else:
+			log.info( f'pretending to write config file to {self.cfg_file}' )
+
+	def dump_state( self ) -> None:
+		if not self.pretend:
+			with open( self.state_file, 'w+' ) as sf:
+				#sf.write( dump_yaml( load_yaml( self._state.dump( full=True ), Loader=FullLoader ), sort_keys=True ) )
+				sf.write( self.state.dump( full=True ) )
+		else:
+			log.info( f'pretending to write state file to {self.state_file}' )
 
 ApplicationConfig = Configuration( APPNAME, __name__, read=False )
 ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )

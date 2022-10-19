@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+from datetime import time
 from typing import Any
 from typing import Dict
 from typing import List
@@ -23,6 +24,7 @@ from .ui import diff_table2
 log = getLogger( __name__ )
 
 DELTA = 180
+PART_THRESHOLD = 4
 
 @dataclass
 class GroupResult:
@@ -147,11 +149,29 @@ def ungroup_activities( ctx: ApplicationContext, activities: List[Activity], for
 
 # parting / unparting
 
-def part_activities( activities: [Activity], force: bool ):
-	if validate_parts( activities ) or force:
-		pass
+def part_activities( activities: List[Activity], force: bool = False, pretend: bool = False, ctx: ApplicationContext = None ):
+	# experimental warning ... todo: remove later
+	if len( activities ) > PART_THRESHOLD:
+		log.warning( f'experimental: not going to create multipart activity consisting of more than {PART_THRESHOLD} activities' )
+		return
 
-def unpart_activities( activities: [Activity], force: bool ):
+	activities.sort( key=lambda e: e.time )
+
+	parts = []
+	gaps = []
+	for a in activities:
+		try:
+			last = parts[-1]
+			parts.append( a.uids )
+		except IndexError:
+			parts.append( a.uids )
+			gaps.append( time( 0 ) )
+
+	multipart = Activity( parts=parts )
+
+	pass
+
+def unpart_activities( activities: List[Activity], force: bool = False, pretend: bool = False, ctx: ApplicationContext = None ):
 	pass
 
 def validate_parts( activities: [Activity], force: bool ) -> bool:

@@ -12,6 +12,7 @@ from . import service
 from .plugin import Plugin
 from ..activity import Activity
 from ..activity import Resource
+from ..config import ApplicationContext
 from ..service import Service
 
 log = getLogger( __name__ )
@@ -49,7 +50,7 @@ class Empty( Service, Plugin ):
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		return [], 200
 
-	def setup( self ) -> None:
+	def setup( self, ctx: ApplicationContext ) -> None:
 		pass
 
 	# noinspection PyMethodMayBeStatic

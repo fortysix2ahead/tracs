@@ -33,7 +33,6 @@ from ..activity_types import ActivityTypes
 from ..activity import Activity
 from ..activity import Resource
 from ..config import ApplicationContext
-from ..config import GlobalConfig as gc
 from ..config import KEY_LAST_FETCH
 from ..service import Service
 from ..utils import as_datetime
@@ -107,10 +106,6 @@ class Waze( Service, Plugin ):
 		log.debug( f'using {self.takeout_importer.field_size_limit} as field size limit for CSV parser in Waze service' )
 
 		self.importer: WazeImporter = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
-
-	@property
-	def _takeouts_dir( self ) -> Path:
-		return Path( gc.db_dir, self.name, TAKEOUTS_DIRNAME )
 
 	def path_for_id( self, local_id: int, base_path: Optional[Path] ) -> Path:
 		_id = str( local_id )

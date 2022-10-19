@@ -7,6 +7,7 @@
       "localtime": "2012-01-07T11:40:56+01:00",
       "location_country": "",
       "location_city": null,
+      "location_place": "Forest",
       "tags": [],
       "uids": [ "polar:1234567890", "strava:12345678", "waze:20210101010101" ]
     },

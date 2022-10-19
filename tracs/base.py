@@ -180,7 +180,7 @@ class Service( Protocol ):
 		pass
 
 	@abstractmethod
-	def setup( self ) -> None:
+	def setup( self, ctx ) -> None:
 		pass
 
 	# define abstract properties

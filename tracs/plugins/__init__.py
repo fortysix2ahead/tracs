@@ -6,6 +6,7 @@ from inspect import getmembers
 from inspect import isclass
 from importlib import import_module
 from logging import getLogger
+from pathlib import Path
 from pkgutil import walk_packages
 from re import match
 from typing import Callable
@@ -21,6 +22,7 @@ from typing import cast
 from ..base import Handler
 from ..base import Importer
 from ..base import Service
+from ..config import ApplicationContext
 from ..config import KEY_CLASSIFER
 
 log = getLogger( __name__ )
@@ -29,6 +31,7 @@ NS_PLUGINS = __name__
 class Registry:
 
 	classifier: str = KEY_CLASSIFER
+	ctx: ApplicationContext = None
 	document_classes: Dict[str, Type] = {}
 	document_types: Dict[str, Type] = {}
 	downloaders = {}
@@ -37,6 +40,15 @@ class Registry:
 	importers: Dict[str, List[Importer]] = {}
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
+
+	@classmethod
+	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
+		_ctx = ctx if ctx else Registry.ctx
+		base_path = kwargs.pop( 'base_path' ) if 'base_path' in kwargs else None
+		for name, service_type in Registry.service_classes.items():
+			service_base_path = Path( base_path, name )
+			log.debug( f'attempting to create service instance {name}, with base path {service_base_path}' )
+			Registry.services[name] = service_type( ctx=ctx, base_path=service_base_path, **kwargs )
 
 	@classmethod
 	def service_names( cls ) -> List[str]:
@@ -202,9 +214,6 @@ def service( cls: Type ):
 	if isclass( cls ):
 		module, name = _spec( cls )
 		Registry.service_classes[module] = cls
-		# config, state = plugin_config_state( module ) # todo: this does not work as expected, but we'll leave it in for now
-		# Registry.services[module] = cls( config=config, state=state )
-		Registry.services[module] = cls()
 		log.debug( f'registered service class {cls}' )
 		return cls
 	else:

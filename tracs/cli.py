@@ -5,7 +5,6 @@ from logging import INFO
 from logging import Formatter
 from logging import StreamHandler
 from logging import getLogger
-from pathlib import Path
 from sys import stderr
 from typing import List
 
@@ -32,7 +31,6 @@ from tracs.list import inspect_resources
 from .activity import Activity
 from .application import Application
 from .config import ApplicationContext
-from .config import GlobalConfig as gc
 from .config import APPNAME
 from .db import backup_db
 from .db import restore_db
@@ -67,9 +65,7 @@ log = getLogger( __name__ )
 @option( '-f', '--force', is_flag=True, default=None, required=False, help='forces operations to be carried out' )
 @option( '-p', '--pretend', is_flag=True, default=None, required=False, help='pretends to work, only simulates everything and does not persist any changes' )
 @pass_context
-def cli( ctx, configuration, debug, force, library, verbose, pretend ):
-	# create application context object
-	ctx.obj = ApplicationContext()
+def cli( ctx, configuration, library, force, verbose, pretend, debug ):
 
 	_init_logging( debug )
 
@@ -77,23 +73,18 @@ def cli( ctx, configuration, debug, force, library, verbose, pretend ):
 		getLogger( __package__ ).setLevel( DEBUG )
 		getLogger( __package__ ).handlers[0].setLevel( DEBUG ) # this should not fail as the handler is defined in __main__
 
-	log.debug( f'triggered CLI with flags debug={debug}, verbose={verbose}, force={force}, pretend={pretend}' )
+	log.debug( f'triggered CLI with flags configuration={configuration}, library={library}, debug={debug}, verbose={verbose}, force={force}, pretend={pretend}' )
 
-	gc.app = Application.instance(
-		ctx=ctx.obj,
-		config_dir=Path( configuration ) if configuration else None,
-		lib_dir=Path( library ) if library else None,
+	instance = Application.instance(
+		config_dir=configuration,
+		lib_dir=library,
 		verbose=verbose,
 		debug=debug,
 		force=force,
 		pretend=pretend
 	)
 
-	# todo: move this init to application module
-	ctx.obj.instance = gc.app
-	ctx.obj.db = gc.app.db
-	ctx.obj.db_file = gc.app.db.db_path
-	ctx.obj.meta = gc.app.db.metadata
+	ctx.obj = instance.ctx # save newly created context object
 
 	migrate_application( ctx.obj, None ) # check if migration is necessary
 
@@ -304,8 +295,10 @@ def unequip( ctx: ApplicationContext, filters, equipment ):
 	unequip_activities( list( ctx.db.find( filters ) ), equipment=equipment, ctx=ctx )
 
 @cli.command( help='application setup' )
-def setup():
-	setup_application()
+@argument( 'services', nargs=-1 )
+@pass_obj
+def setup( ctx: ApplicationContext, services: List[str] ):
+	setup_application( ctx, services )
 
 @cli.command( hidden=True, help='For testing plugin system' )
 def init():
@@ -327,8 +320,9 @@ def inspect( ctx: ApplicationContext, filters, registry: bool, resource: bool ):
 
 @cli.command( hidden=True, help='Performs some validation and sanity tasks.' )
 @argument( 'filters', nargs=-1 )
-def validate( filters ):
-	validate_activities( gc.db.find( filters, True, True, True ) )
+@pass_obj
+def validate( ctx: ApplicationContext, filters ):
+	validate_activities( list( ctx.db.find( filters ) ) )
 
 @cli.command( help='Displays the version number and exits.' )
 def version():

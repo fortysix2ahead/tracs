@@ -54,12 +54,14 @@ def test_init_from( json ):
 def test_asdict():
 	a = Activity()
 	assert a.asdict() == {
+		'equipment': [],
 		'tags'     : [],
 		'timezone' : get_localzone_name(),
 		'uids'     : []
 	}
 
 	assert as_dict( a ) == {
+		'equipment': [],
 		'tags'     : [],
 		'timezone' : get_localzone_name(),
 		'uids'     : []
@@ -68,6 +70,7 @@ def test_asdict():
 	assert as_dict( a, remove_persist=False ) == {
 		'dirty'    : False,
 		'doc_id'   : 0,
+		'equipment': [],
 		'id'       : 0,
 		'metadata' : {},
 		'resources': [],
@@ -104,6 +107,7 @@ def test_asdict():
 #			'type'    : 'gpx',
 #			'uid'     : None
 #		}],
+		'equipment' : [],
 		'name'      : 'name',
 		'raw_id'    : 1,
 		'tags'      : [],
@@ -113,3 +117,4 @@ def test_asdict():
 		'uid'       : 'test:1',
 		'uids'      : []
 	}
+@

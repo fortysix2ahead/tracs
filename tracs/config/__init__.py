@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from importlib import import_module
 from importlib.resources import path as pkg_path
+from logging import getLogger
 from pathlib import Path
 from typing import Any
 from typing import List
@@ -56,6 +57,8 @@ NAMESPACE_PLUGINS = f'{NAMESPACE_BASE}.plugins'
 NAMESPACE_SERVICES = f'{NAMESPACE_BASE}.services'
 
 # application context
+
+log = getLogger( __name__ )
 
 @dataclass
 class ApplicationContext:
@@ -125,6 +128,26 @@ class ApplicationContext:
 		self.state = Configuration( f'{APPNAME}.state', __name__, read=False )
 		with pkg_path( self.__module__, STATE_FILENAME ) as p:
 			self.state.set_file( p )
+
+	def dump_config_state( self ) -> None:
+		self.dump_config()
+		self.dump_state()
+
+	def dump_config( self ) -> None:
+		if not self.pretend:
+			with open( self.cfg_file, 'w+' ) as cf:
+				#cf.write( dump_yaml( load_yaml( self._cfg.dump( full=True ), Loader=FullLoader ), sort_keys=True ) )
+				cf.write( self.config.dump( full=True ) )
+		else:
+			log.info( f'pretending to write config file to {self.cfg_file}' )
+
+	def dump_state( self ) -> None:
+		if not self.pretend:
+			with open( self.state_file, 'w+' ) as sf:
+				#sf.write( dump_yaml( load_yaml( self._state.dump( full=True ), Loader=FullLoader ), sort_keys=True ) )
+				sf.write( self.state.dump( full=True ) )
+		else:
+			log.info( f'pretending to write state file to {self.state_file}' )
 
 ApplicationConfig = Configuration( APPNAME, __name__, read=False )
 ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )

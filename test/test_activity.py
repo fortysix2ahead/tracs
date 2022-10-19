@@ -117,4 +117,3 @@ def test_asdict():
 		'uid'       : 'test:1',
 		'uids'      : []
 	}
-@

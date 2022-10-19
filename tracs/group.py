@@ -20,6 +20,7 @@ from .config import console
 from .dataclasses import as_dict
 from .ui import Choice
 from .ui import diff_table2
+from .utils import seconds_to_time
 
 log = getLogger( __name__ )
 
@@ -157,19 +158,25 @@ def part_activities( activities: List[Activity], force: bool = False, pretend: b
 
 	activities.sort( key=lambda e: e.time )
 
-	parts = []
-	gaps = []
+	parts, gaps = [], []
 	for a in activities:
 		try:
 			last = parts[-1]
-			parts.append( a.uids )
+			gap = a.time - last.time_end
+			if gap.total_seconds() > 0:
+				parts.append( a )
+				gaps.append( seconds_to_time( gap.total_seconds() ) )
+			else:
+				log.warning( f'activities {a.id} and {last.id} overlap, skipping grouping as multipart' )
 		except IndexError:
-			parts.append( a.uids )
+			parts.append( a )
 			gaps.append( time( 0 ) )
 
-	multipart = Activity( parts=parts )
+	part_list = []
+	for i in range( len( parts ) ):
+		part_list.append( { 'gap': gaps[i].isoformat(), 'uids': parts[i].uids } )
 
-	pass
+	ctx.db.insert( Activity( parts=part_list ) )
 
 def unpart_activities( activities: List[Activity], force: bool = False, pretend: bool = False, ctx: ApplicationContext = None ):
 	pass

@@ -96,6 +96,7 @@ def test_parse():
 	assert parse( 'name:Run1' ) == Filter( 'name', 'run1' )
 	assert parse( 'name:"Run 5K in 2021"' ) == Filter( 'name', 'run 5k in 2021' )
 	assert parse( 'name:run,hike,walk' ) == Filter( 'name', ['run', 'hike', 'walk'] )
+	assert parse( 'name:' ) == Filter( 'name', None )
 
 	# numbers as values
 	assert parse( 'distance:5000' ) == Filter( 'distance', int( 5000 ) )
@@ -253,9 +254,9 @@ def test_filters_on_activities( db ):
 	assert Filter( 'time', (time( 10 ), time( 11 )) )( m[2] )
 
 	# field exists, field value is not None/''/[]
-	assert Filter( 'name' )( m[1] )
-	assert not Filter( 'heartrate' )( m[1] )
-	assert not Filter( 'tags' )( m[1] )
+	assert not Filter( 'name' )( m[1] )
+	assert Filter( 'heartrate' )( m[1] )
+	assert Filter( 'tags' )( m[1] )
 
 @mark.db( template='default', inmemory=True )
 def test_filters_on_list( db ):

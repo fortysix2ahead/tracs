@@ -132,8 +132,8 @@ class Filter( QueryLike ):
 			self._freeze_time()
 
 		# all values/ranges are null -> check for existence of field
-		if self.value is None:
-			self.callable = Query()[self.field].test( lambda v: True if v != '' and v is not None and v != [] else False )
+		if self.valid and self.value is None:
+			self.callable = Query()[self.field].test( lambda v: True if v is None or v == '' or v == [] else False )
 
 		if self.valid and self.negate:
 			self.callable = ~ cast( Query, self.callable )

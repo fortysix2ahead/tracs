@@ -207,13 +207,13 @@ def ungroup( ctx: ApplicationContext, filters: List[str] ):
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def part( ctx: ApplicationContext, filters: List[str] ):
-	part_activities( ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend )
+	part_activities( list( ctx.db.find( filters ) ), force=ctx.force, pretend=ctx.pretend, ctx=ctx )
 
 @cli.command( hidden=True, help='reverts multipart activities' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def unpart( ctx: ApplicationContext, filters: List[str] ):
-	unpart_activities( ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend )
+	unpart_activities( ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend, ctx=ctx )
 
 @cli.command( help='modifies activities' )
 @option( '-f', '--field', is_flag=False, required=True, help='field to modify' )

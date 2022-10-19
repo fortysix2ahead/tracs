@@ -43,7 +43,8 @@ class Registry:
 	@classmethod
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
 		_ctx = ctx if ctx else Registry.ctx
-		for name, service_type in Registry.service_classes:
+		for name, service_type in Registry.service_classes.items():
+			log.debug( f'attempting to create service instance {name}' )
 			Registry.services[name] = service_type( ctx=ctx, **kwargs )
 
 	@classmethod

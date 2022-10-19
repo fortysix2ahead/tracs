@@ -1,9 +1,10 @@
-
+from datetime import timedelta
 from logging import getLogger
 from re import match
 from re import DOTALL
 from sys import exit as sysexit
 from typing import Any
+from typing import cast
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -90,7 +91,9 @@ class BikecitizensActivity( Activity ):
 		self.distance = self.raw.get( 'distance' )
 		self.duration = seconds_to_time( self.raw.get( 'duration' ) )
 		self.time = parse( self.raw['start_time'] )
+		self.time_end = self.time + timedelta( hours=self.duration.hour, minutes=self.duration.minute, seconds=self.duration.second )
 		self.localtime = parse( self.raw['start_time'] ).astimezone( tzlocal() )
+		self.localtime_end = self.localtime + timedelta( hours=self.duration.hour, minutes=self.duration.minute, seconds=self.duration.second )
 		self.tags = self.raw.get( 'tags' )
 		self.uuid = self.raw.get( 'uuid' )
 
@@ -110,7 +113,7 @@ class Bikecitizens( Service, Plugin ):
 		self.api_url = api_url if api_url else API_URL
 		self.base_url = base_url if base_url else BASE_URL
 
-		self.importer: BikecitizensImporter = Registry.importer_for( BIKECITIZENS_TYPE )
+		self.importer: BikecitizensImporter = cast( BikecitizensImporter, Registry.importer_for( BIKECITIZENS_TYPE ) )
 
 	@property
 	def base_url( self ) -> str:

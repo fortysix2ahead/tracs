@@ -5,7 +5,6 @@ from logging import INFO
 from logging import Formatter
 from logging import StreamHandler
 from logging import getLogger
-from pathlib import Path
 from sys import stderr
 from typing import List
 
@@ -32,7 +31,6 @@ from tracs.list import inspect_resources
 from .activity import Activity
 from .application import Application
 from .config import ApplicationContext
-from .config import GlobalConfig as gc
 from .config import APPNAME
 from .db import backup_db
 from .db import restore_db
@@ -322,8 +320,9 @@ def inspect( ctx: ApplicationContext, filters, registry: bool, resource: bool ):
 
 @cli.command( hidden=True, help='Performs some validation and sanity tasks.' )
 @argument( 'filters', nargs=-1 )
-def validate( filters ):
-	validate_activities( gc.db.find( filters, True, True, True ) )
+@pass_obj
+def validate( ctx: ApplicationContext, filters ):
+	validate_activities( list( ctx.db.find( filters ) ) )
 
 @cli.command( help='Displays the version number and exits.' )
 def version():

@@ -304,8 +304,10 @@ def unequip( ctx: ApplicationContext, filters, equipment ):
 	unequip_activities( list( ctx.db.find( filters ) ), equipment=equipment, ctx=ctx )
 
 @cli.command( help='application setup' )
-def setup():
-	setup_application()
+@argument( 'services', nargs=-1 )
+@pass_obj
+def setup( ctx: ApplicationContext, services: List[str] ):
+	setup_application( ctx, services )
 
 @cli.command( hidden=True, help='For testing plugin system' )
 def init():

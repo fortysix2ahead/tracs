@@ -92,6 +92,7 @@ class ApplicationContext:
 	plugins_dir: List[Path] = field( default_factory=list )
 
 	log_dir: Path = field( default=None )
+	log_file: Path = field( default=None )
 
 	force: bool = field( default=False )
 	verbose: bool = field( default=False )
@@ -109,15 +110,18 @@ class ApplicationContext:
 			self.cfg_file = Path( self.cfg_dir, CONFIG_FILENAME ) if not self.cfg_file else self.cfg_file
 			self.state_file = Path( self.cfg_dir, STATE_FILENAME ) if not self.state_file else self.state_file
 
-			self.db_dir = Path( self.cfg_dir, DB_DIRNAME ) if not self.db_dir else self.db_dir
 			self.log_dir = Path( self.cfg_dir, LOG_DIRNAME ) if not self.log_dir else self.log_dir
+			self.log_file = Path( self.log_dir, LOG_FILENAME ) if not self.log_file else self.log_file
+
+		if self.lib_dir:
+			self.db_dir = Path( self.lib_dir, DB_DIRNAME ) if not self.db_dir else self.db_dir
 
 		# directories that depend on db_dir
 		if self.db_dir:
 			self.overlay_dir = Path( self.db_dir, OVERLAY_DIRNAME ) if not self.overlay_dir else self.overlay_dir
 			self.takeout_dir = Path( self.db_dir, TAKEOUT_DIRNAME ) if not self.takeout_dir else self.takeout_dir
 
-		# configuration
+		# internal configuration/state
 
 		# read internal config
 		self.config = Configuration( APPNAME, __name__, read=False )

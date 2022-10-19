@@ -67,9 +67,7 @@ log = getLogger( __name__ )
 @option( '-f', '--force', is_flag=True, default=None, required=False, help='forces operations to be carried out' )
 @option( '-p', '--pretend', is_flag=True, default=None, required=False, help='pretends to work, only simulates everything and does not persist any changes' )
 @pass_context
-def cli( ctx, configuration, debug, force, library, verbose, pretend ):
-	# create application context object
-	ctx.obj = ApplicationContext()
+def cli( ctx, configuration, library, force, verbose, pretend, debug ):
 
 	_init_logging( debug )
 
@@ -77,23 +75,18 @@ def cli( ctx, configuration, debug, force, library, verbose, pretend ):
 		getLogger( __package__ ).setLevel( DEBUG )
 		getLogger( __package__ ).handlers[0].setLevel( DEBUG ) # this should not fail as the handler is defined in __main__
 
-	log.debug( f'triggered CLI with flags debug={debug}, verbose={verbose}, force={force}, pretend={pretend}' )
+	log.debug( f'triggered CLI with flags configuration={configuration}, library={library}, debug={debug}, verbose={verbose}, force={force}, pretend={pretend}' )
 
-	gc.app = Application.instance(
-		ctx=ctx.obj,
-		config_dir=Path( configuration ) if configuration else None,
-		lib_dir=Path( library ) if library else None,
+	instance = Application.instance(
+		config_dir=configuration,
+		lib_dir=library,
 		verbose=verbose,
 		debug=debug,
 		force=force,
 		pretend=pretend
 	)
 
-	# todo: move this init to application module
-	ctx.obj.instance = gc.app
-	ctx.obj.db = gc.app.db
-	ctx.obj.db_file = gc.app.db.db_path
-	ctx.obj.meta = gc.app.db.metadata
+	ctx.obj = instance.ctx # save newly created context object
 
 	migrate_application( ctx.obj, None ) # check if migration is necessary
 

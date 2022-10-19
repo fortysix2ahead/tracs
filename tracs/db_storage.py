@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -105,7 +106,9 @@ class DataClassStorage( Storage ):
 		'duration': lambda v: time.fromisoformat( v ),
 		'duration_moving': lambda v: time.fromisoformat( v ),
 		'localtime': lambda v: datetime.fromisoformat( v ),
+		'localtime_end': lambda v: datetime.fromisoformat( v ),
 		'time': lambda v: datetime.fromisoformat( v ),
+		'time_end': lambda v: datetime.fromisoformat( v ),
 		'type': lambda v: ActivityTypes.get( v )
 	}
 

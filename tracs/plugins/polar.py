@@ -340,7 +340,7 @@ class Polar( Service, Plugin ):
 				]
 
 			for r in resources:
-				r.raw_data, r.status = self.download_resource( r )
+				self.download_resource( r )
 
 			return resources
 
@@ -353,6 +353,9 @@ class Polar( Service, Plugin ):
 		if url:
 			log.debug( f'downloading resource from {url}' )
 			response = self._session.get( url, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )
+			resource.content = response.content
+			resource.text = response.text
+			resource.status = response.status_code
 			return response.content, response.status_code
 		else:
 			log.warning( f'unable to determine download url for resource {resource}' )

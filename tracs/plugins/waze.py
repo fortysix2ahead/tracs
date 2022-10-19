@@ -5,6 +5,7 @@ from datetime import datetime
 from os.path import getmtime
 from re import match
 from typing import Any
+from typing import cast
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -100,12 +101,11 @@ class Waze( Service, Plugin ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 		self._logged_in = True
 
-		self.field_size_limit = self.cfg_value( 'field_size_limit' )
-		self.takeout_importer: WazeTakeoutImporter = Registry.importer_for( WAZE_TAKEOUT_TYPE )
-		self.takeout_importer.field_size_limit = self.field_size_limit
-		log.debug( f"using {self.field_size_limit} as field size limit for CSV parser in Waze service" )
+		self.takeout_importer: WazeTakeoutImporter = cast( WazeTakeoutImporter, Registry.importer_for( WAZE_TAKEOUT_TYPE ) )
+		self.takeout_importer.field_size_limit = self.cfg_value( 'field_size_limit' )
+		log.debug( f'using {self.takeout_importer.field_size_limit} as field size limit for CSV parser in Waze service' )
 
-		self.importer: WazeImporter = Registry.importer_for( WAZE_TYPE )
+		self.importer: WazeImporter = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
 
 	@property
 	def _takeouts_dir( self ) -> Path:

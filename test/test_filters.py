@@ -58,6 +58,7 @@ def test_filter_pattern():
 
 	assert match( resource_pattern, 'polar:1000#1' )
 	assert match( resource_pattern, 'polar:1000#gpx' )
+	# assert match( resource_pattern, 'polar:1000?1001.gpx' )
 	assert match( resource_pattern, 'polar:1001#application/xml+gpx' )
 	assert match( resource_pattern, 'polar:1001#application/xml+gpx-polar' )
 
@@ -70,23 +71,23 @@ def test_parse():
 	assert parse( '^1000' ) == Filter( 'id', 1000, negate=True ) # negate also works on id (does not make much sense however ...)
 
 	# list of ids
-	assert parse( '1000,1001,1002' ) == Filter( 'id', values=[1000, 1001, 1002] )
-	assert parse( '^1000,1001,1002' ) == Filter( 'id', values=[1000, 1001, 1002], negate=True )
+	assert parse( '1000,1001,1002' ) == Filter( 'id', [1000, 1001, 1002] )
+	assert parse( '^1000,1001,1002' ) == Filter( 'id', [1000, 1001, 1002], negate=True )
 
 	# range of ids
-	assert parse( '1000..1002' ) == Filter( 'id', range_from=1000, range_to=1002 )
-	assert parse( '1000..' ) == Filter( 'id', range_from=1000, range_to=maxsize )
-	assert parse( '..1002' ) == Filter( 'id', range_from=~maxsize, range_to=1002 )
-	assert parse( '^1000..1002' ) == Filter( 'id', range_from=1000, range_to=1002, negate=True )
+	assert parse( '1000..1002' ) == Filter( 'id', (1000, 1002) )
+	assert parse( '1000..' ) == Filter( 'id', (1000, maxsize ) )
+	assert parse( '..1002' ) == Filter( 'id', (~maxsize, 1002 ) )
+	assert parse( '^1000..1002' ) == Filter( 'id', (1000, 1002), negate=True )
 	assert not parse( '..' ).valid # empty range is invalid
 
 	assert parse( 'id:1000' ) == Filter( 'id', 1000 )
 	assert parse( '^id:1000' ) == Filter( 'id', 1000, negate=True )
 	assert parse( 'id:' ) == Filter( 'id' )
-	assert parse( 'id:1000..' ) == Filter( 'id', range_from=1000, range_to=maxsize )
-	assert parse( 'id:..1010' ) == Filter( 'id', range_from=~maxsize, range_to=1010 )
-	assert parse( 'id:1000..1010' ) == Filter( 'id', range_from=1000, range_to=1010 )
-	assert parse( 'id:1000,1001,1002' ) == Filter( 'id', values=[1000, 1001, 1002] )
+	assert parse( 'id:1000..' ) == Filter( 'id', (1000, maxsize) )
+	assert parse( 'id:..1010' ) == Filter( 'id', (~maxsize, 1010 ) )
+	assert parse( 'id:1000..1010' ) == Filter( 'id', (1000, 1010 ) )
+	assert parse( 'id:1000,1001,1002' ) == Filter( 'id', [1000, 1001, 1002] )
 
 	# non-existing field
 	assert not parse( 'invalid_filter:1000' ).valid
@@ -94,89 +95,89 @@ def test_parse():
 	# strings as values
 	assert parse( 'name:Run1' ) == Filter( 'name', 'run1' )
 	assert parse( 'name:"Run 5K in 2021"' ) == Filter( 'name', 'run 5k in 2021' )
-	assert parse( 'name:run,hike,walk' ) == Filter( 'name', values=['run', 'hike', 'walk'] )
+	assert parse( 'name:run,hike,walk' ) == Filter( 'name', ['run', 'hike', 'walk'] )
 
 	# numbers as values
 	assert parse( 'distance:5000' ) == Filter( 'distance', int( 5000 ) )
 	assert parse( 'distance:5500.55' ) == Filter( 'distance', 5500.55 )
-	assert parse( 'distance:5000..6000' ) == Filter( 'distance', range_from=5000, range_to=6000 )
-	assert parse( 'distance:5000..' ) == Filter( 'distance', range_from=5000, range_to=float_info.max )
-	assert parse( 'distance:..6000' ) == Filter( 'distance', range_from=float_info.min, range_to=6000 )
-	assert parse( 'distance:5000.0..6000.0' ) == Filter( 'distance', range_from=5000.0, range_to=6000.0 )
-	assert parse( 'distance:5000.0..' ) == Filter( 'distance', range_from=5000.0, range_to=float_info.max )
-	assert parse( 'distance:..6000.0' ) == Filter( 'distance', range_from=float_info.min, range_to=6000.0 )
+	assert parse( 'distance:5000..6000' ) == Filter( 'distance', (5000, 6000) )
+	assert parse( 'distance:5000..' ) == Filter( 'distance', (5000, float_info.max) )
+	assert parse( 'distance:..6000' ) == Filter( 'distance', (float_info.min, 6000) )
+	assert parse( 'distance:5000.0..6000.0' ) == Filter( 'distance', (5000.0, 6000.0) )
+	assert parse( 'distance:5000.0..' ) == Filter( 'distance', (5000.0, float_info.max) )
+	assert parse( 'distance:..6000.0' ) == Filter( 'distance', (float_info.min, 6000.0) )
 	assert parse( 'distance:' ) == Filter( 'distance' )
 
-	assert parse( 'date:2020' ) == Filter( 'time', range_from=_fyear( 2020 ), range_to=_cyear( 2020 ) )
-	assert parse( 'date:..2020' ) == Filter( 'time', range_from=_fyear( 1900 ), range_to=_cyear( 2020 ) )
-	assert parse( 'date:2020..' ) == Filter( 'time', range_from=_fyear( 2020 ), range_to=_cyear( 2099 ) )
-	assert parse( 'date:2020..2021' ) == Filter( 'time', range_from=_fyear( 2020 ), range_to=_cyear( 2021 ) )
+	assert parse( 'date:2020' ) == Filter( 'time', (_fyear( 2020 ), _cyear( 2020 )) )
+	assert parse( 'date:..2020' ) == Filter( 'time', (_fyear( 1900 ), _cyear( 2020 )) )
+	assert parse( 'date:2020..' ) == Filter( 'time', (_fyear( 2020 ), _cyear( 2099 )) )
+	assert parse( 'date:2020..2021' ) == Filter( 'time', (_fyear( 2020 ), _cyear( 2021 )) )
 
-	assert parse( 'date:2020-05' ) == Filter( 'time', range_from=_fmonth( 2020, 5 ), range_to=_cmonth( 2020, 5 ) )
-	assert parse( 'date:2020-05..' ) == Filter( 'time', range_from=_fmonth( 2020, 5 ), range_to=_cyear( 2099 ) )
-	assert parse( 'date:..2020-05' ) == Filter( 'time', range_from=_fyear( 1900 ), range_to=_cmonth( 2020, 5 ) )
-	assert parse( 'date:2020-02..2020-05' ) == Filter( 'time', range_from=_fmonth( 2020, 2 ), range_to=_cmonth( 2020, 5 ) )
+	assert parse( 'date:2020-05' ) == Filter( 'time', (_fmonth( 2020, 5 ), _cmonth( 2020, 5 )) )
+	assert parse( 'date:2020-05..' ) == Filter( 'time', (_fmonth( 2020, 5 ), _cyear( 2099 )) )
+	assert parse( 'date:..2020-05' ) == Filter( 'time', (_fyear( 1900 ), _cmonth( 2020, 5 )) )
+	assert parse( 'date:2020-02..2020-05' ) == Filter( 'time', (_fmonth( 2020, 2 ), _cmonth( 2020, 5 )) )
 
-	assert parse( 'date:2020-05-17' ) == Filter( 'time', range_from=_fday( 2020, 5, 17 ), range_to=_cday( 2020, 5, 17 ) )
-	assert parse( 'date:2020-05-17..' ) == Filter( 'time', range_from=_fday( 2020, 5, 17 ), range_to=_cyear( 2099 ) )
-	assert parse( 'date:..2020-05-17' ) == Filter( 'time', range_from=_fyear( 1900 ), range_to=_cday( 2020, 5, 17 ) )
-	assert parse( 'date:2020-05-04..2020-05-17' ) == Filter( 'time', range_from=_fday( 2020, 5, 4 ), range_to=_cday( 2020, 5, 17 ) )
+	assert parse( 'date:2020-05-17' ) == Filter( 'time', (_fday( 2020, 5, 17 ), _cday( 2020, 5, 17 )) )
+	assert parse( 'date:2020-05-17..' ) == Filter( 'time', (_fday( 2020, 5, 17 ), _cyear( 2099 )) )
+	assert parse( 'date:..2020-05-17' ) == Filter( 'time', (_fyear( 1900 ), _cday( 2020, 5, 17 )) )
+	assert parse( 'date:2020-05-04..2020-05-17' ) == Filter( 'time', (_fday( 2020, 5, 4 ), _cday( 2020, 5, 17 )) )
 
 #	assert parse( 'date:latest' ) == Filter( 'date', value='latest' )
 #	assert parse( 'date:lastweek' ) == (None, 'time', 'lastweek', None, None, False)
 
 	n = now()
-	assert parse( 'date:today' ) == Filter( 'time', range_from=n.floor( 'day' ), range_to=n.ceil( 'day' ) )
-	assert parse( 'date:thisweek' ) == Filter( 'time', range_from=n.floor( 'week' ), range_to=n.ceil( 'week' ) )
-	assert parse( 'date:thismonth' ) == Filter( 'time', range_from=n.floor( 'month' ), range_to=n.ceil( 'month' ) )
-	assert parse( 'date:thisquarter' ) == Filter( 'time', range_from=n.floor( 'quarter' ), range_to=n.ceil( 'quarter' ) )
-	assert parse( 'date:thisyear' ) == Filter( 'time', range_from=n.floor( 'year' ), range_to=n.ceil( 'year' ) )
+	assert parse( 'date:today' ) == Filter( 'time', (n.floor( 'day' ), n.ceil( 'day' )) )
+	assert parse( 'date:thisweek' ) == Filter( 'time', (n.floor( 'week' ), n.ceil( 'week' )) )
+	assert parse( 'date:thismonth' ) == Filter( 'time', (n.floor( 'month' ), n.ceil( 'month' )) )
+	assert parse( 'date:thisquarter' ) == Filter( 'time', (n.floor( 'quarter' ), n.ceil( 'quarter' )) )
+	assert parse( 'date:thisyear' ) == Filter( 'time', (n.floor( 'year' ), n.ceil( 'year' )) )
 
 	ns = now().shift( days=-6 )
-	assert parse( 'date:last7days' ) == Filter( 'time', range_from=ns.floor( 'day' ), range_to=n.ceil( 'day' ) )
+	assert parse( 'date:last7days' ) == Filter( 'time', (ns.floor( 'day' ), n.ceil( 'day' )) )
 
 	ns = now().shift( days=-29 )
-	assert parse( 'date:last30days' ) == Filter( 'time', range_from=ns.floor( 'day' ), range_to=n.ceil( 'day' ) )
+	assert parse( 'date:last30days' ) == Filter( 'time', (ns.floor( 'day' ), n.ceil( 'day' )) )
 
 	ns = now().shift( days=-59 )
-	assert parse( 'date:last60days' ) == Filter( 'time', range_from=ns.floor( 'day' ), range_to=n.ceil( 'day' ) )
+	assert parse( 'date:last60days' ) == Filter( 'time', (ns.floor( 'day' ), n.ceil( 'day' )) )
 
 	ns = now().shift( days=-89 )
-	assert parse( 'date:last90days' ) == Filter( 'time', range_from=ns.floor( 'day' ), range_to=n.ceil( 'day' ) )
+	assert parse( 'date:last90days' ) == Filter( 'time', (ns.floor( 'day' ), n.ceil( 'day' )) )
 
 	ns = now().shift( days=-1 )
-	assert parse( 'date:yesterday' ) == Filter( 'time', range_from=ns.floor( 'day' ), range_to=ns.ceil( 'day' ) )
+	assert parse( 'date:yesterday' ) == Filter( 'time', (ns.floor( 'day' ), ns.ceil( 'day' )) )
 	ns = now().shift( weeks=-1 )
-	assert parse( 'date:lastweek' ) == Filter( 'time', range_from=ns.floor( 'week' ), range_to=ns.ceil( 'week' ) )
+	assert parse( 'date:lastweek' ) == Filter( 'time', (ns.floor( 'week' ), ns.ceil( 'week' )) )
 	ns = now().shift( months=-1 )
-	assert parse( 'date:lastmonth' ) == Filter( 'time', range_from=ns.floor( 'month' ), range_to=ns.ceil( 'month' ) )
+	assert parse( 'date:lastmonth' ) == Filter( 'time', (ns.floor( 'month' ), ns.ceil( 'month' )) )
 	ns = now().shift( months=-3 )
-	assert parse( 'date:lastquarter' ) == Filter( 'time', range_from=ns.floor( 'quarter' ), range_to=ns.ceil( 'quarter' ) )
+	assert parse( 'date:lastquarter' ) == Filter( 'time', (ns.floor( 'quarter' ), ns.ceil( 'quarter' )) )
 	ns = now().shift( years=-1 )
-	assert parse( 'date:lastyear' ) == Filter( 'time', range_from=ns.floor( 'year' ), range_to=ns.ceil( 'year' ) )
+	assert parse( 'date:lastyear' ) == Filter( 'time', (ns.floor( 'year' ), ns.ceil( 'year' )) )
 
 	# exact times
-	assert parse( 'time:15' ) == Filter( 'time', value=time( 15 ) )
-	assert parse( 'time:15:00' ) == Filter( 'time', value=time( 15, 0 ) )
-	assert parse( 'time:15:00:07' ) == Filter( 'time', value=time( 15, 0, 7 ) )
+	assert parse( 'time:15' ) == Filter( 'time', time( 15 ) )
+	assert parse( 'time:15:00' ) == Filter( 'time', time( 15, 0 ) )
+	assert parse( 'time:15:00:07' ) == Filter( 'time', time( 15, 0, 7 ) )
 	# leaving out the colons also works
-	assert parse( 'time:1500' ) == Filter( 'time', value=time( 15, 0 ) )
-	assert parse( 'time:150007' ) == Filter( 'time', value=time( 15, 0, 7 ) )
+	assert parse( 'time:1500' ) == Filter( 'time', time( 15, 0 ) )
+	assert parse( 'time:150007' ) == Filter( 'time', time( 15, 0, 7 ) )
 
 	# time ranges
-	assert parse( 'time:15..17' ) == Filter( 'time', range_from=time( 15 ), range_to=time( 17 ) )
-	assert parse( 'time:..17' ) == Filter( 'time', range_from= time( 0 ), range_to=time( 17 ) )
-	assert parse( 'time:15..' ) == Filter( 'time', range_from=time( 15 ), range_to=time( 0 ) )
-	assert parse( 'time:15:00..17:00' ) == Filter( 'time', range_from=time( 15 ), range_to=time( 17 ) )
-	assert parse( 'time:15:00:05..17:00:07' ) == Filter( 'time', range_from=time( 15, 0, 5 ), range_to=time( 17, 0, 7 ) )
-	assert parse( 'time:150005..1700' ) == Filter( 'time', range_from=time( 15, 0, 5 ), range_to=time( 17, 0, 0 ) )
+	assert parse( 'time:15..17' ) == Filter( 'time', (time( 15 ), time( 17 ) ) )
+	assert parse( 'time:..17' ) == Filter( 'time', ( time( 0 ), time( 17 ) ) )
+	assert parse( 'time:15..' ) == Filter( 'time', (time( 15 ), time( 0 ) ) )
+	assert parse( 'time:15:00..17:00' ) == Filter( 'time', (time( 15 ), time( 17 ) ) )
+	assert parse( 'time:15:00:05..17:00:07' ) == Filter( 'time', (time( 15, 0, 5 ), time( 17, 0, 7 ) ) )
+	assert parse( 'time:150005..1700' ) == Filter( 'time', (time( 15, 0, 5 ), time( 17, 0, 0 ) ) )
 
 	# time keywords
-	assert parse( 'time:morning' ) == Filter( 'time', range_from=time( 6 ), range_to=( time( 11 ) ) ) # 06 to 11
-	assert parse( 'time:noon' ) == Filter( 'time', range_from=time( 11 ), range_to=( time( 13 ) ) ) # 11 to 13
-	assert parse( 'time:afternoon' ) == Filter( 'time', range_from=time( 13 ), range_to=( time( 18 ) ) ) # 13 to 18
-	assert parse( 'time:evening' ) == Filter( 'time', range_from=time( 18 ), range_to=( time( 22 ) ) ) # 18 to 22
-	assert parse( 'time:night' ) == Filter( 'time', range_from=time( 22 ), range_to=( time( 6 ) ) ) # 22 to 06
+	assert parse( 'time:morning' ) == Filter( 'time', (time( 6 ), ( time( 11 ) ) ) ) # 06 to 11
+	assert parse( 'time:noon' ) == Filter( 'time', (time( 11 ), ( time( 13 ) ) ) ) # 11 to 13
+	assert parse( 'time:afternoon' ) == Filter( 'time', (time( 13 ), ( time( 18 ) ) ) ) # 13 to 18
+	assert parse( 'time:evening' ) == Filter( 'time', (time( 18 ), ( time( 22 ) ) ) ) # 18 to 22
+	assert parse( 'time:night' ) == Filter( 'time', (time( 22 ), ( time( 6 ) ) ))  # 22 to 06
 
 	# types
 	assert parse( 'type:run' ) == Filter( 'type', 'run' )
@@ -212,13 +213,13 @@ def test_filters_on_activities( db ):
 	assert Filter( field='id', value=1, negate=True )( m[2] )
 
 	# list of ids
-	assert Filter( field='id', values=[1, 3, 5] )( m[1] )
-	assert not Filter( field='id', values=[0, 2, 4] )( m[1] )
+	assert Filter( field='id', value=[1, 3, 5] )( m[1] )
+	assert not Filter( field='id', value=[0, 2, 4] )( m[1] )
 
 	# range of ids
-	assert Filter( field='id', range_from=1, range_to=2 )( m[1] )
-	assert Filter( field='id', range_from=1, range_to=2 )( m[2] )
-	assert not Filter( field='id', range_from=1, range_to=2 )( m[3] )
+	assert Filter( field='id', value=(1, 2) )( m[1] )
+	assert Filter( field='id', value=(1, 2) )( m[2] )
+	assert not Filter( field='id', value=(1, 2) )( m[3] )
 
 	# strings
 	assert Filter( 'name', 'unknown' )( m[1] )
@@ -241,15 +242,15 @@ def test_filters_on_activities( db ):
 	assert not Filter( 'calories', 100 )( m[2] )
 
 	# field in range
-	assert Filter( 'heartrate', range_from=140, range_to=160 )( m[2] )
-	assert not Filter( 'heartrate', range_from=160, range_to=200 )( m[2] )
+	assert Filter( 'heartrate', (140, 160) )( m[2] )
+	assert not Filter( 'heartrate', (160, 200) )( m[2] )
 
 	# datetime ranges
-	assert Filter( 'time', range_from=datetime( 2012, 1, 1, tzinfo=UTC ), range_to=datetime( 2012, 1, 12, tzinfo=UTC ) )( m[2] )
+	assert Filter( 'time', (datetime( 2012, 1, 1, tzinfo=UTC ), datetime( 2012, 1, 12, tzinfo=UTC )) )( m[2] )
 
 	# time_ranges
-	assert Filter( 'time', value=time( 10, 40, 51 ) )( m[2] )
-	assert Filter( 'time', range_from=time( 10 ), range_to=time( 11 ) )( m[2] )
+	assert Filter( 'time', time( 10, 40, 51 ) )( m[2] )
+	assert Filter( 'time', (time( 10 ), time( 11 )) )( m[2] )
 
 	# field exists, field value is not None/''/[]
 	assert Filter( 'name' )( m[1] )
@@ -281,14 +282,14 @@ def test_filters_on_list( db ):
 
 	assert flt( Filter( 'calories', 2904 ) ) == [2]
 
-	assert flt( Filter( 'heartrate', range_from=110, range_to=150 ) ) == [2, 3, 4]
-	assert flt( Filter( 'heartrate', range_from=~maxsize, range_to=140 ) ) == [3, 4]
-	assert flt( Filter( 'heartrate', range_from=140, range_to=maxsize ) ) == [2, 3]
+	assert flt( Filter( 'heartrate', (110, 150) ) ) == [2, 3, 4]
+	assert flt( Filter( 'heartrate', (~maxsize, 140) ) ) == [3, 4]
+	assert flt( Filter( 'heartrate', (140, maxsize) ) ) == [2, 3]
 
-	assert flt( Filter( 'time', range_from=datetime( 2021, 1, 10, tzinfo=UTC ), range_to=datetime( 2021, 1, 12, tzinfo=UTC ) ) ) == [4]
+	assert flt( Filter( 'time', (datetime( 2021, 1, 10, tzinfo=UTC ), datetime( 2021, 1, 12, tzinfo=UTC )) ) ) == [4]
 	assert flt( Filter( 'time', time( 12 ) ) ) == [4]
 	assert flt( Filter( 'time', time( 12, 0, 0 ) ) ) == [4]
-	assert flt( Filter( 'time', range_from=time( 11 ), range_to=time( 13 ) ) ) == [4]
+	assert flt( Filter( 'time', (time( 11 ), time( 13 )) ) ) == [4]
 
 @mark.db( template='default', inmemory=True )
 def test_prepared_filters( db ):

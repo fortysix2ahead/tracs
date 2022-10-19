@@ -1,6 +1,7 @@
 
 from re import match
 from typing import Any
+from typing import cast
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -34,6 +35,7 @@ from ..activity import Activity
 from ..activity import Resource
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types
+from ..config import ApplicationContext
 from ..config import console
 from ..config import APPNAME
 from ..service import Service
@@ -148,7 +150,7 @@ class Strava( Service, Plugin ):
 	def __init__( self, base_url=None, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 		self.base_url = base_url
-		self.importer: StravaImporter = Registry.importer_for( STRAVA_TYPE )
+		self.importer: StravaImporter = cast( StravaImporter, Registry.importer_for( STRAVA_TYPE ) )
 
 	@property
 	def base_url( self ) -> str:
@@ -330,7 +332,7 @@ class Strava( Service, Plugin ):
 		self.set_state_value( 'expires_at', int( token['expires_at'] ) )
 		self.set_state_value( 'expires_in', token['expires_in'] )
 
-	def setup( self ) -> None:
+	def setup( self, ctx: ApplicationContext ) -> None:
 		console.print( f'GPX and TCX files from Strava will be downloaded via Strava\'s Web API, that\'s why your credentials are needed.' )
 
 		user = Prompt.ask( 'Enter your user name', default=self.cfg_value( 'username' ) or '' )
@@ -378,6 +380,7 @@ class Strava( Service, Plugin ):
 			self.set_cfg_value( 'username', user )
 			self.set_cfg_value( 'password', pwd )
 			self.set_cfg_value( 'client_code', client_code )
+			self.set_cfg_value( 'client_id', client_id )
 			self.set_cfg_value( 'client_secret', client_secret )
 
 			# save oauth tokens

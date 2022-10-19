@@ -32,6 +32,7 @@ from .plugin import Plugin
 from ..activity_types import ActivityTypes
 from ..activity import Activity
 from ..activity import Resource
+from ..config import ApplicationContext
 from ..config import GlobalConfig as gc
 from ..config import KEY_LAST_FETCH
 from ..service import Service
@@ -205,7 +206,7 @@ class Waze( Service, Plugin ):
 				return gpx, 200 # return always 200
 
 	# nothing to do for now ...
-	def setup( self ):
+	def setup( self, ctx: ApplicationContext ):
 		echo( 'Skipping setup for Waze ... nothing to configure at the moment' )
 
 	# noinspection PyMethodMayBeStatic

@@ -8,7 +8,6 @@ from rich.table import Table
 from .activity import Activity
 from .activity_types import ActivityTypes as Types
 from .config import console
-from .config import GlobalConfig as gc
 from .service import Service
 
 log = getLogger( __name__ )
@@ -40,7 +39,8 @@ def _check_missing_type( a: Activity, data: List[List] ) -> None:
 
 def _check_files( a: Activity, data: List[List] ) -> None:
 	if not a.is_group:
-		s: Service = gc.app.services.get( a.service )
+		# s: Service = gc.app.services.get( a.service )
+		s: Service = None
 		for ext, status in a.get( 'metadata', {} ).items():
 			if ext not in [ 'groups' ]:
 				if status == 200 and not s.path_for( a, ext ).exists():

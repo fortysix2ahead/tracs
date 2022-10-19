@@ -52,7 +52,6 @@ class Application( object ):
 		# ---- (default) library location ----
 		lib_dir_str = lib_dir # save parameter for later
 		lib_dir = Path( Path.cwd(), lib_dir ).resolve() if lib_dir else Path( config_dir )
-		# lib_dir.mkdir( parents=True, exist_ok=True )
 
 		log.debug( f'using {lib_dir} as default library directory' )
 
@@ -86,6 +85,8 @@ class Application( object ):
 				# todo: update context ...
 			except ConfigTypeError:
 				pass
+
+		lib_dir.mkdir( parents=True, exist_ok=True )
 
 		log.debug( f'using {lib_dir} as library directory' )
 

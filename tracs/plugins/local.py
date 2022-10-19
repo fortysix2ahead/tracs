@@ -16,6 +16,7 @@ from . import service
 from .plugin import Plugin
 from ..activity import Activity
 from ..activity import Resource
+from ..config import ApplicationContext
 from ..service import Service
 
 log = getLogger( __name__ )
@@ -103,7 +104,7 @@ class Local( Service, Plugin ):
 
 		return imported_data
 
-	def setup( self ) -> None:
+	def setup( self, ctx: ApplicationContext ) -> None:
 		pass
 
 	# noinspection PyMethodMayBeStatic

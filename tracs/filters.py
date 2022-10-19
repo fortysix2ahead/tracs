@@ -527,9 +527,12 @@ def postprocess( f: Filter ) -> None:
 	if not f.valid: # do nothing when filter is already invalid
 		return
 
-	if f.filter in TYPES: # mark filter field as field by default, otherwise it's invalid
-		f.field = f.filter
-	else:
+	# set field according to alias
+
+	f.field = f.filter if f.filter in TYPES else None
+	f.field = ALIASES.get( f.field, f.field ) # use existing field instead of alias ...
+
+	if not f.field:
 		f.valid = False
 		return
 

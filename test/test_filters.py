@@ -98,6 +98,10 @@ def test_parse():
 	assert parse( 'name:run,hike,walk' ) == Filter( 'name', ['run', 'hike', 'walk'] )
 	assert parse( 'name:' ) == Filter( 'name', None )
 
+	# aliases
+	assert parse( 'location_place:forest' ) == Filter( 'location_place', 'forest' )
+	assert parse( 'place:forest' ) == Filter( 'location_place', 'forest' )
+
 	# numbers as values
 	assert parse( 'distance:5000' ) == Filter( 'distance', int( 5000 ) )
 	assert parse( 'distance:5500.55' ) == Filter( 'distance', 5500.55 )
@@ -255,6 +259,9 @@ def test_filters_on_activities( db ):
 
 	# field exists, field value is not None/''/[]
 	assert not Filter( 'name' )( m[1] )
+	assert Filter( 'location_country' )( m[1] )
+	assert Filter( 'location_city' )( m[1] )
+	assert not Filter( 'location_place' )( m[1] )
 	assert Filter( 'heartrate' )( m[1] )
 	assert Filter( 'tags' )( m[1] )
 

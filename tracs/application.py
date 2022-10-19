@@ -10,24 +10,13 @@ from logging import getLogger
 from logging import StreamHandler
 from pathlib import Path
 from sys import stderr
-from typing import Mapping
 
-from confuse import Configuration
 from confuse.exceptions import ConfigTypeError
 
-from .config import ApplicationConfig as cfg
 from .config import ApplicationContext
 from .config import APPNAME
-from .config import BACKUP_DIRNAME
-from .config import CONFIG_FILENAME
-from .config import DB_DIRNAME
-from .config import DB_FILENAME
-from .config import LOG_DIRNAME
-from .config import LOG_FILENAME
-from .config import STATE_FILENAME
 from .db import ActivityDb
 from .plugins import Registry
-from .service import Service
 
 log = getLogger( __name__ )
 
@@ -149,103 +138,8 @@ class Application( object ):
 
 		getLogger( APPNAME ).addHandler( file_handler )
 
-	# get/set item is forwarded to _cfg
-	def __getitem__( self, key ):
-		return self._cfg[key]
-
-	def __setitem__( self, key, value ):
-		self._cfg[key] = value
-
 	# ---- context ---------------------------------------------------------------
 
 	@property
 	def ctx( self ) -> ApplicationContext:
 		return self._ctx
-
-	# ---- path-related properties ----
-
-	@property
-	def lib_dir( self ) -> Path:
-		return self._lib_dir
-
-	@property
-	def overlay_dir( self ) -> Path:
-		return self._overlay_dir
-
-	@property
-	def takeout_dir( self ) -> Path:
-		return self._takeout_dir
-
-	@property
-	def cfg_dir( self ) -> Path:
-		return self._config_dir
-
-	@property
-	def cfg_file( self ) -> Path:
-		return Path( self.cfg_dir, CONFIG_FILENAME )
-
-	@property
-	def state_file( self ) -> Path:
-		return Path( self.cfg_dir, STATE_FILENAME )
-
-	@property
-	def db_dir( self ) -> Path:
-		return Path( self.lib_dir, DB_DIRNAME )
-
-	@property
-	def db_file( self ) -> Path:
-		return Path( self.db_dir, DB_FILENAME )
-
-	@property
-	def log_dir( self ) -> Path:
-		return Path( self.cfg_dir, LOG_DIRNAME )
-
-	@property
-	def log_file( self ) -> Path:
-		return Path( self.log_dir, LOG_FILENAME )
-
-	@property
-	def backup_dir( self ) -> Path:
-		return Path( self.db_dir, BACKUP_DIRNAME )
-
-	# ---- Activity related properties/paths -----
-
-	def service_path( self, srv_name: str ) -> Path:
-		return Path( self.db_dir, srv_name )
-
-	# ---- configuration/state objects + dump ----
-
-	@property
-	def cfg( self ) -> Configuration:
-		return self._cfg
-
-	@property
-	def state( self ) -> Configuration:
-		return self._state
-
-	def dump_cfg( self ) -> None:
-		if not cfg['pretend'].get():
-			with open( self.cfg_file, 'w+' ) as cf:
-				#cf.write( dump_yaml( load_yaml( self._cfg.dump( full=True ), Loader=FullLoader ), sort_keys=True ) )
-				cf.write( self._cfg.dump( full=True ) )
-		else:
-			log.info( f'pretending to write config file to {self.cfg_file}' )
-
-	def dump_state( self ) -> None:
-		if not cfg['pretend'].get():
-			with open( self.state_file, 'w+' ) as sf:
-				#sf.write( dump_yaml( load_yaml( self._state.dump( full=True ), Loader=FullLoader ), sort_keys=True ) )
-				sf.write( self._state.dump( full=True ) )
-		else:
-			log.info( f'pretending to write state file to {self.state_file}' )
-
-	# ---- internal db ----
-
-	@property
-	def db( self ) -> ActivityDb:
-		return self._db
-
-	# ---- registered services ----
-	@property
-	def services( self ) -> Mapping[str, Service]:
-		return Registry.services

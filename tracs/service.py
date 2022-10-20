@@ -360,25 +360,22 @@ class Service( ServiceProtocol ):
 
 # ------------------------------------------------------------------------------
 
-def download_activities( activities: [Activity], force: bool = False, pretend: bool = False ):
-	_process_activities( activities, True, False, force, pretend )
+def download_activities( activities: List[Activity], ctx: ApplicationContext, force: bool = False, pretend: bool = False ):
+	for a in activities:
+		for uid in a.uids:
+			resource_group = ctx.db.find_resource_group( uid )
+			service = Registry.services.get( resource_group.summary().classifier )
+			for recording in resource_group.recordings():
+				path = Service.path_for_resource( recording )
+				if not path.exists() or force:
+					service.login() # login first ...
+					service.download_resource( recording )
+
+			a.resources = resource_group.recordings()
+			service.persist_resource_data( a, force, pretend )
 
 def link_activities( activities: [Activity], force: bool = False, pretend: bool = False ):
 	_process_activities( activities, False, True, force, pretend )
 
-def _process_activities( activities: [Activity], download: bool, link: bool, force: bool, pretend: bool ):
-	for activity in activities:
-		for uid in activity.uids:
-			resources = gc.db.find_resources( uid )
-			for r in resources:
-				classifier, raw_id = r.uid.split( ':', maxsplit=1 )
-				service = gc.app.services.get( classifier, None )
-
-				if not service:
-					log.warning( f"service {classifier} not found for activity {uid}, skipping ..." )
-					continue
-
-				if download:
-					service.download( resource=r, force=force, pretend=pretend )
-				if link:
-					service.link( activity, r, force, pretend )
+def _process_activities( activities: List[Activity], ctx: ApplicationContext, download: bool, link: bool, force: bool, pretend: bool ):
+	pass

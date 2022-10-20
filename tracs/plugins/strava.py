@@ -292,16 +292,6 @@ class Strava( Service, Plugin ):
 			for r in resources:
 				self.download_resource( r )
 
-				# fix for TCX documents containing whitespace before the first XML tag
-				# sample first line:
-				# '          <?xml version="1.0" encoding="UTF-8"?><TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"> ...'
-				if r.type == TCX_TYPE:
-					if r.text:
-						r.text = r.text.lstrip( ' ' )
-					if r.content:
-						while r.content[0:1] == b' ':
-							r.content = r.content[1:]
-
 			return resources
 
 		except RuntimeError:
@@ -316,6 +306,17 @@ class Strava( Service, Plugin ):
 			resource.content = response.content
 			resource.text = response.text
 			resource.status = response.status_code
+
+			# fix for Strava bug where TCX documents contain whitespace before the first XML tag
+			# sample first line:
+			# '          <?xml version="1.0" encoding="UTF-8"?><TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"> ...'
+			if resource.type == TCX_TYPE:
+				if resource.text:
+					resource.text = resource.text.lstrip( ' ' )
+				if resource.content:
+					while resource.content[0:1] == b' ':
+						resource.content = resource.content[1:]
+
 			return response.content, response.status_code
 		else:
 			log.warning( f'unable to determine download url for resource {resource}' )

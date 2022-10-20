@@ -1,5 +1,8 @@
 
+from logging import getLogger
 from pathlib import Path
+from typing import List
+from urllib.parse import urlparse
 
 from confuse.exceptions import NotFoundError
 from rich import box
@@ -7,11 +10,43 @@ from rich.pretty import Pretty as pp
 from rich.table import Table
 
 from .activity import Activity
+from .activity import Resource
 from .config import ApplicationContext
 from .config import console
 from .plugins import Registry
 from .service import Service
 from .utils import fmt
+
+log = getLogger( __name__ )
+
+def show_resource( resources: List[str], ctx: ApplicationContext, display_raw: bool = False, verbose: bool = True, format_name: str = None ) -> None:
+	for resource_url in resources:
+		url = urlparse( resource_url )
+		try:
+			id = int( url.path )
+		except ValueError:
+			id = None
+
+		if id and url.scheme == '' and url.query == '':
+			resource = ctx.db.get_resource( id )
+		else:
+			resource = None
+
+		if resource:
+			if display_raw:
+				table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
+				table.add_row( '[blue]field[/blue]', '[blue]value[/blue]' )
+
+				for f in sorted( Resource.fields(), key=lambda field: field.name ):
+					table.add_row( f.name, pp( getattr( resource, f.name ) ) )
+
+				console.print( table )
+
+			else:
+				importer = Registry.importer_for( resource.type )
+				if importer:
+					activity = importer.load( path=Service.path_for_resource( resource ) )
+					show_activity( [activity], ctx, display_raw=False, verbose=False, format_name=format_name )
 
 def show_activity( activities: [Activity], ctx: ApplicationContext, display_raw: bool = False, verbose: bool = True, format_name: str = None ) -> None:
 
@@ -56,7 +91,7 @@ def show_activity( activities: [Activity], ctx: ApplicationContext, display_raw:
 					table.add_row( row[0], fmt( row[1] ) )
 
 			console.print( table )
-			console.print( '\u00b9 Proper timezone support is currently missing, local timezone is displayed' )
+			# console.print( '\u00b9 Proper timezone support is currently missing, local timezone is displayed' )
 
 			if verbose:
 				table = Table( box=box.MINIMAL, show_header=False, show_footer=False )

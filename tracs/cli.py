@@ -7,6 +7,7 @@ from logging import StreamHandler
 from logging import getLogger
 from sys import stderr
 from typing import List
+from urllib.parse import urlparse
 
 from click import argument
 from click import echo
@@ -28,6 +29,7 @@ from tracs.inout import import_activities
 from tracs.inout import open_activities
 from tracs.list import inspect_registry
 from tracs.list import inspect_resources
+from tracs.show import show_resource
 from .activity import Activity
 from .application import Application
 from .config import ApplicationContext
@@ -178,10 +180,14 @@ def ls( ctx, sort, reverse, format_name, filters ):
 @cli.command( help='shows details about activities and resources' )
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )
 @option( '-r', '--raw', is_flag=True, required=False, help='display raw data' )
+@option( '-s', '--resource', is_flag=True, required=False, hidden=True, default=False, help='treat filters as URLs for resources' )
 @argument('filters', nargs=-1)
 @pass_obj
-def show( ctx: ApplicationContext, filters, raw, format_name ):
-	show_activity( list( ctx.db.find( filters ) ), ctx=ctx, display_raw=raw, verbose=ctx.verbose, format_name=format_name )
+def show( ctx: ApplicationContext, filters, raw, format_name, resource ):
+	if resource:
+		show_resource( list( filters ), ctx=ctx, display_raw=raw, verbose=ctx.verbose, format_name=format_name )
+	else:
+		show_activity( list( ctx.db.find( filters ) ), ctx=ctx, display_raw=raw, verbose=ctx.verbose, format_name=format_name )
 
 @cli.command( help='groups activities' )
 @argument( 'filters', nargs=-1 )

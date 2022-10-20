@@ -17,6 +17,7 @@ from .config import ApplicationContext
 from .config import APPNAME
 from .db import ActivityDb
 from .plugins import Registry
+from .utils import UCFG
 
 log = getLogger( __name__ )
 
@@ -97,8 +98,11 @@ class Application( object ):
 		cache = ctx.config['db']['cache'].get()
 		ctx.db = ActivityDb( path=ctx.db_dir, cache=cache )
 
-		# create service instances
+		# ---- create service instances ----
 		Registry.instantiate_services( ctx=ctx, base_path=ctx.db_dir )
+
+		# ---- announce context/configuration to utils module ----
+		UCFG.reconfigure( ctx.config )
 
 		# ---- register cleanup functions ----
 		register_atexit( ctx.db.activities_db.close )

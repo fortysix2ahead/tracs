@@ -144,9 +144,9 @@ def fetch( ctx, sources: List[str] ):
 
 @cli.command( help='downloads activities' )
 @argument( 'filters', nargs=-1 )
-@pass_context
-def download( ctx, filters ):
-	download_activities( ctx.obj.db.find( filters or [] ), force=ctx.obj.force, pretend=ctx.obj.pretend )
+@pass_obj
+def download( ctx: ApplicationContext, filters ):
+	download_activities( ctx.db.find( filters or [] ), ctx=ctx, force=ctx.force, pretend=ctx.pretend )
 
 @cli.command( help='creates links for downloaded resources of activities' )
 @option( '-a', '--all', 'all_', is_flag=True, required=False, help='creates links for all activities (instead of recent ones only), overriding provided filters' )

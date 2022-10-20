@@ -2,6 +2,7 @@
 from datetime import datetime
 from datetime import timezone
 from importlib.resources import path as resource_path
+from itertools import chain
 from shutil import copy
 from typing import cast
 from typing import Dict
@@ -16,7 +17,6 @@ from pathlib import Path
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
-from typing import Mapping
 
 from tinydb import TinyDB
 from tinydb import Query
@@ -240,11 +240,17 @@ class ActivityDb:
 				return cast( Activity, a )
 		return None
 
+	def get_by_id( self, id: int ) -> Optional[Activity]:
+		return self.activities.get( doc_id=id )
+
 	def get_by_uid( self, uid: str, include_resources: bool = False ) -> Optional[Activity]:
 		activity = cast( Activity, next( a for a in self.activities.all() if uid_filter( uid )( a ) ) )
 		if activity and include_resources:
 			activity.resources = self.get_resources_by_uid( uid )
 		return  activity
+
+	def get_resource( self, id: int ) -> Optional[Resource]:
+		return self.resources.get( doc_id=id )
 
 	def get_resources_by_uid( self, uid ) -> List[Resource]:
 		return cast( List[Resource], self.resources.search( Query()['uid'] == uid ) or [] )
@@ -298,6 +304,9 @@ class ActivityDb:
 			resources = self.resources.search( Query()['uid'] == uid )
 
 		return cast( List[Resource], resources )
+
+	def find_all_resources( self, uids: List[str] ) -> List[Resource]:
+		return list( chain( * [ self.resources.search( Query()['uid'] == uid ) for uid in uids ] ) )
 
 	def find_resource_group( self, uid: str, path: str = None ) -> ResourceGroup:
 		return ResourceGroup( resources=self.find_resources( uid, path ) )

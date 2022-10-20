@@ -1,4 +1,6 @@
 
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import date
 from datetime import datetime
 from datetime import time
@@ -23,13 +25,33 @@ from babel.dates import format_timedelta
 from babel.numbers import format_decimal
 from babel.dates import get_timezone
 from click import style
+from confuse import Configuration
 from dateutil.parser import parse as parse_datetime
 from dateutil.parser import ParserError
 from dateutil.tz import gettz
 from dateutil.tz import tzlocal
 
 from .activity_types import ActivityTypes
-from .config import ApplicationConfig as cfg
+
+@dataclass
+class UtilityConfiguration:
+
+	config: Configuration = field( default=None )
+	locale: str = field( default='en' )
+	date_format: str = field( default='medium' )
+	datetime_format: str = field( default='medium' )
+	time_format: str = field( default='medium' )
+	timedelta_format: str = field( default='short' )
+
+	def reconfigure( self, config: Configuration ):
+		self.config = config
+		self.locale = config['formats']['locale'].get() or self.locale
+		self.date_format = config['formats']['date'].get() or self.date_format
+		self.datetime_format = config['formats']['datetime'].get() or self.datetime_format
+		self.time_format = config['formats']['time'].get() or self.time_format
+		self.timedelta_format = config['formats']['timedelta'].get() or self.timedelta_format
+
+UCFG = UtilityConfiguration()
 
 # custom types
 
@@ -37,20 +59,9 @@ FunctionDict = Dict[Union[str, Tuple[str, str]], Callable]
 
 # default formats
 
-_LOCALE = 'en'
-_DATE_FORMAT = 'medium'
-_DATETIME_FORMAT = 'medium'
-_TIME_FORMAT = 'medium'
-_TIMEDELTA_FORMAT = 'short'
-
 _DTISO = r'^(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?(Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])?$'
 
 def fmt( value, locale = None ) -> str:
-	_locale = locale or cfg['formats']['locale'].get( _LOCALE )
-	_date_fmt = cfg['formats']['date'].get() or _DATE_FORMAT
-	_datetime_fmt = cfg['formats']['datetime'].get() or _DATETIME_FORMAT
-	_time_fmt = cfg['formats']['time'].get() or _TIME_FORMAT
-	_timedelta_fmt = cfg['formats']['timedelta'].get() or _TIMEDELTA_FORMAT
 	_rval = ''
 
 	if value is None or value == '':
@@ -70,20 +81,20 @@ def fmt( value, locale = None ) -> str:
 		_rval = str( value )
 
 	if type( value ) is float:
-		_rval = format_decimal( value, format='#,###.#', locale=_locale )
+		_rval = format_decimal( value, format='#,###.#', locale=UCFG.locale )
 
 	if type( value ) is datetime:
-		_rval = format_datetime( value, locale=_locale, format=_time_fmt )
+		_rval = format_datetime( value, locale=UCFG.locale, format=UCFG.time_format )
 
 	if type( value ) is date:
-		_rval = format_date( value, locale=_locale, format=_time_fmt )
+		_rval = format_date( value, locale=UCFG.locale, format=UCFG.time_format )
 
 	if type( value ) is time:
-		_rval = format_time( value, locale=_locale, format=_time_fmt )
+		_rval = format_time( value, locale=UCFG.locale, format=UCFG.time_format )
 
 	if type( value ) is timedelta:
-		_rval = format_timedelta( value, locale=_locale, format=_timedelta_fmt, granularity='second', threshold=3 )
-		#_rval = format_timedelta( value, locale=_locale, format=_timedelta_fmt, granularity='second', add_direction=True )
+		_rval = format_timedelta( value, locale=UCFG.locale, format=UCFG.timedelta_format, granularity='second', threshold=3 )
+		#_rval = format_timedelta( value, locale=UCFG.locale, format=_timedelta_fmt, granularity='second', add_direction=True )
 
 	if type( value ) is ActivityTypes:
 		_rval = value.display_name

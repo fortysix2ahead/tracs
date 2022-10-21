@@ -1,8 +1,9 @@
 
+from dataclasses import dataclass
+from dataclasses import field
 from sys import modules
 from typing import List
 
-from click import style
 from logging import getLogger
 from rich import box
 from rich.table import Table
@@ -14,88 +15,155 @@ from .service import Service
 
 log = getLogger( __name__ )
 
-ERROR = style('Error', fg='red')
-WARN = style('Warning', fg='yellow')
-INFO = style('Info', fg='green')
+ERROR = 'ERROR'
+WARNING = 'WARNING'
+INFO = 'INFO'
 
-def validate_activities( activities: List[Activity], function: str, ctx: ApplicationContext ) -> None:
-	report: List[List] = []
+@dataclass
+class ReportItem:
+
+	status: str = field( default=ERROR )
+	issue: str = field( default=None )
+	details: str = field( default=None )
+	path: str = field( default=None )
+	correction: bool = field( default=False )
+
+	def as_list( self ) -> List[str]:
+		columns = []
+		if self.status == ERROR:
+			columns.append( '[bright_red]\u2718[/bright_red]' )
+			columns.append( f'[bright_red]{self.issue}[/bright_red]' )
+			if self.details:
+				columns.append( f'[bright_red]{self.details}[/bright_red]' )
+			elif self.path:
+				columns.append( f'[bright_red]{self.path}[/bright_red]' )
+			else:
+				columns.append( f'' )
+
+		elif self.status == WARNING:
+			columns.append( '[yellow]\u229a[/yellow]' )
+			columns.append( f'[yellow]{self.issue}[/yellow]' )
+			if self.details:
+				columns.append( f'[yellow]{self.details}[/yellow]' )
+			elif self.path:
+				columns.append( f'[yellow]{self.path}[/yellow]' )
+			else:
+				columns.append( f'' )
+
+		elif self.status == INFO:
+			columns.append( '[bright_green]\u2714[/bright_green]' )
+			columns.append( f'{self.issue}' )
+			if self.details:
+				columns.append( f'{self.details}' )
+			elif self.path:
+				columns.append( f'{self.path}' )
+			else:
+				columns.append( f'' )
+
+		return columns
+
+@dataclass
+class ReportData:
+
+	ctx: ApplicationContext = None
+
+	name: str = field( default=None )
+	items: List[ReportItem] = field( default_factory=list )
+
+	def info( self, issue, details = None, path = None ):
+		self.items.append( ReportItem( status=INFO, issue=issue, details=details, path=path ) )
+
+	def warn( self, issue, details = None, path = None ):
+		self.items.append( ReportItem( status=WARNING, issue=issue, details=details, path=path ) )
+
+	def error( self, issue, details = None, path = None ):
+		self.items.append( ReportItem( status=ERROR, issue=issue, details=details, path=path ) )
+
+	def as_list( self ) -> List[List[str]]:
+		item_list = []
+		for item in self.items:
+			if item.status != INFO or ReportData.ctx.debug:
+				item_list.append( item.as_list() )
+		return item_list
+
+def validate_activities( activities: List[Activity], function: str, correct: bool, ctx: ApplicationContext ) -> None:
+	ReportData.ctx = ctx
+	report: List[ReportData] = []
 
 	if function:
 		function_name = f'{function}'
 		if function_name in dir( modules[ __name__ ] ):
 			if fn := getattr( modules[ __name__ ], function_name ):
-				report_data = fn( activities, ctx )
-				report.append( [function_name, report_data] )
+				report.append( fn( activities, correct ) )
 		else:
 			log.error( f'skipping validation: unable to find function {function_name}' )
 
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 	table.add_row( '', f'[bold bright_blue]Validation Report:[/bold bright_blue]', '' )
 	table.add_section()
-	for r in report:
-		table.add_row( '', f'[blue]{r[0]}[/blue]', '' )
+	for rd in report:
+		table.add_row( '', f'[blue]{rd.name}[/blue]', '' )
 		table.add_section()
-		for line in r[1]:
-			table.add_row( *line )
+		for l in rd.as_list():
+			table.add_row( *l )
 
 	console.print( table )
 
-def resource_files( activities: List[Activity], ctx: ApplicationContext ) -> List[List[str]]:
-	report_data = []
-	all_resources = ctx.db.resources.all()
-	ctx.start( 'Checking resource files ...', total=len( all_resources ) )
+def resource_files( activities: List[Activity], correct: bool ) -> ReportData:
+	rd = ReportData( name='Resource Files' )
+	all_resources = ReportData.ctx.db.resources.all()
+	ReportData.ctx.start( 'Checking resource files ...', total=len( all_resources ) )
 
 	for r in all_resources:
-		ctx.advance( msg=r.path )
+		ReportData.ctx.advance( msg=r.path )
 
 		path = Service.path_for_resource( r )
 
 		if path.exists():
 			if r.status == 200:
-				_info( report_data, 'file ok', str( path ), ctx )
+				rd.info( 'file ok', path=path )
 			else:
-				_error( report_data, f'file exists, but is marked with status = {r.status}', str( path ), ctx )
+				rd.error( f'file exists, but is marked with status = {r.status}', path=path )
 
 		else:
 			if r.status == 200:
-				_error( report_data, f'missing file, but marked with resource status = {r.status}', str( path ), ctx )
+				rd.error( f'missing file, but marked with resource status = {r.status}', path=path )
 			elif r.status == 404:
-				_info( report_data, 'file missing (404)', str( path ), ctx )
+				rd.info( 'file missing (404)', path=path )
 			else:
-				_warn( report_data, f'missing file, resource status = {r.status}', str( path ), ctx )
+				rd.warn( f'missing file, resource status = {r.status}', path=path )
 
-	ctx.complete()
+	ReportData.ctx.complete()
 
-	return report_data
+	return rd
 
-def tcx_files( activities: List[Activity], ctx: ApplicationContext ) -> List[List[str]]:
+def tcx_files( activities: List[Activity], correct: bool ) -> ReportData:
 	from tcxreader.tcxreader import TCXReader
 	from tcxreader.tcx_exercise import TCXExercise
 	from xml.etree.ElementTree import ParseError
 
-	report_data = []
-	all_resources = ctx.db.resources.all()
-	ctx.start( 'Checking resource files ...', total=len( all_resources ) )
+	rd = ReportData( name='TCX Files' )
+	all_resources = ReportData.ctx.db.resources.all()
+	ReportData.ctx.start( 'Checking resource files ...', total=len( all_resources ) )
 
 	reader = TCXReader()
 
 	for r in all_resources:
-		ctx.advance( msg=r.path )
+		ReportData.ctx.advance( msg=r.path )
 
 		if not r.path.endswith( '.tcx' ):
 			continue
 
 		if (path := Service.path_for_resource( r )).exists():
-
 			try:
 				exercise: TCXExercise = reader.read( str( path ) )
-				_info( report_data, f'TCX parsing ok ({len( exercise.trackpoints )})', str( path ), ctx )
+				rd.info( f'TCX parsing ok ({len( exercise.trackpoints )})', path=path )
 			except ParseError:
-				_error( report_data, f'TCX parse error', str( path ), ctx )
+				rd.error( f'TCX parse error', path=path )
 
-	ctx.complete()
-	return report_data
+	ReportData.ctx.complete()
+
+	return rd
 
 # --- helper ---
 

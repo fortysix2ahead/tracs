@@ -1,6 +1,8 @@
 
 from dataclasses import dataclass
 from dataclasses import field
+from pathlib import Path
+from re import match
 from sys import modules
 from typing import List
 
@@ -25,13 +27,18 @@ class ReportItem:
 	status: str = field( default=ERROR )
 	issue: str = field( default=None )
 	details: str = field( default=None )
-	path: str = field( default=None )
+	path: Path = field( default=None )
 	correction: bool = field( default=False )
 
 	def as_list( self ) -> List[str]:
 		columns = []
 		if self.status == ERROR:
 			columns.append( '[bright_red]\u2718[/bright_red]' )
+			if self.correction:
+				columns.append( '[bright_green]\u2714[/bright_green]' )
+			else:
+				columns.append( '[bright_red]\u2718[/bright_red]' )
+
 			columns.append( f'[bright_red]{self.issue}[/bright_red]' )
 			if self.details:
 				columns.append( f'[bright_red]{self.details}[/bright_red]' )
@@ -42,6 +49,11 @@ class ReportItem:
 
 		elif self.status == WARNING:
 			columns.append( '[yellow]\u229a[/yellow]' )
+			if self.correction:
+				columns.append( '[bright_green]\u2714[/bright_green]' )
+			else:
+				columns.append( '[yellow]\u2718[/yellow]' )
+
 			columns.append( f'[yellow]{self.issue}[/yellow]' )
 			if self.details:
 				columns.append( f'[yellow]{self.details}[/yellow]' )
@@ -52,6 +64,7 @@ class ReportItem:
 
 		elif self.status == INFO:
 			columns.append( '[bright_green]\u2714[/bright_green]' )
+			columns.append( '[bright_green]\u207F/\u2090[/bright_green]' )
 			columns.append( f'{self.issue}' )
 			if self.details:
 				columns.append( f'{self.details}' )
@@ -99,10 +112,10 @@ def validate_activities( activities: List[Activity], function: str, correct: boo
 			log.error( f'skipping validation: unable to find function {function_name}' )
 
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
-	table.add_row( '', f'[bold bright_blue]Validation Report:[/bold bright_blue]', '' )
+	table.add_row( '[bold bright_blue]STA[/bold bright_blue]', '[bold bright_blue]COR[/bold bright_blue]', f'[bold bright_blue]Validation Report:[/bold bright_blue]', '' )
 	table.add_section()
 	for rd in report:
-		table.add_row( '', f'[blue]{rd.name}[/blue]', '' )
+		table.add_row( '', '', f'[blue]{rd.name}[/blue]', '' )
 		table.add_section()
 		for l in rd.as_list():
 			table.add_row( *l )
@@ -144,12 +157,12 @@ def tcx_files( activities: List[Activity], correct: bool ) -> ReportData:
 
 	rd = ReportData( name='TCX Files' )
 	all_resources = ReportData.ctx.db.resources.all()
-	ReportData.ctx.start( 'Checking resource files ...', total=len( all_resources ) )
+	ReportData.ctx.start( 'Checking TCX files for parse errors ...', total=len( all_resources ) )
 
 	reader = TCXReader()
 
 	for r in all_resources:
-		ReportData.ctx.advance( msg=r.path )
+		ReportData.ctx.advance( msg=str( r.path ) )
 
 		if not r.path.endswith( '.tcx' ):
 			continue
@@ -158,10 +171,26 @@ def tcx_files( activities: List[Activity], correct: bool ) -> ReportData:
 			try:
 				exercise: TCXExercise = reader.read( str( path ) )
 				rd.info( f'TCX parsing ok ({len( exercise.trackpoints )})', path=path )
-			except ParseError:
+			except (ParseError, ValueError):
 				rd.error( f'TCX parse error', path=path )
 
 	ReportData.ctx.complete()
+
+	if correct:
+		ReportData.ctx.start( 'Repairing TCX files ...', total=len( rd.items ) )
+
+		for item in rd.items:
+			ReportData.ctx.advance( msg=str( item.path ) )
+			try:
+				text = item.path.read_text( encoding='UTF-8' )
+				if match( '^\s+<\?xml.+\?><TrainingCenterDatabase.+', text ):
+					text = text.lstrip( ' ' )
+					item.path.write_text( text, encoding='UTF-8' )
+					item.correction = True
+			except UnicodeDecodeError:
+				item.correction = False
+
+		ReportData.ctx.complete()
 
 	return rd
 

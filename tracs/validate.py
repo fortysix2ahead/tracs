@@ -41,40 +41,72 @@ def validate_activities( activities: List[Activity], function: str, ctx: Applica
 
 	console.print( table )
 
-def check_gpx_resources( activities: List[Activity], ctx: ApplicationContext ) -> List[List[str]]:
+def resource_files( activities: List[Activity], ctx: ApplicationContext ) -> List[List[str]]:
 	report_data = []
 	all_resources = ctx.db.resources.all()
-	ctx.start( 'Checking for file existance', total=len( all_resources ) )
+	ctx.start( 'Checking resource files ...', total=len( all_resources ) )
 
 	for r in all_resources:
 		ctx.advance( msg=r.path )
 
-		if not r.path.endswith( '.gpx' ):
-			continue
-
 		path = Service.path_for_resource( r )
-		if not path.exists():
-			if r.status == 200:
-				_error( report_data, 'missing file, but marked as available in db', str( path ) )
-			else:
-				_warn( report_data, f'missing file, resource status = {r.status}', str( path ) )
 
-		if ctx.verbose:
-			_info( report_data, 'file ok', str( path ) )
+		if path.exists():
+			if r.status == 200:
+				_info( report_data, 'file ok', str( path ), ctx )
+			else:
+				_error( report_data, f'file exists, but is marked with status = {r.status}', str( path ), ctx )
+
+		else:
+			if r.status == 200:
+				_error( report_data, f'missing file, but marked with resource status = {r.status}', str( path ), ctx )
+			elif r.status == 404:
+				_info( report_data, 'file missing (404)', str( path ), ctx )
+			else:
+				_warn( report_data, f'missing file, resource status = {r.status}', str( path ), ctx )
 
 	ctx.complete()
 
 	return report_data
 
+def tcx_files( activities: List[Activity], ctx: ApplicationContext ) -> List[List[str]]:
+	from tcxreader.tcxreader import TCXReader
+	from tcxreader.tcx_exercise import TCXExercise
+	from xml.etree.ElementTree import ParseError
+
+	report_data = []
+	all_resources = ctx.db.resources.all()
+	ctx.start( 'Checking resource files ...', total=len( all_resources ) )
+
+	reader = TCXReader()
+
+	for r in all_resources:
+		ctx.advance( msg=r.path )
+
+		if not r.path.endswith( '.tcx' ):
+			continue
+
+		if (path := Service.path_for_resource( r )).exists():
+
+			try:
+				exercise: TCXExercise = reader.read( str( path ) )
+				_info( report_data, f'TCX parsing ok ({len( exercise.trackpoints )})', str( path ), ctx )
+			except ParseError:
+				_error( report_data, f'TCX parse error', str( path ), ctx )
+
+	ctx.complete()
+	return report_data
+
 # --- helper ---
 
-def _info( report_data: List, issue = '', details = '' ):
-	report_data.append( ['[bright_green]\u2714[/bright_green]', issue, details] )
+def _info( report_data: List, issue = '', details = '', ctx = None ):
+	if ctx.debug:
+		report_data.append( ['[bright_green]\u2714[/bright_green]', issue, details] )
 
-def _warn( report_data: List, issue = '', details = '' ):
+def _warn( report_data: List, issue = '', details = '', ctx = None ):
 	data = [ f'[yellow]{s}[/yellow]' for s in [ '\u229a', issue ] ]
 	data.append( details )
 	report_data.append( data )
 
-def _error( report_data: List, issue = '', details = '' ):
+def _error( report_data: List, issue = '', details = '', ctx = None ):
 	report_data.append( [ f'[bright_red]{s}[/bright_red]' for s in [ '\u2718', issue, details ] ] )

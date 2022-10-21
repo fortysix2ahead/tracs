@@ -14,6 +14,9 @@ from typing import Tuple
 from confuse import Configuration
 from confuse import Subview
 from rich.console import Console
+from rich.progress import Progress
+from rich.progress import TextColumn
+from rich.progress import TimeElapsedColumn
 
 # string constants
 
@@ -100,11 +103,10 @@ class ApplicationContext:
 	pretend: bool = field( default=False )
 
 	console: Console = field( default=Console() )
+	progress: Progress = field( default=None )
+	task_id: Any = field( default=None )
 
 	def __post_init__( self ):
-
-		# initialize paths, if not already done
-
 		# directories depending on cfg_dir
 		if self.cfg_dir:
 			self.cfg_file = Path( self.cfg_dir, CONFIG_FILENAME ) if not self.cfg_file else self.cfg_file
@@ -121,8 +123,6 @@ class ApplicationContext:
 			self.overlay_dir = Path( self.db_dir, OVERLAY_DIRNAME ) if not self.overlay_dir else self.overlay_dir
 			self.takeout_dir = Path( self.db_dir, TAKEOUT_DIRNAME ) if not self.takeout_dir else self.takeout_dir
 
-		# internal configuration/state
-
 		# read internal config
 		self.config = Configuration( APPNAME, __name__, read=False )
 		with pkg_path( self.__module__, CONFIG_FILENAME ) as p:
@@ -132,6 +132,36 @@ class ApplicationContext:
 		self.state = Configuration( f'{APPNAME}.state', __name__, read=False )
 		with pkg_path( self.__module__, STATE_FILENAME ) as p:
 			self.state.set_file( p )
+
+	def pp( self, *objects ):
+		self.console.print( *objects )
+
+	def ppx( self ):
+		self.console.print_exception()
+
+	def start( self, description: str = '', total = None ):
+		if self.verbose:
+			if description:
+				self.pp( description )
+		else:
+			# create progress and start as start/stop/reuse does not seem to work
+			self.progress = Progress( *Progress.get_default_columns(), TextColumn( '/' ), TimeElapsedColumn(), TextColumn( "{task.fields[msg]}" ), console=self.console )
+			self.progress.start()
+			self.task_id = self.progress.add_task( description=description, total=total, msg='' )
+
+	def advance( self, msg: str = None, advance: float = 1 ):
+		if self.verbose:
+			self.pp( msg )
+		else:
+			self.progress.update( task_id=self.task_id, advance=advance, msg=msg )
+
+	def complete( self, msg: str = None ):
+		if self.verbose:
+			if msg:
+				self.pp( msg )
+		else:
+			self.progress.update( task_id=self.task_id, advance=1, msg='' if msg is None else msg )
+			self.progress.stop()
 
 	def dump_config_state( self ) -> None:
 		self.dump_config()

@@ -1,12 +1,17 @@
+
+from sys import modules
 from typing import List
 
 from click import style
 from logging import getLogger
 from rich import box
+from rich.progress import Progress
+from rich.progress import TextColumn
+from rich.progress import TimeElapsedColumn
 from rich.table import Table
 
 from .activity import Activity
-from .activity_types import ActivityTypes as Types
+from .config import ApplicationContext
 from .config import console
 from .service import Service
 
@@ -16,32 +21,72 @@ ERROR = style('Error', fg='red')
 WARN = style('Warning', fg='yellow')
 INFO = style('Info', fg='green')
 
-def validate_activities( activities: List[Activity] ) -> None:
+def validate_activities( activities: List[Activity], function: str, ctx: ApplicationContext ) -> None:
+	report: List[List] = []
+
+	progress = Progress(
+		*Progress.get_default_columns(),
+		TextColumn( '/' ),
+		TimeElapsedColumn(),
+		TextColumn( "{task.fields[extra]}" ),
+	)
+
+	if function:
+		function_name = f'{function}'
+		if function_name in dir( modules[ __name__ ] ):
+			if fn := getattr( modules[ __name__ ], function_name ):
+				progress.start()
+				report_data = fn( activities, ctx, progress )
+				progress.stop()
+				report.append( [function_name, report_data] )
+		else:
+			log.error( f'skipping validation: unable to find function {function_name}' )
+
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
-	for a in activities:
-		data = []
-
-		_check_missing_type( a, data )
-		_check_files( a, data )
-
-		if len( data ) > 0:
-			table.add_row( f'activity {a.id} (uid: {a.uid})', '' )
-			for d in data:
-				table.add_row( d[0], d[1] )
+	table.add_row( '', f'[bold bright_blue]Validation Report:[/bold bright_blue]', '' )
+	table.add_section()
+	for r in report:
+		table.add_row( '', f'[blue]{r[0]}[/blue]', '' )
+		table.add_section()
+		for line in r[1]:
+			table.add_row( *line )
 
 	console.print( table )
 
-def _check_missing_type( a: Activity, data: List[List] ) -> None:
-	t = a.get( 'type' )
-	type_names = [ entry.name for entry in Types ]
-	if t not in type_names:
-		data.append( [WARN, f'usage of outdated type {t}' ] )
+def check_gpx_resources( activities: List[Activity], ctx: ApplicationContext, progress: Progress ) -> List[List[str]]:
+	report_data = []
+	all_resources = ctx.db.resources.all()
+	task = progress.add_task( 'Checking for file existance', total=len( all_resources ), extra='' )
 
-def _check_files( a: Activity, data: List[List] ) -> None:
-	if not a.is_group:
-		# s: Service = gc.app.services.get( a.service )
-		s: Service = None
-		for ext, status in a.get( 'metadata', {} ).items():
-			if ext not in [ 'groups' ]:
-				if status == 200 and not s.path_for( a, ext ).exists():
-					data.append( [WARN, f'file for type {ext} marked with status {status}, but does not exist'] )
+	for r in all_resources:
+		progress.update( task, advance=1, extra=f'{r.path}' )
+
+		if not r.path.endswith( '.gpx' ):
+			continue
+
+		path = Service.path_for_resource( r )
+		if not path.exists():
+			if r.status == 200:
+				_error( report_data, 'missing file, but marked as available in db', str( path ) )
+			else:
+				_warn( report_data, 'missing file, but probably ok', str( path ) )
+
+		if ctx.verbose:
+			_info( report_data, 'file exists', str( path ) )
+
+	progress.update( task, completed=1.0 )
+
+	return report_data
+
+# --- helper ---
+
+def _info( report_data: List, issue = '', details = '' ):
+	report_data.append( ['[bright_green]\u2714[/bright_green]', issue, details] )
+
+def _warn( report_data: List, issue = '', details = '' ):
+	data = [ f'[yellow]{s}[/yellow]' for s in [ '\u229a', issue ] ]
+	data.append( details )
+	report_data.append( data )
+
+def _error( report_data: List, issue = '', details = '' ):
+	report_data.append( [ f'[bright_red]{s}[/bright_red]' for s in [ '\u2718', issue, details ] ] )

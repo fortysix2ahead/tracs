@@ -5,9 +5,6 @@ from typing import List
 from click import style
 from logging import getLogger
 from rich import box
-from rich.progress import Progress
-from rich.progress import TextColumn
-from rich.progress import TimeElapsedColumn
 from rich.table import Table
 
 from .activity import Activity
@@ -24,20 +21,11 @@ INFO = style('Info', fg='green')
 def validate_activities( activities: List[Activity], function: str, ctx: ApplicationContext ) -> None:
 	report: List[List] = []
 
-	progress = Progress(
-		*Progress.get_default_columns(),
-		TextColumn( '/' ),
-		TimeElapsedColumn(),
-		TextColumn( "{task.fields[extra]}" ),
-	)
-
 	if function:
 		function_name = f'{function}'
 		if function_name in dir( modules[ __name__ ] ):
 			if fn := getattr( modules[ __name__ ], function_name ):
-				progress.start()
-				report_data = fn( activities, ctx, progress )
-				progress.stop()
+				report_data = fn( activities, ctx )
 				report.append( [function_name, report_data] )
 		else:
 			log.error( f'skipping validation: unable to find function {function_name}' )
@@ -53,13 +41,13 @@ def validate_activities( activities: List[Activity], function: str, ctx: Applica
 
 	console.print( table )
 
-def check_gpx_resources( activities: List[Activity], ctx: ApplicationContext, progress: Progress ) -> List[List[str]]:
+def check_gpx_resources( activities: List[Activity], ctx: ApplicationContext ) -> List[List[str]]:
 	report_data = []
 	all_resources = ctx.db.resources.all()
-	task = progress.add_task( 'Checking for file existance', total=len( all_resources ), extra='' )
+	ctx.start( 'Checking for file existance', total=len( all_resources ) )
 
 	for r in all_resources:
-		progress.update( task, advance=1, extra=f'{r.path}' )
+		ctx.advance( msg=r.path )
 
 		if not r.path.endswith( '.gpx' ):
 			continue
@@ -69,12 +57,12 @@ def check_gpx_resources( activities: List[Activity], ctx: ApplicationContext, pr
 			if r.status == 200:
 				_error( report_data, 'missing file, but marked as available in db', str( path ) )
 			else:
-				_warn( report_data, 'missing file, but probably ok', str( path ) )
+				_warn( report_data, f'missing file, resource status = {r.status}', str( path ) )
 
 		if ctx.verbose:
-			_info( report_data, 'file exists', str( path ) )
+			_info( report_data, 'file ok', str( path ) )
 
-	progress.update( task, completed=1.0 )
+	ctx.complete()
 
 	return report_data
 

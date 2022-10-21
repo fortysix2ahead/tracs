@@ -325,11 +325,12 @@ def inspect( ctx: ApplicationContext, filters, registry: bool, resource: bool ):
 		inspect_activities( ctx.db.find( filters ) )
 
 @cli.command( hidden=True, help='Performs some validation and sanity tasks.' )
+@option( '-c', '--correct', is_flag=True, required=False, default=False, help='try to correct found problems' )
 @option( '-f', '--function', is_flag=False, required=False, help='restricts validation to the provided function only' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
-def validate( ctx: ApplicationContext, filters, function ):
-	validate_activities( list( ctx.db.find( filters ) ), ctx=ctx, function=function )
+def validate( ctx: ApplicationContext, filters, function, correct ):
+	validate_activities( list( ctx.db.find( filters ) ), ctx=ctx, function=function, correct=correct )
 
 @cli.command( help='Displays the version number and exits.' )
 def version():

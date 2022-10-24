@@ -124,7 +124,7 @@ def validate_activities( activities: List[Activity], function: str, correct: boo
 
 def resource_files( activities: List[Activity], correct: bool ) -> ReportData:
 	rd = ReportData( name='Resource Files' )
-	all_resources = ReportData.ctx.db.resources.all()
+	all_resources = ReportData.ctx.db.find_all_resources_for( activities )
 	ReportData.ctx.start( 'Checking resource files ...', total=len( all_resources ) )
 
 	for r in all_resources:
@@ -156,7 +156,7 @@ def tcx_files( activities: List[Activity], correct: bool ) -> ReportData:
 	from xml.etree.ElementTree import ParseError
 
 	rd = ReportData( name='TCX Files' )
-	all_resources = ReportData.ctx.db.resources.all()
+	all_resources = ReportData.ctx.db.find_all_resources_for( activities )
 	ReportData.ctx.start( 'Checking TCX files for parse errors ...', total=len( all_resources ) )
 
 	reader = TCXReader()
@@ -171,7 +171,7 @@ def tcx_files( activities: List[Activity], correct: bool ) -> ReportData:
 			try:
 				exercise: TCXExercise = reader.read( str( path ) )
 				rd.info( f'TCX parsing ok ({len( exercise.trackpoints )})', path=path )
-			except (ParseError, ValueError):
+			except (ParseError, ValueError) as error:
 				rd.error( f'TCX parse error', path=path )
 
 	ReportData.ctx.complete()
@@ -183,10 +183,10 @@ def tcx_files( activities: List[Activity], correct: bool ) -> ReportData:
 			ReportData.ctx.advance( msg=str( item.path ) )
 			try:
 				text = item.path.read_text( encoding='UTF-8' )
-				if match( '^\s+<\?xml.+\?><TrainingCenterDatabase.+', text ):
-					text = text.lstrip( ' ' )
-					item.path.write_text( text, encoding='UTF-8' )
-					item.correction = True
+#				if match( '^[\s\t]+<\?xml.+\?><TrainingCenterDatabase.+', text ):
+				text = text.lstrip()
+				item.path.write_text( text, encoding='UTF-8' )
+				item.correction = True
 			except UnicodeDecodeError:
 				item.correction = False
 

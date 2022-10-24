@@ -120,15 +120,16 @@ def fields():
 	show_fields()
 
 @cli.command( 'import', hidden=True, help='imports activities' )
-@option( '-a', '--as-one', required=False, hidden=True, is_flag=True, help='multiple resources will be imported as one single activity (dangerous!)' )
-@option( '-sd', '--skip-download', required=False, is_flag=True, help='skips download of activities' )
-@option( '-sl', '--skip-link', required=False, is_flag=True, help='skips linking of downloaded activities' )
 @option( '-i', '--importer', required=False, help='importer to use (default is auto)' )
 @option( '-m', '--move', required=False, hidden=True, is_flag=True, help='move resources (dangerous, input files will be removed)' )
+@option( '-o', '--as-overlay', required=False, hidden=True, is_flag=False, help='import as overlay for an existing resource (experimental, for local imports only)' )
+@option( '-r', '--as-resource', required=False, hidden=True, is_flag=False, help='import as resource for an existing activity (experimental, for local imports only)' )
+@option( '-sd', '--skip-download', required=False, is_flag=True, help='skips download of activities' )
+@option( '-sl', '--skip-link', required=False, is_flag=True, help='skips linking of downloaded activities' )
 @argument( 'sources', nargs=-1 )
 @pass_context
-def imprt( ctx, sources, skip_download: bool = False, skip_link: bool = False, importer = 'auto', as_one: bool = False, move: bool = False ):
-	import_activities( ctx.obj, sources=sources, skip_download=skip_download, importer=importer, as_one=as_one, move=move )
+def imprt( ctx, sources, skip_download: bool = False, skip_link: bool = False, importer = 'auto', move: bool = False, as_overlay: str = None, as_resource: str = None ):
+	import_activities( ctx.obj, sources=sources, skip_download=skip_download, skip_link=skip_link, importer=importer, move=move, as_overlay=as_overlay, as_resource=as_resource )
 
 @cli.command( help='fetches activity ids' )
 @argument( 'sources', nargs=-1 )

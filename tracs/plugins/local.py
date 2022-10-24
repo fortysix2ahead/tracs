@@ -1,13 +1,9 @@
 
 from logging import getLogger
 from pathlib import Path
-from re import compile
 from typing import Any
-from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Optional
-from typing import Tuple
 from typing import Union
 
 from . import Registry
@@ -21,7 +17,7 @@ from ..service import Service
 
 log = getLogger( __name__ )
 
-# empty sample plugin
+# plugin supporting local imports
 
 SERVICE_NAME = 'local'
 DISPLAY_NAME = 'Local'
@@ -45,13 +41,8 @@ class Local( Service, Plugin ):
 		:param ext: file extension
 		:return: path for activity
 		"""
-		_id = str( activity.raw_id ) if activity else resource.raw_id()
-		path = Path( self.base_path, _id[0:2], _id[2:4], _id[4:6], _id )
-		if resource:
-			path = Path( path, resource.path )
-		elif ext:
-			path = Path( path, f'{id}.{ext}' )
-		return path
+		_id = str( activity.raw_id ) if activity else str( resource.local_id )
+		return Path( Path( self.base_path, _id[0:2], _id[2:4], _id[4:6], _id ), resource.path )
 
 	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
 		return None
@@ -63,33 +54,29 @@ class Local( Service, Plugin ):
 		return True
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		activities = []
+		resources = []
+
 		if path := kwargs.get( 'path' ):
 			if path.is_file():
-				activities = [ self.import_from_file( path ) ]
+				paths = [ path ]
 			elif path.is_dir():
-				activities = [ self.import_from_file( f ) for f in path.iterdir() ]
+				paths = [ f for f in path.iterdir() ]
+			else:
+				paths = []
 
-		# if kwargs.get( 'as_one', False ) and len( activities ) > 1:
-		# 	activity = Activity()
-		# 	for a in activities:
-		# 		activity.init_from( other=a )
-		# 		activity.resources.extend( a.resources )
-		# 	activities = [activity]
-		#
-		# if kwargs.get( 'move', False ):
-		# 	pass # todo: implement move
+			for p in paths:
+				activity = self.import_from_file( p )
+				resource = activity.resources[0]
+				resource.uid = f'{self.name}:{activity.time.strftime( "%y%m%d%H%M%S" )}'
+				resource.path = f'{resource.local_id}.{resource.path.rsplit( ".", 1 )[1]}'
+				resource.status = 200
+				resources.append( resource )
 
-		resources = []
-		for a in activities:
-			for r in a.resources:
-				r.uid = f'{self.name}:{a.time.strftime( "%y%m%d%H%M%S" )}'
-				r.path = f'{r.raw_id()}.{r.path.rsplit( ".", 1 )[1]}'
-			resources.extend( a.resources )
 		return resources
 
 	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
-		activity.uid = activity.resources[0].uid # todo: always correct?
+		# todo: is this always correct?
+		activity.uid = activity.resources[0].uid
 
 	# noinspection PyMethodMayBeStatic
 	def import_from_file( self, path: Path ) -> Any:

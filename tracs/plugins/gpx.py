@@ -36,7 +36,7 @@ class GPXActivity( Activity ):
 class GPXImporter( ResourceHandler ):
 
 	def __init__( self ) -> None:
-		super().__init__( type=XML_TYPE, activity_cls=GPXActivity )
+		super().__init__( type=GPX_TYPE, activity_cls=GPXActivity )
 
 	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
 		return parse_gpx( content )

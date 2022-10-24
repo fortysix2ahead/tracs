@@ -308,6 +308,9 @@ class ActivityDb:
 	def find_all_resources( self, uids: List[str] ) -> List[Resource]:
 		return list( chain( * [ self.resources.search( Query()['uid'] == uid ) for uid in uids ] ) )
 
+	def find_all_resources_for( self, activities: List[Activity] ) -> List[Resource]:
+		return self.find_all_resources( list( chain( * [ a.uids for a in activities ] ) ) )
+
 	def find_resource_group( self, uid: str, path: str = None ) -> ResourceGroup:
 		return ResourceGroup( resources=self.find_resources( uid, path ) )
 

@@ -1,12 +1,13 @@
 
+from http.server import BaseHTTPRequestHandler
+from http.server import HTTPServer
+from re import findall
 from re import match
 from typing import Any
 from typing import cast
 from typing import List
 from typing import Optional
 from typing import Tuple
-from http.server import BaseHTTPRequestHandler
-from http.server import HTTPServer
 from typing import Union
 
 from bs4 import BeautifulSoup
@@ -28,6 +29,7 @@ from . import document
 from . import importer
 from . import service
 from tracs.plugins.gpx import GPX_TYPE
+from .fit import FIT_TYPE
 from .handlers import JSONHandler
 from .handlers import TCX_TYPE
 from .plugin import Plugin
@@ -284,10 +286,8 @@ class Strava( Service, Plugin ):
 
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
-			resources = [
-				Resource( type=GPX_TYPE, path=f"{summary.raw_id}.gpx", status=100, uid=summary.uid, source=self.url_for_resource_type( summary.raw_id, GPX_TYPE ) ),
-				Resource( type=TCX_TYPE, path=f"{summary.raw_id}.tcx", status=100, uid=summary.uid, source=self.url_for_resource_type( summary.raw_id, TCX_TYPE ) )
-			]
+			urls = [ f'{self._activities_url}/{summary.raw_id}/export_gpx', f'{self._activities_url}/{summary.raw_id}/export_original' ]
+			resources = [ Resource( uid=summary.uid, source=url ) for url in urls ]
 
 			for r in resources:
 				self.download_resource( r )
@@ -299,13 +299,19 @@ class Strava( Service, Plugin ):
 			return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
-		url = self.url_for_resource_type( resource.raw_id, resource.type )
-		if url:
+		if url := resource.source:
 			log.debug( f'downloading resource from {url}' )
 			response = self._session.get( url, headers=HEADERS_LOGIN, allow_redirects=True, stream=True )
+			ext = findall( r'^.*filename=\".+\.(\w+)\".*$', response.headers['content-disposition'] )[0]
+			resource_type = Registry.resource_type_for_suffix( ext )
 			resource.content = response.content
-			resource.text = response.text
+			resource.type = resource_type
+			resource.path = f'{resource.local_id}.{ext}'
 			resource.status = response.status_code
+
+			# fit is binary, there's no text version to be stored
+			if resource_type == FIT_TYPE:
+				resource.text = None
 
 			# fix for Strava bug where TCX documents contain whitespace before the first XML tag
 			# sample first line:

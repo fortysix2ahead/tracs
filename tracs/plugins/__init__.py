@@ -56,6 +56,21 @@ class Registry:
 		l.remove( 'empty' )
 		return l
 
+	#
+	@classmethod
+	def resource_type_for_suffix( cls, suffix: str ) -> Optional[str]:
+		# first round: prefer suffix in special part of type: 'gpx' matches 'application/xml+gpx'
+		for key in Registry.importers.keys():
+			if m := match( f'^(\w+)/(\w+)\+{suffix}$', key ):
+				return key
+
+		# second round: suffix after slash: 'gpx' matches 'application/gpx'
+		for key in Registry.importers.keys():
+			if m := match( f'^(\w+)/{suffix}(\+([\w-]+))?$', key ):
+				return key
+
+		return None
+
 	# handlers
 
 	@classmethod

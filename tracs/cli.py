@@ -120,13 +120,14 @@ def fields():
 	show_fields()
 
 @cli.command( 'import', hidden=True, help='imports activities' )
-@option( '-a', '--as-one', required=False, is_flag=True, help='multiple resources will be imported as one single activity (dangerous!)' )
-@option( '-d', '--skip-download', required=False, is_flag=True, help='skips download of activities' )
+@option( '-a', '--as-one', required=False, hidden=True, is_flag=True, help='multiple resources will be imported as one single activity (dangerous!)' )
+@option( '-sd', '--skip-download', required=False, is_flag=True, help='skips download of activities' )
+@option( '-sl', '--skip-link', required=False, is_flag=True, help='skips linking of downloaded activities' )
 @option( '-i', '--importer', required=False, help='importer to use (default is auto)' )
-@option( '-m', '--move', required=False, is_flag=True, help='move resources (dangerous, input files will be removed)' )
+@option( '-m', '--move', required=False, hidden=True, is_flag=True, help='move resources (dangerous, input files will be removed)' )
 @argument( 'sources', nargs=-1 )
 @pass_context
-def imprt( ctx, sources, skip_download: bool = False, importer = 'auto', as_one: bool = False, move: bool = False ):
+def imprt( ctx, sources, skip_download: bool = False, skip_link: bool = False, importer = 'auto', as_one: bool = False, move: bool = False ):
 	import_activities( ctx.obj, sources=sources, skip_download=skip_download, importer=importer, as_one=as_one, move=move )
 
 @cli.command( help='fetches activity ids' )

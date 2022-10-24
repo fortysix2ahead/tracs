@@ -31,8 +31,9 @@ from .config import ApplicationContext
 from .dataclasses import as_dict
 from .db import ActivityDb
 from .plugins import Registry
-from tracs.plugins.gpx import GPX_TYPE
+from .plugins.gpx import GPX_TYPE
 from .plugins.handlers import TCX_TYPE
+from .plugins.local import SERVICE_NAME as LOCAL_SERVICE_NAME
 from .service import Service
 from .ui import diff_table
 
@@ -59,17 +60,20 @@ def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **
 		elif ( m := match( '^([a-z]+):(\d+)$', src ) ) and m.groups()[0] in Registry.services.keys():
 			Registry.services.get( m.groups()[0] ).import_activities( ctx=ctx, uid=src, force=ctx.force, pretend=ctx.pretend, **kwargs )
 
-		elif ( path := Path( src ).absolute() ) and path.exists():
-			log.info( f'importing from path {path}' )
-			kwargs['skip_download'] = True
-			kwargs['path'] = path
-			Registry.services.get( 'local' ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
-
-		elif url := parse_url( src ):
-			raise NotImplementedError
-
 		else:
-			log.error( f'unable to import from {src}' )
+			try:
+				path = Path( Path.cwd(), src ).absolute().resolve()
+				log.debug( f'attempting to import from path {path}' )
+				kwargs['skip_download'] = False
+				kwargs['path'] = path
+				Registry.services.get( LOCAL_SERVICE_NAME ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
+			except:
+				log.error( 'unable to import from path', exc_info=True )
+
+				try:
+					url = parse_url( src )
+				except:
+					raise NotImplementedError
 
 def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 	if len( activities ) > MAXIMUM_OPEN:

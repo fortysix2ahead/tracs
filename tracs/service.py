@@ -261,7 +261,8 @@ class Service( ServiceProtocol ):
 				if r_db: # todo: check if we can use db.upsert here
 					self._ctx.db.update_resource( r )
 				else:
-					self._ctx.db.insert_resource( r )
+					doc_id = self._ctx.db.insert_resource( r )
+					log.info( f'created new resource: id = {doc_id}, uid = {r.uid}, path = {r.path}' )
 
 		if not pretend:
 			a_db = self._ctx.db.get( uid=activity.uid )

@@ -58,6 +58,7 @@ class Local( Service, Plugin ):
 			resource = ctx.db.resources.get( doc_id = overlay_id )
 			if resource:
 				overlay_path = self.path_for( resource=resource, ignore_overlay=False )
+				overlay_path.parent.mkdir( parents=True, exist_ok=True )
 				if kwargs.get( 'move', False ):
 					move( path, overlay_path )
 				else:

@@ -107,7 +107,8 @@ def show_activity( activities: [Activity], ctx: ApplicationContext, display_raw:
 
 				table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 				table.add_row( '[bold bright_blue]Resources:[/bold bright_blue]' )
-				table.add_row( '[blue]id[/blue]', '[blue]path[/blue]', '[blue]type[/blue]', '[blue]URL[/blue]' )
+				table.add_row( '[blue]id[/blue]', '[blue]path[/blue]', '[blue]absolute path[/blue]', '[blue]type[/blue]' )
+				# table.add_row( '[blue]id[/blue]', '[blue]path[/blue]', '[blue]absolute path[/blue]', '[blue]type[/blue]', '[blue]URL[/blue]' )
 				for uid in a.uids:
 					resources = ctx.db.find_resources( uid ) if ctx else []
 					for r in resources:
@@ -120,7 +121,10 @@ def show_activity( activities: [Activity], ctx: ApplicationContext, display_raw:
 						overlay_sign = '\u2a01'
 						overlay_path_exists = f'[bright_green] {overlay_sign}[/bright_green]' if overlay_path.exists() else ''
 
-						resource_url = Registry.services.get( r.classifier ).url_for( resource=r )
-						table.add_row( pp( r.doc_id ), f'{r.path} {path_exists}{overlay_path_exists}', r.type, resource_url )
+						absolute_path = str( overlay_path ) if overlay_path.exists() else str( resource_path )
+						table.add_row( pp( r.doc_id ), f'{r.path} {path_exists}{overlay_path_exists}', absolute_path, r.type )
+
+						# resource_url = Registry.services.get( r.classifier ).url_for( resource=r )
+						# table.add_row( pp( r.doc_id ), f'{r.path} {path_exists}{overlay_path_exists}', absolute_path, r.type, resource_url )
 
 				console.print( table )

@@ -35,18 +35,6 @@ class Local( Service, Plugin ):
 	def __init__( self, **kwargs  ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 
-	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
-		"""
-		Returns the path for an activity.
-
-		:param activity: activity for which the path shall be calculated
-		:param resource: resource
-		:param ext: file extension
-		:return: path for activity
-		"""
-		_id = str( activity.raw_id ) if activity else str( resource.local_id )
-		return Path( Path( self.base_path, _id[0:2], _id[2:4], _id[4:6], _id ), resource.path )
-
 	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] ) -> Path:
 		local_id = str( local_id )
 		path = Path( local_id[0:2], local_id[2:4], local_id[4:6], local_id )

@@ -121,7 +121,7 @@ class Service( Protocol ):
 		pass
 
 	@abstractmethod
-	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
+	def path_for( self, activity: Activity = None, resource: Resource = None, ignore_overlay: bool = True ) -> Optional[Path]:
 		"""
 		Returns the path in the local file system where all artefacts of a provided activity are located.
 		The returned path must point to a directory.
@@ -129,6 +129,7 @@ class Service( Protocol ):
 		:param activity: activity
 		:param resource: resource
 		:param ext: file extension for which the path should be returned, can be None
+		:param ignore_overlay: flag to ignore overlay paths (if they exist)
 		:return: path of the activity/resource in the local file system
 		"""
 		pass

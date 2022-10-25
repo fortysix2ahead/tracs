@@ -113,7 +113,14 @@ def show_activity( activities: [Activity], ctx: ApplicationContext, display_raw:
 					for r in resources:
 						resource_path = Registry.services.get( r.classifier ).path_for( resource=r )
 						path_exists = '[bright_green]\u2713[/bright_green]' if resource_path.exists() else '[bright_red]\u2716[/bright_red]'
+
+						overlay_path = Registry.services.get( r.classifier ).path_for( resource=r, ignore_overlay=False )
+						# overlay_sign = ' \u29c9'
+						# overlay_sign = '\u2a39'
+						overlay_sign = '\u2a01'
+						overlay_path_exists = f'[bright_green] {overlay_sign}[/bright_green]' if overlay_path.exists() else ''
+
 						resource_url = Registry.services.get( r.classifier ).url_for( resource=r )
-						table.add_row( pp( r.doc_id ), f'{r.path} {path_exists}', r.type, resource_url )
+						table.add_row( pp( r.doc_id ), f'{r.path} {path_exists}{overlay_path_exists}', r.type, resource_url )
 
 				console.print( table )

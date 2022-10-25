@@ -45,10 +45,12 @@ class Registry:
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
 		_ctx = ctx if ctx else Registry.ctx
 		base_path = kwargs.pop( 'base_path' ) if 'base_path' in kwargs else None
+		overlay_path = kwargs.pop( 'overlay_path' ) if 'overlay_path' in kwargs else None
 		for name, service_type in Registry.service_classes.items():
 			service_base_path = Path( base_path, name )
+			service_overlay_path = Path( overlay_path, name )
 			log.debug( f'attempting to create service instance {name}, with base path {service_base_path}' )
-			Registry.services[name] = service_type( ctx=ctx, base_path=service_base_path, **kwargs )
+			Registry.services[name] = service_type( ctx=ctx, base_path=service_base_path, overlay_path=service_overlay_path, **kwargs )
 
 	@classmethod
 	def service_names( cls ) -> List[str]:

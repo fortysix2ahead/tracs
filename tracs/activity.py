@@ -48,7 +48,7 @@ class Resource( BaseDocument ):
 	# additional field holding data of a resource, used when loading, but won't be persisted in db
 	raw: Any = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # structured data making up this resource
 	text: str = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # decoded content as string
-	content: bytes = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # raw content, as bytes
+	content: Union[bytes, str] = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # raw content, as bytes or string
 
 	@property
 	def classifier( self ) -> str:
@@ -65,6 +65,9 @@ class Resource( BaseDocument ):
 	def _uid( self ) -> Tuple[str, str]:
 		classifier, raw_id = self.uid.split( ':', maxsplit=1 )
 		return classifier, raw_id
+
+	def as_text( self, encoding: str = 'UTF-8' ) -> str:
+		return self.content if type( self.content ) is str else self.content.decode( encoding )
 
 @dataclass
 class ResourceGroup:

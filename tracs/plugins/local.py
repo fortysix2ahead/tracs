@@ -1,10 +1,13 @@
 
 from logging import getLogger
 from pathlib import Path
+from shutil import move
 from typing import Any
 from typing import List
 from typing import Optional
 from typing import Union
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 from . import Registry
 from . import document
@@ -77,6 +80,16 @@ class Local( Service, Plugin ):
 	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
 		# todo: is this always correct?
 		activity.uid = activity.resources[0].uid
+
+	def persist_resource_data( self, activity: Activity, force: bool, pretend: bool, **kwargs ) -> None:
+		if kwargs.get( 'move', False ):
+			for r in activity.resources:
+				src_path = Path( urlparse( url2pathname( r.source ) ).path )
+				dest_path = self.path_for( resource=r )
+				dest_path.parent.mkdir( parents=True, exist_ok=True )
+				move( src_path, dest_path )
+		else:
+			super().persist_resource_data( activity, force, pretend, **kwargs )
 
 	# noinspection PyMethodMayBeStatic
 	def import_from_file( self, path: Path ) -> Any:

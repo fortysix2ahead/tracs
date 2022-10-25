@@ -194,11 +194,6 @@ class Polar( Service, Plugin ):
 
 		self.importer: PolarImporter = cast( PolarImporter, Registry.importer_for( POLAR_FLOW_TYPE ) )
 
-	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
-		return super().path_for( activity, resource, ext )
-		# if a.is_multipart: # todo: add multipart support
-		#	 path = Path( super().path_for( a ), f'{id}.{ext}.zip' ) if ext in ['gpx', 'tcx', 'hrv'] else None
-
 	def _link_path( self, pa: Activity, ext: str ) -> Path or None:
 		if pa.id:
 			utc = pa.utctime

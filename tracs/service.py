@@ -39,10 +39,11 @@ class Service( ServiceProtocol ):
 		self._name = kwargs.pop( 'name' ) if 'name' in kwargs else None
 		self._display_name = kwargs.pop( 'display_name' ) if 'display_name' in kwargs else None
 		self._base_path = kwargs.pop( 'base_path' ) if 'base_path' in kwargs else None
+		self._overlay_path = kwargs.pop( 'overlay_path' ) if 'overlay_path' in kwargs else None
 		self._base_url = kwargs.pop( 'base_url' ) if 'base_url' in kwargs else None
 		self._logged_in = False
 
-		log.debug( f'service instance {self._name} created, with base path {self._base_path}' )
+		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
 
 	# helpers for setting/getting plugin configuration/state values
 
@@ -85,6 +86,14 @@ class Service( ServiceProtocol ):
 		self._base_path = path
 
 	@property
+	def overlay_path( self ) -> Path:
+		return self._overlay_path
+
+	@overlay_path.setter
+	def overlay_path( self, path: Path ) -> None:
+		self._overlay_path = path
+
+	@property
 	def base_url( self ) -> str:
 		return self._base_url
 
@@ -121,25 +130,30 @@ class Service( ServiceProtocol ):
 		rel_path = Path( _id[0], _id[1], _id[2], _id )
 		return Path( base_path, rel_path ) if base_path else rel_path
 
-	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
+	def path_for( self, activity: Activity = None, resource: Resource = None, ignore_overlay: bool = True ) -> Optional[Path]:
 		"""
 		Returns the path in the local file system where all artefacts of a provided activity are located.
 
 		:param activity: activity
 		:param resource: resource
 		:param ext: file extension for which the path should be returned, can be None
+		:param ignore_overlay:
 		:return: path of the activity in the local file system
 		"""
+		path, overlay_path = None, None
 		if activity:
-			path = self.path_for_id( activity.raw_id, self.base_path )
-			if ext:
-				path = Path( path, f'{activity.raw_id}.{ext}' )
+			rel_path = self.path_for_id( activity.raw_id, base_path=None )
+			path = Path( self.base_path, rel_path )
+			overlay_path = Path( self.overlay_path, rel_path )
 		elif resource:
-			path = Path( self.path_for_id( resource.local_id, self.base_path ), resource.path )
-		else:
-			path = None
+			rel_path = self.path_for_id( resource.local_id, base_path=None )
+			path = Path( self.base_path, rel_path, resource.path )
+			overlay_path = Path( self.overlay_path, rel_path, resource.path )
 
-		return path
+		if ignore_overlay:
+			return path
+		else:
+			return overlay_path if overlay_path else path
 
 	def link_for( self, activity: Optional[Activity], resource: Optional[Resource], ext: Optional[str] = None ) -> Optional[Path]:
 		ts = activity.time.strftime( '%Y%m%d%H%M%S' )

@@ -99,7 +99,7 @@ class Application( object ):
 		ctx.db = ActivityDb( path=ctx.db_dir, cache=cache )
 
 		# ---- create service instances ----
-		Registry.instantiate_services( ctx=ctx, base_path=ctx.db_dir )
+		Registry.instantiate_services( ctx=ctx, base_path=ctx.db_dir, overlay_path=ctx.overlay_dir )
 
 		# ---- announce context/configuration to utils module ----
 		UCFG.reconfigure( ctx.config )

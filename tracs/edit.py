@@ -10,6 +10,7 @@ from .dataclasses import PROTECTED
 from .inout import load_all_resources
 from .inout import open_activities
 from .ui import Choice
+from .utils import fmt
 
 MSG_OPEN_APPLICATION = '<open/view GPX/TCX in default application>'
 
@@ -34,6 +35,7 @@ def rename_activities( activities: [Activity], ctx: ApplicationContext, force: b
 	for a in activities:
 		ctx.console.print( f'renaming activity [{a.id}]' )
 		ctx.console.print( f'  name                   : {a.name}' )
+		ctx.console.print( f'  local time             : {fmt( a.localtime )}' )
 		ctx.console.print( f'  place, city (country)  : {a.location_place}, {a.location_city} ({a.location_country})' )
 
 		load_all_resources( ctx.db, a )

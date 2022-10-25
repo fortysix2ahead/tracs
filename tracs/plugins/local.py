@@ -47,6 +47,11 @@ class Local( Service, Plugin ):
 		_id = str( activity.raw_id ) if activity else str( resource.local_id )
 		return Path( Path( self.base_path, _id[0:2], _id[2:4], _id[4:6], _id ), resource.path )
 
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] ) -> Path:
+		local_id = str( local_id )
+		path = Path( local_id[0:2], local_id[2:4], local_id[4:6], local_id )
+		return Path( base_path, path ) if base_path else path
+
 	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
 		return None
 

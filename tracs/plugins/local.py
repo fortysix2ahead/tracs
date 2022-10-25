@@ -1,6 +1,7 @@
 
 from logging import getLogger
 from pathlib import Path
+from shutil import copy2 as copy
 from shutil import move
 from typing import Any
 from typing import List
@@ -52,6 +53,16 @@ class Local( Service, Plugin ):
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		resources = []
 
+		if (path := kwargs.get( 'path' )) and (overlay_id := kwargs.get( 'as_overlay', False )):
+			ctx = kwargs.get( 'ctx' )
+			resource = ctx.db.resources.get( doc_id = overlay_id )
+			if resource:
+				overlay_path = self.path_for( resource=resource, ignore_overlay=False )
+				if kwargs.get( 'move', False ):
+					move( path, overlay_path )
+				else:
+					copy( path, overlay_path )
+
 		if path := kwargs.get( 'path' ):
 			if path.is_file():
 				paths = [ path ]
@@ -81,6 +92,7 @@ class Local( Service, Plugin ):
 				dest_path = self.path_for( resource=r )
 				dest_path.parent.mkdir( parents=True, exist_ok=True )
 				move( src_path, dest_path )
+				r.dirty = True
 		else:
 			super().persist_resource_data( activity, force, pretend, **kwargs )
 

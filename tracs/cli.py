@@ -122,7 +122,7 @@ def fields():
 @cli.command( 'import', hidden=True, help='imports activities' )
 @option( '-i', '--importer', required=False, help='importer to use (default is auto)' )
 @option( '-m', '--move', required=False, hidden=True, is_flag=True, help='move resources (dangerous, input files will be removed)' )
-@option( '-o', '--as-overlay', required=False, hidden=True, is_flag=False, help='import as overlay for an existing resource (experimental, for local imports only)' )
+@option( '-o', '--as-overlay', required=False, hidden=True, is_flag=False, type=int, help='import as overlay for an existing resource (experimental, for local imports only)' )
 @option( '-r', '--as-resource', required=False, hidden=True, is_flag=False, help='import as resource for an existing activity (experimental, for local imports only)' )
 @option( '-sd', '--skip-download', required=False, is_flag=True, help='skips download of activities' )
 @option( '-sl', '--skip-link', required=False, is_flag=True, help='skips linking of downloaded activities' )

@@ -85,12 +85,10 @@ def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 	paths = []
 
 	for a in activities:
-		for uid in a.uids:
-			resources = db.find_resources( uid )
-			for r in resources:
-				if r.type == resource_type:
-					paths.append( Service.path_for_resource( r ) )
-					break
+		for r in db.find_all_resources_for( a ):
+			if r.type == resource_type:
+				paths.append( Service.path_for_resource( r ) )
+				break
 
 	paths = [ str( p ) for p in paths ]
 	system( 'open ' + ' '.join( paths ) )

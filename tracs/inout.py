@@ -7,7 +7,7 @@ from logging import getLogger
 from copy import deepcopy
 from csv import writer as csv_writer
 from os import system
-from re import match
+from re import compile
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -42,31 +42,37 @@ log = getLogger( __name__ )
 TAG_OFFSET_CORRECTION = 'offset'
 TAG_TIMEZONE_CORRECTION = 'timezone'
 
+DEFAULT_IMPORTER = 'auto'
+
 MAXIMUM_OPEN = 8
 
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
 
-#def import_activities( ctx: Optional[ApplicationContext], sources: List[str], importer: str, as_one: bool = False, move: bool = False, **kwargs ):
-def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **kwargs ):
+def import_activities( ctx: Optional[ApplicationContext], importer: str, sources: List[str], **kwargs ):
 	# use all registered services if nothing is provided
-	sources = sources or Registry.service_names()
+	# services = [ s for i in importers if ( s := Registry.services.get( i ) ) ]
 
-	for src in list( sources ):
-		if src in Registry.services.keys():
+	sources = sources or []
+	uid_pattern = compile( f'^({"|".join( Registry.service_names() )}):(\d+)$' )
+
+	for src in sources:
+		if service := Registry.services.get( src ):
 			log.info( f'importing from service {src}' )
-			Registry.services.get( src ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
-
-		elif ( m := match( '^([a-z]+):(\d+)$', src ) ) and m.groups()[0] in Registry.services.keys():
-			Registry.services.get( m.groups()[0] ).import_activities( ctx=ctx, uid=src, force=ctx.force, pretend=ctx.pretend, **kwargs )
-
+			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
+		if uid_pattern.match( src ) and (service := Registry.service_for( src )):
+			service.import_activities( ctx=ctx, uid=src, force=ctx.force, pretend=ctx.pretend, **kwargs )
 		else:
+			# try to use src as path
 			try:
 				path = Path( Path.cwd(), src ).absolute().resolve()
-				log.debug( f'attempting to import from path {path}' )
-				kwargs['skip_download'] = False
-				kwargs['path'] = path
-				Registry.services.get( LOCAL_SERVICE_NAME ).import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
+				if path.exists():
+					log.debug( f'attempting to import from path {path}' )
+					kwargs['skip_download'] = False
+					kwargs['path'] = path
+
+					s = Registry.services.get( importer, Registry.services.get( LOCAL_SERVICE_NAME ) )
+					s.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
 			except:
 				log.error( 'unable to import from path', exc_info=True )
 

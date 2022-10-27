@@ -58,7 +58,10 @@ class Registry:
 		l.remove( 'empty' )
 		return l
 
-	#
+	@classmethod
+	def service_for( cls, uid: str = None ) -> Service:
+		return Registry.services.get( uid.split( ':', maxsplit= 1 )[0] )
+
 	@classmethod
 	def resource_type_for_suffix( cls, suffix: str ) -> Optional[str]:
 		# first round: prefer suffix in special part of type: 'gpx' matches 'application/xml+gpx'

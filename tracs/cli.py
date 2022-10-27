@@ -7,7 +7,6 @@ from logging import StreamHandler
 from logging import getLogger
 from sys import stderr
 from typing import List
-from urllib.parse import urlparse
 
 from click import argument
 from click import echo
@@ -42,6 +41,7 @@ from .group import group_activities
 from .group import ungroup_activities
 from .group import part_activities
 from .group import unpart_activities
+from .inout import DEFAULT_IMPORTER
 from .inout import reimport_activities
 from .list import inspect_activities
 from .list import list_activities
@@ -120,18 +120,18 @@ def fields():
 	show_fields()
 
 @cli.command( 'import', hidden=True, help='imports activities' )
-@option( '-i', '--importer', required=False, help='importer to use (default is auto)' )
-@option( '-m', '--move', required=False, hidden=True, is_flag=True, help='move resources (dangerous, input files will be removed)' )
-@option( '-o', '--as-overlay', required=False, hidden=True, is_flag=False, type=int, help='import as overlay for an existing resource (experimental, for local imports only)' )
-@option( '-r', '--as-resource', required=False, hidden=True, is_flag=False, help='import as resource for an existing activity (experimental, for local imports only)' )
+@option( '-i', '--importer', required=False, hidden=True, default=DEFAULT_IMPORTER, help='importer to use (default is auto)' )
+@option( '-m', '--move', required=False, hidden=True, is_flag=True, help='move resources after import (dangerous, input files will be removed, local imports only)' )
+@option( '-o', '--as-overlay', required=False, hidden=True, is_flag=False, type=int, help='import as overlay for an existing resource (experimental, local imports only)' )
+@option( '-r', '--as-resource', required=False, hidden=True, is_flag=False, help='import as resource for an existing activity (experimental, local imports only)' )
 @option( '-sd', '--skip-download', required=False, is_flag=True, help='skips download of activities' )
 @option( '-sl', '--skip-link', required=False, is_flag=True, help='skips linking of downloaded activities' )
-@argument( 'sources', nargs=-1 )
+@argument( 'sources', nargs=-1 ) #, help='list of sources to import from, can be names of services, files in the local file system or URLs (currently unsupported)' )
 @pass_context
-def imprt( ctx, sources, skip_download: bool = False, skip_link: bool = False, importer = 'auto', move: bool = False, as_overlay: str = None, as_resource: str = None ):
+def imprt( ctx, sources, skip_download: bool = False, skip_link: bool = False, importer = DEFAULT_IMPORTER, move: bool = False, as_overlay: str = None, as_resource: str = None ):
 	import_activities( ctx.obj, sources=sources, skip_download=skip_download, skip_link=skip_link, importer=importer, move=move, as_overlay=as_overlay, as_resource=as_resource )
 
-@cli.command( help='fetches activity ids' )
+@cli.command( help='fetches activity summaries' )
 @argument( 'sources', nargs=-1 )
 @pass_context
 def fetch( ctx, sources: List[str] ):

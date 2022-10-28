@@ -83,8 +83,12 @@ class ResourceHandler:
 		pass
 
 	# noinspection PyMethodMayBeStatic
-	def as_str( self, content: bytes, encoding: str = 'UTF-8' ):
+	def as_str( self, content: bytes, encoding: str = 'UTF-8' ) -> str:
 		return content.decode( encoding )
+
+	# noinspection PyMethodMayBeStatic
+	def as_bytes( self, text: str, encoding: str = 'UTF-8' ) -> bytes:
+		return text.encode( encoding )
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		return self._activity_cls( raw=resource.raw, resources=[ resource ] )
@@ -98,21 +102,41 @@ class ResourceHandler:
 		return self._activity_cls
 
 	# noinspection PyMethodMayBeStatic
-	def save_content( self, content: bytes, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> None:
-		if path:
-			path.write_bytes( content )
+	def preprocess_data( self, data: Any, **kwargs ) -> Any:
+		return data
 
-	# noinspection PyMethodMayBeStatic
-	def save_text( self, text: str, **kwargs ) -> bytes:
-		return text.encode( encoding = 'UTF-8' )
-
-	def save_data( self, data: Any, **kwargs ) -> str:
+	def save_data( self, data: Any, **kwargs ) -> bytes:
 		pass
 
-	def save( self, data: Any = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> None:
-		_text = self.save_data( data )
-		_content = self.save_text( _text )
-		self.save_content( _content, path, url, **kwargs )
+	# noinspection PyMethodMayBeStatic
+	def save_to_path( self, content: bytes, path: Path, **kwargs ) -> None:
+		path.write_bytes( content )
+
+	# noinspection PyMethodMayBeStatic
+	def save_to_url( self, content: bytes, url: str, **kwargs ) -> None:
+		pass
+
+	# noinspection PyMethodMayBeStatic
+	def save_to_resource( self, content: bytes, **kwargs ) -> Resource:
+		uid = kwargs.get( 'uid' )
+		resource_path = kwargs.get( 'resource_path' )
+		status = kwargs.get( 'status' )
+		summary = kwargs.get( 'summary' )
+
+		return Resource( uid=uid, path=resource_path, status=status, summary=summary, content=content )
+
+	def save( self, data: Any, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
+		# allow sub classes to preprocess data
+		data = self.preprocess_data( data )
+
+		content: bytes = self.save_data( data, **kwargs )
+
+		if path:
+			self.save_to_path( content, path, **kwargs )
+		elif url:
+			self.save_to_url( content, url, **kwargs )
+		else:
+			return self.save_to_resource( content, **kwargs )
 
 @importer( type=CSV_TYPE )
 class CSVHandler( ResourceHandler ):
@@ -137,11 +161,8 @@ class JSONHandler( ResourceHandler ):
 	def load_data( self, resource: Resource, **kwargs ) -> None:
 		resource.raw = load_json( resource.content )
 
-	def save_data( self, data: Any, **kwargs ) -> str:
-		return save_json( data, option=JSONHandler.options ).decode( 'UTF-8' )
-
-	def save( self, data: Any = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> None:
-		self.save_content( content=save_json( data, option=JSONHandler.options ), path=path, url=url, **kwargs )
+	def save_data( self, data: Any, **kwargs ) -> bytes:
+		return save_json( data, option=JSONHandler.options )
 
 @importer( type=XML_TYPE )
 class XMLHandler( ResourceHandler ):

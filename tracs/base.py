@@ -304,5 +304,9 @@ class Exporter( Protocol ):
 	"""
 
 	@abstractmethod
-	def save( self, data: Union[Dict, str, bytes], path: Optional[Path] = None, url: Optional[str] = None ) -> None:
+	def save( self, data: Any, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
+		"""
+		Saves provided data to a path or a URL or returns it as a resource if both parameters are missing.
+
+		"""
 		pass

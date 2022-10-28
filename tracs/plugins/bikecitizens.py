@@ -23,6 +23,7 @@ from . import document
 from . import importer
 from . import service
 from tracs.plugins.gpx import GPX_TYPE
+from .handlers import JSON_TYPE
 from .handlers import JSONHandler
 from .plugin import Plugin
 from ..activity import Activity
@@ -113,6 +114,7 @@ class Bikecitizens( Service, Plugin ):
 		self.base_url = base_url if base_url else BASE_URL
 
 		self.importer: BikecitizensImporter = cast( BikecitizensImporter, Registry.importer_for( BIKECITIZENS_TYPE ) )
+		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
 
 	@property
 	def base_url( self ) -> str:
@@ -229,18 +231,11 @@ class Bikecitizens( Service, Plugin ):
 
 		try:
 			response = options( url=self.user_tracks_url, headers=HEADERS_OPTIONS )
-			response = self._session.get( self.user_tracks_url, headers={**HEADERS_OPTIONS, **{'X-API-Key': self._api_key}} )
+			json_resource = self.json_handler.load( url=self.user_tracks_url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } }, session=self._session )
 
-			resources = []
-			for json in response.json():
-				resource = self.importer.load( data=json )
-				resource.uid = f'{self.name}:{json["id"]}'
-				resource.path = f'{json["id"]}.raw.json'
-				resource.status = 200
-				resource.summary = True
-				resource.text = self.importer.save_data( json )
-
-				resources.append( resource )
+			resources: List[Resource] = []
+			for item in json_resource.raw:
+				resources.append( self.importer.save( item, uid = f'{self.name}:{item["id"]}', resource_path=f'{item["id"]}.raw.json', status = 200, summary = True ) )
 
 			return resources
 

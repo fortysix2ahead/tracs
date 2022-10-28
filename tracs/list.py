@@ -11,7 +11,6 @@ from rich.pretty import Pretty as pp
 from rich.table import Table
 
 from .activity import Activity
-from .config import ApplicationConfig as cfg
 from .config import ApplicationContext
 from .config import console
 from .dataclasses import FILTERABLE
@@ -24,12 +23,7 @@ from .utils import red
 
 log = getLogger( __name__ )
 
-FILE_EXISTS = '\u2705' # file has been downloaded
-FILE_MISSING = '\u2716' # file is missing (does not exist on server)
-FILE_NEEDS_DOWNLOAD = '\u25EF' # file is missing, but might exist on the server
-FILE_NEEDS_DOWNLOAD = '\u21A9' # file is missing, but might exist on the server
-
-def list_activities( activities: List[Activity], sort: str = False, reverse: bool = False, format_name: str = False ) -> None:
+def list_activities( activities: List[Activity], sort: str = False, reverse: bool = False, format_name: str = False, ctx: ApplicationContext = None ) -> None:
 	sort = sort or 'time'
 
 	if sort in Activity.fieldnames():
@@ -41,9 +35,9 @@ def list_activities( activities: List[Activity], sort: str = False, reverse: boo
 		activities.reverse()
 
 	try:
-		list_format = cfg['formats']['list'][format_name].get()
+		list_format = ctx.config['formats']['list'][format_name].get()
 	except NotFoundError:
-		list_format = cfg['formats']['list']['default'].get()
+		list_format = ctx.config['formats']['list']['default'].get()
 	list_fields = list_format.split()
 
 	headers = [ f for f in list_fields ]

@@ -175,9 +175,9 @@ def _filter_activities( all_, filters ) -> [Activity]:
 @option( '-r', '--reverse', is_flag=True, required=False, help='reverses sort order' )
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )
 @argument('filters', nargs=-1)
-@pass_context
-def ls( ctx, sort, reverse, format_name, filters ):
-	list_activities( list( ctx.obj.db.find( filters ) ), sort, reverse, format_name )
+@pass_obj
+def ls( ctx: ApplicationContext, sort, reverse, format_name, filters ):
+	list_activities( list( ctx.db.find( filters ) ), sort=sort, reverse=reverse, format_name=format_name, ctx=ctx )
 
 @cli.command( help='shows details about activities and resources' )
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )

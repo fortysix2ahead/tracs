@@ -144,7 +144,7 @@ class StravaActivity( Activity ):
 class StravaImporter( JSONHandler ):
 
 	def __init__( self ) -> None:
-		super().__init__( type=STRAVA_TYPE, activity_cls=StravaActivity )
+		super().__init__( resource_type=STRAVA_TYPE, activity_cls=StravaActivity )
 
 @service
 class Strava( Service, Plugin ):
@@ -266,7 +266,7 @@ class Strava( Service, Plugin ):
 				response = self._oauth_session.get( self.all_events_url( page ) )
 
 				for json in response.json():
-					resource = self.importer.load( data=json, as_resource=True )
+					resource = self.importer.load( data=json )
 					resource.uid = f"{self.name}:{json['id']}"
 					resource.path = f"{json['id']}.raw.json"
 					resource.source = self.url_for_id( json['id'] )

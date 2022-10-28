@@ -42,7 +42,7 @@ def _migrate_11_12( current_db, next_db ):
 	pass
 
 def consolidate_ids( current_db, next_db ):
-	json = JSONHandler().load( path=current_db.activities_path )
+	json = JSONHandler().load( path=current_db.activities_path ).raw
 
 	activity_list = []
 	for doc_id, a in json.raw['_default'].items():
@@ -59,8 +59,8 @@ def consolidate_ids( current_db, next_db ):
 	JSONHandler().save( data = new_dict, path=Path( current_db.activities_path.parent, 'activities_consolidated.json' ) )
 
 def migrate_resources( current_db, next_db ):
-	json = JSONHandler().load( current_db.activities_path )
-	resource_json = JSONHandler().load( current_db.resources_path )
+	json = JSONHandler().load( path=current_db.activities_path ).raw
+	resource_json = JSONHandler().load( path=current_db.resources_path ).raw
 
 	table = json['_default']
 	resource_table = resource_json['_default']

@@ -262,16 +262,19 @@ class Importer( Protocol ):
 	"""
 
 	@abstractmethod
-	def load( self, data: Optional[Any] = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Union[Activity, Resource]]:
+	def load( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
 		"""
 		Loads data from a (remove) source as transforms this data into either an activity or at least into some kind of structured data.
 
-		:param data: data to load from, either as str or bytes, this takes precedence over path and url
 		:param path: local path to load data from, takes precedence over url parameter
 		:param url: URL to load data from
 		:param kwargs: additional parameters for implementers of this protocol
 		:return: loaded data (an activity or structured data like dict)
 		"""
+		pass
+
+	@abstractmethod
+	def load_as_activity( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Activity]:
 		pass
 
 	@property

@@ -5,14 +5,15 @@ from pathlib import Path
 from typing import Any
 from typing import Optional
 from typing import Type
-from typing import Union
 
-from lxml.etree import parse as parse_xml
+from lxml.etree import fromstring
 from orjson import loads as load_json
 from orjson import dumps as save_json
 from orjson import OPT_APPEND_NEWLINE
 from orjson import OPT_INDENT_2
 from orjson import OPT_SORT_KEYS
+from requests import Session
+from requests import Response
 
 from . import importer
 from ..activity import Activity
@@ -25,69 +26,68 @@ TCX_TYPE = 'application/xml+tcx'
 
 class ResourceHandler:
 
-	def __init__( self, type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
+	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
 		self._activity_cls: Optional[Type] = activity_cls
-		self._type: Optional[str] = type
+		self._type: Optional[str] = resource_type
+		self.content: Optional[bytes] = None
+		self.resource: Optional[Resource] = None
+		self.data: Any = None
 
-	def load( self, data: Optional[Any] = None, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Union[Activity, Resource]]:
-		as_resource = kwargs.get( 'as_resource', False ) # flag to force to return a resource even when an activity class is available
-		as_string = kwargs.get( 'as_string', False ) # flag to signal to read binary data only
-		as_binary = kwargs.get( 'as_binary', False ) # flag to signal to return only a string
-		encoding = kwargs.get( 'encoding', 'UTF-8' ) # encoding to use when converting from bytes to str
+	def load( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
+		# load from either path or url
+		if path:
+			self.resource = self.load_from_path( path, **kwargs )
+		elif url:
+			self.resource = self.load_from_url( url, **kwargs )
 
-		# try to load from url if provided
-		_content = self.load_url( url, **kwargs ) if url else None
-
-		# try to load from path if provided, but don't overwrite loaded data
-		_content = self.load_path( path, **kwargs ) if path and not _content else None
-
-		# decode the content into a string
-		_text = self.load_text( _content, **kwargs ) if _content else None
-
-		# try load/process either provided or loaded data
-		_data = self.load_data( _text or _content ) if not data else data
+		# try load data from content in resource
+		self.load_data( self.resource, **kwargs )
 
 		# postprocess data
-		_data = self.postprocess_data( _data, _text, _content, path, url )
+		self.postprocess_data( self.resource, **kwargs )
 
-		# transform into activity, if activity class is set otherwise return as structured data
-		resource = self.create_resource( _data, _text, _content, path, url )
+		# return the result
+		return self.resource
 
-		# create an activity
-		activity = self.create_activity( resource ) if not as_resource else None
+	def load_as_activity( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Activity]:
+		return self.as_activity( self.load( path, url, **kwargs ) )
 
-		return activity or resource
+	def load_from_url( self, url: str, **kwargs ) -> Optional[Resource]:
+		session: Session = kwargs.get( 'session' )
+		headers = kwargs.get( 'headers' )
+		allow_redirects: bool = kwargs.get( 'allow_redirects', True )
+		stream: bool = kwargs.get( 'stream', True )
 
-
-	def load_url( self, url: str, **kwargs ) -> Optional[bytes]:
-		pass
-
-	def load_path( self, path: Path, **kwargs ) -> Optional[bytes]:
-		return path.read_bytes()
-
-	# noinspection PyMethodMayBeStatic
-	def load_text( self, content: bytes, **kwargs ) -> Optional[str]:
-		return content.decode( 'UTF-8' )
-
-	def load_data( self, text: Any, **kwargs ) -> Any:
-		return text
-
-	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
-		return data
-
-	def create_resource( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Resource:
+		response: Response = session.get( url, headers=headers, allow_redirects=allow_redirects, stream=stream )
 		return Resource(
-			type=self.type,
-			path=path.name if path else None,
-			source=path.as_uri() if path else None,
+			type=self._type,
+			source=url,
+			status=response.status_code,
+			content=response.content,
+		)
+
+	def load_from_path( self, path: Path, **kwargs ) -> Optional[Resource]:
+		content = path.read_bytes()
+		return Resource(
+			type=self._type,
+			path=path.name,
+			source=path.as_uri(),
 			status=200,
-			raw=data,
-			text=text,
 			content=content
 		)
 
-	def create_activity( self, resource: Resource ) -> Optional[Activity]:
-		return self.activity_cls( raw=resource.raw, resources=[ resource ] ) if self.activity_cls else None
+	def load_data( self, resource: Resource, **kwargs ) -> None:
+		pass
+
+	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
+		pass
+
+	# noinspection PyMethodMayBeStatic
+	def as_str( self, content: bytes, encoding: str = 'UTF-8' ):
+		return content.decode( encoding )
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		return self._activity_cls( raw=resource.raw, resources=[ resource ] )
 
 	@property
 	def type( self ) -> Optional[str]:
@@ -117,25 +117,25 @@ class ResourceHandler:
 @importer( type=CSV_TYPE )
 class CSVHandler( ResourceHandler ):
 
-	def __init__( self, type: Optional[str] = None, activity_cls: Optional[Type] = None, **kwargs ) -> None:
-		super().__init__( type=type or JSON_TYPE, activity_cls=activity_cls )
+	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None, **kwargs ) -> None:
+		super().__init__( resource_type=resource_type or JSON_TYPE, activity_cls=activity_cls )
 
 		self._field_size_limit = kwargs.get( 'field_size_limit', 131072 ) # keep this later use
 		field_size_limit( self._field_size_limit )
 
-	def load_data( self, text: str, **kwargs ) -> Any:
-		return [ r for r in csv_reader( text.splitlines() ) ]
+	def load_data( self, resource: Resource, **kwargs ) -> None:
+		resource.raw = [ r for r in csv_reader( self.as_str( resource.content ).splitlines() ) ]
 
 @importer( type=JSON_TYPE )
 class JSONHandler( ResourceHandler ):
 
 	options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
-	def __init__( self, type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
-		super().__init__( type=type or JSON_TYPE, activity_cls=activity_cls )
+	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
+		super().__init__( resource_type=resource_type or JSON_TYPE, activity_cls=activity_cls )
 
-	def load_data( self, text: str, **kwargs ) -> Any:
-		return load_json( text )
+	def load_data( self, resource: Resource, **kwargs ) -> None:
+		resource.raw = load_json( resource.content )
 
 	def save_data( self, data: Any, **kwargs ) -> str:
 		return save_json( data, option=JSONHandler.options ).decode( 'UTF-8' )
@@ -146,9 +146,8 @@ class JSONHandler( ResourceHandler ):
 @importer( type=XML_TYPE )
 class XMLHandler( ResourceHandler ):
 
-	def __init__( self, type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
-		super().__init__( type=type or XML_TYPE, activity_cls=activity_cls )
+	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
+		super().__init__( resource_type=resource_type or XML_TYPE, activity_cls=activity_cls )
 
-	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
-		return parse_xml( path )
-
+	def load_data( self, resource: Resource, **kwargs ) -> None:
+		resource.raw = fromstring( resource.content )

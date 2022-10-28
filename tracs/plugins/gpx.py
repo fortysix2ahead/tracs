@@ -10,6 +10,7 @@ from gpxpy import parse as parse_gpx
 from gpxpy.gpx import GPX
 
 from tracs.activity import Activity
+from tracs.activity import Resource
 from tracs.plugins import document
 from tracs.plugins import importer
 from tracs.plugins.handlers import ResourceHandler
@@ -38,7 +39,7 @@ class GPXActivity( Activity ):
 class GPXImporter( ResourceHandler ):
 
 	def __init__( self ) -> None:
-		super().__init__( type=GPX_TYPE, activity_cls=GPXActivity )
+		super().__init__( resource_type=GPX_TYPE, activity_cls=GPXActivity )
 
-	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
-		return parse_gpx( content )
+	def load_data( self, resource: Resource, **kwargs ) -> None:
+		resource.raw = parse_gpx( resource.content )

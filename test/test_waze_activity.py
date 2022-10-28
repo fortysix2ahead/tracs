@@ -19,14 +19,12 @@ from .helpers import get_file_path
 
 @mark.file( 'templates/waze/200712_074743.json' )
 def test_read_drive( path ):
-	importer: WazeImporter = Registry.importer_for( WAZE_TYPE )
-	resource = importer.load( path=path, as_resource=True )
+	resource = Registry.importer_for( WAZE_TYPE ).load( path=path )
 	assert len( resource.raw ) == 137
 
 @mark.file( 'templates/waze/account_activity_3.csv' )
 def test_read_takeout( path ):
-	importer: WazeTakeoutImporter = Registry.importer_for( WAZE_TAKEOUT_TYPE )
-	resource = importer.load( path=path, as_resource=True )
+	resource = Registry.importer_for( WAZE_TAKEOUT_TYPE ).load( path=path )
 	assert len( resource.raw ) == 2
 
 @mark.file( 'libraries/default/waze/20/07/12/200712074743/200712074743.raw.txt' )

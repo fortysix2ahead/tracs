@@ -21,4 +21,4 @@ class TCXActivity( Activity ):
 class TCXImporter( ResourceHandler ):
 
 	def __init__( self ) -> None:
-		super().__init__( type=TCX_TYPE, activity_cls=TCXActivity )
+		super().__init__( resource_type=TCX_TYPE, activity_cls=TCXActivity )

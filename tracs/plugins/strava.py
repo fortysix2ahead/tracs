@@ -271,10 +271,11 @@ class Strava( Service, Plugin ):
 				for item in json_resource.raw:
 					resources.append( self.importer.save( item, uid=f"{self.name}:{item['id']}", resource_path=f"{item['id']}.raw.json", resource_type=STRAVA_TYPE, status=200, source=self.url_for_id( item['id'] ), summary=True ) )
 
-				if json_resource.raw and len( json_resource.raw ) == 0:
+				if not json_resource.raw or len( json_resource.raw ) == 0:
 					break
 
 			return resources
+
 		except RuntimeError:
 			log.error( f'error fetching activity ids', exc_info=True )
 			return []

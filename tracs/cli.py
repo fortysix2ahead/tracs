@@ -173,7 +173,7 @@ def _filter_activities( all_, filters ) -> [Activity]:
 @cli.command( 'list', help='lists activities' )
 @option( '-s', '--sort', is_flag=False, required=False, help='sorts the output according to an attribute' )
 @option( '-r', '--reverse', is_flag=True, required=False, help='reverses sort order' )
-@option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )
+@option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, help='uses the format with the provided name when printing', metavar='FORMAT' )
 @argument('filters', nargs=-1)
 @pass_obj
 def ls( ctx: ApplicationContext, sort, reverse, format_name, filters ):

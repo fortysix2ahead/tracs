@@ -29,6 +29,7 @@ from . import document
 from . import importer
 from . import service
 from tracs.plugins.gpx import GPX_TYPE
+from .handlers import JSON_TYPE
 from .handlers import JSONHandler
 from .handlers import TCX_TYPE
 from .handlers import XMLHandler
@@ -193,6 +194,7 @@ class Polar( Service, Plugin ):
 		self._logged_in = False
 
 		self.importer: PolarImporter = cast( PolarImporter, Registry.importer_for( POLAR_FLOW_TYPE ) )
+		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
 
 	def _link_path( self, pa: Activity, ext: str ) -> Path or None:
 		if pa.id:
@@ -295,20 +297,12 @@ class Polar( Service, Plugin ):
 			return []
 
 		try:
-			response = self._session.get( self.all_events_url(), headers=HEADERS_API )
+			json_resource = self.json_handler.load( url=self.all_events_url(), headers=HEADERS_API, session=self._session )
 			resources = []
 
-			for json in response.json():
-				resource = self.importer.load( data=json )
-				local_id = _local_id( json )
-				resource.uid = f'{self.name}:{local_id}'
-				resource.path = f'{local_id}.raw.json'
-				resource.status = 200
-				resource.source = self.url_for_id( local_id )
-				resource.summary = True
-				resource.text = self.importer.save_data( json )
-
-				resources.append( resource )
+			for item in json_resource.raw:
+				local_id = _local_id( item )
+				resources.append( self.importer.save( item, uid = f'{self.name}:{local_id}', resource_path=f'{local_id}.raw.json', resource_type=POLAR_FLOW_TYPE, status = 200, source = self.url_for_id( local_id ), summary = True ) )
 
 			return resources
 

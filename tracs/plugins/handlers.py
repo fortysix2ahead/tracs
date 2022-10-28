@@ -118,12 +118,15 @@ class ResourceHandler:
 
 	# noinspection PyMethodMayBeStatic
 	def save_to_resource( self, content: bytes, **kwargs ) -> Resource:
+		data = kwargs.get( 'data' )
 		uid = kwargs.get( 'uid' )
 		resource_path = kwargs.get( 'resource_path' )
+		resource_type = kwargs.get( 'resource_type' )
+		source = kwargs.get( 'source' )
 		status = kwargs.get( 'status' )
 		summary = kwargs.get( 'summary' )
 
-		return Resource( uid=uid, path=resource_path, status=status, summary=summary, content=content )
+		return Resource( raw=data, content=content, uid=uid, path=resource_path, source=source, status=status, summary=summary, type=resource_type )
 
 	def save( self, data: Any, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
 		# allow sub classes to preprocess data
@@ -136,7 +139,7 @@ class ResourceHandler:
 		elif url:
 			self.save_to_url( content, url, **kwargs )
 		else:
-			return self.save_to_resource( content, **kwargs )
+			return self.save_to_resource( content, data=data, **kwargs )
 
 @importer( type=CSV_TYPE )
 class CSVHandler( ResourceHandler ):

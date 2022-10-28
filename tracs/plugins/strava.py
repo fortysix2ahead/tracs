@@ -30,6 +30,7 @@ from . import importer
 from . import service
 from tracs.plugins.gpx import GPX_TYPE
 from .fit import FIT_TYPE
+from .handlers import JSON_TYPE
 from .handlers import JSONHandler
 from .handlers import TCX_TYPE
 from .plugin import Plugin
@@ -153,6 +154,7 @@ class Strava( Service, Plugin ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 		self.base_url = base_url
 		self.importer: StravaImporter = cast( StravaImporter, Registry.importer_for( STRAVA_TYPE ) )
+		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
 
 	@property
 	def base_url( self ) -> str:
@@ -263,20 +265,13 @@ class Strava( Service, Plugin ):
 		try:
 			resources = []
 			for page in range( 1, 999999 ):
-				response = self._oauth_session.get( self.all_events_url( page ) )
+				# status is 429 and raw['message'] = 'Rate Limit Exceeded', when rate goes out of bounds ...
+				json_resource = self.json_handler.load( url=self.all_events_url( page ), session=self._oauth_session )
 
-				for json in response.json():
-					resource = self.importer.load( data=json )
-					resource.uid = f"{self.name}:{json['id']}"
-					resource.path = f"{json['id']}.raw.json"
-					resource.source = self.url_for_id( json['id'] )
-					resource.status = 200
-					resource.summary = True
-					resource.text = self.importer.save_data( json )
+				for item in json_resource.raw:
+					resources.append( self.importer.save( item, uid=f"{self.name}:{item['id']}", resource_path=f"{item['id']}.raw.json", resource_type=STRAVA_TYPE, status=200, source=self.url_for_id( item['id'] ), summary=True ) )
 
-					resources.append( resource )
-
-				if len( response.json() ) == 0:
+				if json_resource.raw and len( json_resource.raw ) == 0:
 					break
 
 			return resources

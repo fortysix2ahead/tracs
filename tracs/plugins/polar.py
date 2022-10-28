@@ -152,13 +152,13 @@ class PolarExerciseDataActivity( Activity ):
 class PolarImporter( JSONHandler ):
 
 	def __init__( self ) -> None:
-		super().__init__( type=POLAR_FLOW_TYPE, activity_cls=PolarActivity )
+		super().__init__( resource_type=POLAR_FLOW_TYPE, activity_cls=PolarActivity )
 
 @importer( type=POLAR_EXERCISE_DATA_TYPE )
 class PersonalTrainerImporter( XMLHandler ):
 
 	def __init__( self ) -> None:
-		super().__init__( type=POLAR_EXERCISE_DATA_TYPE, activity_cls=PolarExerciseDataActivity )
+		super().__init__( resource_type=POLAR_EXERCISE_DATA_TYPE, activity_cls=PolarExerciseDataActivity )
 
 	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
 		xml = super().postprocess_data( data, text, content, path, url )
@@ -299,7 +299,7 @@ class Polar( Service, Plugin ):
 			resources = []
 
 			for json in response.json():
-				resource = self.importer.load( data=json, as_resource=True )
+				resource = self.importer.load( data=json )
 				local_id = _local_id( json )
 				resource.uid = f'{self.name}:{local_id}'
 				resource.path = f'{local_id}.raw.json'

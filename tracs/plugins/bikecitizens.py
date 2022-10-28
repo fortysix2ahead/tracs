@@ -100,7 +100,7 @@ class BikecitizensActivity( Activity ):
 class BikecitizensImporter( JSONHandler ):
 
 	def __init__( self ) -> None:
-		super().__init__( type=BIKECITIZENS_TYPE, activity_cls=BikecitizensActivity )
+		super().__init__( resource_type=BIKECITIZENS_TYPE, activity_cls=BikecitizensActivity )
 
 @service
 class Bikecitizens( Service, Plugin ):
@@ -233,7 +233,7 @@ class Bikecitizens( Service, Plugin ):
 
 			resources = []
 			for json in response.json():
-				resource = self.importer.load( data=json, as_resource=True )
+				resource = self.importer.load( data=json )
 				resource.uid = f'{self.name}:{json["id"]}'
 				resource.path = f'{json["id"]}.raw.json'
 				resource.status = 200

@@ -65,10 +65,10 @@ class WazeActivity( Activity ):
 class WazeImporter( ResourceHandler ):
 
 	def __init__( self ) -> None:
-		super().__init__( type=WAZE_TYPE, activity_cls=WazeActivity )
+		super().__init__( resource_type=WAZE_TYPE, activity_cls=WazeActivity )
 
-	def load_data( self, data: Any, **kwargs ) -> Any:
-		return read_drive( data )
+	def load_data( self, resource: Resource, **kwargs ) -> Any:
+		resource.raw = read_drive( self.as_str( resource.content ) )
 
 @importer( type=WAZE_TAKEOUT_TYPE )
 class WazeTakeoutImporter( CSVHandler ):
@@ -76,10 +76,10 @@ class WazeTakeoutImporter( CSVHandler ):
 	def __init__( self ) -> None:
 		super().__init__( type=WAZE_TAKEOUT_TYPE )
 
-	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
+	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
 		parse_mode = False
 		drives = []
-		for row in data:
+		for row in resource.raw:
 			if len( row ) == 3 and row[0] == 'Location details (date':
 				parse_mode = True
 
@@ -92,7 +92,7 @@ class WazeTakeoutImporter( CSVHandler ):
 			elif parse_mode and not row:
 				parse_mode = False
 
-		return drives
+		resource.raw = drives
 
 @service
 class Waze( Service, Plugin ):
@@ -158,10 +158,10 @@ class Waze( Service, Plugin ):
 				log.debug( f"skipping Waze takeout in {file} as it is older than the last_fetch timestamp, consider --force to ignore timestamps"  )
 				continue
 
-			takeout_resource = self.takeout_importer.load( path=file, as_resource=True )
+			takeout_resource = self.takeout_importer.load( path=file )
 			for drive in takeout_resource.raw:
 				local_id = int( drive[0][1][1].strftime( '%y%m%d%H%M%S' ) )
-				summary = self.importer.load( data=drive[0], as_resource=True )
+				summary = self.importer.load( data=drive[0] )
 				summary.path = f'{local_id}.raw.txt'
 				summary.status = 200
 				summary.text = drive[1]

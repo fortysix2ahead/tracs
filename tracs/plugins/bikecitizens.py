@@ -235,7 +235,7 @@ class Bikecitizens( Service, Plugin ):
 
 			resources: List[Resource] = []
 			for item in json_resource.raw:
-				resources.append( self.importer.save( item, uid = f'{self.name}:{item["id"]}', resource_path=f'{item["id"]}.raw.json', status = 200, summary = True ) )
+				resources.append( self.importer.save( item, uid = f'{self.name}:{item["id"]}', resource_path=f'{item["id"]}.raw.json', resource_type=BIKECITIZENS_TYPE, status = 200, summary = True ) )
 
 			return resources
 

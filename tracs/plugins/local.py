@@ -103,7 +103,7 @@ class Local( Service, Plugin ):
 		try:
 			imported_data = None
 			for i in importers:
-				imported_data = i.load( path=path )
+				imported_data = i.load_as_activity( path=path )
 				break
 		except AttributeError:
 			imported_data = None

@@ -221,9 +221,9 @@ def var_run_path( file_name = None ) -> Path:
 			run_path.mkdir( parents=True, exist_ok=True )
 		return run_path
 
-def cleanup( dir: Path = None, db_path: Path = None ) -> None:
-	if dir and dir.parent.name == 'run' and dir.parent.parent.name == 'var': # sanity check: only remove when in test/var/run
-		rmtree( dir, ignore_errors=True )
+def cleanup( run_path: Path = None ) -> None:
+	if run_path and run_path.parent.name == 'run' and run_path.parent.parent.name == 'var': # sanity check: only remove when in test/var/run
+		rmtree( run_path, ignore_errors=True )
 
 def ids( doc_list: [Document] ) -> []:
 	return [a.doc_id for a in doc_list]

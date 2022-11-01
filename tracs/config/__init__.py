@@ -124,7 +124,7 @@ class ApplicationContext:
 		if self.db_dir:
 			self.overlay_dir = Path( self.db_dir, OVERLAY_DIRNAME ) if not self.overlay_dir else self.overlay_dir
 			self.takeout_dir = Path( self.db_dir, TAKEOUT_DIRNAME ) if not self.takeout_dir else self.takeout_dir
-			self.var_dir = Path( self.lib_dir, VAR_DIRNAME ) if not self.var_dir else self.var_dir
+			self.var_dir = Path( self.db_dir, VAR_DIRNAME ) if not self.var_dir else self.var_dir
 
 		# read internal config
 		self.config = Configuration( APPNAME, __name__, read=False )

@@ -70,17 +70,26 @@ def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: st
 
 def prepare_context( cfg_name: str, lib_name: str ) -> ApplicationContext:
 	with path( 'test', '__init__.py' ) as test_path:
-		run_path = var_run_path()
-		config_path = Path( test_path.parent, 'configurations', cfg_name )
-		lib_path = Path( test_path.parent, 'libraries', lib_name )
+		cfg_path = var_run_path()
+		lib_path = None
 
-		copy( Path( config_path, CONFIG_FILENAME ), run_path )
-		copy( Path( config_path, STATE_FILENAME ), run_path )
-		copytree( lib_path, Path( run_path, DB_DIRNAME ) )
+		if cfg_name:
+			cfg_src_path = Path( test_path.parent, 'configurations', cfg_name )
+			try:
+				copy( Path( cfg_src_path, CONFIG_FILENAME ), cfg_path )
+			except FileNotFoundError as error:
+				pass
 
-		context = ApplicationContext( cfg_dir=run_path )
+			try:
+				copy( Path( cfg_src_path, STATE_FILENAME ), cfg_path )
+			except FileNotFoundError as error:
+				pass
 
-		return context
+		if lib_name:
+			lib_path = Path( test_path.parent, 'libraries', lib_name )
+			copytree( lib_path, Path( cfg_path, DB_DIRNAME ) )
+
+		return ApplicationContext( cfg_dir=cfg_path, lib_dir=lib_path )
 
 def get_config_path( name: str, writable: bool = False ) -> Path:
 	with path( 'test', '__init__.py' ) as test_path:

@@ -17,32 +17,15 @@ from .helpers import get_config_path
 
 def test_app_constructor():
 	app =  Application.__new__( Application, config_dir=None, lib_dir=None, verbose=False, debug=False, force=False )
-
+	ctx = app.ctx
 	home = Path.home()
 
 	if system() == 'Windows':
-		system_cfg_dir = Path( home, 'Appdata/Roaming' )
+		cfg_dir = Path( home, 'Appdata/Roaming' )
 	elif system() == 'Linux' or system() == 'Darwin':
-		system_cfg_dir = Path( home, '.config' )
+		cfg_dir = Path( home, '.config' )
 	else:
 		return
-
-	assert app.cfg_dir == Path( system_cfg_dir, 'tracs' )
-	assert app.cfg_file == Path( system_cfg_dir, 'tracs/config.yaml' )
-	assert app.state_file == Path( system_cfg_dir, 'tracs/state.yaml' )
-
-	assert app.lib_dir == Path( system_cfg_dir, 'tracs' )
-	assert app.db_dir == Path( system_cfg_dir, 'tracs/db' )
-	assert app.db_file == Path( system_cfg_dir, 'tracs/db/db.json' )
-
-	assert app.backup_dir == Path( system_cfg_dir, 'tracs/db/.backup' )
-
-@mark.skipif( system() != 'Darwin', reason='Skipping OS-specific test' )
-def test_app_constructor_macosx():
-	app =  Application.__new__( Application, config_dir=None, lib_dir=None, verbose=False, debug=False, force=False )
-	ctx = app.ctx
-	home = Path.home()
-	cfg_dir = Path( home, '.config' )
 
 	assert ctx.cfg_dir == Path( cfg_dir, APPNAME )
 	assert ctx.cfg_file == Path( cfg_dir, APPNAME, CONFIG_FILENAME )
@@ -54,20 +37,17 @@ def test_app_constructor_macosx():
 	assert ctx.overlay_dir == Path( ctx.db_dir, OVERLAY_DIRNAME )
 	assert ctx.var_dir == Path( ctx.db_dir, VAR_DIRNAME )
 
-def test_app_constructor_cfg_dir():
-	env_path = get_config_path( 'debug', False )
-	ctx = ApplicationContext()
-	app =  Application.__new__( Application, ctx=ctx, config_dir=env_path, lib_dir=None, verbose=False, debug=False, force=False )
+@mark.context( config='empty' )
+def test_app_constructor_cfg_dir( ctx ):
+	cfg_dir = ctx.cfg_dir
+	app =  Application.__new__( Application, config_dir=cfg_dir, lib_dir=None, verbose=False, debug=False, force=False )
 
-	assert app.cfg_dir == Path( env_path )
-	assert app.cfg_file == Path( env_path, 'config.yaml' )
-	assert app.state_file == Path( env_path, 'state.yaml' )
+	assert app.ctx.cfg_dir == cfg_dir
+	assert app.ctx.cfg_file == Path( cfg_dir, 'config.yaml' )
+	assert app.ctx.state_file == Path( cfg_dir, 'state.yaml' )
 
-	assert app.lib_dir == Path( env_path )
-	assert app.db_dir == Path( env_path, 'db' )
-	assert app.db_file == Path( env_path, 'db/db.json' )
-
-	assert app.backup_dir == Path( env_path, 'db/.backup' )
+	assert app.ctx.lib_dir == Path( cfg_dir )
+	assert app.ctx.db_dir == Path( cfg_dir, 'db' )
 
 def test_app_constructor_lib_dir():
 	env_path = get_config_path( 'debug', False )

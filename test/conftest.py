@@ -137,7 +137,7 @@ def service( request, ctx ) -> Optional[Service]:
 		marker = request.node.get_closest_marker( 'service' )
 		service_class = marker.kwargs.get( 'cls' )
 		service_class_name = service_class.__name__.lower()
-		base_url = marker.kwargs.get( 'base_url' )
+		base_url = marker.kwargs.get( 'url' )
 
 		if ctx:
 			service_config = ctx.cfg_file
@@ -154,6 +154,9 @@ def service( request, ctx ) -> Optional[Service]:
 			state_path = Path( test_pkg_path.parent.parent, service_state )
 			state = Configuration( f'test.{service_class_name}', __name__, read=False )
 			state.set_file( state_path )
+
+			ctx.config = config
+			ctx.state = state
 
 			return service_class( ctx=ctx, base_url=base_url, config=config, state=state )
 

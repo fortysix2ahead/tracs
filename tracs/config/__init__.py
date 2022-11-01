@@ -31,6 +31,7 @@ LOG_FILENAME = f'{APPNAME}.log'
 OVERLAY_DIRNAME = 'overlay'
 TAKEOUT_DIRNAME = 'takeouts'
 TMP_DIRNAME = '.tmp'
+VAR_DIRNAME = 'var'
 
 CONFIG_FILENAME = 'config.yaml'
 STATE_FILENAME = 'state.yaml'
@@ -93,6 +94,7 @@ class ApplicationContext:
 	overlay_dir: Path = field( default=None )
 	takeout_dir: Path = field( default=None )
 	plugins_dir: List[Path] = field( default_factory=list )
+	var_dir: Path = field( default=None )
 
 	log_dir: Path = field( default=None )
 	log_file: Path = field( default=None )
@@ -122,6 +124,7 @@ class ApplicationContext:
 		if self.db_dir:
 			self.overlay_dir = Path( self.db_dir, OVERLAY_DIRNAME ) if not self.overlay_dir else self.overlay_dir
 			self.takeout_dir = Path( self.db_dir, TAKEOUT_DIRNAME ) if not self.takeout_dir else self.takeout_dir
+			self.var_dir = Path( self.lib_dir, VAR_DIRNAME ) if not self.var_dir else self.var_dir
 
 		# read internal config
 		self.config = Configuration( APPNAME, __name__, read=False )

@@ -24,7 +24,7 @@ from tracs.service import Service
 
 from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
-from .helpers import cleanup
+from .helpers import cleanup as cleanup_path
 from .helpers import get_db_as_json
 from .helpers import get_file_as_json
 from .helpers import get_file_db
@@ -69,7 +69,7 @@ def db( request ) -> ActivityDb:
 	yield db
 
 	if cleanup and not inmemory and writable:
-		cleanup( db_dir=db.path )
+		cleanup_path( db.path )
 
 @fixture
 def config( request ) -> None:
@@ -93,7 +93,7 @@ def ctx( request ) -> Optional[ApplicationContext]:
 		yield context
 
 		if do_cleanup:
-			cleanup( dir=context.cfg_dir )
+			cleanup_path( context.cfg_dir )
 
 	except ValueError:
 		log.error( 'unable to run fixture context', exc_info=True )

@@ -49,46 +49,39 @@ def test_app_constructor_cfg_dir( ctx ):
 	assert app.ctx.lib_dir == Path( cfg_dir )
 	assert app.ctx.db_dir == Path( cfg_dir, 'db' )
 
-def test_app_constructor_lib_dir():
-	env_path = get_config_path( 'debug', False )
-	ctx = ApplicationContext()
-	app =  Application.__new__( Application, ctx=ctx, config_dir=None, lib_dir=env_path, verbose=False, debug=False, force=False )
+@mark.context( library='empty' )
+def test_app_constructor_lib_dir( ctx ):
+	lib_dir = ctx.lib_dir
+	app =  Application.__new__( Application, lib_dir=lib_dir, verbose=False, debug=False, force=False )
 	home = Path.home()
 
 	if system() == 'Windows':
-		system_cfg_dir = Path( home, 'Appdata/Roaming' )
+		cfg_dir = Path( home, 'Appdata/Roaming' )
 	elif system() == 'Linux' or system() == 'Darwin':
-		system_cfg_dir = Path( home, '.config' )
+		cfg_dir = Path( home, '.config' )
 	else:
 		return
 
-	assert app.cfg_dir == Path( system_cfg_dir, 'tracs' )
-	assert app.cfg_file == Path( system_cfg_dir, 'tracs/config.yaml' )
-	assert app.state_file == Path( system_cfg_dir, 'tracs/state.yaml' )
+	assert app.ctx.cfg_dir == Path( cfg_dir, APPNAME )
+	assert app.ctx.lib_dir == ctx.lib_dir
 
-	assert app.lib_dir == Path( env_path )
-	assert app.db_dir == Path( env_path, 'db' )
-	assert app.db_file == Path( env_path, 'db/db.json' )
+def test_default_environment():
+	app = Application.__new__( Application, config_dir=None, lib_dir=None, verbose=False, debug=False, force=False ) # matches default object creation
+	assert app.ctx.debug == False
+	assert app.ctx.verbose == False
+	assert app.ctx.force == False
 
-	assert app.backup_dir == Path( env_path, 'db/.backup' )
+@mark.context( config='debug' )
+def test_debug_environment( ctx ):
+	app = Application.__new__( Application, config_dir=ctx.cfg_dir, verbose=None, debug=None, force=None )
+	assert app.ctx.debug == True
+	assert app.ctx.verbose == True
+	assert app.ctx.force == False
 
-def test_environment():
-	# load default/debug configuration
-	ctx = ApplicationContext()
-	Application._instance = Application.__new__( Application, ctx=ctx, config_dir=None, lib_dir=None, verbose=False, debug=False, force=False ) # matches default object creation
-	assert cfg['debug'].get() == False
-	assert cfg['verbose'].get() == False
-	assert cfg['force'].get() == False
-
-	cfg_dir = get_config_path( 'debug', False )
-
-	Application._instance = Application.__new__( Application, ctx=ctx, config_dir=cfg_dir, lib_dir=None, verbose=None, debug=None, force=None ) # matches default object creation
-	assert cfg['debug'].get() == True
-	assert cfg['verbose'].get() == True
-	assert cfg['force'].get() == False
-
+@mark.context( config='debug' )
+def test_parameterized_environment( ctx ):
 	# override configuration loaded from file to simulate command line parameters
-	Application._instance = Application.__new__( Application, ctx=ctx, config_dir=cfg_dir, lib_dir=None, verbose=None, debug=None, force=True ) # matches default object creation
-	assert cfg['debug'].get() == True
-	assert cfg['verbose'].get() == True
-	assert cfg['force'].get() == True
+	app = Application.__new__( Application, config_dir=ctx.cfg_dir, verbose=None, debug=None, force=True )
+	assert app.ctx.debug == True
+	assert app.ctx.verbose == True
+	assert app.ctx.force == True

@@ -26,7 +26,8 @@ def test_constructor():
 	assert polar._events_url == f'{TEST_BASE_URL}/training/getCalendarEvents'
 	assert polar._export_url == f'{TEST_BASE_URL}/api/export/training'
 
-@mark.service( cls=Polar, base_url=TEST_BASE_URL, config='test/configurations/default/config.yaml', state='test/configurations/default/state.yaml' )
+@mark.context( library='empty', config='default', cleanup=True )
+@mark.service( cls=Polar, url=TEST_BASE_URL )
 def test_service( polar_server, service ):
 	# login
 	service.login()
@@ -42,9 +43,9 @@ def test_service( polar_server, service ):
 	assert r.status == 200
 	assert r.uid == 'polar:300003'
 
-@mark.service( cls=Polar, base_url=TEST_BASE_URL, config='test/configurations/default/config.yaml', state='test/configurations/default/state.yaml' )
-@mark.db( template='empty', inmemory=True, update_gc=True )
-def test_workflow( polar_server, service, db ):
+@mark.context( library='empty', config='default', cleanup=True )
+@mark.service( cls=Polar, url=TEST_BASE_URL )
+def test_workflow( polar_server, service ):
 	service.login()
 	fetched = service.fetch( True, False )
 	assert len( fetched ) == 3

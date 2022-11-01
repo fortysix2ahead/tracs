@@ -86,8 +86,9 @@ def prepare_context( cfg_name: str, lib_name: str ) -> ApplicationContext:
 				pass
 
 		if lib_name:
-			lib_path = Path( test_path.parent, 'libraries', lib_name )
-			copytree( lib_path, Path( cfg_path, DB_DIRNAME ) )
+			lib_src_path = Path( test_path.parent, 'libraries', lib_name )
+			lib_path = Path( cfg_path, DB_DIRNAME )
+			copytree( lib_src_path, lib_path )
 
 		return ApplicationContext( cfg_dir=cfg_path, lib_dir=lib_path )
 

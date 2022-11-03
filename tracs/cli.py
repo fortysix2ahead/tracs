@@ -335,8 +335,9 @@ def validate( ctx: ApplicationContext, filters, function, correct ):
 	validate_activities( list( ctx.db.find( filters ) ), ctx=ctx, function=function, correct=correct )
 
 @cli.command( help='Displays the version number and exits.' )
-def version():
-	echo( '0.1.0' )
+@pass_obj
+def version( ctx: ApplicationContext ):
+	ctx.console.print( '0.1.0' )
 
 def main( args=None ):
 	cli()  # trigger cli

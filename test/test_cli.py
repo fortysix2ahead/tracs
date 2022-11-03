@@ -1,4 +1,4 @@
-from os import getenv
+
 from pathlib import Path
 from typing import List
 from typing import Optional
@@ -11,9 +11,10 @@ from click.testing import Result
 from pytest import mark
 
 from tracs.cli import cli
-from .conftest import ENABLE_LIVE_TESTS
+from tracs.config import ApplicationContext
 
 from .helpers import prepare_environment
+from .helpers import skip_live
 
 cfg_path: Optional[Path] = None
 lib_path: Optional[Path] = None
@@ -25,81 +26,70 @@ main_debug_options = []
 live_options = []
 
 cmd_config = 'config'
-cmd_fetch_polar = 'fetch -r polar'
-cmd_fetch_strava = 'fetch -r strava'
+cmd_fetch_polar = 'fetch polar'
+cmd_fetch_strava = 'fetch strava'
+cmd_fields = 'fields'
 cmd_list_thisyear = 'list date:thisyear'
 cmd_inspect_1 = 'inspect 1'
+cmd_list = 'list'
 cmd_show_1 = 'show 1'
 cmd_show_86 = 'show 86'
 cmd_version = 'version'
 
 # setup / teardown ========================================
 
-def setup_module( module ):
-	global cfg_path, lib_path
-	global live_cfg_path, live_lib_path
-	global main_options, main_debug_options, live_options
+def _setup_module( module ):
+	pass
 
-	cfg_path, lib_path = prepare_environment( 'live', 'None', 'empty' )
-	live_cfg_path, live_live_path = prepare_environment( 'live', 'None', 'live-220325' )
-
-	main_options = ['-c', cfg_path.as_posix(), '-l', lib_path.as_posix()]
-	main_debug_options = ['-d', '-c', cfg_path.as_posix(), '-l', lib_path.as_posix()]
-	live_options = ['-c', live_cfg_path.as_posix(), '-l', live_live_path.as_posix()]
-
-def teardown_module( module ):
-	global cfg_path, lib_path
-	#rmtree( cfg_path )
+def _teardown_module( module ):
+	pass
 
 def setup_function( function ):
-	secho( f'setup_function {function.__name__}' )
+	pass
 
 def teardown_function( function ):
-	secho( f'teardown_function {function.__name__}' )
+	pass
 
-@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
-def test_fetch():
-	runner, result, stdout = invoke( cmd_fetch_polar, log=True )
-	runner, result, stdout = invoke( cmd_fetch_strava, log=True )
+# live tests
 
-@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
-def test_list():
-	runner, result, stdout = invoke( cmd_list_thisyear, live_options, True )
+@skip_live
+@mark.context( library='empty', config='live', cleanup=True )
+def test_polar( ctx ):
+	runner, result, stdout = invoke( ctx, cmd = cmd_fetch_polar, log = True )
+	runner, result, stdout = invoke( ctx, cmd = cmd_list, log = True )
+	runner, result, stdout = invoke( ctx, cmd = cmd_show_1, log = True )
+	runner, result, stdout = invoke( ctx, cmd = cmd_inspect_1, log = True )
 
-@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
-def test_inspect():
-	invoke( cmd_inspect_1, live_options, True )
+@skip_live
+@mark.context( library='empty', config='live', cleanup=True )
+def test_strava( ctx ):
+	runner, result, stdout = invoke( ctx, cmd = cmd_fetch_strava, log = False )
+	runner, result, stdout = invoke( ctx, cmd = cmd_list, log = True )
+	runner, result, stdout = invoke( ctx, cmd = cmd_show_1, log = True )
+	runner, result, stdout = invoke( ctx, cmd = cmd_inspect_1, log = True )
 
-@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
-def test_list_show():
-	runner, result, stdout = invoke( cmd_list_thisyear, live_options, True )
-	runner, result, stdout = invoke( cmd_show_1, live_options, True )
-	runner, result, stdout = invoke( cmd_show_86, live_options, True )
-
-@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
-def test_config():
-	runner, result, stdout = invoke( cmd_config )
+@skip_live
+@mark.context( library='empty', config='live', cleanup=True )
+def test_config( ctx ):
+	runner, result, stdout = invoke( ctx, cmd=cmd_config, log=True )
 	assert result.exit_code == 0
 
-@mark.skipif( not getenv( ENABLE_LIVE_TESTS ), reason='live test not enabled' )
-def test_version():
-	runner, result, stdout = invoke( cmd_version )
-
-	assert result.exit_code == 0
-	assert '0.1.0' in result.stdout
+@skip_live
+@mark.context( library='empty', config='live', cleanup=False )
+def test_version( ctx ):
+	runner, result, stdout = invoke( ctx, cmd = cmd_version )
+	assert result.exit_code == 0 and '0.1.0' in result.stdout
 
 # helpers
 
-def invoke( cmd: str or List[str], options: List = None, log=False ) -> Tuple[CliRunner, Result, List[str]]:
+def invoke( ctx: ApplicationContext, options: str = None, cmd: str = None, cmd_options: str = None, log = False ) -> Tuple[CliRunner, Result, List[str]]:
 	runner = CliRunner()
-	if type( cmd ) is str:
-		if options:
-			full_cmd = list( options )
-		else:
-			full_cmd = list( main_options )
-		full_cmd.extend( _split( cmd ) )
-	else:
-		full_cmd = cmd
+
+	full_cmd = []
+	full_cmd.extend( options.split( ' ' ) if options else [] )
+	full_cmd.extend( [ '-c', str( ctx.cfg_dir ) ] )
+	full_cmd.extend( cmd.split( ' ' ) if cmd else [] )
+	full_cmd.extend( cmd_options.split( ' ' ) if cmd_options else [] )
 
 	echo( f'running command: {full_cmd}' )
 
@@ -116,6 +106,3 @@ def invoke( cmd: str or List[str], options: List = None, log=False ) -> Tuple[Cl
 	# assert result.exit_code == 0
 
 	return runner, result, stdout
-
-def _split( cmd: str ) -> List[str]:
-	return cmd.split( " " )

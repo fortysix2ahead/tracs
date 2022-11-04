@@ -166,7 +166,7 @@ def load_resource( resource: Resource ) -> Optional[Activity]:
 	path = Service.path_for_resource( resource )
 
 	for i in importers:
-		if activity := i.load( path = path ):
+		if activity := i.load_as_activity( path = path ):
 			return activity
 
 	log.error( f'no importer found for resource type {resource.type}' )

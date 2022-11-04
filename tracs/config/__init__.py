@@ -60,9 +60,12 @@ NAMESPACE_CONFIG = f'{NAMESPACE_BASE}.config'
 NAMESPACE_PLUGINS = f'{NAMESPACE_BASE}.plugins'
 NAMESPACE_SERVICES = f'{NAMESPACE_BASE}.services'
 
-# application context
+# default logger + console
 
 log = getLogger( __name__ )
+cs = Console( tab_size=2 )
+
+# application context
 
 @dataclass
 class ApplicationContext:
@@ -104,7 +107,7 @@ class ApplicationContext:
 	debug: bool = field( default=False )
 	pretend: bool = field( default=False )
 
-	console: Console = field( default=Console() )
+	console: Console = field( default=cs )
 	progress: Progress = field( default=None )
 	task_id: Any = field( default=None )
 
@@ -192,7 +195,7 @@ ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )
 APP_CFG = ApplicationConfig
 APP_STATE = ApplicationState
 
-console = Console()
+console = cs # to be removed by cs from above
 
 # load defaults from internal package
 with pkg_path( import_module( NAMESPACE_CONFIG ), CONFIG_FILENAME ) as p:

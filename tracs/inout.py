@@ -28,6 +28,7 @@ from .activity import Activity
 from .activity import Resource
 from .config import ApplicationConfig as cfg
 from .config import ApplicationContext
+from .config import cs
 from .dataclasses import as_dict
 from .db import ActivityDb
 from .plugins import Registry
@@ -177,7 +178,7 @@ def _confirm_init( source: Activity, target: Activity, console: Console ) -> boo
 		console.print( table )
 		answer = Confirm.ask( f'Would you like to reimport activity {source.uid}?', default=False )
 	else:
-		log.info( f'no difference found during reimport of activity {source.uid}, skipping reimport' )
+		cs.print( f'no difference found during reimport of activity {source.uid}, skipping reimport' )
 		answer = False
 	return answer
 

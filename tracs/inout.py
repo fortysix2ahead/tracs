@@ -176,9 +176,9 @@ def _confirm_init( source: Activity, target: Activity, console: Console ) -> boo
 	table = diff_table( as_dict( source, remove_protected=True ), as_dict( target, remove_protected=True ), header=('Field', 'Old Value', 'New Value') )
 	if len( table.rows ) > 0:
 		console.print( table )
-		answer = Confirm.ask( f'Would you like to reimport activity {source.uid}?', default=False )
+		answer = Confirm.ask( f'Would you like to reimport activity {source.uids[0]}?', default=False )
 	else:
-		cs.print( f'no difference found during reimport of activity {source.uid}, skipping reimport' )
+		cs.print( f'no difference found during reimport of activity {source.uids[0]}, skipping reimport' )
 		answer = False
 	return answer
 

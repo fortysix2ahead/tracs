@@ -102,7 +102,7 @@ def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 		# os.system( "open " + shlex.quote( filename ) )  # MacOS/X
 		# os.system( "start " + filename )  # windows
 
-def reimport_activities( activities: List[Activity], include_recordings: bool = False, offset: str = None, timezone: str = None, ctx: ApplicationContext = None ):
+def reimport_activities( activities: List[Activity], include_recordings: bool = False, strategy: str = None, offset: str = None, timezone: str = None, ctx: ApplicationContext = None ):
 	force = ctx.force
 	log.debug( f'reimporting {len( activities )} activities, with force={force}' )
 

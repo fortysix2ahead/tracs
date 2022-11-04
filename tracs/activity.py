@@ -115,6 +115,10 @@ class Activity( BaseDocument ):
 	location_state: str = field( default=None, metadata={ FILTERABLE: True, FILTER_ALIAS: [ 'state' ] } ) #
 	location_city: str = field( default=None, metadata={ FILTERABLE: True, FILTER_ALIAS: [ 'city' ] } ) #
 	location_place: str = field( default=None, metadata={ FILTERABLE: True, FILTER_ALIAS: [ 'place' ] } ) #
+	location_latitude_start: float = field( default=None, metadata={ FILTERABLE: True } ) #
+	location_longitude_start: float = field( default=None, metadata={ FILTERABLE: True } ) #
+	location_latitude_end: float = field( default=None, metadata={ FILTERABLE: True } ) #
+	location_longitude_end: float = field( default=None, metadata={ FILTERABLE: True } ) #
 	route: str = field( default=None, metadata={ FILTERABLE: True } ) #
 
 	time: datetime = field( default=None, metadata={ FILTERABLE: True, FILTER_ALIAS: [ 'date', 'datetime' ] } ) # activity time (UTC)

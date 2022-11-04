@@ -153,6 +153,10 @@ class Activity( BaseDocument ):
 	#is_group: bool = field( init=False, default=False, metadata={ PERSIST: False } ) # todo: for backward compatibility
 	#is_multipart: bool = field( init=False, default=False, metadata={ PERSIST: False } ) # todo: for backward compatibility
 
+	@property
+	def abbreviated_type( self ) -> str:
+		return self.type.abbreviation if self.type else ':question_mark:'
+
 	def __post_init__( self ):
 		super().__post_init__()
 

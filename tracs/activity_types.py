@@ -81,6 +81,10 @@ class ActivityTypes( Enum ):
 		return list( map( lambda c: c.value, cls ) )
 
 	@property
+	def abbreviation( self ) -> str:
+		return ':sports_medal:'
+
+	@property
 	def display_name( self ):
 		return display_names.get( self, ActivityTypes.unknown )
 

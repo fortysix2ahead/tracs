@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import fields
 from datetime import datetime
+from urllib.parse import urlparse
 from typing import Any
 from typing import Dict
 from typing import Union
@@ -27,16 +28,26 @@ from .resources import ResourceGroup
 log = getLogger( __name__ )
 
 @dataclass
-class ActivityRef:
+class UID:
 
-	id: str = field( default=None )
 	uid: str = field( default=None )
-
-	classifier: str = field( init=False, default=None )
-	raw_id: str = field( init=False, default=None )
+	classifier: str = field( default=None )
+	local_id: int = field( default=None )
+	path: str = field( default=None )
 
 	def __post_init__( self ):
-		self.classifier, self.raw_id = self.uid.split( ':' ) if self.uid else (None, None)
+		if self.uid:
+			url = urlparse( self.uid )
+			self.classifier = url.scheme if url.scheme else None
+			self.local_id = int( url.path ) if url.path else None
+			self.path = url.query if url.query else None
+		elif self.classifier and self.local_id:
+			self.uid = f'{self.classifier}:{self.local_id}'
+			if self.path:
+				self.uid = f'{self.uid}?{self.path}'
+
+	def __str__( self ) -> str:
+		return self.uid
 
 @dataclass
 class Activity( BaseDocument ):

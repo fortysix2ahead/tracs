@@ -7,6 +7,7 @@ from tzlocal import get_localzone_name
 from pytest import mark
 
 from tracs.activity import Activity
+from tracs.activity import UID
 from tracs.resources import Resource
 from tracs.activity_types import ActivityTypes
 from tracs.dataclasses import as_dict
@@ -120,6 +121,19 @@ def test_asdict():
 
 def test_activity_parts():
 	activity = Activity()
+
+def test_uid():
+	uid = UID( 'polar' )
+	assert uid.classifier == 'polar' and uid.local_id is None and uid.path is None
+	assert uid.uid == 'polar' and uid.denotes_service()
+
+	uid = UID( 'polar:101' )
+	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path is None
+	assert uid.uid == 'polar:101' and uid.denotes_activity()
+
+	uid = UID( 'polar:101?recording.gpx' )
+	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path == 'recording.gpx'
+	assert uid.uid == 'polar:101?recording.gpx' and uid.denotes_resource()
 
 def test_resource():
 	some_string = 'some string value'

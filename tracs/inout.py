@@ -25,6 +25,7 @@ from rich.prompt import Confirm
 from tzlocal import get_localzone_name
 
 from .activity import Activity
+from .activity import UID
 from .resources import Resource
 from .config import ApplicationConfig as cfg
 from .config import ApplicationContext
@@ -58,11 +59,18 @@ def import_activities( ctx: Optional[ApplicationContext], importer: str, sources
 	uid_pattern = compile( f'^({"|".join( Registry.service_names() )}):(\d+)$' )
 
 	for src in sources:
-		if service := Registry.services.get( src ):
+		uid = UID( src )
+
+		if uid.denotes_service() and (service := Registry.services.get( src )):
 			log.info( f'importing from service {src}' )
 			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
-		if uid_pattern.match( src ) and (service := Registry.service_for( src )):
-			service.import_activities( ctx=ctx, uid=src, force=ctx.force, pretend=ctx.pretend, **kwargs )
+
+		elif uid.denotes_activity() and (service := Registry.service_for( uid.classifier )):
+			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, uid=src, **kwargs )
+
+		elif uid.denotes_resource() and (service := Registry.service_for( uid.classifier )):
+			raise NotImplementedError
+
 		else:
 			# try to use src as path
 			try:

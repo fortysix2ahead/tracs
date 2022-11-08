@@ -135,6 +135,15 @@ def test_uid():
 	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path == 'recording.gpx'
 	assert uid.uid == 'polar:101?recording.gpx' and uid.denotes_resource()
 
+	uid = UID( 'polar:101#2' )
+	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.part == 2
+	assert uid.uid == 'polar:101#2' and uid.denotes_part()
+
+	assert UID( classifier='polar', local_id=101 ).uid == 'polar:101'
+	assert UID( classifier='polar', local_id=101, path='recording.gpx' ).uid == 'polar:101?recording.gpx'
+	assert UID( classifier='polar', local_id=101, part=1 ).uid == 'polar:101#1'
+	assert UID( classifier='polar', local_id=101, path='recording.gpx', part=1 ).uid == 'polar:101?recording.gpx#1' # works, but does not make sense ...
+
 def test_resource():
 	some_string = 'some string value'
 	r = Resource( content=some_string.encode( encoding='UTF-8' ) )

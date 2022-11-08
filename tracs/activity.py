@@ -34,6 +34,7 @@ class UID:
 	classifier: str = field( default=None )
 	local_id: int = field( default=None )
 	path: str = field( default=None )
+	part: int = field( default=None )
 
 	def __post_init__( self ):
 		if self.uid:
@@ -42,6 +43,7 @@ class UID:
 				self.classifier = url.scheme
 				self.local_id = int( url.path ) if url.path else None
 				self.path = url.query if url.query else None
+				self.part = int( url.fragment ) if url.fragment else None
 			else:
 				self.classifier = url.path
 
@@ -49,6 +51,8 @@ class UID:
 			self.uid = f'{self.classifier}:{self.local_id}'
 			if self.path:
 				self.uid = f'{self.uid}?{self.path}'
+			if self.part:
+				self.uid = f'{self.uid}#{self.part}'
 
 	def __str__( self ) -> str:
 		return self.uid
@@ -65,6 +69,9 @@ class UID:
 
 	def denotes_resource( self ) -> bool:
 		return True if self.classifier and self.local_id and self.path else False
+
+	def denotes_part( self ) -> bool:
+		return True if self.classifier and self.local_id and self.part else False
 
 @dataclass
 class Activity( BaseDocument ):

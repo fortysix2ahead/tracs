@@ -17,3 +17,6 @@ plugins:
       client_secret: 1000000000000000000000000000000000000000
       username: strava@example.com
       password: some_strava_password
+
+  waze:
+    field_size_limit: 512000

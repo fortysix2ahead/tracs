@@ -12,6 +12,7 @@ from typing import Tuple
 from typing import Union
 
 from confuse import Configuration
+from confuse import NotFoundError
 from dateutil.tz import UTC
 
 from .activity import Activity
@@ -48,10 +49,16 @@ class Service( ServiceProtocol ):
 	# helpers for setting/getting plugin configuration/state values
 
 	def cfg_value( self, key: str ) -> Any:
-		return self._cfg[KEY_PLUGINS][self._name][key].get()
+		try:
+			return self._cfg[KEY_PLUGINS][self._name][key].get()
+		except NotFoundError:
+			log.error( f'missing configuration key {key}', exc_info=True )
 
 	def state_value( self, key: str ) -> Any:
-		return self._state[KEY_PLUGINS][self._name][key].get()
+		try:
+			return self._state[KEY_PLUGINS][self._name][key].get()
+		except NotFoundError:
+			log.error( f'missing state key {key}', exc_info=True )
 
 	def set_cfg_value( self, key: str, value: Any ) -> None:
 		self._cfg[KEY_PLUGINS][self._name][key] = value

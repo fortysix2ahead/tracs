@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import fields
+from dataclasses import InitVar
 from datetime import datetime
 from typing import Any
 from typing import Dict
@@ -47,8 +48,12 @@ class Resource( BaseDocument ):
 
 	# additional field holding data of a resource, used when loading, but won't be persisted in db
 	raw: Any = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # structured data making up this resource
-	text: str = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # decoded content as string
-	content: Union[bytes, str] = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # raw content, as bytes or string
+	content: bytes = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # raw content as bytes
+	text: InitVar[str] = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # decoded content as string, to be removed
+
+	def __post_init__( self, text: str ):
+		super().__post_init__()
+		self.content = text.encode( encoding='UTF-8' ) if text else self.content
 
 	@property
 	def classifier( self ) -> str:
@@ -66,8 +71,8 @@ class Resource( BaseDocument ):
 		classifier, raw_id = self.uid.split( ':', maxsplit=1 )
 		return classifier, raw_id
 
-	def as_text( self, encoding: str = 'UTF-8' ) -> str:
-		return self.content if type( self.content ) is str else self.content.decode( encoding )
+	def as_text( self, encoding: str = 'UTF-8' ) -> Optional[str]:
+		return self.content.decode( encoding )
 
 @dataclass
 class ResourceGroup:

@@ -145,7 +145,7 @@ class ResourceHandler:
 class CSVHandler( ResourceHandler ):
 
 	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None, **kwargs ) -> None:
-		super().__init__( resource_type=resource_type or JSON_TYPE, activity_cls=activity_cls )
+		super().__init__( resource_type=resource_type or CSV_TYPE, activity_cls=activity_cls )
 
 		self._field_size_limit = kwargs.get( 'field_size_limit', 131072 ) # keep this later use
 		field_size_limit( self._field_size_limit )

@@ -1,8 +1,9 @@
 
 from csv import field_size_limit
 from csv import reader as csv_reader
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import datetime
-from os.path import getmtime
 from re import match
 from typing import Any
 from typing import cast
@@ -53,13 +54,29 @@ class WazeActivity( Activity ):
 
 	def __raw_init__( self, raw: Any ) -> None:
 		if len( raw ) > 0:
-			self.raw_id = int( self.raw[0][1].strftime( '%y%m%d%H%M%S' ) )
-			self.time = self.raw[0][1]
+			self.raw_id = cast( WazePoint, self.raw[0] ).time_as_int()
+			self.time = cast( WazePoint, self.raw[0] ).time
 			self.localtime = as_datetime( self.time, tz=gettz() )
 
 		self.type = ActivityTypes.drive
 		self.classifier = f'{SERVICE_NAME}'
 		self.uid = f'{self.classifier}:{self.raw_id}'
+
+@dataclass
+class WazePoint:
+
+	str_format = '%y%m%d%H%M%S'
+
+	key: int = field( default = None )
+	time: datetime = field( default = None  )
+	lat: float = field( default = None  )
+	lon: float = field( default = None  )
+
+	def time_as_str( self ) -> str:
+		return self.time.strftime( WazePoint.str_format )
+
+	def time_as_int( self ) -> int:
+		return int( self.time_as_str() )
 
 @importer( type=WAZE_TYPE )
 class WazeImporter( ResourceHandler ):
@@ -67,32 +84,63 @@ class WazeImporter( ResourceHandler ):
 	def __init__( self ) -> None:
 		super().__init__( resource_type=WAZE_TYPE, activity_cls=WazeActivity )
 
+	def load( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
+		if from_str := kwargs.get( 'from_string', False ):
+			self.resource = Resource( content=from_str.encode( encoding='UTF-8' ) )
+			self.load_data( self.resource )
+		else:
+			super().load( path, url, **kwargs )
+
+		return self.resource
+
 	def load_data( self, resource: Resource, **kwargs ) -> Any:
-		resource.raw = read_drive( self.as_str( resource.content ) )
+		resource.raw = self.read_drive( self.as_str( resource.content ) )
+
+	# noinspection PyMethodMayBeStatic
+	def read_drive( self, s: str ) -> List[WazePoint]:
+		points: List[WazePoint] = []
+
+		s = s.strip( '[]' )
+		for segment in s.split( '};{' ):
+			segment = segment.strip( '{}' )
+			key, value = segment.split( sep=':', maxsplit=1 ) # todo: what exactly is meant by the key being a number starting with 0?
+			key, value = key.strip( '"' ), value.strip( '"' )
+			for token in value.split( " => " ):
+				# need to match two versions:
+				# version 1 (2020): 2020-01-01 12:34:56(50.000000; 10.000000)
+				# version 2 (2022): 2022-01-01 12:34:56 GMT(50.000000; 10.000000)
+				if m := match( '(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d).*\((\d+\.\d+); (\d+\.\d+)\)', token ):
+					timestamp, lat, lon = m.groups()
+					points.append( WazePoint( int( key ), datetime.strptime( timestamp, '%Y-%m-%d %H:%M:%S' ).replace( tzinfo=UTC ), float( lat ), float( lon ) ) )
+				else:
+					raise RuntimeError( f'Error parsing Waze drive while processing token {token}' )
+
+		return points
 
 @importer( type=WAZE_TAKEOUT_TYPE )
 class WazeTakeoutImporter( CSVHandler ):
 
 	def __init__( self ) -> None:
-		super().__init__( type=WAZE_TAKEOUT_TYPE )
+		super().__init__( resource_type=WAZE_TAKEOUT_TYPE )
+		self.importer = WazeImporter()
 
-	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
+	def load_data( self, resource: Resource, **kwargs ) -> None:
+		super().load_data( resource, **kwargs )
+
 		parse_mode = False
-		drives = []
 		for row in resource.raw:
 			if len( row ) == 3 and row[0] == 'Location details (date':
 				parse_mode = True
 
 			elif parse_mode and row:
 				try:
-					drives.append( (read_drive( row[0] ), row[0]) )
+					r = Resource( raw=self.importer.read_drive( row[0] ), text=row[0], type=WAZE_TAKEOUT_TYPE )
+					self.resource.resources.append( r )
 				except RuntimeError:
 					log.error( 'Error parsing row' )
 
 			elif parse_mode and not row:
 				parse_mode = False
-
-		resource.raw = drives
 
 @service
 class Waze( Service, Plugin ):
@@ -141,7 +189,7 @@ class Waze( Service, Plugin ):
 		return self._logged_in
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		ctx = kwargs.get( 'ctx' )
+		ctx = self._ctx or kwargs.get( 'ctx' )
 		takeouts_dir = Path( ctx.takeout_dir, self.name )
 		log.debug( f"fetching Waze activities from {takeouts_dir}" )
 
@@ -151,25 +199,27 @@ class Waze( Service, Plugin ):
 		for file in sorted( takeouts_dir.rglob( ACTIVITY_FILE ) ):
 			log.debug( f'fetching activities from Waze takeout in {file}' )
 
-			# rel_path = file.relative_to( takeouts_dir )
-			mtime = datetime.fromtimestamp( getmtime( file ), UTC )
-
-			if last_fetch and datetime.fromisoformat( last_fetch ) >= mtime and not force:
-				log.debug( f"skipping Waze takeout in {file} as it is older than the last_fetch timestamp, consider --force to ignore timestamps"  )
+			rel_path = file.relative_to( takeouts_dir ).parent
+			if (_takeouts := self.state_value( 'takeouts' )) and rel_path.name in _takeouts:
 				continue
 
-			takeout_resource = self.takeout_importer.load( path=file )
-			for drive in takeout_resource.raw:
-				local_id = int( drive[0][1][1].strftime( '%y%m%d%H%M%S' ) )
-				summary = self.importer.load( data=drive[0] )
-				summary.path = f'{local_id}.raw.txt'
-				summary.status = 200
-				summary.text = drive[1]
-				# summary.source = file.as_uri() # don't save the source right now
-				summary.summary = True
-				summary.uid = f'{self.name}:{local_id}'
+			# don't look at mtime, not convenient during development
+			# mtime = datetime.fromtimestamp( getmtime( file ), UTC )
+			# if last_fetch and datetime.fromisoformat( last_fetch ) >= mtime and not force:
+			#	log.debug( f"skipping Waze takeout in {file} as it is older than the last_fetch timestamp, consider --force to ignore timestamps"  )
+			#	continue
 
-				summaries.append( summary )
+			takeout_resource = self.takeout_importer.load( path=file )
+			for resource in takeout_resource.resources:
+				local_id = cast( WazePoint, resource.raw[0] ).time_as_int()
+				resource.path = f'{local_id}.raw.txt'
+				resource.status = 200
+				# resource.source = file.as_uri() # don't save the source right now
+				resource.summary = True
+				resource.type = WAZE_TYPE
+				resource.uid = f'{self.name}:{local_id}'
+
+				summaries.append( resource )
 
 		log.debug( f'fetched {len( summaries )} Waze activities' )
 
@@ -179,7 +229,7 @@ class Waze( Service, Plugin ):
 		try:
 			local_id, uid = summary.raw_id, summary.uid
 			resource = Resource( type=GPX_TYPE, path=f'{local_id}.gpx', status=100, uid=uid )
-			resource.raw_data, resource.status = self.download_resource( resource, text=summary.text ), 200
+			self.download_resource( resource, summary = summary )
 			return [ resource ]
 
 		except RuntimeError:
@@ -187,16 +237,14 @@ class Waze( Service, Plugin ):
 			return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
-		# todo: better to transform this into an importer
-		if text := kwargs.get( 'text' ):
-			resource.raw, resource.content = to_gpx( read_drive( text ) )
-			return resource.content, 200
-
+		if (summary := kwargs.get( 'summary' )) and summary.raw:
+			resource.raw, resource.content = to_gpx( summary.raw )
+			resource.status = 200
 		else:
-			raw_path = Path( self.path_for( resource=resource ).parent, f'{resource.raw_id}.raw.txt' )
-			with open( raw_path, mode='r', encoding='UTF-8' ) as p:
+			local_path = Path( self.path_for( resource=resource ).parent, f'{resource.local_id}.raw.txt' )
+			with open( local_path, mode='r', encoding='UTF-8' ) as p:
 				content = p.read()
-				drive = read_drive( content )
+				drive = self.importer.read_drive( content )
 				gpx = to_gpx( drive )
 				return gpx, 200 # return always 200
 
@@ -210,62 +258,11 @@ class Waze( Service, Plugin ):
 
 # helper functions
 
-def read_takeout( path: Path, field_limit: int = 131072 ) -> List[Tuple[List[Tuple[int, datetime, float, float]], str]]:
-	field_size_limit( field_limit )
-	activities = []
-
-	with path.open( 'r', encoding='utf-8' ) as f:
-		reader = csv_reader( f )
-		parse_mode = False
-		for row in reader:
-			if len( row ) == 3 and row[0] == 'Location details (date':
-				parse_mode = True
-			elif parse_mode and row:
-				try:
-					activities.append( (read_drive( row[0] ), row[0] ) )
-				except RuntimeError:
-					log.error( 'Error parsing row' )
-			elif parse_mode and not row:
-				parse_mode = False
-
-	return activities
-
-def read_drive( s: str ) -> List[Tuple[int, datetime, float, float]]:
-	if not s:
-		return []
-
-	points = []
-	s = s.strip( '[]' )
-	for segment in s.split( '};{' ):
-		# segment = '{' + segment if segment[0] != '{' else segment
-		# segment = segment + '}' if segment[-1] != '}' else segment
-		segment = segment.strip( '{}' )
-		key, value = segment.split( sep=':', maxsplit=1 ) # todo: what exactly is meant by the key being a number starting with 0
-		key, value = key.strip( '"' ), value.strip( '"' )
-		for token in value.split( " => " ):
-			# need to match two versions:
-			# version 1 (2020): 2020-01-01 12:34:56(50.000000; 10.000000)
-			# version 2 (2022): 2022-01-01 12:34:56 GMT(50.000000; 10.000000)
-			if m := match( '(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d).*\((\d+\.\d+); (\d+\.\d+)\)', token ):
-				timestamp, lat, lon = m.groups()
-				points.append( (int( key ), datetime.strptime( timestamp, '%Y-%m-%d %H:%M:%S' ).replace( tzinfo=UTC ), float( lat ), float( lon )) )
-			else:
-				raise RuntimeError( f'Error parsing Waze drive while processing token {token}' )
-
-	return points
-
-def to_gpx( tokens: List[Tuple[int, datetime, float, float]] ) -> Tuple[GPX, bytes]:
-	# create GPX object for track
-	gpx = GPX()
+def to_gpx( points: List[WazePoint] ) -> Tuple[GPX, bytes]:
+	trackpoints = [ GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon ) for p in points ]
+	segment = GPXTrackSegment( points = trackpoints )
 	track = GPXTrack()
-	gpx.tracks.append( track )
-	segment = GPXTrackSegment()
 	track.segments.append( segment )
-
-	# parse tokens and store information in GPX
-	for token in tokens:
-		index, time, latitude, longitude = token 	# todo: token[0] is a segment?
-		point = GPXTrackPoint( time=time, latitude=latitude, longitude=longitude )
-		segment.points.append( point )
-
+	gpx = GPX()
+	gpx.tracks.append( track )
 	return gpx, bytes( gpx.to_xml(), 'UTF-8' )

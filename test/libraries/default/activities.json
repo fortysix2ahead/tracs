@@ -177,7 +177,9 @@
 					"gap": "00:03:00",
 					"uids": [ "polar:200000?200003.gpx", "polar:200000?200003.tcx" ]
 				}
-			]
+			],
+			"resources": [ "polar:200000?200000.zip" ],
+			"uids": [ "polar:200000" ]
 		},
 		"301": {
 			"name": "Polar Multipart - Part 1",

@@ -142,14 +142,14 @@
 			"type": "run",
 			"calories": 100,
 			"distance": 1.0,
-			"uids": [ "polar:200?201.gpx", "polar:200?201.tcx" ]
+			"uids": [ "polar:200000?200001.gpx", "polar:200000?200001.tcx" ]
 		},
 		"202": {
 			"name": "Polar Multipart - Part 2",
 			"time": "2021-01-12T11:00:00+00:00",
 			"calories": 200,
 			"type": "gym",
-			"uids": [ "polar:200?202.tcx" ]
+			"uids": [ "polar:200000?200002.tcx" ]
 		},
 		"203": {
 			"name": "Polar Multipart - Part 3",
@@ -157,7 +157,50 @@
 			"calories": 300,
 			"distance": 3.0,
 			"type": "run",
-			"uids": [ "polar:200?203.gpx", "polar:200?203.tcx" ]
+			"uids": [ "polar:200000?200003.gpx", "polar:200000?200003.tcx" ]
+		},
+		"300": {
+			"name": "Polar Multipart",
+			"time": "2021-01-12T10:00:00+00:00",
+			"calories": 600,
+			"distance": 4.0,
+			"parts": [
+				{
+					"gap": "00:01:00",
+					"uids": [ "polar:200000?200001.gpx", "polar:200000?200001.tcx" ]
+				},
+				{
+					"gap": "00:02:00",
+					"uids": [ "polar:200000?200002.tcx" ]
+				},
+				{
+					"gap": "00:03:00",
+					"uids": [ "polar:200000?200003.gpx", "polar:200000?200003.tcx" ]
+				}
+			]
+		},
+		"301": {
+			"name": "Polar Multipart - Part 1",
+			"time": "2021-01-12T10:00:00+00:00",
+			"type": "run",
+			"calories": 100,
+			"distance": 1.0,
+			"uids": [ "polar:200000#1" ]
+		},
+		"302": {
+			"name": "Polar Multipart - Part 2",
+			"time": "2021-01-12T11:00:00+00:00",
+			"calories": 200,
+			"type": "gym",
+			"uids": [ "polar:200000#2" ]
+		},
+		"303": {
+			"name": "Polar Multipart - Part 3",
+			"time": "2021-01-12T12:00:00+00:00",
+			"calories": 300,
+			"distance": 3.0,
+			"type": "run",
+			"uids": [ "polar:200000#3" ]
 		}
 	}
 }

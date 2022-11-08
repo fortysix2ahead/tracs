@@ -51,6 +51,8 @@ class Resource( BaseDocument ):
 	content: bytes = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # raw content as bytes
 	text: InitVar[str] = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # decoded content as string, to be removed
 
+	resources: List[Resource] = field( default_factory=list, repr=False, metadata={ PERSIST: False, PROTECTED: True } )
+
 	def __post_init__( self, text: str ):
 		super().__post_init__()
 		self.content = text.encode( encoding='UTF-8' ) if text else self.content
@@ -73,6 +75,12 @@ class Resource( BaseDocument ):
 
 	def as_text( self, encoding: str = 'UTF-8' ) -> Optional[str]:
 		return self.content.decode( encoding )
+
+	def summaries( self ) -> Optional[Resource]:
+		return next( (r for r in self.resources if r.summary), None )
+
+	def recordings( self ) -> List[Resource]:
+		return [r for r in self.resources if not r.summary]
 
 @dataclass
 class ResourceGroup:

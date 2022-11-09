@@ -6,7 +6,7 @@ from typing import Any
 from typing import Optional
 from typing import Type
 
-from lxml.etree import fromstring
+from lxml.objectify import fromstring
 from orjson import loads as load_json
 from orjson import dumps as save_json
 from orjson import OPT_APPEND_NEWLINE

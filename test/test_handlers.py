@@ -16,6 +16,7 @@ from tracs.plugins.polar import PolarActivity
 from tracs.plugins.polar import PolarExerciseDataActivity
 from tracs.plugins.strava import STRAVA_TYPE
 from tracs.plugins.strava import StravaActivity
+from tracs.plugins.tcx import TCXActivity
 from tracs.plugins.waze import WAZE_TYPE
 from tracs.plugins.waze import WazeActivity
 from .helpers import get_file_path
@@ -45,6 +46,15 @@ def test_gpx_importer( path ):
 	activity = Registry.importer_for( 'application/xml+gpx' ).load_as_activity( path=path )
 	assert type( activity ) is GPXActivity
 	assert activity.time is not None and type( activity.time ) is datetime
+	assert activity.raw_id is not None
+	assert activity.resources[0].path is not None
+	assert activity.resources[0].raw is not None
+
+@mark.file( 'templates/tcx/sample.tcx' )
+def test_tcx_importer( path ):
+	activity = Registry.importer_for( 'application/xml+tcx' ).load_as_activity( path=path )
+	assert type( activity ) is TCXActivity
+	assert type( activity.time ) is datetime
 	assert activity.raw_id is not None
 	assert activity.resources[0].path is not None
 	assert activity.resources[0].raw is not None

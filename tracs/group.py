@@ -193,11 +193,6 @@ def _delta( target_time: datetime, src_time: datetime ) -> Tuple[bool, float]:
 	else:
 		return False, delta
 
-def _new_group( children: [Activity] ) -> Any:
-	ids = list( [c.doc_id for c in children] )
-	uids = list( [c['uid'] for c in children] )
-	return ActivityGroup( group_ids=ids, group_uids=uids )
-
 def _ungroup( parent: Activity, children: [Activity] ) -> None:
 	del parent[GROUPS]
 	for c in children:

@@ -352,8 +352,12 @@ class Polar( Service, Plugin ):
 
 	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
 		for r in list( resources ):
+			unzipped_resources = []
 			if r.type in [POLAR_ZIP_GPX_TYPE, POLAR_ZIP_TCX_TYPE]:
-				activity.resources.extend( decompress_resources( r ) )
+				unzipped_resources.extend( decompress_resources( r ) )
+
+			for uzr in unzipped_resources:
+				print( uzr )
 
 	def setup( self, ctx: ApplicationContext ) -> None:
 		console.print( f'For Polar Flow we will use their inofficial Web API to download activity data, that\'s why your credentials are needed.' )
@@ -403,10 +407,10 @@ def _multipart_str( self ) -> str:
 
 def decompress_resources( r: Resource ) -> List[Resource]:
 	mem_fs = open_fs('mem://')
-	mem_fs.writebytes( '/archive.zip', r.content )
+	mem_fs.writebytes( f'/{r.path}', r.content )
 	resources = []
 
-	with mem_fs.openbin( '/archive.zip' ) as zip_file:
+	with mem_fs.openbin( f'/{r.path}' ) as zip_file:
 		with ReadZipFS( zip_file ) as zip_fs:
 			for f in zip_fs.listdir( '/' ):
 				if f.endswith( '.gpx' ):

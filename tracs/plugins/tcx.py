@@ -10,6 +10,7 @@ from typing import Union
 
 from dateutil.parser import parse as parse_dt
 from dateutil.tz import tzlocal
+from lxml.objectify import fromstring
 from lxml.objectify import ObjectPath
 from lxml.objectify import ObjectifiedElement
 
@@ -88,7 +89,8 @@ class TCXImporter( XMLHandler ):
 	def __init__( self ) -> None:
 		super().__init__( resource_type=TCX_TYPE, activity_cls=TCXActivity )
 
-	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
+	def load_data( self, resource: Resource, **kwargs ) -> None:
+		resource.raw = fromstring( resource.content )
 		root: ObjectifiedElement = resource.raw.getroottree().getroot()
 
 		for a in root.Activities.iterchildren( '{*}Activity' ):

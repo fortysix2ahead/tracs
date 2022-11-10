@@ -1,4 +1,6 @@
 
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
@@ -7,11 +9,17 @@ from sys import exit as sysexit
 from time import time as current_time
 from typing import Any
 from typing import cast
+from typing import Dict
 from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Union
+
+from datetimerange import DateTimeRange
+from requests_cache import CachedSession
+from sys import exit as sysexit
+from time import time as current_time
 
 from bs4 import BeautifulSoup
 from click import echo
@@ -41,6 +49,7 @@ from ..registry import resourcetype
 from ..registry import service
 from ..resources import Resource
 from ..service import Service
+from ..utils import seconds_to_time
 from ..utils import seconds_to_time as stt
 
 log = getLogger( __name__ )
@@ -124,6 +133,19 @@ TYPES = {
 	'f0c9643f1cef947e5621b0b46ab06783-2015-10-20_13_46_12': Types.xcski_free,
 	'f4197b0c1a4d65962b9e45226c77d4d5-2015-10-20_13_45_26': Types.swim,
 }
+
+@dataclass
+class ResourcePartlist:
+
+	index: int = field( default=0 )
+	range: DateTimeRange = field( default = None )
+	resources: List[Resource] = field( default_factory=list )
+
+	def start( self ) -> datetime:
+		return self.range.start_datetime
+
+	def end( self ) -> datetime:
+		return self.range.end_datetime
 
 @resourcetype( type=POLAR_FLOW_TYPE, summary=True )
 class PolarActivity( Activity ):
@@ -351,13 +373,48 @@ class Polar( Service, Plugin ):
 			return None, 500
 
 	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
+		unzipped_resources = self.unzip_resources( resources )
+		partlist = self.create_partlist( unzipped_resources )
+		self.update_activity_partlist( activity, partlist )
+
+	# noinspection PyMethodMayBeStatic
+	def unzip_resources( self, resources: List[Resource] ) -> List[Resource]:
+		unzipped_resources = []
 		for r in list( resources ):
-			unzipped_resources = []
 			if r.type in [POLAR_ZIP_GPX_TYPE, POLAR_ZIP_TCX_TYPE]:
 				unzipped_resources.extend( decompress_resources( r ) )
+		return unzipped_resources
 
-			for uzr in unzipped_resources:
-				print( uzr )
+	# noinspection PyMethodMayBeStatic
+	def create_partlist( self, resources: List[Resource] ) -> List[ResourcePartlist]:
+		ranges: Dict[int, ResourcePartlist] = {}
+		for r in resources:
+			activity = Registry.importer_for( r.type ).as_activity( r )
+			dtr = DateTimeRange( activity.time, activity.time_end )
+
+			found_key = None
+			for k, v in ranges.items():
+				if dtr.is_intersection( v.range ):
+					found_key = k
+					break
+
+			if not found_key:
+				ranges[len( ranges.keys() ) + 1] = ResourcePartlist( resources=[r], range=dtr )
+			else:
+				ranges.get( found_key ).range.encompass( dtr )
+				ranges.get( found_key ).resources.append( r )
+
+		return sorted( ranges.values(), key=lambda pl: pl.start() )
+
+	# noinspection PyMethodMayBeStatic
+	def update_activity_partlist( self, activity: Activity, partlist: List[ResourcePartlist] ) -> None:
+		for index in range( len( partlist ) ):
+			if index == 0:
+				gap = '00:00:00'
+			else:
+				gap = seconds_to_time( (partlist[index].start() - partlist[index-1].end()).total_seconds() ).isoformat()
+			uids = [ f'{activity.uid}?{r.path}' for r in partlist[index].resources ]
+			activity.parts.append( { str( index + 1 ): { 'gap': gap, 'uids': uids } } )
 
 	def setup( self, ctx: ApplicationContext ) -> None:
 		console.print( f'For Polar Flow we will use their inofficial Web API to download activity data, that\'s why your credentials are needed.' )
@@ -413,9 +470,10 @@ def decompress_resources( r: Resource ) -> List[Resource]:
 	with mem_fs.openbin( f'/{r.path}' ) as zip_file:
 		with ReadZipFS( zip_file ) as zip_fs:
 			for f in zip_fs.listdir( '/' ):
-				if f.endswith( '.gpx' ):
-					resources.append( Resource( path=f, text=zip_fs.readtext( f'/{f}' ), type=GPX_TYPE, status=200, uid=r.uid, source=r.path ) )
-				elif f.endswith( '.tcx' ):
-					resources.append( Resource( path=f, text=zip_fs.readtext( f'/{f}' ), type=TCX_TYPE, status=200, uid=r.uid, source=r.path ) )
+				resource = Resource( path=f, content=zip_fs.readbytes( f'/{f}' ), status=200, uid=r.uid, source=r.path )
+				resource.type = GPX_TYPE if f.endswith( '.gpx' ) else TCX_TYPE
+				Registry.importer_for( resource.type ).load_data( resource )
+
+				resources.append( resource )
 
 	return resources

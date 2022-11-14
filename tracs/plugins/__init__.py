@@ -19,11 +19,11 @@ from typing import Type
 from typing import Union
 from typing import cast
 
-from ..handlers import Handler
-from ..handlers import Importer
-from ..base import Service
 from ..config import ApplicationContext
 from ..config import KEY_CLASSIFER
+from ..handlers import Handler
+from ..handlers import Importer
+from ..service import Service
 
 log = getLogger( __name__ )
 NS_PLUGINS = __name__

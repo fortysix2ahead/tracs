@@ -10,7 +10,7 @@ from tracs.activity import Activity
 from tracs.resources import Resource
 from tracs.activity_types import ActivityTypes
 from tracs.dataclasses import as_dict
-from tracs.plugins.polar import PolarActivity
+from tracs.plugin.polar import PolarActivity
 
 @mark.file( 'libraries/default/activities.json' )
 def test_init( json ):

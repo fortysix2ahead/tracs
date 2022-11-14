@@ -9,7 +9,6 @@ from rich.prompt import Confirm
 from tinydb import TinyDB
 
 from .config import ApplicationContext
-from .db import document_cls
 from .db_storage import DataClassStorage
 from .plugins.handlers import JSONHandler
 from .utils import timestring

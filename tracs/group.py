@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -16,7 +17,6 @@ from .config import ApplicationContext
 from .config import KEY_GROUPS as GROUPS
 from .config import console
 from .dataclasses import as_dict
-from .plugins.groups import ActivityGroup
 from .ui import Choice
 from .ui import diff_table2
 
@@ -166,7 +166,7 @@ def _delta( target_time: datetime, src_time: datetime ) -> Tuple[bool, float]:
 	else:
 		return False, delta
 
-def _new_group( children: [Activity] ) -> ActivityGroup:
+def _new_group( children: [Activity] ) -> Any:
 	ids = list( [c.doc_id for c in children] )
 	uids = list( [c['uid'] for c in children] )
 	return ActivityGroup( group_ids=ids, group_uids=uids )

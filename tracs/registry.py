@@ -4,9 +4,11 @@ from __future__ import annotations
 from importlib import import_module
 from inspect import getmembers
 from inspect import isclass
+from logging import getLogger
 from pathlib import Path
 from pkgutil import walk_packages
 from re import match
+from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Dict
@@ -21,8 +23,9 @@ from tracs.config import ApplicationContext
 from tracs.config import KEY_CLASSIFER
 from tracs.handlers import Handler
 from tracs.handlers import Importer
-from tracs.plugins import log
-from tracs.service import Service
+from tracs.plugin import Plugin
+
+log = getLogger( __name__ )
 
 class Registry:
 
@@ -34,7 +37,7 @@ class Registry:
 	fetchers = {}
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
-	services: Dict[str, Service] = {}
+	services: Dict[str, Plugin] = {}
 	service_classes: Dict[str, Type] = {}
 
 	@classmethod
@@ -55,7 +58,7 @@ class Registry:
 		return l
 
 	@classmethod
-	def service_for( cls, uid: str = None ) -> Service:
+	def service_for( cls, uid: str = None ) -> Any:
 		return Registry.services.get( uid.split( ':', maxsplit= 1 )[0] )
 
 	@classmethod

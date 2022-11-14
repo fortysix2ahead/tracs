@@ -4,8 +4,8 @@ from pytest import mark
 
 import tracs.registry
 from tracs.resources import Resource
-from tracs.plugins.polar import BASE_URL
-from tracs.plugins.polar import Polar
+from tracs.plugin.polar import BASE_URL
+from tracs.plugin.polar import Polar
 from .helpers import skip_live
 
 from .polar_server import TEST_BASE_URL

@@ -10,13 +10,13 @@ from typing import Union
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
+from ..activity import Activity
+from ..config import ApplicationContext
+from ..plugin import Plugin
 from ..registry import Registry
 from ..registry import document
 from ..registry import service
-from . import Plugin
-from ..activity import Activity
 from ..resources import Resource
-from ..config import ApplicationContext
 from ..service import Service
 
 log = getLogger( __name__ )

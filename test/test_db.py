@@ -8,11 +8,11 @@ from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.db import ActivityDb
 from tracs.db_storage import DataClassStorage
-from tracs.plugins.groups import ActivityGroup
+from tracs.plugin.groups import ActivityGroup
 
-from tracs.plugins.polar import PolarActivity
-from tracs.plugins.strava import StravaActivity
-from tracs.plugins.waze import WazeActivity
+from tracs.plugin.polar import PolarActivity
+from tracs.plugin.strava import StravaActivity
+from tracs.plugin.waze import WazeActivity
 
 from .helpers import ids
 from .helpers import get_db_path

@@ -6,8 +6,8 @@ from pytest import mark
 
 import tracs.registry
 from tracs.resources import Resource
-from tracs.plugins.strava import Strava
-from tracs.plugins.strava import StravaActivity
+from tracs.plugin.strava import Strava
+from tracs.plugin.strava import StravaActivity
 from .helpers import skip_live
 
 from .strava_server import TEST_BASE_URL

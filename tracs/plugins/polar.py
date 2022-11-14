@@ -28,7 +28,7 @@ from ..registry import Registry
 from ..registry import document
 from ..registry import importer
 from ..registry import service
-from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugin.gpx import GPX_TYPE
 from .handlers import JSON_TYPE
 from .handlers import JSONHandler
 from .handlers import TCX_TYPE

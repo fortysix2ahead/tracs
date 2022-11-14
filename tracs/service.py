@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Protocol
 from typing import Tuple
 from typing import Union
 
@@ -17,7 +18,6 @@ from dateutil.tz import UTC
 
 from .activity import Activity
 from .resources import Resource
-from .base import Service as ServiceProtocol
 from .config import ApplicationContext
 from .config import GlobalConfig as gc
 from .config import KEY_LAST_DOWNLOAD
@@ -29,7 +29,7 @@ log = getLogger( __name__ )
 
 # ---- base class for a service ----
 
-class Service( ServiceProtocol ):
+class Service( Protocol ):
 
 	def __init__( self, **kwargs ):
 		# field for saving the current context, to access the context from sub-methods

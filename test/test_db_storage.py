@@ -18,7 +18,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.db import document_cls
 from tracs.db_storage import DataClassStorage
 from tracs.db_storage import OrJSONStorage
-from tracs.plugins.polar import PolarActivity
+from tracs.plugin.polar import PolarActivity
 
 from .helpers import get_db_path
 

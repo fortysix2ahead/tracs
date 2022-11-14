@@ -27,7 +27,7 @@ from ..registry import document
 from ..registry import importer
 from ..registry import service
 from .handlers import CSVHandler
-from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugin.gpx import GPX_TYPE
 from ..handlers import ResourceHandler
 from . import Plugin
 from ..activity_types import ActivityTypes

@@ -1,5 +1,4 @@
-from confuse import Configuration
-from confuse import Configuration
+
 from confuse import Configuration
 
 class Plugin:

@@ -75,27 +75,27 @@ def clean_registry():
 
 @fixture
 def setup_registry():
-	import tracs.plugins.base as base
+	import tracs.plugin.base as base
 	Registry.register_accessors( None, base.accessors() )
 	Registry.register_transformers( None, base.transformers() )
 	Registry.register_function( CLASSIFIER, base.classifier, Registry.accessors )
 
-	import tracs.plugins.bikecitizens as bikecitizens
+	import tracs.plugin.bikecitizens as bikecitizens
 	Registry.register_accessors( 'bikecitizens', bikecitizens.accessors() )
 	Registry.register_transformers( 'bikecitizens', bikecitizens.transformers() )
 
-	import tracs.plugins.empty as empty
+	import tracs.plugin.empty as empty
 	Registry.register_accessors( 'empty', empty.accessors() )
 	Registry.register_transformers( 'empty', empty.transformers() )
 
-	import tracs.plugins.polar as polar
+	import tracs.plugin.polar as polar
 	Registry.register_accessors( 'polar', polar.accessors() )
 	Registry.register_transformers( 'polar', polar.transformers() )
 
-	import tracs.plugins.strava as strava
+	import tracs.plugin.strava as strava
 	Registry.register_accessors( 'strava', strava.accessors() )
 	Registry.register_transformers( 'strava', strava.transformers() )
 
-	import tracs.plugins.waze as waze
+	import tracs.plugin.waze as waze
 	Registry.register_accessors( 'waze', waze.accessors() )
 	Registry.register_transformers( 'waze', waze.transformers() )

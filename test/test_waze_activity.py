@@ -10,11 +10,11 @@ from pytest import mark
 import tracs.registry
 from tracs.activity_types import ActivityTypes
 from tracs.registry import Registry
-from tracs.plugins.waze import WAZE_TAKEOUT_TYPE
-from tracs.plugins.waze import WAZE_TYPE
-from tracs.plugins.waze import Waze
-from tracs.plugins.waze import WazeActivity
-from tracs.plugins.waze import WazeImporter
+from tracs.plugin.waze import WAZE_TAKEOUT_TYPE
+from tracs.plugin.waze import WAZE_TYPE
+from tracs.plugin.waze import Waze
+from tracs.plugin.waze import WazeActivity
+from tracs.plugin.waze import WazeImporter
 
 from .helpers import get_file_path
 

@@ -17,7 +17,7 @@ from tracs.activity import Activity
 from tracs.resources import Resource
 from tracs.registry import document
 from tracs.registry import importer
-from tracs.plugins.handlers import XMLHandler
+from tracs.plugin.handlers import XMLHandler
 
 log = getLogger( __name__ )
 

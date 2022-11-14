@@ -2,9 +2,9 @@
 from pytest import mark
 
 import tracs.registry
-from tracs.plugins.bikecitizens import Bikecitizens
-from tracs.plugins.bikecitizens import BASE_URL
-from tracs.plugins.bikecitizens import API_URL
+from tracs.plugin.bikecitizens import Bikecitizens
+from tracs.plugin.bikecitizens import BASE_URL
+from tracs.plugin.bikecitizens import API_URL
 
 from .bikecitizens_server import TEST_API_URL
 from .bikecitizens_server import TEST_BASE_URL

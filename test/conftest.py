@@ -18,8 +18,8 @@ from tracs.config import ApplicationContext
 from tracs.config import KEY_PLUGINS
 from tracs.db import ActivityDb
 from tracs.registry import Registry
-from tracs.plugins.bikecitizens import Bikecitizens
-from tracs.plugins.polar import Polar
+from tracs.plugin.bikecitizens import Bikecitizens
+from tracs.plugin.polar import Polar
 from tracs.service import Service
 
 from .bikecitizens_server import bikecitizens_server

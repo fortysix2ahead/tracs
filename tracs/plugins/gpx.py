@@ -13,7 +13,7 @@ from tracs.activity import Activity
 from tracs.resources import Resource
 from tracs.plugins import document
 from tracs.plugins import importer
-from tracs.plugins.handlers import ResourceHandler
+from tracs.handlers import ResourceHandler
 from tracs.utils import seconds_to_time
 
 log = getLogger( __name__ )

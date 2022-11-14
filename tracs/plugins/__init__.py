@@ -19,8 +19,8 @@ from typing import Type
 from typing import Union
 from typing import cast
 
-from ..base import Handler
-from ..base import Importer
+from ..handlers import Handler
+from ..handlers import Importer
 from ..base import Service
 from ..config import ApplicationContext
 from ..config import KEY_CLASSIFER

@@ -162,6 +162,10 @@ class PolarActivity( Activity ):
 		self.duration = stt( self.raw['duration'] / 1000 ) if self.raw.get( 'duration' ) else None
 		self.calories = self.raw.get( 'calories' )
 
+	@property
+	def is_multipart( self ):
+		return _is_multipart_id( self.raw.get( 'iconUrl' ) )
+
 @resourcetype( type=POLAR_EXERCISE_DATA_TYPE, summary=True )
 class PolarExerciseDataActivity( Activity ):
 
@@ -353,6 +357,7 @@ class Polar( Service, Plugin ):
 			for r in resources:
 				self.download_resource( r )
 
+			summary.resources.extend( resources )
 			return resources
 
 		except RuntimeError:
@@ -372,10 +377,24 @@ class Polar( Service, Plugin ):
 			log.warning( f'unable to determine download url for resource {resource}' )
 			return None, 500
 
-	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
-		unzipped_resources = self.unzip_resources( resources )
-		partlist = self.create_partlist( unzipped_resources )
-		self.update_activity_partlist( activity, partlist )
+	def postprocess_resource( self, resource: Resource = None, **kwargs ) -> None:
+		resource.resources.extend( self.unzip_resources( resource.resources ) )
+
+	def create_activities( self, resource: Resource, **kwargs ) -> List[Activity]:
+		activities = super().create_activities( resource, **kwargs )
+		if activities[0].is_multipart:
+			recordings = [ r for r in resource.resources if r.type in [GPX_TYPE, TCX_TYPE] ]
+			partlist = self.create_partlist( activities[0], recordings )
+			for rp in partlist:
+				#part = Activity( time=rp.range.start_datetime, time_end=rp.range.end_datetime, uids=[f'{activities[0].uid}#{rp.index}'] )
+				part = Activity( time=rp.range.start_datetime, time_end=rp.range.end_datetime, uid=f'{activities[0].uid}#{rp.index}' )
+				activities.append( part )
+		return activities
+
+	def postprocess( self, activity: Optional[Activity] = None, resource: Optional[Resource] = None, **kwargs ) -> None:
+		resource.resources.extend( self.unzip_resources( resource.resources ) )
+		# partlist = self.create_partlist( unzipped_resources )
+		# self.update_activity_partlist( activity, partlist )
 
 	# noinspection PyMethodMayBeStatic
 	def unzip_resources( self, resources: List[Resource] ) -> List[Resource]:
@@ -386,11 +405,11 @@ class Polar( Service, Plugin ):
 		return unzipped_resources
 
 	# noinspection PyMethodMayBeStatic
-	def create_partlist( self, resources: List[Resource] ) -> List[ResourcePartlist]:
+	def create_partlist( self, activity: Activity, resources: List[Resource] ) -> List[ResourcePartlist]:
 		ranges: Dict[int, ResourcePartlist] = {}
 		for r in resources:
-			activity = Registry.importer_for( r.type ).as_activity( r )
-			dtr = DateTimeRange( activity.time, activity.time_end )
+			recording = Registry.importer_for( r.type ).as_activity( r )
+			dtr = DateTimeRange( recording.time, recording.time_end )
 
 			found_key = None
 			for k, v in ranges.items():
@@ -398,23 +417,25 @@ class Polar( Service, Plugin ):
 					found_key = k
 					break
 
-			if not found_key:
-				ranges[len( ranges.keys() ) + 1] = ResourcePartlist( resources=[r], range=dtr )
+			if found_key is None:
+				ranges[len( ranges.keys() )] = ResourcePartlist( resources=[r], range=dtr )
 			else:
 				ranges.get( found_key ).range.encompass( dtr )
 				ranges.get( found_key ).resources.append( r )
 
-		return sorted( ranges.values(), key=lambda pl: pl.start() )
+		# sort and number parts
+		partlists = sorted( ranges.values(), key=lambda pl: pl.start() )
 
-	# noinspection PyMethodMayBeStatic
-	def update_activity_partlist( self, activity: Activity, partlist: List[ResourcePartlist] ) -> None:
-		for index in range( len( partlist ) ):
+		for index in range( len( partlists ) ):
+			partlists[index].index = index + 1
 			if index == 0:
 				gap = '00:00:00'
 			else:
-				gap = seconds_to_time( (partlist[index].start() - partlist[index-1].end()).total_seconds() ).isoformat()
-			uids = [ f'{activity.uid}?{r.path}' for r in partlist[index].resources ]
+				gap = seconds_to_time( (partlists[index].start() - partlists[index - 1].end()).total_seconds() ).isoformat()
+			uids = [f'{activity.uid}?{r.path}' for r in partlists[index].resources]
 			activity.parts.append( { str( index + 1 ): { 'gap': gap, 'uids': uids } } )
+
+		return partlists
 
 	def setup( self, ctx: ApplicationContext ) -> None:
 		console.print( f'For Polar Flow we will use their inofficial Web API to download activity data, that\'s why your credentials are needed.' )

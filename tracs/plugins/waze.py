@@ -32,7 +32,7 @@ from .handlers import ResourceHandler
 from .plugin import Plugin
 from ..activity_types import ActivityTypes
 from ..activity import Activity
-from ..activity import Resource
+from ..resources import Resource
 from ..config import ApplicationContext
 from ..config import KEY_LAST_FETCH
 from ..service import Service

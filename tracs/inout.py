@@ -25,7 +25,7 @@ from rich.prompt import Confirm
 from tzlocal import get_localzone_name
 
 from .activity import Activity
-from .activity import Resource
+from .resources import Resource
 from .config import ApplicationConfig as cfg
 from .config import ApplicationContext
 from .config import cs

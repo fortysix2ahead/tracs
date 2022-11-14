@@ -35,7 +35,7 @@ from .handlers import JSONHandler
 from .handlers import TCX_TYPE
 from .plugin import Plugin
 from ..activity import Activity
-from ..activity import Resource
+from ..resources import Resource
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types
 from ..config import ApplicationContext

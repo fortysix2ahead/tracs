@@ -2,7 +2,7 @@
 from typing import List
 from pytest import mark
 
-from tracs.activity import Resource
+from tracs.resources import Resource
 from tracs.plugins.polar import BASE_URL
 from tracs.plugins.polar import Polar
 from .helpers import skip_live

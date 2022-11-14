@@ -27,8 +27,8 @@ from tinydb.table import Document
 from tinydb.table import Table
 
 from .activity import Activity
-from .activity import Resource
-from .activity import ResourceGroup
+from .resources import Resource
+from .resources import ResourceGroup
 from .config import CLASSIFIER
 from .config import KEY_GROUPS
 from .config import console

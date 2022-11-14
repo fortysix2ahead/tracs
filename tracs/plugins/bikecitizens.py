@@ -22,10 +22,10 @@ from ..registry import Registry
 from ..registry import document
 from ..registry import importer
 from ..registry import service
-from tracs.plugin.gpx import GPX_TYPE
+from .gpx import GPX_TYPE
 from .handlers import JSON_TYPE
 from .handlers import JSONHandler
-from . import Plugin
+from ..plugin import Plugin
 from ..activity import Activity
 from ..resources import Resource
 from ..activity_types import ActivityTypes

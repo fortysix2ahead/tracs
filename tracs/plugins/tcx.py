@@ -13,11 +13,11 @@ from dateutil.tz import tzlocal
 from lxml.objectify import ObjectPath
 from lxml.objectify import ObjectifiedElement
 
-from tracs.activity import Activity
-from tracs.resources import Resource
-from tracs.registry import document
-from tracs.registry import importer
-from tracs.plugin.handlers import XMLHandler
+from .handlers import XMLHandler
+from ..activity import Activity
+from ..resources import Resource
+from ..registry import document
+from ..registry import importer
 
 log = getLogger( __name__ )
 

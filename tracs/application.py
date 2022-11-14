@@ -98,6 +98,10 @@ class Application( object ):
 		cache = ctx.config['db']['cache'].get()
 		ctx.db = ActivityDb( path=ctx.db_dir, cache=cache )
 
+		# load plugins
+		from .registry import load as load_plugins
+		load_plugins()
+
 		# ---- create service instances ----
 		Registry.instantiate_services( ctx=ctx, base_path=ctx.db_dir, overlay_path=ctx.overlay_dir )
 

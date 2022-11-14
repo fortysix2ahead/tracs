@@ -13,7 +13,7 @@ from .activity import Activity
 from .resources import Resource
 from .config import ApplicationContext
 from .config import console
-from .plugins import Registry
+from .registry import Registry
 from .service import Service
 from .utils import fmt
 

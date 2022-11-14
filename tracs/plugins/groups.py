@@ -7,7 +7,7 @@ from attrs import Attribute
 from logging import getLogger
 from rich.console import Console
 
-from . import document
+from ..registry import document
 from ..activity import Activity
 from ..activity import ActivityRef
 from ..dataclasses import PERSIST

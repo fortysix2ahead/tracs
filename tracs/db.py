@@ -43,7 +43,7 @@ from .filters import false as false_filter
 from .filters import parse_filters
 from .filters import raw_id as raw_id_filter
 from .filters import uid as uid_filter
-from .plugins import Registry
+from .registry import Registry
 
 log = getLogger( __name__ )
 

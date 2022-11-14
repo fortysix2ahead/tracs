@@ -31,7 +31,7 @@ from .config import ApplicationContext
 from .config import cs
 from .dataclasses import as_dict
 from .db import ActivityDb
-from .plugins import Registry
+from .registry import Registry
 from .plugins.gpx import GPX_TYPE
 from .plugins.handlers import TCX_TYPE
 from .plugins.local import SERVICE_NAME as LOCAL_SERVICE_NAME

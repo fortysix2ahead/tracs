@@ -50,7 +50,7 @@ from .show import show_activity
 from .list import show_config
 from .edit import rename_activities
 from .migrate import migrate_application
-from .plugins import Registry
+from tracs.registry import Registry
 from .validate import validate_activities
 from .setup import setup as setup_application
 from .service import download_activities
@@ -311,7 +311,7 @@ def setup( ctx: ApplicationContext, services: List[str] ):
 
 @cli.command( hidden=True, help='For testing plugin system' )
 def init():
-	from .plugins import load as load_plugins
+	from tracs.registry import load as load_plugins
 	load_plugins()
 
 @cli.command( hidden=True, help='inspects activities/resources/internal registry' )

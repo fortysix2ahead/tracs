@@ -22,10 +22,10 @@ from gpxpy.gpx import GPXTrackSegment
 from logging import getLogger
 from pathlib import Path
 
-from . import Registry
-from . import document
-from . import importer
-from . import service
+from ..registry import Registry
+from ..registry import document
+from ..registry import importer
+from ..registry import service
 from .handlers import CSVHandler
 from tracs.plugins.gpx import GPX_TYPE
 from ..handlers import ResourceHandler

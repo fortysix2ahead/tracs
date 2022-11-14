@@ -17,7 +17,7 @@ from tracs.config import ApplicationConfig as state
 from tracs.config import ApplicationContext
 from tracs.config import KEY_PLUGINS
 from tracs.db import ActivityDb
-from tracs.plugins import Registry
+from tracs.registry import Registry
 from tracs.plugins.bikecitizens import Bikecitizens
 from tracs.plugins.polar import Polar
 from tracs.service import Service

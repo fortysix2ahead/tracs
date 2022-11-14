@@ -18,10 +18,10 @@ from requests import options
 from requests import Session
 from rich.prompt import Prompt
 
-from . import Registry
-from . import document
-from . import importer
-from . import service
+from ..registry import Registry
+from ..registry import document
+from ..registry import importer
+from ..registry import service
 from tracs.plugins.gpx import GPX_TYPE
 from .handlers import JSON_TYPE
 from .handlers import JSONHandler

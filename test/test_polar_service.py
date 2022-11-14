@@ -2,6 +2,7 @@
 from typing import List
 from pytest import mark
 
+import tracs.registry
 from tracs.resources import Resource
 from tracs.plugins.polar import BASE_URL
 from tracs.plugins.polar import Polar
@@ -27,7 +28,7 @@ def test_constructor():
 	assert polar._export_url == f'{TEST_BASE_URL}/api/export/training'
 
 @mark.context( library='empty', config='default', cleanup=True )
-@mark.service( cls=Polar, url=TEST_BASE_URL )
+@tracs.registry.service( cls=Polar, url=TEST_BASE_URL )
 def test_service( polar_server, service ):
 	# login
 	service.login()
@@ -44,7 +45,7 @@ def test_service( polar_server, service ):
 	assert r.uid == 'polar:300003'
 
 @mark.context( library='empty', config='default', cleanup=True )
-@mark.service( cls=Polar, url=TEST_BASE_URL )
+@tracs.registry.service( cls=Polar, url=TEST_BASE_URL )
 def test_workflow( polar_server, service ):
 	service.login()
 	fetched = service.fetch( True, False )
@@ -52,7 +53,7 @@ def test_workflow( polar_server, service ):
 
 @skip_live
 @mark.context( library='empty', config='live', cleanup=True )
-@mark.service( cls=Polar, url=BASE_URL )
+@tracs.registry.service( cls=Polar, url=BASE_URL )
 def test_live_workflow( service ):
 	service.login()
 	assert service.logged_in

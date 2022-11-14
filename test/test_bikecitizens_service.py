@@ -1,6 +1,7 @@
 
 from pytest import mark
 
+import tracs.registry
 from tracs.plugins.bikecitizens import Bikecitizens
 from tracs.plugins.bikecitizens import BASE_URL
 from tracs.plugins.bikecitizens import API_URL
@@ -27,7 +28,7 @@ def test_constructor():
 
 @skip_live
 @mark.context( library='empty', config='live', cleanup=True )
-@mark.service( cls=Bikecitizens, url=BASE_URL )
+@tracs.registry.service( cls=Bikecitizens, url=BASE_URL )
 def test_live_workflow( service ):
 	service.login()
 	assert service.logged_in

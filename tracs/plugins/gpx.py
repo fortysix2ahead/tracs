@@ -11,8 +11,8 @@ from gpxpy.gpx import GPX
 
 from tracs.activity import Activity
 from tracs.resources import Resource
-from tracs.plugins import document
-from tracs.plugins import importer
+from tracs.registry import document
+from tracs.registry import importer
 from tracs.handlers import ResourceHandler
 from tracs.utils import seconds_to_time
 

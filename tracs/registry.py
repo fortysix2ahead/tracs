@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from importlib import import_module
 from inspect import getmembers
 from inspect import isclass
@@ -8,7 +9,6 @@ from logging import getLogger
 from pathlib import Path
 from pkgutil import walk_packages
 from re import match
-from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Dict
@@ -23,9 +23,17 @@ from tracs.config import ApplicationContext
 from tracs.config import KEY_CLASSIFER
 from tracs.handlers import Handler
 from tracs.handlers import Importer
-from tracs.plugin import Plugin
+from tracs.protocols import Service
 
 log = getLogger( __name__ )
+
+NS_PLUGINS = 'tracs.plugins'
+
+class EventTypes( Enum ):
+
+	plugin_loaded = 'plugin_loaded'
+	resource_loaded = 'resource_loaded'
+	service_created = 'service_created'
 
 class Registry:
 
@@ -34,10 +42,11 @@ class Registry:
 	document_classes: Dict[str, Type] = {}
 	document_types: Dict[str, Type] = {}
 	downloaders = {}
+	event_listeners = {}
 	fetchers = {}
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
-	services: Dict[str, Plugin] = {}
+	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
 
 	@classmethod
@@ -48,17 +57,16 @@ class Registry:
 		for name, service_type in Registry.service_classes.items():
 			service_base_path = Path( base_path, name )
 			service_overlay_path = Path( overlay_path, name )
-			log.debug( f'attempting to create service instance {name}, with base path {service_base_path}' )
 			Registry.services[name] = service_type( ctx=ctx, base_path=service_base_path, overlay_path=service_overlay_path, **kwargs )
+			# log.debug( f'created service instance {name}, with base path {service_base_path}' )
+			Registry.notify( EventTypes.service_created, Registry.services[name] )
 
 	@classmethod
 	def service_names( cls ) -> List[str]:
-		l = list( Registry.services.keys() )
-		l.remove( 'empty' )
-		return l
+		return list( Registry.services.keys() )
 
 	@classmethod
-	def service_for( cls, uid: str = None ) -> Any:
+	def service_for( cls, uid: str = None ) -> Service:
 		return Registry.services.get( uid.split( ':', maxsplit= 1 )[0] )
 
 	@classmethod
@@ -75,6 +83,19 @@ class Registry:
 
 		return None
 
+	# event handling
+
+	@classmethod
+	def notify( cls, event_type: EventTypes, *args, **kwargs ) -> None:
+		for fn in Registry.event_listeners.get( event_type, [] ):
+			fn( *args, **kwargs )
+
+	@classmethod
+	def register_listener( cls, event_type: EventTypes, fn: Callable ) -> None:
+		if not event_type in Registry.event_listeners.keys():
+			Registry.event_listeners[event_type] = []
+		Registry.event_listeners.get( event_type ).append( fn )
+
 	# handlers
 
 	@classmethod
@@ -83,11 +104,11 @@ class Registry:
 		return handler_list[0] if len( handler_list ) > 0 else None
 
 	@classmethod
-	def handlers_for( cls, type: str ):
+	def handlers_for( cls, type: str ) -> List[Handler]:
 		return Registry.handlers.get( type ) or []
 
 	@classmethod
-	def register_handler( cls, handler: Handler, type: str ):
+	def register_handler( cls, handler: Handler, type: str ) -> None:
 		handler_list = Registry.handlers.get( type ) or []
 		if handler not in handler_list:
 			handler_list.append( handler )
@@ -158,8 +179,6 @@ class Registry:
 			elif not key and type( item_key ) is str:
 				rval[item_key] = item_fn
 		return rval
-
-NS_PLUGINS = __name__
 
 def _spec( func: Callable ) -> Tuple[str, str]:
 	"""
@@ -281,16 +300,18 @@ def download( fn ):
 
 def load( plugin_pkgs: List[str] = None, disabled: List[str] = None ):
 	plugin_pkgs = plugin_pkgs if plugin_pkgs else [NS_PLUGINS]
-	disabled = disabled if disabled else []
+	disabled = disabled if disabled else [ 'empty' ]
 
 	for plugin_pkg in plugin_pkgs:
-		log.debug( f'attempting to load plugins from namespace {plugin_pkg}' )
-
 		plugins_module = import_module( plugin_pkg )
 		for finder, name, ispkg in walk_packages( plugins_module.__path__ ):
 			if name not in disabled:
 				qname = f'{plugin_pkg}.{name}'
-				plugin = import_module( qname )
-				log.debug( f'imported plugin {plugin}' )
+				try:
+					plugin = import_module( qname )
+					Registry.notify( EventTypes.plugin_loaded, plugin )
+					log.debug( f'imported plugin {plugin}' )
+				except ModuleNotFoundError:
+					log.debug( f'error imporing module {qname}' )
 			else:
 				log.debug( f'skipping import of disabled plugin {name} in package {plugin_pkg}' )

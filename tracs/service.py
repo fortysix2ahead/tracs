@@ -6,17 +6,16 @@ from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from typing import Any
+from typing import cast
 from typing import List
 from typing import Optional
-from typing import Protocol
 from typing import Tuple
 from typing import Union
 
-from confuse import Configuration
-from confuse import NotFoundError
 from dateutil.tz import UTC
 
 from .activity import Activity
+from .plugin import Plugin
 from .resources import Resource
 from .config import ApplicationContext
 from .config import GlobalConfig as gc
@@ -29,13 +28,10 @@ log = getLogger( __name__ )
 
 # ---- base class for a service ----
 
-class Service( Protocol ):
+class Service( Plugin ):
 
 	def __init__( self, **kwargs ):
-		# field for saving the current context, to access the context from sub-methods
-		self._ctx: ApplicationContext = kwargs.get( 'ctx' )
-		self._cfg: Configuration = self._ctx.config if self._ctx else None
-		self._state: Configuration = self._ctx.state if self._ctx else None
+		super().__init__( **kwargs )
 
 		self._name = kwargs.pop( 'name' ) if 'name' in kwargs else None
 		self._display_name = kwargs.pop( 'display_name' ) if 'display_name' in kwargs else None
@@ -45,26 +41,6 @@ class Service( Protocol ):
 		self._logged_in = False
 
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
-
-	# helpers for setting/getting plugin configuration/state values
-
-	def cfg_value( self, key: str ) -> Any:
-		try:
-			return self._cfg[KEY_PLUGINS][self._name][key].get()
-		except NotFoundError:
-			log.error( f'missing configuration key {key}', exc_info=True )
-
-	def state_value( self, key: str ) -> Any:
-		try:
-			return self._state[KEY_PLUGINS][self._name][key].get()
-		except NotFoundError:
-			log.error( f'missing state key {key}', exc_info=True )
-
-	def set_cfg_value( self, key: str, value: Any ) -> None:
-		self._cfg[KEY_PLUGINS][self._name][key] = value
-
-	def set_state_value( self, key: str, value: Any ) -> None:
-		self._state[KEY_PLUGINS][self._name][key] = value
 
 	# properties
 
@@ -113,7 +89,7 @@ class Service( Protocol ):
 	@classmethod
 	def path_for_uid( cls, uid: str ) -> Optional[Path]:
 		classifier, local_id = uid.split( ':', 1 )
-		if service := Registry.services.get( classifier ):
+		if service := cast( cls, Registry.services.get( classifier ) ):
 			return Path( service.name, service.path_for_id( local_id, None ) )
 		else:
 			return None
@@ -143,7 +119,6 @@ class Service( Protocol ):
 
 		:param activity: activity
 		:param resource: resource
-		:param ext: file extension for which the path should be returned, can be None
 		:param ignore_overlay:
 		:return: path of the activity in the local file system
 		"""
@@ -210,7 +185,7 @@ class Service( Protocol ):
 		return []
 
 	def fetch_ids( self ) -> List[int]:
-		return [ r.raw_id() for r in self.fetch( force=False, pretend=False ) ]
+		return [ r.local_id for r in self.fetch( force=False, pretend=False ) ]
 
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		"""

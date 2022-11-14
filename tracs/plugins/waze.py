@@ -1,6 +1,4 @@
 
-from csv import field_size_limit
-from csv import reader as csv_reader
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
@@ -27,9 +25,9 @@ from ..registry import document
 from ..registry import importer
 from ..registry import service
 from .handlers import CSVHandler
-from tracs.plugin.gpx import GPX_TYPE
+from .gpx import GPX_TYPE
 from ..handlers import ResourceHandler
-from . import Plugin
+from ..plugin import Plugin
 from ..activity_types import ActivityTypes
 from ..activity import Activity
 from ..resources import Resource

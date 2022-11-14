@@ -24,10 +24,10 @@ from webbrowser import open as open_url
 
 from rich.prompt import Prompt
 
-from . import Registry
-from . import document
-from . import importer
-from . import service
+from ..registry import Registry
+from ..registry import document
+from ..registry import importer
+from ..registry import service
 from tracs.plugins.gpx import GPX_TYPE
 from .fit import FIT_TYPE
 from .handlers import JSON_TYPE

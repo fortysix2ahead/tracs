@@ -10,9 +10,9 @@ from typing import Union
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
-from . import Registry
-from . import document
-from . import service
+from ..registry import Registry
+from ..registry import document
+from ..registry import service
 from .plugin import Plugin
 from ..activity import Activity
 from ..resources import Resource

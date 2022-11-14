@@ -7,8 +7,9 @@ from dateutil.tz import gettz
 
 from pytest import mark
 
+import tracs.registry
 from tracs.activity_types import ActivityTypes
-from tracs.plugins import Registry
+from tracs.registry import Registry
 from tracs.plugins.waze import WAZE_TAKEOUT_TYPE
 from tracs.plugins.waze import WAZE_TYPE
 from tracs.plugins.waze import Waze
@@ -48,7 +49,7 @@ def test_activity_from_raw( path ):
 	assert a.type == ActivityTypes.drive
 
 @mark.context( library='default', config='default', cleanup=True )
-@mark.service( cls=Waze )
+@tracs.registry.service( cls=Waze )
 def test_fetch( service ):
 	resources = service.fetch( force=False, pretend=False )
 	assert len( resources ) == 2

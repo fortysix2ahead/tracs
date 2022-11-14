@@ -12,7 +12,7 @@ from orjson import OPT_APPEND_NEWLINE
 from orjson import OPT_INDENT_2
 from orjson import OPT_SORT_KEYS
 
-from . import importer
+from ..registry import importer
 from ..handlers import ResourceHandler
 from ..resources import Resource
 

@@ -31,7 +31,7 @@ from tinydb.queries import QueryLike
 from .activity import Activity
 from .dataclasses import FILTERABLE
 from .dataclasses import FILTER_ALIAS
-from .plugins import Registry
+from .registry import Registry
 
 log = getLogger( __name__ )
 

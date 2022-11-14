@@ -8,7 +8,7 @@ from rich.table import Table
 
 from .config import ApplicationContext
 from .config import console
-from .plugins import Registry
+from .registry import Registry
 
 log = getLogger( __name__ )
 

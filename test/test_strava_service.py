@@ -4,6 +4,7 @@ from typing import List
 
 from pytest import mark
 
+import tracs.registry
 from tracs.resources import Resource
 from tracs.plugins.strava import Strava
 from tracs.plugins.strava import StravaActivity
@@ -42,7 +43,7 @@ def test_constructor():
 
 @mark.skip( reason='HTTP test not supported by OAuth lib' )
 @mark.context( library='empty', config='default', cleanup=True )
-@mark.service( cls=Strava, url=TEST_BASE_URL )
+@tracs.registry.service( cls=Strava, url=TEST_BASE_URL )
 def test_service( strava_server, service ):
 	from tracs.config import ApplicationConfig
 	from tracs.config import ApplicationState
@@ -72,7 +73,7 @@ def test_service( strava_server, service ):
 
 @mark.skip( reason='HTTP test not supported by OAuth lib' )
 @mark.context( library='empty', config='default', cleanup=True )
-@mark.service( cls=Strava, url=TEST_BASE_URL )
+@tracs.registry.service( cls=Strava, url=TEST_BASE_URL )
 def test_workflow( strava_server, service ):
 	service.login()
 	fetched = service.fetch( False, False )
@@ -81,7 +82,7 @@ def test_workflow( strava_server, service ):
 
 @skip_live
 @mark.context( library='empty', config='live', cleanup=True )
-@mark.service( cls=Strava, url=LIVE_BASE_URL )
+@tracs.registry.service( cls=Strava, url=LIVE_BASE_URL )
 def test_live_workflow( service ):
 	service.login()
 	assert service.logged_in

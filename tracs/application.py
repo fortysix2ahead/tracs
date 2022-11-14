@@ -16,7 +16,7 @@ from confuse.exceptions import ConfigTypeError
 from .config import ApplicationContext
 from .config import APPNAME
 from .db import ActivityDb
-from .plugins import Registry
+from .registry import Registry
 from .utils import UCFG
 
 log = getLogger( __name__ )

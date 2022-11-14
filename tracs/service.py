@@ -23,7 +23,7 @@ from .config import GlobalConfig as gc
 from .config import KEY_LAST_DOWNLOAD
 from .config import KEY_LAST_FETCH
 from .config import KEY_PLUGINS
-from .plugins import Registry
+from .registry import Registry
 
 log = getLogger( __name__ )
 

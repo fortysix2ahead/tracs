@@ -7,8 +7,8 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-from . import document
-from . import service
+from ..registry import document
+from ..registry import service
 from .plugin import Plugin
 from ..activity import Activity
 from ..resources import Resource

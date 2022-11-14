@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pytest import mark
 
-from tracs.plugins import Registry
+from tracs.registry import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE
 from tracs.plugins.bikecitizens import BikecitizensActivity
 from tracs.plugins.handlers import CSV_TYPE

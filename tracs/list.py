@@ -17,7 +17,7 @@ from .dataclasses import FILTERABLE
 from .dataclasses import FILTER_ALIAS
 from .dataclasses import PERSIST
 from .dataclasses import PROTECTED
-from .plugins import Registry
+from .registry import Registry
 from .utils import fmt
 from .utils import red
 

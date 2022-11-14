@@ -28,7 +28,7 @@ from . import importer
 from . import service
 from .handlers import CSVHandler
 from tracs.plugins.gpx import GPX_TYPE
-from .handlers import ResourceHandler
+from ..handlers import ResourceHandler
 from .plugin import Plugin
 from ..activity_types import ActivityTypes
 from ..activity import Activity

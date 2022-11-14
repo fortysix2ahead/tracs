@@ -5,7 +5,7 @@ from typing import Any
 from tracs.activity import Activity
 from tracs.plugins import document
 from tracs.plugins import importer
-from tracs.plugins.handlers import ResourceHandler
+from tracs.handlers import ResourceHandler
 
 log = getLogger( __name__ )
 

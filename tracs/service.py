@@ -171,6 +171,8 @@ class Service( Plugin ):
 	def url_for_resource_type( self, local_id: Union[int, str], type: str ):
 		pass
 
+	# methods related to fetch()
+
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		"""
 		This method has to be implemented by a service class. It shall fetch information for
@@ -186,6 +188,16 @@ class Service( Plugin ):
 
 	def fetch_ids( self ) -> List[int]:
 		return [ r.local_id for r in self.fetch( force=False, pretend=False ) ]
+
+	# noinspection PyMethodMayBeStatic
+	def filter_fetched( self, resources: List[Resource], **kwargs ) -> List[Resource]:
+		if uid := kwargs.get( 'uid', None ):
+			requested = next( (r for r in resources if r.uid == uid ), None )
+			return [requested] if requested else []
+		else:
+			return resources
+
+	# methods related to download()
 
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		"""
@@ -211,30 +223,42 @@ class Service( Plugin ):
 		"""
 		pass
 
-	def persist_resource_data( self, activity: Activity, force: bool, pretend: bool, **kwargs ) -> None:
+	def persist_resources( self, resources: Union[Resource, List[Resource]], force: bool, pretend: bool, **kwargs ) -> None:
+		resources = [resources] if type( resources ) is Resource else resources
 		if pretend:
-			log.info( f'pretending to write resources of activity {activity.uid}' )
+			log.info( f'pretending to write resources' ) # todo: improve message
 			return
 
-		for r in activity.resources:
-			path = self.path_for_resource( r )
-			path.parent.mkdir( parents=True, exist_ok=True )
+		for r in resources:
+			resource_list = [ r, *r.resources ]
+			for rl in resource_list:
+				path = self.path_for_resource( rl)
+				path.parent.mkdir( parents=True, exist_ok=True )
+				if not force and path.exists():
+					continue
 
-			if ( r.text or r.content ) and r.status == 200:
-				if not path.exists() or force:
+				try:
+					path.write_bytes( rl.content )
+					kwargs.get( 'ctx' ).db.insert_resource( rl )
+				except TypeError:
+					log.error( f'error writing resource data for resource {rl.uid}?{rl.path}', exc_info=True )
 
-					try:
-						path.write_text( r.text )
-						r.dirty = True
-					except TypeError:
-						try:
-							path.write_bytes( r.content )
-							r.dirty = True
-						except TypeError:
-							log.error( f'skipping write of resource data for resource {r.path}', exc_info=True )
-
-	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
+	def postprocess_resource( self, resource: Resource = None, **kwargs ) -> None:
 		pass
+
+	# noinspection PyMethodMayBeStatic
+	def create_activities( self, resource: Resource, **kwargs ) -> List[Activity]:
+		if activity_cls := Registry.document_types.get( resource.type ):
+			return [ activity_cls( raw=resource.raw, resources=[resource, *resource.resources] ) ]
+		else:
+			return []
+
+	def postprocess_activities( self, *activities: Activity, **kwargs ) -> None:
+		pass
+
+	def persist_activities( self, *activities: Activity, force: bool, pretend: bool, **kwargs ) -> None:
+		for a in activities:
+			self.upsert_activity( activity=a, force=force, pretend=pretend, **kwargs )
 
 	def upsert_activity( self, activity: Activity, force: bool, pretend: bool, **kwargs ) -> None:
 		for r in activity.resources:
@@ -254,23 +278,35 @@ class Service( Plugin ):
 			else:
 				new_activity = Activity().init_from( activity )
 				new_activity.uids = [activity.uid]
+				new_activity.parts = activity.parts
 				self._ctx.db.insert( new_activity )
 
 	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ):
 		self._ctx: ApplicationContext = kwargs.get( 'ctx', None )
+		skip_fetch = kwargs.get( 'skip_fetch', False ) # not used at the moment
 		skip_download = kwargs.get( 'skip_download', False )
-		uid = kwargs.get( 'uid', None )
 
 		# fetch 'main' resources for each activity
 		summaries = self.fetch( force, pretend, **kwargs )
 
 		# if only one resource was requested: filter out everything else
-		if uid:
-			requested = next( (r for r in summaries if r.uid == uid ), None )
-			summaries = [requested] if requested else []
+		summaries = self.filter_fetched( summaries, **kwargs )
 
 		# update fetch timestamp
 		self._ctx.state[KEY_PLUGINS][self.name][KEY_LAST_FETCH] = datetime.utcnow().astimezone( UTC ).isoformat()
+
+		if not skip_download:
+			for summary in summaries:
+				if not ( recordings := self._ctx.db.find_resource_group( summary.uid ).recordings() ) or force:
+					self.download( summary=summary, force=force, pretend=pretend, **kwargs )
+					self.postprocess_resource( resource=summary, **kwargs )  # post process
+					self.persist_resources( resources=summary, force=force, pretend=pretend, **kwargs )
+
+					activities = self.create_activities( resource=summary, **kwargs )
+					self.postprocess_activities( *activities, **kwargs )
+					self.persist_activities( *activities, force=force, pretend=pretend, **kwargs )
+
+		raise RuntimeError
 
 		for summary in summaries:
 			recordings = []

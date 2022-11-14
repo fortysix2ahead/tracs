@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,7 +14,6 @@ from requests import Response
 from requests import Session
 
 from tracs.activity import Activity
-from tracs.base import Activity
 from tracs.resources import Resource
 
 class Handler( Protocol ):

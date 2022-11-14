@@ -25,7 +25,7 @@ from ..registry import service
 from tracs.plugins.gpx import GPX_TYPE
 from .handlers import JSON_TYPE
 from .handlers import JSONHandler
-from .plugin import Plugin
+from . import Plugin
 from ..activity import Activity
 from ..resources import Resource
 from ..activity_types import ActivityTypes

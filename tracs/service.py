@@ -16,7 +16,7 @@ from confuse import NotFoundError
 from dateutil.tz import UTC
 
 from .activity import Activity
-from .activity import Resource
+from .resources import Resource
 from .base import Service as ServiceProtocol
 from .config import ApplicationContext
 from .config import GlobalConfig as gc

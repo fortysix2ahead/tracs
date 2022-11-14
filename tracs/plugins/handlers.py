@@ -17,7 +17,7 @@ from requests import Response
 
 from . import importer
 from ..activity import Activity
-from ..activity import Resource
+from ..resources import Resource
 
 CSV_TYPE = 'application/csv'
 JSON_TYPE = 'application/json'

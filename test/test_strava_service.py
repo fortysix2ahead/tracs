@@ -4,7 +4,7 @@ from typing import List
 
 from pytest import mark
 
-from tracs.activity import Resource
+from tracs.resources import Resource
 from tracs.plugins.strava import Strava
 from tracs.plugins.strava import StravaActivity
 from .helpers import skip_live

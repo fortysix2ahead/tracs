@@ -11,7 +11,7 @@ from . import document
 from . import service
 from .plugin import Plugin
 from ..activity import Activity
-from ..activity import Resource
+from ..resources import Resource
 from ..config import ApplicationContext
 from ..service import Service
 

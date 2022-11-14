@@ -27,7 +27,7 @@ from .handlers import JSON_TYPE
 from .handlers import JSONHandler
 from .plugin import Plugin
 from ..activity import Activity
-from ..activity import Resource
+from ..resources import Resource
 from ..activity_types import ActivityTypes
 from ..config import ApplicationContext
 from ..config import console

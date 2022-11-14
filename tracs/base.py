@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from abc import ABC
 from abc import abstractmethod
-from enum import Enum
 from pathlib import Path
 from typing import Any
 from typing import Dict
@@ -13,63 +12,7 @@ from typing import Protocol
 from typing import Type
 from typing import Union
 
-class ResourceStatus( Enum ):
-	UNKNOWN = 100
-	EXISTS = 200
-	NO_CONTENT = 204
-	NOT_FOUND = 404
-
-class Resource( Protocol ):
-
-	@property
-	@abstractmethod
-	def name( self ) -> str:
-		pass
-
-	@property
-	@abstractmethod
-	def type( self ) -> str:
-		pass
-
-	@property
-	@abstractmethod
-	def status( self ) -> int:
-		pass
-
-	@status.setter
-	@abstractmethod
-	def status( self, status: int ) -> None:
-		pass
-
-	@property
-	@abstractmethod
-	def path( self ) -> str:
-		pass
-
-	@property
-	@abstractmethod
-	def uid( self ) -> str:
-		pass
-
-	@property
-	@abstractmethod
-	def content( self ) -> Optional[bytes]:
-		pass
-
-	@property
-	@abstractmethod
-	def text( self ) -> Optional[str]:
-		pass
-
-	@property
-	@abstractmethod
-	def raw( self ) -> Any:
-		pass
-
-	@property
-	@abstractmethod
-	def data( self ) -> Any:
-		pass
+from tracs.resources import Resource
 
 class Activity( ABC, dict ):
 	"""

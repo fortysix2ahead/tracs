@@ -4,11 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import fields
-from dataclasses import InitVar
 from datetime import datetime
 from typing import Any
 from typing import Dict
-from typing import Tuple
 from typing import Union
 
 from logging import getLogger
@@ -23,66 +21,10 @@ from .dataclasses import FILTERABLE
 from .dataclasses import FILTER_ALIAS
 from .dataclasses import PERSIST
 from .dataclasses import PROTECTED
+from .resources import Resource
+from .resources import ResourceGroup
 
 log = getLogger( __name__ )
-
-@dataclass
-class Resource( BaseDocument ):
-
-	name: str = field( default=None )
-	type: str = field( default=None )
-	path: str = field( default=None )
-	source: str = field( default=None )
-	status: int = field( default=None )
-	summary: bool = field( default=False )
-	uid: str = field( default=None )
-
-	# additional field holding data of a resource, used when loading, but won't be persisted in db
-	raw: Any = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # structured data making up this resource
-	content: bytes = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # raw content as bytes
-	text: InitVar[str] = field( default=None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )  # decoded content as string, to be removed
-
-	resources: List[Resource] = field( default_factory=list, repr=False, metadata={ PERSIST: False, PROTECTED: True } )
-
-	def __post_init__( self, text: str ):
-		super().__post_init__()
-		self.content = text.encode( encoding='UTF-8' ) if text else self.content
-
-	@property
-	def classifier( self ) -> str:
-		return self._uid()[0]
-
-	@property
-	def local_id( self ) -> int:
-		return int( self._uid()[1] )
-
-	@property # property should be deprecated in favour of local id
-	def raw_id( self ) -> int:
-		return self.local_id
-
-	def _uid( self ) -> Tuple[str, str]:
-		classifier, raw_id = self.uid.split( ':', maxsplit=1 )
-		return classifier, raw_id
-
-	def as_text( self, encoding: str = 'UTF-8' ) -> Optional[str]:
-		return self.content.decode( encoding )
-
-	def summaries( self ) -> Optional[Resource]:
-		return next( (r for r in self.resources if r.summary), None )
-
-	def recordings( self ) -> List[Resource]:
-		return [r for r in self.resources if not r.summary]
-
-@dataclass
-class ResourceGroup:
-
-	resources: List[Resource] = field( default_factory=list )
-
-	def summary( self ) -> Optional[Resource]:
-		return next( ( r for r in self.resources if r.summary ), None )
-
-	def recordings( self ) -> List[Resource]:
-		return [ r for r in self.resources if not r.summary ]
 
 @dataclass
 class ActivityRef:

@@ -10,7 +10,7 @@ from gpxpy import parse as parse_gpx
 from gpxpy.gpx import GPX
 
 from tracs.activity import Activity
-from tracs.activity import Resource
+from tracs.resources import Resource
 from tracs.plugins import document
 from tracs.plugins import importer
 from tracs.plugins.handlers import ResourceHandler

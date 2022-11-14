@@ -26,15 +26,6 @@ from .dataclasses import PROTECTED
 
 log = getLogger( __name__ )
 
-# noinspection PyTypeChecker
-def str2activitytype( v: Union[ActivityTypes, str] ) -> ActivityTypes:
-	if type( v ) is ActivityTypes:
-		return v
-	elif type( v ) is str:
-		return ActivityTypes.get( v )
-	else:
-		return None
-
 @dataclass
 class Resource( BaseDocument ):
 

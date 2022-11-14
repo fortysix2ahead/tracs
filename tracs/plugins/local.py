@@ -13,7 +13,7 @@ from urllib.request import url2pathname
 from ..registry import Registry
 from ..registry import document
 from ..registry import service
-from .plugin import Plugin
+from . import Plugin
 from ..activity import Activity
 from ..resources import Resource
 from ..config import ApplicationContext

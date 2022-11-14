@@ -33,7 +33,7 @@ from .handlers import JSON_TYPE
 from .handlers import JSONHandler
 from .handlers import TCX_TYPE
 from .handlers import XMLHandler
-from .plugin import Plugin
+from . import Plugin
 from ..activity import Activity
 from ..resources import Resource
 from ..activity_types import ActivityTypes

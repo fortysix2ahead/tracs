@@ -15,6 +15,7 @@ from typing import Union
 from dateutil.tz import UTC
 
 from .activity import Activity
+from .db import ActivityDb
 from .plugin import Plugin
 from .resources import Resource
 from .config import ApplicationContext
@@ -65,6 +66,10 @@ class Service( Plugin ):
 	@property
 	def base_url( self ) -> str:
 		return self._base_url
+
+	@property
+	def _db( self ) -> ActivityDb:
+		return self.ctx.db
 
 	# some helper class methods
 
@@ -272,12 +277,13 @@ class Service( Plugin ):
 		skip_fetch = kwargs.get( 'skip_fetch', False ) # not used at the moment
 		skip_download = kwargs.get( 'skip_download', False )
 		skip_link = kwargs.get( 'skip_link', False ) # not used at the moment
+		uid = kwargs.get( 'uid' )
 
-		# fetch 'main' resources for each activity
-		summaries = self.fetch( force, pretend, **kwargs )
-
-		# if only one resource was requested: filter out everything else
-		summaries = self.filter_fetched( summaries, **kwargs )
+		if uid:
+			summary = self._db.get_resources_by_uid( uid )
+		else:
+			summaries = self.fetch( force, pretend, **kwargs ) # fetch 'main' resources for each activity
+			summaries = self.filter_fetched( summaries, **kwargs ) # if only one resource was requested: filter out everything else
 
 		# update fetch timestamp
 		self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() )

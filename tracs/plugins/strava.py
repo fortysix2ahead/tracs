@@ -308,6 +308,12 @@ class Strava( Service, Plugin ):
 		if url := resource.source:
 			log.debug( f'downloading resource from {url}' )
 			response = self._session.get( url, headers=HEADERS_LOGIN, allow_redirects=True, stream=True )
+
+			# content type is 'text/html; charset=utf-8' for .gpx resources that do not exist (i.e. for strenth training)
+			# disposition is None in such cases
+			content_type = response.headers.get( 'Content-Type' )
+			content_disposition = response.headers.get( 'content-disposition' )
+
 			ext = findall( r'^.*filename=\".+\.(\w+)\".*$', response.headers['content-disposition'] )[0]
 			resource_type = Registry.resource_type_for_suffix( ext )
 			resource.content = response.content
@@ -348,7 +354,6 @@ class Strava( Service, Plugin ):
 		}
 
 	def _save_oauth_token( self, token: dict ) -> None:
-
 		self.set_state_value( 'access_token', token['access_token'] )
 		self.set_state_value( 'refresh_token', token['refresh_token'] )
 		self.set_state_value( 'token_type', token['token_type'] )

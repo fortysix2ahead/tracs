@@ -27,6 +27,7 @@ from rich.prompt import Prompt
 from ..registry import Registry
 from ..registry import document
 from ..registry import importer
+from ..registry import resourcetype
 from ..registry import service
 from .gpx import GPX_TYPE
 from .fit import FIT_TYPE
@@ -117,7 +118,7 @@ TYPES = {
 	'Yoga': Types.yoga,
 }
 
-@document( type=STRAVA_TYPE )
+@resourcetype( type=STRAVA_TYPE, summary=True )
 class StravaActivity( Activity ):
 
 	def __raw_init__( self, raw: Any ) -> None:

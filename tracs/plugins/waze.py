@@ -2,6 +2,8 @@
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+from logging import getLogger
+from pathlib import Path
 from re import match
 from typing import Any
 from typing import cast
@@ -11,28 +13,26 @@ from typing import Tuple
 from typing import Union
 
 from click import echo
-from dateutil.tz import UTC
 from dateutil.tz import gettz
+from dateutil.tz import UTC
 from gpxpy.gpx import GPX
 from gpxpy.gpx import GPXTrack
 from gpxpy.gpx import GPXTrackPoint
 from gpxpy.gpx import GPXTrackSegment
-from logging import getLogger
-from pathlib import Path
 
-from ..registry import Registry
-from ..registry import document
-from ..registry import importer
-from ..registry import service
-from .handlers import CSVHandler
 from .gpx import GPX_TYPE
-from ..handlers import ResourceHandler
-from ..plugin import Plugin
-from ..activity_types import ActivityTypes
+from .handlers import CSVHandler
 from ..activity import Activity
-from ..resources import Resource
+from ..activity_types import ActivityTypes
 from ..config import ApplicationContext
 from ..config import KEY_LAST_FETCH
+from ..handlers import ResourceHandler
+from ..plugin import Plugin
+from ..registry import importer
+from ..registry import Registry
+from ..registry import resourcetype
+from ..registry import service
+from ..resources import Resource
 from ..service import Service
 from ..utils import as_datetime
 
@@ -47,7 +47,7 @@ DISPLAY_NAME = 'Waze'
 WAZE_TYPE = 'text/vnd.waze+txt'
 WAZE_TAKEOUT_TYPE = 'text/vnd.waze+csv'
 
-@document( type=WAZE_TYPE )
+@resourcetype( type=WAZE_TYPE, summary=True )
 class WazeActivity( Activity ):
 
 	def __raw_init__( self, raw: Any ) -> None:

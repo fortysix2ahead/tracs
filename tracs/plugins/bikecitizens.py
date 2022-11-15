@@ -1,8 +1,8 @@
 
 from datetime import timedelta
 from logging import getLogger
-from re import match
 from re import DOTALL
+from re import match
 from sys import exit as sysexit
 from typing import Any
 from typing import cast
@@ -18,20 +18,20 @@ from requests import options
 from requests import Session
 from rich.prompt import Prompt
 
-from ..registry import Registry
-from ..registry import document
-from ..registry import importer
-from ..registry import service
 from .gpx import GPX_TYPE
 from .handlers import JSON_TYPE
 from .handlers import JSONHandler
-from ..plugin import Plugin
 from ..activity import Activity
-from ..resources import Resource
 from ..activity_types import ActivityTypes
 from ..config import ApplicationContext
-from ..config import console
 from ..config import APPNAME
+from ..config import console
+from ..plugin import Plugin
+from ..registry import importer
+from ..registry import Registry
+from ..registry import resourcetype
+from ..registry import service
+from ..resources import Resource
 from ..service import Service
 from ..utils import seconds_to_time
 
@@ -79,7 +79,7 @@ HEADERS_OPTIONS = { **HEADERS_TEMPLATE, **{
 	}
 }
 
-@document( type=BIKECITIZENS_TYPE )
+@resourcetype( type=BIKECITIZENS_TYPE, summary=True )
 class BikecitizensActivity( Activity ):
 
 	def __raw_init__( self, raw: Any ) -> None:

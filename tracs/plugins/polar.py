@@ -3,6 +3,8 @@ from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from re import match
+from sys import exit as sysexit
+from time import time as current_time
 from typing import Any
 from typing import cast
 from typing import List
@@ -11,10 +13,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-from requests_cache import CachedSession
-from sys import exit as sysexit
-from time import time as current_time
-
 from bs4 import BeautifulSoup
 from click import echo
 from dateutil.parser import parse
@@ -22,25 +20,26 @@ from dateutil.tz import tzlocal
 from dateutil.tz import UTC
 from fs import open_fs
 from fs.zipfs import ReadZipFS
+from requests_cache import CachedSession
 from rich.prompt import Prompt
 
-from ..registry import Registry
-from ..registry import document
-from ..registry import importer
-from ..registry import service
 from .gpx import GPX_TYPE
 from .handlers import JSON_TYPE
 from .handlers import JSONHandler
 from .handlers import TCX_TYPE
 from .handlers import XMLHandler
-from ..plugin import Plugin
 from ..activity import Activity
-from ..resources import Resource
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types
 from ..config import ApplicationContext
-from ..config import console
 from ..config import APPNAME
+from ..config import console
+from ..plugin import Plugin
+from ..registry import importer
+from ..registry import Registry
+from ..registry import resourcetype
+from ..registry import service
+from ..resources import Resource
 from ..service import Service
 from ..utils import seconds_to_time as stt
 
@@ -126,7 +125,7 @@ TYPES = {
 	'f4197b0c1a4d65962b9e45226c77d4d5-2015-10-20_13_45_26': Types.swim,
 }
 
-@document( type=POLAR_FLOW_TYPE )
+@resourcetype( type=POLAR_FLOW_TYPE, summary=True )
 class PolarActivity( Activity ):
 
 	def __raw_init__( self, raw: Any ) -> None:
@@ -141,7 +140,7 @@ class PolarActivity( Activity ):
 		self.duration = stt( self.raw['duration'] / 1000 ) if self.raw.get( 'duration' ) else None
 		self.calories = self.raw.get( 'calories' )
 
-@document
+@resourcetype( type=POLAR_EXERCISE_DATA_TYPE, summary=True )
 class PolarExerciseDataActivity( Activity ):
 
 	def __raw_init__( self, raw: Any ) -> None:

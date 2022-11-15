@@ -22,3 +22,16 @@ def test_resource_type():
 
 	rt = ResourceType( 'application/vnd.polar.gpx+zip' )
 	assert rt == ResourceType( type=rt.type, vendor='polar', subtype='gpx', suffix='zip' ) and rt.extension() == 'gpx.zip'
+
+	assert ResourceType( 'application/fit' ).extension() == 'fit'
+	assert ResourceType( 'application/vnd.bikecitizens+json' ).extension() == 'json'
+	assert ResourceType( 'application/vnd.bikecitizens.rec+json' ).extension() == 'rec.json'
+	assert ResourceType( 'application/vnd.polar+json' ).extension() == 'json'
+	assert ResourceType( 'application/vnd.strava+json' ).extension() == 'json'
+	assert ResourceType( 'application/vnd.waze+txt' ).extension() == 'txt'
+	assert ResourceType( 'application/vnd.polar.hrv+txt' ).extension() == 'hrv.txt'
+	assert ResourceType( 'application/gpx+xml' ).extension() == 'gpx'
+	assert ResourceType( 'application/vnd.polar.ped+xml' ).extension() == 'ped.xml'
+	assert ResourceType( 'application/tcx+xml' ).extension() == 'tcx'
+	assert ResourceType( 'application/vnd.polar+csv' ).extension() == 'csv'
+	assert ResourceType( 'application/vnd.polar.hrv+csv' ).extension() == 'hrv.csv'

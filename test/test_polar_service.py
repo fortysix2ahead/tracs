@@ -2,10 +2,9 @@
 from typing import List
 from pytest import mark
 
-import tracs.registry
 from tracs.resources import Resource
-from tracs.plugin.polar import BASE_URL
-from tracs.plugin.polar import Polar
+from tracs.plugins.polar import BASE_URL
+from tracs.plugins.polar import Polar
 from .helpers import skip_live
 
 from .polar_server import TEST_BASE_URL
@@ -28,7 +27,7 @@ def test_constructor():
 	assert polar._export_url == f'{TEST_BASE_URL}/api/export/training'
 
 @mark.context( library='empty', config='default', cleanup=True )
-@tracs.registry.service( cls=Polar, url=TEST_BASE_URL )
+@mark.service( cls=Polar, url=TEST_BASE_URL )
 def test_service( polar_server, service ):
 	# login
 	service.login()
@@ -45,7 +44,7 @@ def test_service( polar_server, service ):
 	assert r.uid == 'polar:300003'
 
 @mark.context( library='empty', config='default', cleanup=True )
-@tracs.registry.service( cls=Polar, url=TEST_BASE_URL )
+@mark.service( cls=Polar, url=TEST_BASE_URL )
 def test_workflow( polar_server, service ):
 	service.login()
 	fetched = service.fetch( True, False )
@@ -53,7 +52,7 @@ def test_workflow( polar_server, service ):
 
 @skip_live
 @mark.context( library='empty', config='live', cleanup=True )
-@tracs.registry.service( cls=Polar, url=BASE_URL )
+@mark.service( cls=Polar, url=BASE_URL )
 def test_live_workflow( service ):
 	service.login()
 	assert service.logged_in

@@ -1,8 +1,7 @@
-from pathlib import Path
+
 from threading import Thread
 
 from bottle import Bottle
-from bottle import request
 from bottle import static_file
 
 from .helpers import get_file_path

@@ -253,6 +253,8 @@ class Bikecitizens( Service, Plugin ):
 			for r in resources:
 				self.download_resource( r )
 
+			summary.resources.extend( resources )
+
 			return resources
 
 		except RuntimeError:

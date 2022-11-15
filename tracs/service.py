@@ -269,9 +269,9 @@ class Service( Plugin ):
 				self._ctx.db.insert( new_activity )
 
 	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ):
-		self._ctx: ApplicationContext = kwargs.get( 'ctx', None )
 		skip_fetch = kwargs.get( 'skip_fetch', False ) # not used at the moment
 		skip_download = kwargs.get( 'skip_download', False )
+		skip_link = kwargs.get( 'skip_link', False ) # not used at the moment
 
 		# fetch 'main' resources for each activity
 		summaries = self.fetch( force, pretend, **kwargs )
@@ -280,7 +280,7 @@ class Service( Plugin ):
 		summaries = self.filter_fetched( summaries, **kwargs )
 
 		# update fetch timestamp
-		self._ctx.state[KEY_PLUGINS][self.name][KEY_LAST_FETCH] = datetime.utcnow().astimezone( UTC ).isoformat()
+		self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() )
 
 		if not skip_download:
 			for summary in summaries:

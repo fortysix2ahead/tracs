@@ -16,10 +16,10 @@ from ..registry import importer
 from ..handlers import ResourceHandler
 from ..resources import Resource
 
-CSV_TYPE = 'application/csv'
+CSV_TYPE = 'text/csv'
 JSON_TYPE = 'application/json'
 XML_TYPE = 'application/xml'
-TCX_TYPE = 'application/xml+tcx'
+TCX_TYPE = 'application/tcx+xml'
 
 @importer( type=CSV_TYPE )
 class CSVHandler( ResourceHandler ):

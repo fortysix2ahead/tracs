@@ -44,8 +44,8 @@ ACTIVITY_FILE = 'account_activity_3.csv'
 SERVICE_NAME = 'waze'
 DISPLAY_NAME = 'Waze'
 
-WAZE_TYPE = 'application/text+waze'
-WAZE_TAKEOUT_TYPE = 'application/csv+waze'
+WAZE_TYPE = 'text/vnd.waze+txt'
+WAZE_TAKEOUT_TYPE = 'text/vnd.waze+csv'
 
 @document( type=WAZE_TYPE )
 class WazeActivity( Activity ):

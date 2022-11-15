@@ -21,7 +21,7 @@ from ..registry import importer
 
 log = getLogger( __name__ )
 
-TCX_TYPE = 'application/xml+tcx'
+TCX_TYPE = 'application/tcx+xml'
 
 @dataclass
 class TcxPoint:

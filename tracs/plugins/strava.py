@@ -49,7 +49,8 @@ log = getLogger( __name__ )
 
 SERVICE_NAME = 'strava'
 DISPLAY_NAME = 'Strava'
-STRAVA_TYPE = 'application/json+strava'
+
+STRAVA_TYPE = 'application/vnd.strava+json'
 
 BASE_URL = 'https://www.strava.com'
 OAUTH_REDIRECT_URL = 'http://localhost:40004'

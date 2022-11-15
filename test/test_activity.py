@@ -11,7 +11,7 @@ from tracs.activity import UID
 from tracs.resources import Resource
 from tracs.activity_types import ActivityTypes
 from tracs.dataclasses import as_dict
-from tracs.plugin.polar import PolarActivity
+from tracs.plugins.polar import PolarActivity
 
 @mark.file( 'libraries/default/activities.json' )
 def test_init( json ):
@@ -56,6 +56,7 @@ def test_asdict():
 	a = Activity()
 	assert a.asdict() == {
 		'equipment': [],
+		'parts'     : [],
 		'tags'     : [],
 		'timezone' : get_localzone_name(),
 		'uids'     : []
@@ -63,6 +64,7 @@ def test_asdict():
 
 	assert as_dict( a ) == {
 		'equipment': [],
+		'parts'    : [],
 		'tags'     : [],
 		'timezone' : get_localzone_name(),
 		'uids'     : []
@@ -74,6 +76,7 @@ def test_asdict():
 		'equipment': [],
 		'id'       : 0,
 		'metadata' : {},
+		'parts'    : [],
 		'resources': [],
 		'tags'     : [],
 		'timezone' : get_localzone_name(),
@@ -111,6 +114,7 @@ def test_asdict():
 		'equipment' : [],
 		'name'      : 'name',
 		'raw_id'    : 1,
+		'parts'     : [],
 		'tags'      : [],
 		'time'      : datetime( 2020, 1, 1, 10, 0, 0, tzinfo=UTC ),
 		'timezone'  : get_localzone_name(),

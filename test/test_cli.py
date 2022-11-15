@@ -5,7 +5,6 @@ from typing import Optional
 from typing import Tuple
 
 from click import echo
-from click import secho
 from click.testing import CliRunner
 from click.testing import Result
 from pytest import mark
@@ -13,7 +12,6 @@ from pytest import mark
 from tracs.cli import cli
 from tracs.config import ApplicationContext
 
-from .helpers import prepare_environment
 from .helpers import skip_live
 
 cfg_path: Optional[Path] = None

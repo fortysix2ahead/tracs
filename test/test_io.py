@@ -3,11 +3,10 @@ from pytest import mark
 from tracs.config import ApplicationContext
 from tracs.inout import load_resource
 from tracs.inout import reimport_activities
-from tracs.plugin.gpx import GPXActivity
-from tracs.plugin.gpx import GPX_TYPE
-from tracs.plugin.polar import POLAR_FLOW_TYPE
-from tracs.plugin.polar import PolarActivity
-
+from tracs.plugins.gpx import GPXActivity
+from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugins.polar import POLAR_FLOW_TYPE
+from tracs.plugins.polar import PolarActivity
 
 @mark.db( library='default', inmemory=True )
 def test_load_resource( db ):

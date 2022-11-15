@@ -51,12 +51,13 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'polar'
 DISPLAY_NAME = 'Polar Flow'
 
-POLAR_CSV_TYPE = 'text/csv+polar'
-POLAR_HRV_TYPE = 'text/csv+polar-hrv'
-POLAR_FLOW_TYPE = 'application/json+polar'
-POLAR_EXERCISE_DATA_TYPE = 'application/xml+polar-ped'
-POLAR_ZIP_GPX_TYPE = 'application/zip+polar-gpx'
-POLAR_ZIP_TCX_TYPE = 'application/zip+polar-tcx'
+POLAR_CSV_TYPE = 'text/vnd.polar+csv'
+POLAR_HRV_TYPE = 'text/vnd.polar.hrv+csv'
+POLAR_FLOW_TYPE = 'application/vnd.polar+json'
+POLAR_EXERCISE_DATA_TYPE = 'application/vnd.polar.ped+xml'
+POLAR_ZIP_GPX_TYPE = 'application/vnd.polar.gpx+zip'
+POLAR_ZIP_TCX_TYPE = 'application/vnd.polar.tcx+zip'
+
 PED_NS = 'http://www.polarpersonaltrainer.com'
 
 # polar icon ids for identifying multipart activities: there does not seem to be any other way to identify those

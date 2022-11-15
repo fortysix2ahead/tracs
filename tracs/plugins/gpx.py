@@ -18,7 +18,7 @@ from tracs.utils import seconds_to_time
 
 log = getLogger( __name__ )
 
-GPX_TYPE = 'application/xml+gpx'
+GPX_TYPE = 'application/gpx+xml'
 
 @document( type=GPX_TYPE )
 class GPXActivity( Activity ):

@@ -43,8 +43,8 @@ DISPLAY_NAME = 'Bike Citizens'
 BASE_URL = 'https://my.bikecitizens.net'
 API_URL = 'https://api.bikecitizens.net'
 
-BIKECITIZENS_TYPE = 'application/json+bikecitizens'
-BIKECITIZENS_RECORDING_TYPE = 'application/json+bikecitizens-recording'
+BIKECITIZENS_TYPE = 'application/vnd.bikecitizens+json'
+BIKECITIZENS_RECORDING_TYPE = 'application/vnd.bikecitizens.rec+json'
 
 HEADERS_TEMPLATE = {
 	'Accept-Encoding': 'gzip, deflate, br',

@@ -7,7 +7,7 @@ from dateutil.tz import tzlocal
 
 from pytest import mark
 
-from tracs.plugin.polar import PolarActivity
+from tracs.plugins.polar import PolarActivity
 from tracs.activity_types import ActivityTypes
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.raw.json' )

@@ -283,7 +283,9 @@ class Service( Plugin ):
 		self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() )
 
 		if not skip_download:
+			self.ctx.start( f'downloading activity data from {self.display_name}', len( summaries ) )
 			for summary in summaries:
+				self.ctx.advance( f'{summary.uid}' )
 				if not ( recordings := self._ctx.db.find_resource_group( summary.uid ).recordings() ) or force:
 					self.download( summary=summary, force=force, pretend=pretend, **kwargs )
 					self.postprocess_resource( resource=summary, **kwargs )  # post process
@@ -292,6 +294,8 @@ class Service( Plugin ):
 					activities = self.create_activities( resource=summary, **kwargs )
 					self.postprocess_activities( *activities, **kwargs )
 					self.persist_activities( *activities, force=force, pretend=pretend, **kwargs )
+
+			self.ctx.complete( 'done' )
 
 	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
 		if resource.type in ['gpx', 'tcx'] and resource.status == 200: # todo: make linkable resources configurable

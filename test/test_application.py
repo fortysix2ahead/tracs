@@ -10,10 +10,7 @@ from tracs.config import CONFIG_FILENAME
 from tracs.config import DB_DIRNAME
 from tracs.config import OVERLAY_DIRNAME
 from tracs.config import STATE_FILENAME
-from tracs.config import ApplicationConfig as cfg
-from tracs.config import ApplicationContext
 from tracs.config import VAR_DIRNAME
-from .helpers import get_config_path
 
 def test_app_constructor():
 	app =  Application.__new__( Application, config_dir=None, lib_dir=None, verbose=False, debug=False, force=False )

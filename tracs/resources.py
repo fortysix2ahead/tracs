@@ -5,10 +5,13 @@ from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import InitVar
 from enum import Enum
+from re import compile
+from re import Pattern
 from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Type
 
 from tracs.dataclasses import BaseDocument
 from tracs.dataclasses import PERSIST
@@ -20,6 +23,39 @@ class ResourceStatus( Enum ):
 	EXISTS = 200
 	NO_CONTENT = 204
 	NOT_FOUND = 404
+
+pattern: Pattern = compile( '\w+\/(vnd\.(?P<vendor>\w+).)?((?P<subtype>\w+)\+)?(?P<suffix>\w+)' )
+
+@dataclass
+class ResourceType:
+
+	# type/subtype
+	# type "/" [tree "."] subtype ["+" suffix]* [";" parameter]
+
+	type: str = field( default=None )
+	subtype: str = field( default=None )
+	suffix: str = field( default=None )
+	vendor: str = field( default=None )
+
+	activity_cls: Type = field( default=None )
+	name: str = field( default=None )
+	summary: bool = field( default=False )
+	recording: bool = field( default=False )
+	image: bool = field( default=False )
+
+	def __post_init__( self ):
+		if self.subtype or self.suffix or self.vendor:
+			return
+		if self.type and (m := pattern.match( self.type )):
+			self.suffix = m.groupdict().get( 'suffix' )
+			self.subtype = m.groupdict().get( 'subtype' )
+			self.vendor = m.groupdict().get( 'vendor' )
+
+	def extension( self ) -> Optional[str]:
+		if self.suffix and self.subtype:
+			return f'{self.subtype}' if not self.vendor else f'{self.subtype}.{self.suffix}'
+		else:
+			return self.suffix
 
 @dataclass
 class Resource( BaseDocument ):

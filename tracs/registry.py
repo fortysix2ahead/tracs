@@ -24,6 +24,7 @@ from tracs.config import KEY_CLASSIFER
 from tracs.handlers import Handler
 from tracs.handlers import Importer
 from tracs.protocols import Service
+from tracs.resources import ResourceType
 
 log = getLogger( __name__ )
 
@@ -46,6 +47,7 @@ class Registry:
 	fetchers = {}
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
+	resource_types: Dict[str, Type] = {}
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
 
@@ -68,6 +70,17 @@ class Registry:
 	@classmethod
 	def service_for( cls, uid: str = None ) -> Service:
 		return Registry.services.get( uid.split( ':', maxsplit= 1 )[0] )
+
+	# resource types
+
+	@classmethod
+	def register_resource_type( cls, resource_type ) -> None:
+		Registry.resource_types[resource_type.type] = resource_type
+
+	# noinspection PyUnresolvedReferences
+	@classmethod
+	def resource_type_for_extension( cls, extension: str ) -> Optional[ResourceType]:
+		return next( (rt for rt in Registry.resource_types.values() if rt.extension() == extension), None )
 
 	@classmethod
 	def resource_type_for_suffix( cls, suffix: str ) -> Optional[str]:
@@ -243,6 +256,12 @@ def _register( args, kwargs, dictionary, callable_fn = False ) -> Union[Type, Ca
 		return decorated_fn
 	else:
 		raise RuntimeError( 'unable to register function -> this needs to be reported' )
+
+def resourcetype( *args, **kwargs ):
+	def reg_resource_type( cls ):
+		Registry.register_resource_type( ResourceType( type=kwargs.get( 'type' ), summary=kwargs.get( 'summary', False ), activity_cls=cls ) )
+		return cls
+	return reg_resource_type if len( args ) == 0 else args[0]
 
 def service( cls: Type ):
 	if isclass( cls ):

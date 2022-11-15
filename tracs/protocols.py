@@ -19,7 +19,7 @@ log = getLogger( __name__ )
 
 # protocol for a service -> todo: should be stripped down, not all methods are necessary
 
-class Service( Protocol ):
+class Plugin( Protocol ):
 
 	# getting/setting configuration values
 
@@ -35,7 +35,17 @@ class Service( Protocol ):
 	def set_state_value( self, key: str, value: Any ) -> None:
 		pass
 
-	def path_for_id( self, raw_id: int, base_path: Optional[Path] ) -> Path:
+class Service( Protocol ):
+
+	def path_for_id( self, local_id: int, base_path: Optional[Path] ) -> Path:
+		"""
+		Returns the path in the local db for the provided local id. If the base_path is
+		provided, the method returns an abolute path, if not a path relative to the db path
+		of the service.
+
+		Example: local_id = 1001, return value = '1/0/0/1001'
+		:return: path for the provided local id
+		"""
 		pass
 
 	def path_for( self, activity: Activity = None, resource: Resource = None, ignore_overlay: bool = True ) -> Optional[Path]:

@@ -33,8 +33,6 @@ class Service( Plugin ):
 	def __init__( self, **kwargs ):
 		super().__init__( **kwargs )
 
-		self._name = kwargs.pop( 'name' ) if 'name' in kwargs else None
-		self._display_name = kwargs.pop( 'display_name' ) if 'display_name' in kwargs else None
 		self._base_path = kwargs.pop( 'base_path' ) if 'base_path' in kwargs else None
 		self._overlay_path = kwargs.pop( 'overlay_path' ) if 'overlay_path' in kwargs else None
 		self._base_url = kwargs.pop( 'base_url' ) if 'base_url' in kwargs else None
@@ -43,18 +41,6 @@ class Service( Plugin ):
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
 
 	# properties
-
-	@property
-	def name( self ) -> str:
-		return self._name
-
-	@property
-	def display_name( self ) -> str:
-		return self._display_name
-
-	@property
-	def enabled( self ) -> bool:
-		return True
 
 	@property
 	def logged_in( self ) -> bool:
@@ -79,10 +65,6 @@ class Service( Plugin ):
 	@property
 	def base_url( self ) -> str:
 		return self._base_url
-
-	@property
-	def db_dir( self ) -> Path:
-		return self._cfg['db_dir'].get()
 
 	# some helper class methods
 
@@ -169,6 +151,11 @@ class Service( Plugin ):
 
 	@abstractmethod
 	def url_for_resource_type( self, local_id: Union[int, str], type: str ):
+		pass
+
+	# login method
+
+	def login( self ) -> bool:
 		pass
 
 	# methods related to fetch()
@@ -305,64 +292,6 @@ class Service( Plugin ):
 					activities = self.create_activities( resource=summary, **kwargs )
 					self.postprocess_activities( *activities, **kwargs )
 					self.persist_activities( *activities, force=force, pretend=pretend, **kwargs )
-
-		raise RuntimeError
-
-		for summary in summaries:
-			recordings = []
-
-			# do not download if skip flag is set
-			if not skip_download:
-				# download all additional resources for a certain local id/main resource
-				if not ( recordings := self._ctx.db.find_resource_group( summary.uid ).recordings() ) or force:
-					recordings = self.download( summary=summary, force=force, pretend=pretend, **kwargs )
-					recordings = [ r for r in recordings if r.status == 200 ]
-					self._ctx.state[KEY_PLUGINS][self.name][KEY_LAST_DOWNLOAD] = datetime.utcnow().astimezone( UTC ).isoformat()
-
-			# create an activity out of the downloaded resources
-			if activity_cls := Registry.document_types.get( summary.type ):
-				activity = activity_cls( raw=summary.raw, resources=[summary, *recordings] )
-
-				self.postprocess( activity, activity.resources ) # post process
-
-				# persist all information
-				if activity:
-					self.persist_resource_data( activity=activity, force=force, pretend=pretend, **kwargs )
-					self.upsert_activity( activity=activity, force=force, pretend=pretend, **kwargs )
-
-	# not used at the moment ...
-
-	# def _filter_fetched( self, fetched: Iterable[Activity], force: bool ) -> Tuple[List, List, List, List]:
-	# 	all_existing: List[Activity] = list( self._ctx.db.find_by_classifier( self.name ) )
-	# 	# old_new = [ ( next( ( e for e in existing if f.uid in e.uids ), None ), f ) for f in fetched ]
-	#
-	# 	added, updated, removed, unchanged = [], [], [], []
-	#
-	# 	for f in fetched:
-	# 		# existing = next( (e for e in all_existing if f.uid in e.uids), None )
-	# 		existing = self._ctx.db.get_by_uid( f.uid, True )
-	# 		if not existing:
-	# 			added.append( f )
-	# 		else:
-	# 			# all_existing.remove( existing ) # remove exiting activity from all_list, so we do not need to check it again
-	# 			pass
-	#
-	# 			if force: # use newly fetched resources in case of force
-	# 				existing.resources = f.resources
-	# 				updated.append( existing )
-	#
-	# 			else: # check for delta
-	# 				needs_update = False
-	#
-	# 				for r in f.resources:
-	# 					existing_resource = next( ( re for re in existing.resources if r.path == re.path ), None )
-	# 					if not existing_resource:
-	# 						existing.resources.append( r )
-	# 						needs_update = True
-	#
-	# 				updated.append( existing ) if needs_update else unchanged.append( existing )
-	#
-	# 	return added, updated, removed, unchanged
 
 	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
 		if resource.type in ['gpx', 'tcx'] and resource.status == 200: # todo: make linkable resources configurable

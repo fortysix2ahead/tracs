@@ -4,22 +4,21 @@ from datetime import datetime
 from pytest import mark
 
 from tracs.registry import Registry
-from tracs.plugin.bikecitizens import BIKECITIZENS_TYPE
-from tracs.plugin.bikecitizens import BikecitizensActivity
-from tracs.plugin.handlers import CSV_TYPE
-from tracs.plugin.gpx import GPXActivity
-from tracs.plugin.handlers import JSON_TYPE
-from tracs.plugin.handlers import XML_TYPE
-from tracs.plugin.polar import POLAR_EXERCISE_DATA_TYPE
-from tracs.plugin.polar import POLAR_FLOW_TYPE
-from tracs.plugin.polar import PolarActivity
-from tracs.plugin.polar import PolarExerciseDataActivity
-from tracs.plugin.strava import STRAVA_TYPE
-from tracs.plugin.strava import StravaActivity
-from tracs.plugin.tcx import TCXActivity
-from tracs.plugin.waze import WAZE_TYPE
-from tracs.plugin.waze import WazeActivity
-from .helpers import get_file_path
+from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE
+from tracs.plugins.bikecitizens import BikecitizensActivity
+from tracs.plugins.handlers import CSV_TYPE
+from tracs.plugins.gpx import GPXActivity
+from tracs.plugins.handlers import JSON_TYPE
+from tracs.plugins.handlers import XML_TYPE
+from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE
+from tracs.plugins.polar import POLAR_FLOW_TYPE
+from tracs.plugins.polar import PolarActivity
+from tracs.plugins.polar import PolarExerciseDataActivity
+from tracs.plugins.strava import STRAVA_TYPE
+from tracs.plugins.strava import StravaActivity
+from tracs.plugins.tcx import TCXActivity
+from tracs.plugins.waze import WAZE_TYPE
+from tracs.plugins.waze import WazeActivity
 
 @mark.file( 'templates/waze/account_activity_3.csv' )
 def test_csv_handler( path ):

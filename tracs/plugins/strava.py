@@ -264,9 +264,13 @@ class Strava( Service, Plugin ):
 		if not self.login():
 			return []
 
+		self.ctx.start( f'fetching activity summaries from {self.display_name}' )
+
 		try:
 			resources = []
 			for page in range( 1, 999999 ):
+				self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to { page * FETCH_PAGE_SIZE } (page {page})' )
+
 				# status is 429 and raw['message'] = 'Rate Limit Exceeded', when rate goes out of bounds ...
 				json_resource = self.json_handler.load( url=self.all_events_url( page ), session=self._oauth_session )
 
@@ -275,6 +279,8 @@ class Strava( Service, Plugin ):
 
 				if not json_resource.raw or len( json_resource.raw ) == 0:
 					break
+
+			self.ctx.complete( 'done' )
 
 			return resources
 
@@ -289,6 +295,8 @@ class Strava( Service, Plugin ):
 
 			for r in resources:
 				self.download_resource( r )
+
+			summary.resources.extend( resources )
 
 			return resources
 

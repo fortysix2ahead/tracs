@@ -187,14 +187,17 @@ class Waze( Service ):
 		return self._logged_in
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		ctx = self._ctx or kwargs.get( 'ctx' )
-		takeouts_dir = Path( ctx.takeout_dir, self.name )
+		takeouts_dir = Path( self.ctx.takeout_dir, self.name )
 		log.debug( f"fetching Waze activities from {takeouts_dir}" )
 
-		last_fetch = self.state_value( KEY_LAST_FETCH )
+		takeout_files = sorted( takeouts_dir.rglob( ACTIVITY_FILE ) )
+		self.ctx.start( f'fetching activity summaries from {self.display_name}', len( takeout_files ) )
+		# last_fetch = self.state_value( KEY_LAST_FETCH )
+
 		summaries = []
 
-		for file in sorted( takeouts_dir.rglob( ACTIVITY_FILE ) ):
+		for file in takeout_files:
+			self.ctx.advance( f'{file}' )
 			log.debug( f'fetching activities from Waze takeout in {file}' )
 
 			rel_path = file.relative_to( takeouts_dir ).parent
@@ -218,6 +221,8 @@ class Waze( Service ):
 				resource.uid = f'{self.name}:{local_id}'
 
 				summaries.append( resource )
+
+		self.ctx.complete( 'done' )
 
 		log.debug( f'fetched {len( summaries )} Waze activities' )
 

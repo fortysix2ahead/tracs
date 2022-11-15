@@ -141,7 +141,7 @@ class WazeTakeoutImporter( CSVHandler ):
 				parse_mode = False
 
 @service
-class Waze( Service, Plugin ):
+class Waze( Service ):
 
 	def __init__( self, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
@@ -226,9 +226,10 @@ class Waze( Service, Plugin ):
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
 			local_id, uid = summary.raw_id, summary.uid
-			resource = Resource( type=GPX_TYPE, path=f'{local_id}.gpx', status=100, uid=uid )
-			self.download_resource( resource, summary = summary )
-			return [ resource ]
+			gpx_resource = Resource( type=GPX_TYPE, path=f'{local_id}.gpx', status=100, uid=uid )
+			self.download_resource( gpx_resource, summary = summary )
+			summary.resources.append( gpx_resource )
+			return [ gpx_resource ]
 
 		except RuntimeError:
 			log.error( f'error fetching resources',exc_info=True )

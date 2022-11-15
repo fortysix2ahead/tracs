@@ -6,7 +6,7 @@ from datetime import timezone
 from pytest import mark
 
 from tracs.activity_types import ActivityTypes
-from tracs.plugin.strava import StravaActivity
+from tracs.plugins.strava import StravaActivity
 
 @mark.file( 'libraries/default/strava/2/0/0/200002/200002.raw.json' )
 def test_init_from_raw( json ):

@@ -275,7 +275,7 @@ class Strava( Service, Plugin ):
 				json_resource = self.json_handler.load( url=self.all_events_url( page ), session=self._oauth_session )
 
 				for item in json_resource.raw:
-					resources.append( self.importer.save( item, uid=f"{self.name}:{item['id']}", resource_path=f"{item['id']}.raw.json", resource_type=STRAVA_TYPE, status=200, source=self.url_for_id( item['id'] ), summary=True ) )
+					resources.append( self.importer.save( item, uid=f"{self.name}:{item['id']}", resource_path=f"{item['id']}.json", resource_type=STRAVA_TYPE, status=200, source=self.url_for_id( item['id'] ), summary=True ) )
 
 				if not json_resource.raw or len( json_resource.raw ) == 0:
 					break

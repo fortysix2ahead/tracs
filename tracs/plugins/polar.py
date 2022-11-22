@@ -5,8 +5,6 @@ from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from re import match
-from sys import exit as sysexit
-from time import time as current_time
 from typing import Any
 from typing import cast
 from typing import Dict
@@ -17,7 +15,6 @@ from typing import Tuple
 from typing import Union
 
 from datetimerange import DateTimeRange
-from requests_cache import CachedSession
 from sys import exit as sysexit
 from time import time as current_time
 
@@ -328,7 +325,7 @@ class Polar( Service, Plugin ):
 
 			for item in json_resource.raw:
 				local_id = _local_id( item )
-				resources.append( self.importer.save( item, uid = f'{self.name}:{local_id}', resource_path=f'{local_id}.raw.json', resource_type=POLAR_FLOW_TYPE, status = 200, source = self.url_for_id( local_id ), summary = True ) )
+				resources.append( self.importer.save( item, uid = f'{self.name}:{local_id}', resource_path=f'{local_id}.json', resource_type=POLAR_FLOW_TYPE, status = 200, source = self.url_for_id( local_id ), summary = True ) )
 
 			return resources
 

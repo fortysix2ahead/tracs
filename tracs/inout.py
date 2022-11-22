@@ -55,14 +55,14 @@ def import_activities( ctx: Optional[ApplicationContext], importer: str, sources
 	# use all registered services if nothing is provided
 	# services = [ s for i in importers if ( s := Registry.services.get( i ) ) ]
 
-	sources = sources or []
+	sources = sources or Registry.service_names()
 	uid_pattern = compile( f'^({"|".join( Registry.service_names() )}):(\d+)$' )
 
 	for src in sources:
 		uid = UID( src )
 
 		if uid.denotes_service() and (service := Registry.services.get( src )):
-			log.info( f'importing from service {src}' )
+			log.debug( f'importing from service {src}' )
 			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
 
 		elif uid.denotes_activity() and (service := Registry.service_for( uid.classifier )):

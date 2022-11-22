@@ -11,6 +11,7 @@ from difflib import SequenceMatcher
 from enum import Enum
 from re import match
 from time import gmtime
+from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -209,6 +210,9 @@ def colored_diff( left: str, right: str ) -> Tuple[str, str]:
 			left_colored += left[left_from:left_to]
 			right_colored += right[right_from:right_to]
 	return  left_colored, right_colored
+
+def unarg( key: str, *args, kwargs: Dict ) -> List[Any]:
+	return [*args[0]] or value if type( value := kwargs.get( key, [] ) ) is list else [value]
 
 # styling helpers
 

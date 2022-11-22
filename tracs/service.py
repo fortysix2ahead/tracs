@@ -24,6 +24,8 @@ from .config import KEY_LAST_DOWNLOAD
 from .config import KEY_LAST_FETCH
 from .config import KEY_PLUGINS
 from .registry import Registry
+from .resources import ResourceType
+from .utils import unarg
 
 log = getLogger( __name__ )
 
@@ -215,23 +217,22 @@ class Service( Plugin ):
 		"""
 		pass
 
-	def persist_resources( self, resources: Union[Resource, List[Resource]], force: bool, pretend: bool, **kwargs ) -> None:
-		resources = [resources] if type( resources ) is Resource else resources
+	def persist_resources( self, *resources: Resource, force: bool, pretend: bool, **kwargs ) -> None:
 		if pretend:
 			log.info( f'pretending to write resources' ) # todo: improve message
 			return
 
-		for r in resources:
-			resource_list = [ r, *r.resources ]
-			for rl in resource_list:
-				path = self.path_for_resource( rl)
-				path.parent.mkdir( parents=True, exist_ok=True )
+		for r in unarg( 'resources', resources, kwargs=kwargs ):
+			for rl in [ r, *r.resources ]:
+				path = self.path_for_resource( rl )
 				if not force and path.exists():
 					continue
 
 				try:
-					path.write_bytes( rl.content )
-					kwargs.get( 'ctx' ).db.insert_resource( rl )
+					if rl.content and len( rl.content ) > 0:
+						path.parent.mkdir( parents=True, exist_ok=True )
+						path.write_bytes( rl.content )
+						self.ctx.db.insert_resource( rl )
 				except TypeError:
 					log.error( f'error writing resource data for resource {rl.uid}?{rl.path}', exc_info=True )
 
@@ -240,7 +241,7 @@ class Service( Plugin ):
 
 	# noinspection PyMethodMayBeStatic
 	def create_activities( self, resource: Resource, **kwargs ) -> List[Activity]:
-		if activity_cls := Registry.document_types.get( resource.type ):
+		if activity_cls := cast( ResourceType, Registry.resource_types.get( resource.type ) ).activity_cls:
 			return [ activity_cls( raw=resource.raw, resources=[resource, *resource.resources] ) ]
 		else:
 			return []
@@ -292,7 +293,7 @@ class Service( Plugin ):
 			self.ctx.start( f'downloading activity data from {self.display_name}', len( summaries ) )
 			for summary in summaries:
 				self.ctx.advance( f'{summary.uid}' )
-				if not ( recordings := self._ctx.db.find_resource_group( summary.uid ).recordings() ) or force:
+				if not ( self._ctx.db.find_all_summaries( summary.uid ) ) or force:
 					self.download( summary=summary, force=force, pretend=pretend, **kwargs )
 					self.postprocess_resource( resource=summary, **kwargs )  # post process
 					self.persist_resources( resources=summary, force=force, pretend=pretend, **kwargs )

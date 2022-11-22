@@ -235,7 +235,7 @@ class Bikecitizens( Service, Plugin ):
 
 			resources: List[Resource] = []
 			for item in json_resource.raw:
-				resources.append( self.importer.save( item, uid = f'{self.name}:{item["id"]}', resource_path=f'{item["id"]}.raw.json', resource_type=BIKECITIZENS_TYPE, status = 200, summary = True ) )
+				resources.append( self.importer.save( item, uid = f'{self.name}:{item["id"]}', resource_path=f'{item["id"]}.json', resource_type=BIKECITIZENS_TYPE, status = 200, summary = True ) )
 
 			return resources
 
@@ -246,7 +246,7 @@ class Bikecitizens( Service, Plugin ):
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
 			resources = [
-				Resource( type=BIKECITIZENS_RECORDING_TYPE, path=f"{summary.raw_id}.json", status=100, uid=summary.uid ),
+				Resource( type=BIKECITIZENS_RECORDING_TYPE, path=f"{summary.raw_id}.rec.json", status=100, uid=summary.uid ),
 				Resource( type=GPX_TYPE, path=f"{summary.raw_id}.gpx", status=100, uid=summary.uid )
 			]
 

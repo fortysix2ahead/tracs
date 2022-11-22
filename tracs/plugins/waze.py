@@ -213,7 +213,7 @@ class Waze( Service ):
 			takeout_resource = self.takeout_importer.load( path=file )
 			for resource in takeout_resource.resources:
 				local_id = cast( WazePoint, resource.raw[0] ).time_as_int()
-				resource.path = f'{local_id}.raw.txt'
+				resource.path = f'{local_id}.txt'
 				resource.status = 200
 				# resource.source = file.as_uri() # don't save the source right now
 				resource.summary = True

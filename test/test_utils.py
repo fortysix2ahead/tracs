@@ -3,6 +3,7 @@ from datetime import date
 from datetime import datetime
 from datetime import time
 from datetime import timezone
+from typing import List
 from urllib.parse import urlparse
 
 from dateutil.tz import gettz
@@ -13,6 +14,7 @@ from tracs.utils import fmt
 from tracs.utils import seconds_to_time
 from tracs.utils import fromisoformat
 from tracs.utils import toisoformat
+from tracs.utils import unarg
 
 def test_fmt():
 	assert fmt( None ) == ''
@@ -126,3 +128,21 @@ def test_uri_parsing():
 	# a resource might also be addressed even shorter:
 	result = urlparse( '1001?gpx' )
 	assert result.path == '1001' and result.query == 'gpx'
+
+def test_unarg():
+
+	def fn( *numbers, **kwargs ) -> List:
+		return unarg( 'numbers', numbers, kwargs=kwargs )
+
+	def fn2( arg1, arg2, *numbers, **kwargs ) -> List:
+		return unarg( 'numbers', numbers, kwargs=kwargs )
+
+	assert fn( 5 ) == [5]
+	assert fn( 1, 2, 3 ) == [1, 2, 3]
+	assert fn( numbers=5 ) == [5]
+	assert fn( numbers=[1, 2, 3] ) == [1, 2, 3]
+	assert fn( 1, numbers=[10, 20, 30] ) == [1]
+	assert fn( 1, 2, 3, numbers=[10, 20, 30] ) == [1, 2, 3]
+	assert fn( 1, 2, 3, force=True, numbers=[10, 20, 30] ) == [1, 2, 3]
+
+	assert fn2( 100, 200, 1, 2, 3, force=True, numbers=[10, 20, 30] ) == [1, 2, 3]

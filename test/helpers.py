@@ -139,7 +139,7 @@ def get_inmemory_db( template: str = None, library: str = None ) -> Optional[Act
 	else:
 		return None
 
-	return ActivityDb( path=db_path.parent, pretend=True, cache=False )
+	return ActivityDb( path=db_path.parent, pretend=True )
 
 def get_file_db( template: str = None, library: str = None, writable = False ) -> ActivityDb:
 	"""
@@ -155,7 +155,7 @@ def get_file_db( template: str = None, library: str = None, writable = False ) -
 	else:
 		db_path = get_db_path( template_name=template, writable=writable )
 
-	return ActivityDb( path=db_path.parent, pretend=not writable, cache=False )
+	return ActivityDb( path=db_path.parent, pretend=not writable )
 
 def get_db_as_json( db_name: str ) -> Dict:
 	parent_path, db_path, meta_path = get_db_path( db_name, writable=False )

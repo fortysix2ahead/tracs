@@ -52,8 +52,8 @@ class Resource( BaseDocument ):
 
 	resources: List[Resource] = field( default_factory=list, repr=False, metadata={ PERSIST: False, PROTECTED: True } )
 
-	def __post_init__( self, serialized_data: Dict, text: str ):
-		super().__post_init__( serialized_data=serialized_data )
+	def __post_init__( self, text: str ):
+		super().__post_init__()
 		self.content = text.encode( encoding='UTF-8' ) if text else self.content
 
 	@property

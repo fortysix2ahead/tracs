@@ -27,7 +27,7 @@ def migrate_application( ctx: ApplicationContext, function_name: str = None, for
 
 	next_db_file = Path( current_db_file.parent, current_db_file.name.replace( '.json', f'.migration_{timestring()}.json' ) )
 	copy( current_db_file, next_db_file )
-	next_db = TinyDB( storage=DataClassStorage, path=next_db_file, use_memory_storage=True, use_cache=True )
+	next_db = TinyDB( storage=DataClassStorage, path=next_db_file, read_only=True )
 
 	if function_name and function_name in dir( modules[ __name__ ] ):
 		if force or Confirm.ask( f'migration function {function_name} found, would you like to execute the migration?' ):

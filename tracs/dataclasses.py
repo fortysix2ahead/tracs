@@ -14,6 +14,7 @@ from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # constants
 FILTERABLE = 'filterable'
@@ -162,25 +163,26 @@ class BaseDocument( DataClass ):
 	dirty: bool = field( default=False, repr=False, metadata={ PERSIST: False, PROTECTED: True } )
 	"""flag to indicate that the document contains changes that need to be persisted"""
 
-	serialized_data: InitVar[Dict] = field( default = None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )
-	"""same structure as data field, but holds serialized data (i.e. strings instead of datetime instances)"""
-
-	def __post_init__( self, serialized_data: Dict = None ):
+	def __post_init__( self ):
 		super().__post_init__()
 
 		# only set fields from data which exist, ignore the others
 		if self.data:
-			for f in fields( self ):
-				if f.name in self.data:
-					setattr( self, f.name, self.data[f.name] )
-		elif serialized_data:
-			for f in fields( self ):
-				if f.name in serialized_data:
-					setattr( self, f.name, self.__unserialize__( f, serialized_data[f.name] ) )
+			# V1, iterate fields
+			# for f in fields( self ):
+			#	if f.name in self.data:
+			#		setattr( self, f.name, self.data[f.name] )
+			# V2, simply try data fields
+			for k, v in self.data.items():
+				try:
+					setattr( self, k, self.__unserialize__( None, k, v ) )
+				except AttributeError:
+					pass
+			self.data = None
 
 		if self.doc_id:
 			self.id = self.doc_id
 
 	# noinspection PyMethodMayBeStatic
-	def __unserialize__( self, f: Field, v: Any ) -> Any:
+	def __unserialize__( self, f: Optional[Field], k: str, v: Any ) -> Any:
 		return v

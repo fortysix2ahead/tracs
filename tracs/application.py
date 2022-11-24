@@ -95,8 +95,7 @@ class Application( object ):
 		self._setup_file_logging( ctx )
 
 		# ---- open db from config_dir ----------------------------------------------
-		cache = ctx.config['db']['cache'].get()
-		ctx.db = ActivityDb( path=ctx.db_dir, cache=cache )
+		ctx.db = ActivityDb( path=ctx.db_dir, pretend=ctx.pretend )
 
 		# load plugins
 		from .registry import load as load_plugins

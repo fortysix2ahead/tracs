@@ -12,7 +12,6 @@ from orjson import OPT_SORT_KEYS
 from pytest import mark
 from orjson import loads as load_json
 from orjson import dumps as save_json
-from rich import print as pp
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
@@ -254,6 +253,11 @@ def test_read2( path ):
 
 	storage = DataClassStorage2( path=path, read_only=True, passthrough=False )
 	assert storage.read() == {'_default': {'1': {'version': 12}}}
+
+@mark.file( 'databases/storage.json' )
+def test_read2_transform( path ):
+	storage = DataClassStorage2( path=path, read_only=True, passthrough=False, document_cls=Activity )
+	assert storage.read() == {'_default': {'1': unserialized_data['_default']['1']  }}
 
 @mark.file( 'databases/empty/schema.json' )
 def test_write2( path ):

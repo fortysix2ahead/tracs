@@ -7,6 +7,7 @@ from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import fields
+from dataclasses import InitVar
 from typing import Any
 from typing import Dict
 from typing import Iterator
@@ -161,7 +162,10 @@ class BaseDocument( DataClass ):
 	dirty: bool = field( default=False, repr=False, metadata={ PERSIST: False, PROTECTED: True } )
 	"""flag to indicate that the document contains changes that need to be persisted"""
 
-	def __post_init__( self ):
+	serialized_data: InitVar[Dict] = field( default = None, repr=False, metadata={ PERSIST: False, PROTECTED: True } )
+	"""same structure as data field, but holds serialized data (i.e. strings instead of datetime instances)"""
+
+	def __post_init__( self, serialized_data: Dict = None ):
 		super().__post_init__()
 
 		# only set fields from data which exist, ignore the others
@@ -169,6 +173,14 @@ class BaseDocument( DataClass ):
 			for f in fields( self ):
 				if f.name in self.data:
 					setattr( self, f.name, self.data[f.name] )
+		elif serialized_data:
+			for f in fields( self ):
+				if f.name in serialized_data:
+					setattr( self, f.name, self.__unserialize__( f, serialized_data[f.name] ) )
 
 		if self.doc_id:
 			self.id = self.doc_id
+
+	# noinspection PyMethodMayBeStatic
+	def __unserialize__( self, f: Field, v: Any ) -> Any:
+		return v

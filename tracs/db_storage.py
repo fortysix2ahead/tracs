@@ -209,13 +209,14 @@ class DataClassStorage2( Storage ):
 	options_passthrough = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS | OPT_PASSTHROUGH_DATACLASS
 	memory_path = '/storage.json'
 
-	def __init__( self, path: Optional[Path], encoding: str = 'UTF-8', read_only: bool = False, passthrough: bool = True ):
+	def __init__( self, path: Optional[Path], encoding: str = 'UTF-8', read_only: bool = False, passthrough: bool = True, document_cls: Type = None ):
 		super().__init__()
 		self.path = path
 		self.encoding = encoding
 		self.read_only = read_only
 		self.passthrough = passthrough
 		self.options = DataClassStorage2.options_passthrough if passthrough else DataClassStorage2.options
+		self.document_cls = document_cls
 
 		self.fs = MultiFS()
 		self.fs.add_fs( 'underlay', OSFS( root_path='/' ), write=False )
@@ -244,7 +245,17 @@ class DataClassStorage2( Storage ):
 	# read/write/close
 
 	def read( self ) -> Optional[Dict[str, Dict[str, Any]]]:
-		return self.mem_as_dict()
+		data = self.mem_as_dict()
+		return data if not self.document_cls else self.transform( data )
+
+	def transform( self, data: Dict ) -> Dict:
+		transformed_data = {}
+		for table_name, table_data in data.items():
+			transformed_table = {}
+			for item_id, item_data in table_data.items():
+				transformed_table[item_id] = self.document_cls( serialized_data=item_data, doc_id=int( item_id ) )
+			transformed_data[table_name] = transformed_table
+		return transformed_data
 
 	def write( self, data: Dict[str, Dict[str, Any]] ) -> None:
 		self.ofs.writebytes( DataClassStorage2.memory_path, dump_as_json( data, default=default, option=self.options ) )

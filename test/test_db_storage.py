@@ -12,15 +12,16 @@ from orjson import OPT_SORT_KEYS
 from pytest import mark
 from orjson import loads as load_json
 from orjson import dumps as save_json
+from rich import print as pp
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.db import document_cls
 from tracs.db_storage import DataClassStorage
+from tracs.db_storage import DataClassStorage2
 from tracs.db_storage import OrJSONStorage
-from tracs.plugin.polar import PolarActivity
-
-from .helpers import get_db_path
+from tracs.plugins.polar import PolarActivity
+from tracs.resources import Resource
 
 unserialized_data = {
 	"_default": {
@@ -215,6 +216,53 @@ def test_passthrough( db ):
 	storage.memory.memory = deepcopy( serialized_memory_data )
 	data = storage.read()
 	assert type( data['_default']['1'] ) is dict
+
+@mark.file( 'databases/empty/schema.json' )
+def test_create_storage2( path ):
+	storage = DataClassStorage2( path=None, read_only=True, passthrough=False )
+	assert storage.mem_as_bytes() == b''
+	assert storage.mem_as_str() == ''
+	assert storage.mem_as_dict() == {}
+
+	storage = DataClassStorage2( path=path, read_only=True, passthrough=False )
+	assert storage.mem_as_str() == '{\n  "_default": {\n    "1": {\n      "version": 12\n    }\n  }\n}\n'
+	assert storage.mem_as_dict() == {'_default': {'1': {'version': 12}}}
+
+@mark.file( 'databases/empty/schema.json' )
+def test_read2( path ):
+	storage = DataClassStorage2( path=None, read_only=True, passthrough=False )
+	assert storage.read() == {}
+
+	storage = DataClassStorage2( path=path, read_only=True, passthrough=False )
+	assert storage.read() == {'_default': {'1': {'version': 12}}}
+
+@mark.file( 'databases/empty/schema.json' )
+def test_write2( path ):
+	storage = DataClassStorage2( path=None, read_only=True, passthrough=False )
+	storage.write( {'_default': {'1': {'version': 1}}} )
+	assert storage.mem_as_dict() == {'_default': {'1': {'version': 1}}}
+
+	dt = datetime( 2020, 1, 1, 9, 10, 11, tzinfo=UTC )
+	storage.write( {'datetimes': {'1': dt } } )
+	assert storage.mem_as_dict() == {'datetimes': {'1': dt.isoformat() } }
+
+	t = time( 20, 1, 1 )
+	storage.write( { 'times': { '1': t } } )
+	assert storage.mem_as_dict() == { 'times': { '1': t.isoformat() } }
+
+	r = Resource()
+	storage.write( { 'resources': { '1': r } } )
+
+	pp( storage.mem_as_dict() )
+	return
+
+	assert storage.mem_as_dict() == { 'resources': { '1': '' } }
+
+	a = Activity()
+	storage.write( { 'activities': { '1': a } } )
+	assert storage.mem_as_dict() == { 'activities': { '1': '' } }
+
+# helpers
 
 def _get_activity_name( db_path: Path ) -> str:
 	with open( db_path, mode='r+', encoding='UTF-8' ) as p:

@@ -5,6 +5,7 @@ from dataclasses import field
 from dataclasses import InitVar
 from enum import Enum
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -51,8 +52,8 @@ class Resource( BaseDocument ):
 
 	resources: List[Resource] = field( default_factory=list, repr=False, metadata={ PERSIST: False, PROTECTED: True } )
 
-	def __post_init__( self, text: str ):
-		super().__post_init__()
+	def __post_init__( self, serialized_data: Dict, text: str ):
+		super().__post_init__( serialized_data=serialized_data )
 		self.content = text.encode( encoding='UTF-8' ) if text else self.content
 
 	@property

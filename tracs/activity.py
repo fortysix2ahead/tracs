@@ -3,8 +3,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import Field
 from dataclasses import fields
 from datetime import datetime
+from datetime import time
 from typing import Any
 from typing import Dict
 from typing import Union
@@ -103,11 +105,21 @@ class Activity( BaseDocument ):
 	def abbreviated_type( self ) -> str:
 		return self.type.abbreviation if self.type else ':question_mark:'
 
-	def __post_init__( self ):
-		super().__post_init__()
+	def __post_init__( self, serialized_data: Optional[Dict] ):
+		super().__post_init__( serialized_data=serialized_data )
 
 		if self.raw:
 			self.__raw_init__( self.raw )
+
+	def __unserialize__( self, f: Field, v: Any ) -> Any:
+		if f.name == 'type':
+			return ActivityTypes.get( v )
+		elif f.name in [ 'time', 'time_end', 'localtime', 'localtime_end' ]:
+			return datetime.fromisoformat( v )
+		elif f.name in [ 'duration', 'duraton_moving' ]:
+			return time.fromisoformat( v )
+		else:
+			return v
 
 	def __raw_init__( self, raw: Any ) -> None:
 		"""
@@ -139,7 +151,7 @@ class Activity( BaseDocument ):
 						setattr( self, f.name, new_value )
 		elif raw:
 			self.raw = raw
-			self.__post_init__()
+			self.__post_init__( serialized_data=None )
 
 		return self
 

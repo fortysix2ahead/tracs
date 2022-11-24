@@ -1,0 +1,16 @@
+{
+	"_default": {
+		"1": {
+			"calories"  : 2904,
+			"distance"  : 30000.1,
+			"duration"  : "03:23:53",
+			"localtime" : "2012-01-07T10:40:51+01:00",
+			"name"      : "03:23:53;0.0 km",
+			"raw_id"    : 1234567890,
+			"tags"      : [ "one", "two", "three" ],
+			"time"      : "2012-01-07T09:40:51+00:00",
+			"timezone"  : "Europe/Berlin",
+			"type"      : "xcski_classic"
+		}
+	}
+}

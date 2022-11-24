@@ -3,12 +3,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import Field
 from dataclasses import fields
 from datetime import datetime
-from urllib.parse import urlparse
+from datetime import time
 from typing import Any
 from typing import Dict
 from typing import Union
+from urllib.parse import urlparse
 
 from logging import getLogger
 from typing import List
@@ -154,6 +156,17 @@ class Activity( BaseDocument ):
 		if self.raw:
 			self.__raw_init__( self.raw )
 
+	def __unserialize__( self, f: Optional[Field], k: str, v: Any ) -> Any:
+		k = f.name if f else k
+		if k == 'type':
+			return ActivityTypes.get( v )
+		elif k in [ 'time', 'time_end', 'localtime', 'localtime_end' ]:
+			return datetime.fromisoformat( v )
+		elif k in [ 'duration', 'duraton_moving' ]:
+			return time.fromisoformat( v )
+		else:
+			return v
+
 	def __raw_init__( self, raw: Any ) -> None:
 		"""
 		Called from __post_init__ with raw data as parameter and can be overridden in subclasses. Will not be called when raw is None.
@@ -184,7 +197,7 @@ class Activity( BaseDocument ):
 						setattr( self, f.name, new_value )
 		elif raw:
 			self.raw = raw
-			self.__post_init__()
+			self.__post_init__( serialized_data=None )
 
 		return self
 

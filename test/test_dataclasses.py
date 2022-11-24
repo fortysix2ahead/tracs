@@ -12,6 +12,7 @@ from tracs.dataclasses import as_dict
 from tracs.dataclasses import BaseDocument
 
 # test BaseDocument as the DataClass class is not of much use as it does not contain any fields
+# noinspection PyUnresolvedReferences,PyArgumentList
 def test_dataclass_document():
 	bd = BaseDocument()
 	assert bd.doc_id == 0 and bd['doc_id'] == 0 and 'doc_id' in bd
@@ -65,6 +66,7 @@ def test_get():
 #	assert 10 in bd.values()
 #	assert ('doc_id', 10) in list( bd.items() )
 
+# noinspection PyArgumentList
 def test_testdataclass():
 	# default empty document
 	bd = BaseDocument()

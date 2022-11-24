@@ -55,7 +55,7 @@ SCHEMA_NAME = 'schema.json'
 
 class ActivityDb:
 
-	def __init__( self, path: Path = None, activities_name: str = None, metadata_name: str = None, resources_name: str = None, schema_name: str = None, pretend: bool=False, cache: bool=False, passthrough=False ):
+	def __init__( self, path: Path = None, activities_name: str = None, metadata_name: str = None, resources_name: str = None, schema_name: str = None, pretend: bool=False ):
 		"""
 		Creates an activity db, consisting of tiny db instances (meta + activities + resources + schema).
 
@@ -104,13 +104,13 @@ class ActivityDb:
 		self._schema_version = self._schema.all()[0][KEY_VERSION]
 
 		# init activities db
-		self._db: TinyDB = TinyDB( storage=DataClassStorage, path=self._activities_path, use_memory_storage=pretend, use_cache=cache, passthrough=True )
+		self._db: TinyDB = TinyDB( storage=DataClassStorage, path=self._activities_path, read_only=pretend, passthrough=True )
 		self._storage: DataClassStorage = cast( DataClassStorage, self._db.storage )
 		self._activities = self.db.table( TABLE_NAME_DEFAULT )
 		self._activities.document_class = Activity
 
 		# init resources db
-		self._resources_db: TinyDB = TinyDB( storage=DataClassStorage, path=self._resources_path, use_memory_storage=pretend, use_cache=cache, passthrough=True, use_serializers=False )
+		self._resources_db: TinyDB = TinyDB( storage=DataClassStorage, path=self._resources_path, read_only=pretend, passthrough=True )
 		self._resources = self._resources_db.table( TABLE_NAME_DEFAULT )
 		self._resources.document_class = Resource
 
@@ -355,11 +355,11 @@ def document_cls( doc: Union[Dict, Document], doc_id: int ) -> Type:
 def document_factory( doc: Union[Dict, Document], doc_id: int ) -> Document:
 	return document_cls( doc, doc_id )( doc, doc_id )
 
-def create_metadb( path: Path = None, use_memory_storage: bool = False, cache: bool = False ) -> TinyDB:
-	return TinyDB( storage=DataClassStorage, path=path, use_memory_storage=use_memory_storage, cache=cache, passthrough=True )
+def create_metadb( path: Path = None, use_memory_storage: bool = False ) -> TinyDB:
+	return TinyDB( storage=DataClassStorage, path=path, read_only = use_memory_storage, passthrough=False )
 
-def create_db( path: Path = None, use_memory_storage: bool = False, cache: bool = False, passthrough = False ) -> TinyDB:
-	return TinyDB( storage=DataClassStorage, path=path, use_memory_storage=use_memory_storage, cache=cache, passthrough=passthrough )
+def create_db( path: Path = None, use_memory_storage: bool = False, passthrough = False ) -> TinyDB:
+	return TinyDB( storage=DataClassStorage, path=path, read_only=use_memory_storage, passthrough=passthrough )
 
 # ---- DB Operations ----
 

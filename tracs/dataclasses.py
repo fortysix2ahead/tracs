@@ -22,9 +22,10 @@ PERSIST_AS = 'persist_as'
 PROTECTED = 'protected'
 
 class DictFilter:
-	def __init__( self, remove_persist: bool = True, remove_null: bool = True, remove_data: bool = True, remove_protected: bool = False ):
+	def __init__( self, remove_persist: bool = True, remove_null: bool = True, remove_empty = True, remove_data: bool = True, remove_protected: bool = False ):
 		self.remove_persist = remove_persist
 		self.remove_null = remove_null
+		self.remove_empty = remove_empty
 		self.remove_data = remove_data
 		self.remove_protected = remove_protected
 
@@ -32,6 +33,8 @@ class DictFilter:
 		if self.remove_persist and not f.metadata.get( PERSIST, True ):
 			return True
 		elif self.remove_null and value is None:
+			return True
+		elif self.remove_empty and ( value == [] or value == {} or value == '' ):
 			return True
 		elif self.remove_data and f.name == 'data':
 			return True

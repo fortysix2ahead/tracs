@@ -33,6 +33,7 @@ from tinydb.storages import Storage
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.dataclasses import as_dict
+from tracs.resources import Resource
 
 log = getLogger( __name__ )
 
@@ -208,7 +209,7 @@ class DataClassStorage2( Storage ):
 	options_passthrough = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS | OPT_PASSTHROUGH_DATACLASS
 	memory_path = '/storage.json'
 
-	def __init__( self, path: Optional[Path], encoding: str = 'UTF-8', read_only: bool = False, passthrough: bool = False ):
+	def __init__( self, path: Optional[Path], encoding: str = 'UTF-8', read_only: bool = False, passthrough: bool = True ):
 		super().__init__()
 		self.path = path
 		self.encoding = encoding
@@ -261,6 +262,6 @@ class DataClassStorage2( Storage ):
 # default customization
 
 def default( obj ):
-	if isinstance( obj, Activity ):
-		return str( obj )
+	if isinstance( obj, (Activity, Resource) ):
+		return obj.asdict()
 	raise TypeError

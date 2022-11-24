@@ -1,6 +1,7 @@
 
 from datetime import datetime
-
+from datetime import timedelta
+from datetime import timezone
 from pytest import mark
 from tinydb.table import Table
 
@@ -8,11 +9,7 @@ from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.db import ActivityDb
 from tracs.db_storage import DataClassStorage
-from tracs.plugin.groups import ActivityGroup
-
-from tracs.plugin.polar import PolarActivity
-from tracs.plugin.strava import StravaActivity
-from tracs.plugin.waze import WazeActivity
+from tracs.plugins.strava import StravaActivity
 
 from .helpers import ids
 from .helpers import get_db_path
@@ -20,24 +17,20 @@ from .helpers import get_db_path
 def test_new_db():
 	db = ActivityDb( path=None )
 	assert type( db.storage ) is DataClassStorage
-	assert db.storage.use_memory_storage is True
 
-	db = ActivityDb( path=None, pretend=True, cache=False )
-	assert db.storage.use_memory_storage is True and db.storage.use_cache is True
+	db = ActivityDb( path=None, pretend=True )
+	assert db.storage.read_only is True
 
-	db = ActivityDb( path=None, pretend=False, cache=True )
-	assert db.storage.use_memory_storage is True and db.storage.use_cache is True
-
-	db = ActivityDb( path=None, pretend=True, cache=True )
-	assert db.storage.use_memory_storage is True and db.storage.use_cache is True
+	db = ActivityDb( path=None, pretend=False )
+	assert db.storage.read_only is True # in-memory mode automatically turned on
 
 	db_path = get_db_path( 'empty', writable=False )
-	db = ActivityDb( path=db_path.parent, pretend=True, cache=False )
-	assert db.storage.use_memory_storage is True and db.storage.use_cache is True
+	db = ActivityDb( path=db_path.parent, pretend=True )
+	assert db.storage.read_only is True
 
 	db_path = get_db_path( 'empty', writable=True )
-	db = ActivityDb( path=db_path.parent, pretend=False, cache=True )
-	assert db.storage.use_memory_storage is False and db.storage.use_cache is True
+	db = ActivityDb( path=db_path.parent, pretend=False )
+	assert db.storage.read_only is False
 
 @mark.db( template='default', inmemory=True )
 def test_open_db( db ):
@@ -47,6 +40,17 @@ def test_open_db( db ):
 	assert db.schema > 0
 
 	assert db.activities.document_class is Activity
+
+	assert db.activities.all()[0] == Activity(
+		doc_id=1,
+		name='Unknown Location',
+	   type=ActivityTypes.xcski,
+		time=datetime( 2012, 1, 7, 10, 40, 56, tzinfo=timezone.utc ),
+		localtime=datetime( 2012, 1, 7, 11, 40, 56, tzinfo=timezone( timedelta( seconds=3600 ) ) ),
+		location_country='',
+		location_place='Forest',
+		uids=['polar:1234567890', 'strava:12345678', 'waze:20210101010101'],
+	)
 
 @mark.db( template='empty', inmemory=True )
 def test_write_middleware( db ):

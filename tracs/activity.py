@@ -105,18 +105,19 @@ class Activity( BaseDocument ):
 	def abbreviated_type( self ) -> str:
 		return self.type.abbreviation if self.type else ':question_mark:'
 
-	def __post_init__( self, serialized_data: Optional[Dict] ):
-		super().__post_init__( serialized_data=serialized_data )
+	def __post_init__( self ):
+		super().__post_init__()
 
 		if self.raw:
 			self.__raw_init__( self.raw )
 
-	def __unserialize__( self, f: Field, v: Any ) -> Any:
-		if f.name == 'type':
+	def __unserialize__( self, f: Optional[Field], k: str, v: Any ) -> Any:
+		k = f.name if f else k
+		if k == 'type':
 			return ActivityTypes.get( v )
-		elif f.name in [ 'time', 'time_end', 'localtime', 'localtime_end' ]:
+		elif k in [ 'time', 'time_end', 'localtime', 'localtime_end' ]:
 			return datetime.fromisoformat( v )
-		elif f.name in [ 'duration', 'duraton_moving' ]:
+		elif k in [ 'duration', 'duraton_moving' ]:
 			return time.fromisoformat( v )
 		else:
 			return v

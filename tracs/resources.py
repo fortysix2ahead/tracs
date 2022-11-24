@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,6 +7,7 @@ from enum import Enum
 from re import compile
 from re import Pattern
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -59,7 +59,6 @@ class ResourceType:
 
 @dataclass
 class Resource( BaseDocument ):
-
 	name: str = field( default=None )
 	type: str = field( default=None )
 	path: str = field( default=None )
@@ -87,7 +86,7 @@ class Resource( BaseDocument ):
 	def local_id( self ) -> int:
 		return int( self._uid()[1] )
 
-	@property # property should be deprecated in favour of local id
+	@property  # property should be deprecated in favour of local id
 	def raw_id( self ) -> int:
 		return self.local_id
 
@@ -106,11 +105,10 @@ class Resource( BaseDocument ):
 
 @dataclass
 class ResourceGroup:
-
 	resources: List[Resource] = field( default_factory=list )
 
 	def summary( self ) -> Optional[Resource]:
-		return next( ( r for r in self.resources if r.summary ), None )
+		return next( (r for r in self.resources if r.summary), None )
 
 	def recordings( self ) -> List[Resource]:
-		return [ r for r in self.resources if not r.summary ]
+		return [r for r in self.resources if not r.summary]

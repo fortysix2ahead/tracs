@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pytest import mark
 
+from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE
 from tracs.plugins.bikecitizens import BikecitizensActivity
@@ -42,7 +44,7 @@ def test_xml_importer( path ):
 
 @mark.file( 'templates/gpx/mapbox.gpx' )
 def test_gpx_importer( path ):
-	activity = Registry.importer_for( 'application/xml+gpx' ).load_as_activity( path=path )
+	activity = Registry.importer_for( GPX_TYPE ).load_as_activity( path=path )
 	assert type( activity ) is GPXActivity
 	assert activity.time is not None and type( activity.time ) is datetime
 	assert activity.raw_id is not None
@@ -51,7 +53,7 @@ def test_gpx_importer( path ):
 
 @mark.file( 'templates/tcx/sample.tcx' )
 def test_tcx_importer( path ):
-	activity = Registry.importer_for( 'application/xml+tcx' ).load_as_activity( path=path )
+	activity = Registry.importer_for( TCX_TYPE ).load_as_activity( path=path )
 	assert type( activity ) is TCXActivity
 	assert type( activity.time ) is datetime
 	assert activity.raw_id is not None

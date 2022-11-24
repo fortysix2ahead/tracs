@@ -20,6 +20,7 @@ from tracs.db import document_cls
 from tracs.db_storage import DataClassStorage
 from tracs.db_storage import DataClassStorage2
 from tracs.db_storage import OrJSONStorage
+from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.polar import PolarActivity
 from tracs.resources import Resource
 
@@ -33,9 +34,27 @@ unserialized_data = {
 			localtime=datetime( 2012, 1, 7, 10, 40, 51, tzinfo=tzlocal() ),
 			name='03:23:53;0.0 km',
 			raw_id=1234567890,
+			tags=[ 'one', 'two', 'three' ],
 			time=datetime( 2012, 1, 7, 9, 40, 51, tzinfo=UTC ),
 			type=ActivityTypes.xcski_classic,
 		)
+	}
+}
+
+serialized_data = {
+	'_default': {
+		'1': {
+			'calories'  : 2904,
+			'distance'  : 30000.1,
+			'duration'  : '03:23:53',
+			'localtime' : '2012-01-07T10:40:51+01:00',
+			'name'      : '03:23:53;0.0 km',
+			'raw_id'    : 1234567890,
+			'tags'      : [ 'one', 'two', 'three' ],
+			'time'      : '2012-01-07T09:40:51+00:00',
+			'timezone'  : 'Europe/Berlin',
+			'type'      : 'xcski_classic'
+		}
 	}
 }
 
@@ -238,7 +257,7 @@ def test_read2( path ):
 
 @mark.file( 'databases/empty/schema.json' )
 def test_write2( path ):
-	storage = DataClassStorage2( path=None, read_only=True, passthrough=False )
+	storage = DataClassStorage2( path=None, read_only=True )
 	storage.write( {'_default': {'1': {'version': 1}}} )
 	assert storage.mem_as_dict() == {'_default': {'1': {'version': 1}}}
 
@@ -250,17 +269,17 @@ def test_write2( path ):
 	storage.write( { 'times': { '1': t } } )
 	assert storage.mem_as_dict() == { 'times': { '1': t.isoformat() } }
 
-	r = Resource()
+	r = Resource( path='test.gpx', type=GPX_TYPE )
 	storage.write( { 'resources': { '1': r } } )
-
-	pp( storage.mem_as_dict() )
-	return
-
-	assert storage.mem_as_dict() == { 'resources': { '1': '' } }
+	assert storage.mem_as_dict() == { 'resources': { '1': {'path': 'test.gpx', 'summary': False, 'type': 'application/xml+gpx'} } }
 
 	a = Activity()
 	storage.write( { 'activities': { '1': a } } )
-	assert storage.mem_as_dict() == { 'activities': { '1': '' } }
+	assert storage.mem_as_dict() == { 'activities': { '1': { 'timezone': 'Europe/Berlin' } } }
+
+	a = unserialized_data['_default']['1']
+	storage.write( { '_default': { '1': a } } )
+	assert storage.mem_as_dict() == serialized_data
 
 # helpers
 

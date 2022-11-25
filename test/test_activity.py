@@ -1,5 +1,8 @@
 
 from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
+
 from dateutil.tz import UTC
 from dateutil.tz import tzlocal
 from tzlocal import get_localzone_name
@@ -31,16 +34,15 @@ def test_init( json ):
 
 	assert a.doc_id == 1 and a['doc_id'] == 1
 	assert a['id'] == 1 and a.id == 1
-	assert a.type == "run"
-	# assert a.type == ActivityTypes.run
+	# assert a.type == "run"
+	assert a.type == ActivityTypes.run
 
 	# times
-	assert a.time == '2012-10-24T23:29:40+00:00'
-	# assert a.time == datetime( 2012, 1, 7, 10, 40, 56, tzinfo=UTC )
-	assert a.localtime == '2012-10-24T22:29:40+01:00'
-
-
-# assert a.localtime == datetime( 2012, 1, 7, 11, 40, 56, tzinfo=tzlocal() )
+	# assert a.time == '2012-10-24T23:29:40+00:00'
+	assert a.time == datetime( 2012, 10, 24, 23, 29, 40, tzinfo=UTC )
+	# assert a.localtime == '2012-10-24T22:29:40+01:00'
+	# assert a.localtime == datetime( 2012, 10, 24, 22, 29, 40, tzinfo=tzlocal() ) # comparison with tzlocal worked before ...
+	assert a.localtime == datetime( 2012, 10, 24, 22, 29, 40, tzinfo=timezone( timedelta( seconds=3600 ) ) )
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.raw.json' )
 def test_init_from( json ):

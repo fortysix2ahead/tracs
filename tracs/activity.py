@@ -161,9 +161,9 @@ class Activity( BaseDocument ):
 		if k == 'type':
 			return ActivityTypes.get( v )
 		elif k in [ 'time', 'time_end', 'localtime', 'localtime_end' ]:
-			return datetime.fromisoformat( v )
-		elif k in [ 'duration', 'duraton_moving' ]:
-			return time.fromisoformat( v )
+			return datetime.fromisoformat( v ) if v else v
+		elif k in [ 'duration', 'duration_moving' ]:
+			return time.fromisoformat( v ) if v else v
 		else:
 			return v
 

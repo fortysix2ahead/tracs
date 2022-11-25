@@ -50,9 +50,9 @@ def deserialize( inst: type, f: Field, value: Any ) -> Any:
 	return value
 
 #def as_dict( instance: Union[DataClass, Dict], instance_type: Type[DataClass] = None, attributes: List[Attribute] = None, modify_arg: bool = False, remove_persist: bool = True, remove_null: bool = True, remove_data = True, remove_protected = False ) -> Optional[Dict]:
-def as_dict( instance: DataClass, remove_persist: bool = True, remove_null: bool = True, remove_data = True, remove_protected = False ) -> Optional[Dict]:
+def as_dict( instance: DataClass, remove_persist: bool = True, remove_null: bool = True, remove_empty: bool = True, remove_data = True, remove_protected = False ) -> Optional[Dict]:
 	# _serialize = serialize # use serializer from above
-	_filter = DictFilter( remove_persist, remove_null, remove_data, remove_protected )
+	_filter = DictFilter( remove_persist, remove_null, remove_empty, remove_data, remove_protected )
 	_dict = asdict( instance )
 
 	for f in fields( instance ):
@@ -174,10 +174,8 @@ class BaseDocument( DataClass ):
 			#		setattr( self, f.name, self.data[f.name] )
 			# V2, simply try data fields
 			for k, v in self.data.items():
-				try:
+				if k in self.__class__.fieldnames():
 					setattr( self, k, self.__unserialize__( None, k, v ) )
-				except AttributeError:
-					pass
 			self.data = None
 
 		if self.doc_id:

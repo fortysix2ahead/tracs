@@ -13,11 +13,16 @@ from typing import Tuple
 from typing import Union
 
 from dateutil.tz import UTC
+from fs.base import FS
+from fs.multifs import MultiFS
+from fs.osfs import OSFS
 
 from .activity import Activity
 from .db import ActivityDb
 from .plugin import Plugin
 from .resources import Resource
+from .config import DEFAULT_DB_DIR
+from .config import OVERLAY_DIRNAME
 from .config import ApplicationContext
 from .config import GlobalConfig as gc
 from .config import KEY_LAST_DOWNLOAD
@@ -36,9 +41,15 @@ class Service( Plugin ):
 	def __init__( self, **kwargs ):
 		super().__init__( **kwargs )
 
-		self._base_path = kwargs.pop( 'base_path' ) if 'base_path' in kwargs else None
-		self._overlay_path = kwargs.pop( 'overlay_path' ) if 'overlay_path' in kwargs else None
-		self._base_url = kwargs.pop( 'base_url' ) if 'base_url' in kwargs else None
+		# paths + plugin filesystem area
+		self._base_path = kwargs.get( 'base_path', Path( DEFAULT_DB_DIR, self.name ) )
+		self._overlay_path = kwargs.get( 'overlay_path', Path( self._base_path.parent, OVERLAY_DIRNAME, self.name ) )
+
+		self._fs = MultiFS()
+		self._fs.add_fs( 'base', OSFS( str( self._base_path ), create=True ), write=True )
+		self._fs.add_fs( 'overlay', OSFS( str( self._overlay_path ), create=True ), write=False )
+
+		self._base_url = kwargs.get( 'base_url' )
 		self._logged_in = False
 
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
@@ -72,6 +83,20 @@ class Service( Plugin ):
 	@property
 	def _db( self ) -> ActivityDb:
 		return self.ctx.db
+
+	# fs properties
+
+	@property
+	def fs( self ) -> FS:
+		return self._fs
+
+	@property
+	def base_fs( self ) -> FS:
+		return self._fs.get_fs( 'base' )
+
+	@property
+	def overlay_fs( self ) -> FS:
+		return self._fs.get_fs( 'overlay' )
 
 	# some helper class methods
 
@@ -293,7 +318,7 @@ class Service( Plugin ):
 			self.ctx.start( f'downloading activity data from {self.display_name}', len( summaries ) )
 			for summary in summaries:
 				self.ctx.advance( f'{summary.uid}' )
-				if not ( self._ctx.db.find_all_summaries( summary.uid ) ) or force:
+				if not ( self._ctx.db.find_all_summaries( [summary.uid] ) ) or force:
 					self.download( summary=summary, force=force, pretend=pretend, **kwargs )
 					self.postprocess_resource( resource=summary, **kwargs )  # post process
 					self.persist_resources( resources=summary, force=force, pretend=pretend, **kwargs )

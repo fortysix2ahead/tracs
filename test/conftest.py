@@ -7,6 +7,7 @@ from typing import Optional
 from typing import Tuple
 
 from bottle import Bottle
+from confuse import ConfigReadError
 from confuse import Configuration
 from pytest import fixture
 from yaml import SafeLoader
@@ -147,18 +148,23 @@ def service( request, ctx ) -> Optional[Service]:
 			service_state = marker.kwargs.get( 'state' )
 
 		with resource_path( 'test', '__init__.py' ) as test_pkg_path:
-			config_path = Path( test_pkg_path.parent.parent, service_config )
-			config = Configuration( f'test.{service_class_name}', __name__, read=False )
-			config.set_file( config_path )
+			try:
+				config_path = Path( test_pkg_path.parent.parent, service_config )
+				config = Configuration( f'test.{service_class_name}', __name__, read=False )
+				config.set_file( config_path )
+				ctx.config = config
+			except ConfigReadError:
+				pass
 
-			state_path = Path( test_pkg_path.parent.parent, service_state )
-			state = Configuration( f'test.{service_class_name}', __name__, read=False )
-			state.set_file( state_path )
+			try:
+				state_path = Path( test_pkg_path.parent.parent, service_state )
+				state = Configuration( f'test.{service_class_name}', __name__, read=False )
+				state.set_file( state_path )
+				ctx.state = state
+			except ConfigReadError:
+				pass
 
-			ctx.config = config
-			ctx.state = state
-
-			return service_class( ctx=ctx, base_url=base_url, config=config, state=state )
+			return service_class( ctx=ctx, base_url=base_url, base_path=Path( ctx.db_dir, service_class_name ), config=config, state=state, **marker.kwargs )
 
 	except ValueError:
 		log.error( 'unable to run fixture service', exc_info=True )

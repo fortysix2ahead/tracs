@@ -11,6 +11,7 @@ from typing import Any
 from typing import List
 from typing import Tuple
 
+from appdirs import AppDirs
 from confuse import Configuration
 from confuse import Subview
 from rich.console import Console
@@ -21,6 +22,7 @@ from rich.progress import TimeElapsedColumn
 # string constants
 
 APPNAME = 'tracs'
+APPDIRS = AppDirs( appname=APPNAME )
 
 BACKUP_DIRNAME = '.backup'
 CACHE_DIRNAME = '.cache'
@@ -35,6 +37,9 @@ VAR_DIRNAME = 'var'
 
 CONFIG_FILENAME = 'config.yaml'
 STATE_FILENAME = 'state.yaml'
+
+DEFAULT_CFG_DIR = Path( APPDIRS.user_config_dir )
+DEFAULT_DB_DIR = Path( DEFAULT_CFG_DIR, DB_DIRNAME )
 
 TABLE_NAME_DEFAULT = '_default'
 TABLE_NAME_ACTIVITIES = 'activities'

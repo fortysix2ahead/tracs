@@ -106,38 +106,24 @@ class BikecitizensImporter( JSONHandler ):
 @service
 class Bikecitizens( Service, Plugin ):
 
-	def __init__( self, base_url=None, api_url=None, user_id=None, **kwargs ):
+	def __init__( self, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 
-		self._user_id = user_id
-		self.api_url = api_url if api_url else API_URL
-		self.base_url = base_url if base_url else BASE_URL
+		self._user_id = kwargs.get( 'user_id' )
+		self._api_url = kwargs.get( 'api_url', API_URL )
+
+		self._session = None
 
 		self.importer: BikecitizensImporter = cast( BikecitizensImporter, Registry.importer_for( BIKECITIZENS_TYPE ) )
 		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
 
 	@property
-	def base_url( self ) -> str:
-		return self._base_url
-
-	@base_url.setter
-	def base_url( self, url: str ) -> None:
-		url = url if url else BASE_URL
-		self._base_url = url
-		self._signin_url = f'{self._base_url}/users/sign_in'
-		self._user_url = f'{self._api_url}/api/v1/users/{self._user_id}'
-		self._stats_url = f'{self._user_url}/stats'
-		self._session = None
-		self._api_key = None
-
-	# sample: 'https://api.bikecitizens.net/api/v1/users'
-	@property
 	def api_url( self ) -> str:
 		return self._api_url
 
-	@api_url.setter
-	def api_url( self, url: str ) -> None:
-		self._api_url = url if url else API_URL
+	@property
+	def signin_url( self ):
+		return f'{self.base_url}/users/sign_in'
 
 	@property
 	def user_url( self ) -> str:
@@ -147,10 +133,9 @@ class Bikecitizens( Service, Plugin ):
 	def user_tracks_url( self ) -> str:
 		return f'{self._api_url}/api/v1/tracks/user/{self._user_id}'
 
-	# sample:
-	# f'https://api.bikecitizens.net/api/v1/users/{user_id}/stats?start=2010-01-01&end=2022-12-31'
+	# sample: https://api.bikecitizens.net/api/v1/users/{user_id}/stats?start=2010-01-01&end=2022-12-31
 	def stats_url( self, year: int ) -> str:
-		return f'{self._stats_url}?start={year}-01-01&end={year}-12-31'
+		return f'{self.user_url}/stats?start={year}-01-01&end={year}-12-31'
 
 	# service methods
 
@@ -167,7 +152,7 @@ class Bikecitizens( Service, Plugin ):
 		#			self._session.cookies.set( "_dashboard_session", self._state[self.name]['session'], domain="my.bikecitizens.net" )
 		#			return True
 
-		response = self._session.get( self._signin_url )
+		response = self._session.get( self.signin_url )
 
 		try:
 			token = BeautifulSoup( response.text, 'html.parser' ).find( 'input', attrs={ 'name': 'authenticity_token' } )['value']
@@ -192,7 +177,7 @@ class Bikecitizens( Service, Plugin ):
 			'commit': 'Login'
 		}
 
-		response = self._session.post( self._signin_url, headers=HEADERS_LOGIN, data=data )
+		response = self._session.post( self.signin_url, headers=HEADERS_LOGIN, data=data )
 
 		# status should be 200, need to check what is returned if credentials are wrong
 		if response.status_code == 200:

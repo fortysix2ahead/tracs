@@ -57,32 +57,18 @@ def test_init_from( json ):
 def test_asdict():
 	a = Activity()
 	assert a.asdict() == {
-		'equipment': [],
-		'parts'     : [],
-		'tags'     : [],
 		'timezone' : get_localzone_name(),
-		'uids'     : []
 	}
 
 	assert as_dict( a ) == {
-		'equipment': [],
-		'parts'    : [],
-		'tags'     : [],
 		'timezone' : get_localzone_name(),
-		'uids'     : []
 	}
 
 	assert as_dict( a, remove_persist=False ) == {
 		'dirty'    : False,
 		'doc_id'   : 0,
-		'equipment': [],
 		'id'       : 0,
-		'metadata' : {},
-		'parts'    : [],
-		'resources': [],
-		'tags'     : [],
 		'timezone' : get_localzone_name(),
-		'uids'     : []
 	}
 
 	activity_dict = {
@@ -100,29 +86,12 @@ def test_asdict():
 
 	assert as_dict( Activity( data=activity_dict ) ) == {
 		'classifier': 'polar',
-#		'metadata'  : {},
-#		'resources' : [{
-#			'data'    : None,
-#			'doc_id'  : 0,
-#			'id'      : 0,
-#			'name'    : 'one',
-#			'path'    : 'one.gpx',
-#			'raw'     : None,
-#			'raw_data': None,
-#			'status'  : 100,
-#			'type'    : 'gpx',
-#			'uid'     : None
-#		}],
-		'equipment' : [],
 		'name'      : 'name',
 		'raw_id'    : 1,
-		'parts'     : [],
-		'tags'      : [],
 		'time'      : datetime( 2020, 1, 1, 10, 0, 0, tzinfo=UTC ),
 		'timezone'  : get_localzone_name(),
 		'type'      : ActivityTypes.run,
 		'uid'       : 'test:1',
-		'uids'      : []
 	}
 
 def test_activity_parts():

@@ -26,6 +26,7 @@ from .dataclasses import PERSIST
 from .dataclasses import PROTECTED
 from .resources import Resource
 from .resources import ResourceGroup
+from .utils import fromisoformat
 
 log = getLogger( __name__ )
 
@@ -159,11 +160,11 @@ class Activity( BaseDocument ):
 	def __unserialize__( self, f: Optional[Field], k: str, v: Any ) -> Any:
 		k = f.name if f else k
 		if k == 'type':
-			return ActivityTypes.get( v )
+			return v if isinstance( v, ActivityTypes ) else ActivityTypes.get( v )
 		elif k in [ 'time', 'time_end', 'localtime', 'localtime_end' ]:
-			return datetime.fromisoformat( v ) if v else v
+			return fromisoformat( v )
 		elif k in [ 'duration', 'duration_moving' ]:
-			return time.fromisoformat( v ) if v else v
+			return fromisoformat( v )
 		else:
 			return v
 

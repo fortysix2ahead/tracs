@@ -208,11 +208,14 @@ class PersonalTrainerImporter( XMLHandler ):
 		return f'{{{PED_NS}}}' + s.replace( '/', f'/{{{PED_NS}}}' )
 
 @service
-class Polar( Service, Plugin ):
+class Polar( Service ):
 
 	def __init__( self, base_url=None, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
-		self.base_url = base_url # use setter in order to update all internal fields
+		self._base_url = kwargs.get( 'base_url', BASE_URL )
+		self._username = kwargs.get( 'username' )
+		self._password = kwargs.get( 'password' )
+
 		self._session = None
 		self._logged_in = False
 
@@ -232,46 +235,49 @@ class Polar( Service, Plugin ):
 			return None
 
 	@property
-	def base_url( self ) -> str:
-		return self._base_url
-
-	@base_url.setter
-	def base_url( self, url: str ) -> None:
-		self._base_url = url if url else BASE_URL
-		self._login_url = f'{self._base_url}/login'
-		self._ajax_login_url = f'{self._base_url}/ajaxLogin?_={str( int( current_time() ) )}'
-		self._events_url = f'{self._base_url}/training/getCalendarEvents'
-		self._activity_url = f'{self._base_url}/training/analysis'
-		self._export_url = f'{self._base_url}/api/export/training'
+	def login_url( self ) -> str:
+		return f'{self.base_url}/login'
 
 	@property
 	def ajax_login_url( self ) -> str:
-		return  f'{self.base_url}/ajaxLogin?_={str( int( current_time() ) )}'
+		return f'{self.base_url}/ajaxLogin?_={str( int( current_time() ) )}'
+
+	@property
+	def events_url( self ) -> str:
+		return f'{self.base_url}/training/getCalendarEvents'
+
+	@property
+	def activity_url( self ) -> str:
+		return f'{self.base_url}/training/analysis'
+
+	@property
+	def export_url( self ) -> str:
+		return f'{self.base_url}/api/export/training'
 
 	def events_url_for( self, year ) -> str:
-		return f'{self._events_url}?start=1.1.{year}&end=31.12.{year}'
+		return f'{self.events_url}?start=1.1.{year}&end=31.12.{year}'
 
 	def all_events_url( self ):
-		return f'{self._events_url}?start=1.1.1970&end=1.1.{datetime.utcnow().year + 1}'
+		return f'{self.events_url}?start=1.1.1970&end=1.1.{datetime.utcnow().year + 1}'
 
 	def url_for_id( self, local_id: Union[int, str] ) -> str:
-		return f'{self._activity_url}/{local_id}'
+		return f'{self.activity_url}/{local_id}'
 
 	def url_for_resource_type( self, local_id: Union[int, str], type: str ):
 		url = None
 
 		if type == POLAR_CSV_TYPE:
-			url = f'{self._export_url}/csv/{local_id}'
+			url = f'{self.export_url}/csv/{local_id}'
 		elif type == GPX_TYPE:
-			url = f'{self._export_url}/gpx/{local_id}'
+			url = f'{self.export_url}/gpx/{local_id}'
 		elif type == TCX_TYPE:
-			url = f'{self._export_url}/tcx/{local_id}'
+			url = f'{self.export_url}/tcx/{local_id}'
 		elif type == POLAR_HRV_TYPE:
-			url = f'{self._export_url}/rr/csv/{local_id}'
+			url = f'{self.export_url}/rr/csv/{local_id}'
 		elif type == POLAR_ZIP_GPX_TYPE:
-			url = f'{self._export_url}/gpx/{local_id}?compress=true'
+			url = f'{self.export_url}/gpx/{local_id}?compress=true'
 		elif type == POLAR_ZIP_TCX_TYPE:
-			url = f'{self._export_url}/tcx/{local_id}?compress=true'
+			url = f'{self.export_url}/tcx/{local_id}?compress=true'
 
 		return url
 
@@ -297,19 +303,19 @@ class Polar( Service, Plugin ):
 			echo( "CSRF Token not found" )
 			return False
 
-		if not self.cfg_value( 'username' ) and not self.cfg_value( 'password' ):
+		if not self._username and not self._password:
 			log.error( f"application setup not complete for Polar Flow, consider running {APPNAME} setup" )
 			sysexit( -1 )
 
 		data = {
 			'csrfToken': token,
-			'email': self.cfg_value( 'username' ),
-			'password': self.cfg_value( 'password' ),
+			'email': self._username,
+			'password': self._password,
 			'returnUrl': '/'
 		}
 
 		# noinspection PyUnusedLocal
-		response = self._session.post( self._login_url, headers=HEADERS_LOGIN, data=data )
+		response = self._session.post( self.login_url, headers=HEADERS_LOGIN, data=data )
 
 		self._logged_in = True
 

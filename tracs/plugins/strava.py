@@ -154,26 +154,41 @@ class Strava( Service, Plugin ):
 
 	def __init__( self, base_url=None, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
-		self.base_url = base_url
+
+		self._base_url = kwargs.get( 'base_url', BASE_URL )
+		self._username = kwargs.get( 'username' )
+		self._password = kwargs.get( 'password' )
+
+		self._scope = 'activity:read_all'
+		self._session = None
+		self._oauth_session = None
+
 		self.importer: StravaImporter = cast( StravaImporter, Registry.importer_for( STRAVA_TYPE ) )
 		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
 
 	@property
-	def base_url( self ) -> str:
-		return self._base_url
+	def login_url( self ) -> str:
+		return f'{self.base_url}/login'
 
-	@base_url.setter
-	def base_url( self, url: str ) -> None:
-		self._base_url = url if url else BASE_URL
-		self._login_url = f'{self.base_url}/login'
-		self._session_url = f'{self.base_url}/session'
-		self._activities_url = f'{self.base_url}/activities'
-		self._auth_url = f'{self.base_url}/oauth/authorize'
-		self._token_url = f'{self.base_url}/oauth/token'
-		self._scope = 'activity:read_all'
-		self._redirect_url = OAUTH_REDIRECT_URL
-		self._session = None
-		self._oauth_session = None
+	@property
+	def session_url( self ) -> str:
+		return f'{self.base_url}/session'
+
+	@property
+	def activities_url( self ) -> str:
+		return f'{self.base_url}/activities'
+
+	@property
+	def auth_url( self ) -> str:
+		return f'{self.base_url}/oauth/authorize'
+
+	@property
+	def token_url( self ) -> str:
+		return f'{self.base_url}/oauth/token'
+
+	@property
+	def redirect_url( self ) -> str:
+		return OAUTH_REDIRECT_URL
 
 	def url_events_year( self, year, page: int ) -> str:
 		after = int( datetime( year, 1, 1, tzinfo=UTC ).timestamp() )
@@ -209,7 +224,7 @@ class Strava( Service, Plugin ):
 	def weblogin( self ):
 		if not self._session:
 			self._session = Session()
-			response = self._session.get( self._login_url )
+			response = self._session.get( self.login_url )
 
 			try:
 				token = BeautifulSoup( response.text, 'html.parser' ).find( 'meta', attrs={'name': 'csrf-token'} )['content']
@@ -222,18 +237,18 @@ class Strava( Service, Plugin ):
 				echo( "CSRF Token not found" )
 				return None
 
-			if not self.cfg_value( 'username' ) and not self.cfg_value( 'password' ):
-				log.error( f"application setup not complete for Strava, consider running {APPNAME} setup --strava" )
+			if not self._username and not self._password:
+				log.error( f"setup not complete for Strava, consider running {APPNAME} setup --strava" )
 				sysexit( -1 )
 
 			data = {
 				'utf8': '✓',
 				'authenticity_token': token,
 				'plan': '',
-				'email': self.cfg_value( 'username' ),
-				'password': self.cfg_value( 'password' )
+				'email': self._username,
+				'password': self._password
 			}
-			response = self._session.post( self._session_url, headers=HEADERS_LOGIN, data=data )
+			response = self._session.post( self.session_url, headers=HEADERS_LOGIN, data=data )
 
 			if not response.status_code == 200:
 				log.error( "web login failed for Strava, are the credentials correct?" )
@@ -251,7 +266,7 @@ class Strava( Service, Plugin ):
 			'client_secret': self.cfg_value( 'client_secret' )
 		}
 
-		self._oauth_session = OAuth2Session( client_id, token=token, auto_refresh_url=self._token_url, auto_refresh_kwargs = extra, token_updater = self._save_oauth_token )
+		self._oauth_session = OAuth2Session( client_id, token=token, auto_refresh_url=self.token_url, auto_refresh_kwargs = extra, token_updater = self._save_oauth_token )
 
 		# do web login as well
 		self.weblogin()

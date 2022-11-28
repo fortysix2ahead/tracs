@@ -148,7 +148,7 @@ class Waze( Service ):
 		self._logged_in = True
 
 		self.takeout_importer: WazeTakeoutImporter = cast( WazeTakeoutImporter, Registry.importer_for( WAZE_TAKEOUT_TYPE ) )
-		self.takeout_importer.field_size_limit = self.cfg_value( 'field_size_limit' )
+		self.takeout_importer.field_size_limit = kwargs.get( 'field_size_limit' )
 		log.debug( f'using {self.takeout_importer.field_size_limit} as field size limit for CSV parser in Waze service' )
 
 		self.importer: WazeImporter = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )

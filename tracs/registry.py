@@ -19,6 +19,8 @@ from typing import Tuple
 from typing import Type
 from typing import Union
 
+from confuse import NotFoundError
+
 from tracs.config import ApplicationContext
 from tracs.config import KEY_CLASSIFER
 from tracs.handlers import Handler
@@ -54,12 +56,23 @@ class Registry:
 	@classmethod
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
 		_ctx = ctx if ctx else Registry.ctx
-		base_path = kwargs.pop( 'base_path' ) if 'base_path' in kwargs else None
-		overlay_path = kwargs.pop( 'overlay_path' ) if 'overlay_path' in kwargs else None
+		base_path = kwargs.get( 'base_path' )
+		overlay_path = kwargs.get( 'overlay_path' )
 		for name, service_type in Registry.service_classes.items():
 			service_base_path = Path( base_path, name )
 			service_overlay_path = Path( overlay_path, name )
-			Registry.services[name] = service_type( ctx=ctx, base_path=service_base_path, overlay_path=service_overlay_path, **kwargs )
+
+			# find config/state values
+			try:
+				service_cfg = ctx.config['plugins'][name].get() or {}
+			except NotFoundError:
+				service_cfg = {}
+			try:
+				service_state = ctx.state['plugins'][name].get() or {}
+			except NotFoundError:
+				service_state = {}
+
+			Registry.services[name] = service_type( ctx=ctx, **{ **kwargs, **service_cfg, **service_state, **{ 'base_path': service_base_path, 'overlay_path': service_overlay_path } } )
 			# log.debug( f'created service instance {name}, with base path {service_base_path}' )
 			Registry.notify( EventTypes.service_created, Registry.services[name] )
 

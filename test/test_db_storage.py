@@ -91,7 +91,7 @@ def test_write2( path ):
 
 	r = Resource( path='test.gpx', type=GPX_TYPE )
 	storage.write( { 'resources': { '1': r } } )
-	assert storage.mem_as_dict() == { 'resources': { '1': {'path': 'test.gpx', 'summary': False, 'type': 'application/xml+gpx'} } }
+	assert storage.mem_as_dict() == { 'resources': { '1': {'path': 'test.gpx', 'summary': False, 'type': 'application/gpx+xml'} } }
 
 	a = Activity()
 	storage.write( { 'activities': { '1': a } } )

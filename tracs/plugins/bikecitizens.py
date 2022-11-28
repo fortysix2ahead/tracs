@@ -109,9 +109,15 @@ class Bikecitizens( Service, Plugin ):
 	def __init__( self, **kwargs ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
 
+		self._username = kwargs.get( 'username' )
+		self._password = kwargs.get( 'password' )
+
+		self._base_url = kwargs.get( 'base_url', BASE_URL )
+		self._saved_session = kwargs.get( 'session' )
 		self._user_id = kwargs.get( 'user_id' )
 		self._api_url = kwargs.get( 'api_url', API_URL )
 
+		self._api_key = None
 		self._session = None
 
 		self.importer: BikecitizensImporter = cast( BikecitizensImporter, Registry.importer_for( BIKECITIZENS_TYPE ) )
@@ -165,15 +171,15 @@ class Bikecitizens( Service, Plugin ):
 		else:
 			log.debug( f"Found authenticity token for {self.name}: {token}" )
 
-		if not self.cfg_value( 'username' ) and not self.cfg_value( 'password' ):
-			log.error( f'application setup not complete for {self.display_name}, consider running {APPNAME} setup' )
+		if not self._username and not self._password:
+			log.error( f'setup not complete for {self.display_name}, consider running {APPNAME} setup' )
 			sysexit( -1 )
 
 		data = {
 			'utf8': '✓',
 			'authenticity_token': token,
-			'user[login]': self.cfg_value( 'username' ),
-			'user[password]': self.cfg_value( 'password' ),
+			'user[login]': self._username,
+			'user[password]': self._password,
 			'commit': 'Login'
 		}
 
@@ -194,6 +200,7 @@ class Bikecitizens( Service, Plugin ):
 			for script in scripts:
 				if m := match( r'.*\"id\":\s*\"(\d*)\".*', script.text, flags=DOTALL ):
 					self._user_id = int( m.group( 1 ) )
+					self.set_state_value( 'user_id', self._user_id )
 		except TypeError:
 			pass
 

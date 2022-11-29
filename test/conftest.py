@@ -93,6 +93,8 @@ def ctx( request ) -> Optional[ApplicationContext]:
 
 		yield context
 
+		context.db.close()
+
 		if do_cleanup:
 			cleanup_path( context.cfg_dir )
 
@@ -164,7 +166,9 @@ def service( request, ctx ) -> Optional[Service]:
 			except ConfigReadError:
 				pass
 
-			return service_class( ctx=ctx, base_url=base_url, base_path=Path( ctx.db_dir, service_class_name ), config=config, state=state, **marker.kwargs )
+			s = service_class( ctx=ctx, base_url=base_url, base_path=Path( ctx.db_dir, service_class_name ), config=config, state=state, **marker.kwargs )
+			Registry.services[s.name] = s
+			return s
 
 	except ValueError:
 		log.error( 'unable to run fixture service', exc_info=True )

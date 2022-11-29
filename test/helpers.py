@@ -10,8 +10,10 @@ from shutil import copytree
 from importlib.resources import path
 from shutil import rmtree
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from pytest import mark
 from tinydb.table import Document
@@ -21,6 +23,8 @@ from tracs.config import CONFIG_FILENAME
 from tracs.config import DB_DIRNAME
 from tracs.config import STATE_FILENAME
 from tracs.db import ActivityDb
+from tracs.resources import Resource
+from tracs.service import Service
 
 DATABASES = 'databases'
 LIBRARIES = 'libraries'
@@ -42,6 +46,27 @@ class DbPath:
 			self.metadata = Path( self.parent, 'metadata.json' )
 			self.resources = Path( self.parent, 'resources.json' )
 			self.schema = Path( self.parent, 'schema.json' )
+
+class Mock( Service ):
+
+	def __init__( self, **kwargs ):
+		super().__init__( name='mock', display_name='Mock', **kwargs )
+
+	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
+		return [
+			Resource( uid='mock:1001', path='1001.json', text='{}' ),
+			Resource( uid='mock:1002', path='1002.json', text='{}' ),
+			Resource( uid='mock:1003', path='1003.json', text='{}' ),
+		]
+
+	def url_for_id( self, local_id: Union[int, str] ) -> str:
+		pass
+
+	def url_for_resource_type( self, local_id: Union[int, str], type: str ):
+		pass
+
+	def setup( self, ctx: ApplicationContext ) -> None:
+		pass
 
 def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: str = None ) -> Tuple[Path, Path]:
 	run_dir = _run_path()
@@ -90,7 +115,7 @@ def prepare_context( cfg_name: str, lib_name: str ) -> ApplicationContext:
 			lib_path = Path( cfg_path )
 			copytree( lib_src_path, Path( lib_path, DB_DIRNAME ) )
 
-		return ApplicationContext( cfg_dir=cfg_path, lib_dir=lib_path )
+		return ApplicationContext( cfg_dir=cfg_path, lib_dir=lib_path, db=ActivityDb( path=lib_path ) )
 
 def get_config_path( name: str, writable: bool = False ) -> Path:
 	with path( 'test', '__init__.py' ) as test_path:

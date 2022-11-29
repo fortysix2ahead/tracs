@@ -344,6 +344,14 @@ class ActivityDb:
 
 		return self._activities.search( query )
 
+	# close all
+
+	def close( self ):
+		self._db.close()
+		self._resources_db.close()
+		self._metadata_db.close()
+		self._schema.close()
+
 # ---- DB Factory ---
 
 def document_cls( doc: Union[Dict, Document], doc_id: int ) -> Type:

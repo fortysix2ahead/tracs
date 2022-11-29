@@ -242,24 +242,33 @@ class Service( Plugin ):
 
 	def persist_resources( self, *resources: Resource, force: bool, pretend: bool, include_children: bool = True, **kwargs ) -> None:
 		for resource in unarg( 'resources', resources, kwargs=kwargs ):
-			resource_list = [resource, *resource.resources] if include_children else [resource]
-			for r in resource_list:
-				path = self.path_for_resource( r )
-				if not force and path.exists():
-					continue
+			self.persist_resource( resource, force, pretend, include_children, **kwargs )
 
-				try:
-					if pretend:
-						log.info( f'pretending to write resource {r.uid}?{r.path}' )
-						continue
+	def persist_resource( self, resource: Resource, force: bool, pretend: bool, include_children: bool = True, **kwargs ) -> None:
+		path = self.path_for_resource( resource )
+		if not force and path and path.exists():
+			return
 
-					if r.content and len( r.content ) > 0:
-						path.parent.mkdir( parents=True, exist_ok=True )
-						path.write_bytes( r.content )
-						self.ctx.db.upsert_resource( r )
+		try:
+			if pretend:
+				log.info( f'pretending to write resource {resource.uid}?{resource.path}' )
+				return
 
-				except TypeError:
-					log.error( f'error writing resource data for resource {r.uid}?{r.path}', exc_info=True )
+			if resource.content and len( resource.content ) > 0:
+				path.parent.mkdir( parents=True, exist_ok=True )
+				path.write_bytes( resource.content )
+				self.ctx.db.upsert_resource( resource )
+
+			if include_children:
+				for r in resource.resources:
+					self.persist_resource( r, force, pretend, include_children=False, **kwargs )
+
+		except TypeError:
+			log.error( f'error writing resource data for resource {resource.uid}?{resource.path}', exc_info=True )
+
+	def postprocess_resources( self, *resources: Resource, **kwargs ) -> None:
+		for resource in unarg( 'resources', resources, kwargs=kwargs ):
+			self.postprocess_resource( resource, **kwargs )
 
 	def postprocess_resource( self, resource: Resource = None, **kwargs ) -> None:
 		pass
@@ -313,9 +322,8 @@ class Service( Plugin ):
 			summaries = self.fetch( force, pretend, **kwargs ) # fetch 'main' resources for each activity
 			summaries = self.filter_fetched( summaries, *uids, **kwargs ) # if only one resource was requested: filter out everything else
 
-			for s in summaries:
-				self.postprocess_resource( resource=s, **kwargs )  # post process summary
-				self.persist_resources( resources=s, force=force, pretend=pretend, include_children=False, **kwargs )
+			self.postprocess_resources( *summaries, **kwargs )  # post process summaries
+			self.persist_resources( *summaries, force=force, pretend=pretend, include_children=False, **kwargs )
 
 			self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() ) # update fetch timestamp
 			self.ctx.complete( 'done' )
@@ -333,9 +341,8 @@ class Service( Plugin ):
 				summary.resources = [r for r in existing if not(r.uid == summary.uid and r.path == summary.path)]
 
 				downloaded = self.download( summary=summary, force=force, pretend=pretend, **kwargs )
-				for d in downloaded:
-					self.postprocess_resource( resource=d, **kwargs )  # post process
-					self.persist_resources( resources=d, force=force, include_children=False, pretend=pretend, **kwargs )
+				self.postprocess_resources( *downloaded, **kwargs )  # post process
+				self.persist_resources( *downloaded, force=force, include_children=False, pretend=pretend, **kwargs )
 
 				activities = self.create_activities( resource=summary, **kwargs )
 				self.postprocess_activities( *activities, **kwargs )

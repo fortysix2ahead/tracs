@@ -144,6 +144,11 @@ class ApplicationContext:
 		with pkg_path( self.__module__, STATE_FILENAME ) as p:
 			self.state.set_file( p )
 
+	# path helpers
+
+	def db_dir_for( self, service_name: str ) -> Path:
+		return Path( self.db_dir, service_name )
+
 	def pp( self, *objects ):
 		self.console.print( *objects )
 

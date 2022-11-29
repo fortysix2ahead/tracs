@@ -236,28 +236,24 @@ class Bikecitizens( Service, Plugin ):
 			return []
 
 	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
-		try:
-			resources = [
-				Resource( type=BIKECITIZENS_RECORDING_TYPE, path=f"{summary.raw_id}.rec.json", status=100, uid=summary.uid ),
-				Resource( type=GPX_TYPE, path=f"{summary.raw_id}.gpx", status=100, uid=summary.uid )
-			]
+		resources = [
+			Resource( uid=summary.uid, path=f'{summary.local_id}.rec.json', type=BIKECITIZENS_RECORDING_TYPE, source=f'{self.url_for_id( summary.local_id )}/points' ),
+			Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, source=f'{self.url_for_id( summary.local_id )}/gpx' )
+		]
 
-			for r in resources:
-				self.download_resource( r )
+		for r in resources:
+			if not summary.get_child( r.type ) or force:
+				try:
+					self.download_resource( r )
+				except RuntimeError:
+					log.error( f'error fetching resource from {r.source}', exc_info=True )
 
-			summary.resources.extend( resources )
-
-			return resources
-
-		except RuntimeError:
-			log.error( f'error fetching resources', exc_info=True )
-			return []
+		return [ r for r in resources if r.content ]
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
-		url = self.url_for_resource_type( resource.raw_id, resource.type )
 		# noinspection PyUnusedLocal
-		response = options( url, headers=HEADERS_OPTIONS )
-		response = self._session.get( url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } } )
+		response = options( resource.source, headers=HEADERS_OPTIONS )
+		response = self._session.get( resource.source, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } } )
 		resource.content, resource.text, resource.status = response.content, response.text, response.status_code
 		return response.content, response.status_code
 

@@ -339,46 +339,35 @@ class Polar( Service ):
 			log.error( f'error fetching activity ids' )
 			return []
 
-	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
-		try:
-			lid = summary.raw_id
-			uid = summary.uid
+	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+		if _is_multipart_id( summary.raw.get( 'iconUrl' ) ):
+			resources = [
+				Resource( uid=summary.uid, type=POLAR_ZIP_GPX_TYPE, path=f'{summary.local_id}.gpx.zip', source=f'{self.export_url}/gpx/{summary.local_id}?compress=true' ),
+				Resource( uid=summary.uid, type=POLAR_ZIP_TCX_TYPE, path=f'{summary.local_id}.tcx.zip', source=f'{self.export_url}/tcx/{summary.local_id}?compress=true' ),
+			]
+		else:
+			resources = [
+				Resource( uid=summary.uid, type=POLAR_CSV_TYPE, path=f'{summary.local_id}.csv', source=f'{self.export_url}/csv/{summary.local_id}' ),
+				Resource( uid=summary.uid, type=GPX_TYPE, path=f'{summary.local_id}.gpx', source=f'{self.export_url}/gpx/{summary.local_id}' ),
+				Resource( uid=summary.uid, type=TCX_TYPE, path=f'{summary.local_id}.tcx', source=f'{self.export_url}/tcx/{summary.local_id}' ),
+				Resource( uid=summary.uid, type=POLAR_HRV_TYPE, path=f'{summary.local_id}.hrv.csv', source=f'{self.export_url}/rr/csv/{summary.local_id}' )
+			]
 
-			if _is_multipart_id( summary.raw.get( 'iconUrl' ) ):
-				resources = [
-					Resource( type=POLAR_ZIP_GPX_TYPE, path=f'{lid}.gpx.zip', status=100, uid=uid, source=self.url_for_resource_type( lid, POLAR_ZIP_GPX_TYPE ) ),
-					Resource( type=POLAR_ZIP_TCX_TYPE, path=f'{lid}.tcx.zip', status=100, uid=uid, source=self.url_for_resource_type( lid, POLAR_ZIP_TCX_TYPE ) ),
-				]
-			else:
-				resources = [
-					Resource( type=POLAR_CSV_TYPE, path=f'{lid}.csv', status=100, uid=uid, source=self.url_for_resource_type( lid, POLAR_CSV_TYPE ) ),
-					Resource( type=GPX_TYPE, path=f'{lid}.gpx', status=100, uid=uid, source=self.url_for_resource_type( lid, GPX_TYPE ) ),
-					Resource( type=TCX_TYPE, path=f'{lid}.tcx', status=100, uid=uid, source=self.url_for_resource_type( lid, TCX_TYPE ) ),
-					Resource( type=POLAR_HRV_TYPE, path=f'{lid}.hrv.csv', status=100, uid=uid, source=self.url_for_resource_type( lid, POLAR_HRV_TYPE ) )
-				]
+		for r in resources:
+			if not summary.get_child( r.type ) or force:
+				try:
+					self.download_resource( r )
+				except RuntimeError:
+					log.error( f'error fetching resource from {r.source}', exc_info=True )
 
-			for r in resources:
-				self.download_resource( r )
-
-			summary.resources.extend( resources )
-			return resources
-
-		except RuntimeError:
-			log.error( f'error fetching resources' )
-			return []
+		return [r for r in resources if r.content]
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
-		url = self.url_for_resource_type( resource.raw_id, resource.type )
-		if url:
-			log.debug( f'downloading resource from {url}' )
-			response = self._session.get( url, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )
-			resource.content = response.content
-			resource.text = response.text
-			resource.status = response.status_code
-			return response.content, response.status_code
-		else:
-			log.warning( f'unable to determine download url for resource {resource}' )
-			return None, 500
+		log.debug( f'downloading resource from {resource.source}' )
+		response = self._session.get( resource.source, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )
+		resource.content = response.content
+		resource.status = response.status_code
+		return response.content, response.status_code
 
 	def postprocess_resource( self, resource: Resource = None, **kwargs ) -> None:
 		resource.resources.extend( self.unzip_resources( resource.resources ) )

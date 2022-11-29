@@ -214,7 +214,7 @@ class Service( Plugin ):
 
 	# methods related to download()
 
-	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		"""
 		Downloads related resources like GPX recordings based on a provided activity or summary resource.
 		TODO: create a method for all services to ease implementation of subclasses.

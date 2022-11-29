@@ -63,8 +63,8 @@ class Resource( BaseDocument ):
 	type: str = field( default=None )
 	path: str = field( default=None )
 	source: str = field( default=None )
-	status: int = field( default=None )
-	summary: bool = field( default=False )
+	status: int = field( default=None, metadata={ PERSIST: False } )
+	summary: bool = field( default=False, metadata={ PERSIST: False } )
 	uid: str = field( default=None )
 
 	# additional field holding data of a resource, used when loading, but won't be persisted in db
@@ -102,6 +102,9 @@ class Resource( BaseDocument ):
 
 	def recordings( self ) -> List[Resource]:
 		return [r for r in self.resources if not r.summary]
+
+	def get_child( self, resource_type: str ) -> Optional[Resource]:
+		return next( (r for r in self.resources if r.type == resource_type), None )
 
 @dataclass
 class ResourceGroup:

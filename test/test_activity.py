@@ -46,12 +46,17 @@ def test_init( json ):
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.raw.json' )
 def test_init_from( json ):
-	src = PolarActivity( json, 2 )
-	target = Activity( doc_id=3 )
-	target.init_from( src )
+	src1 = Activity( doc_id=1, name='One' )
+	src2 = Activity( distance=10, calories=20 )
+	src3 = Activity( calories=100, heartrate= 100 )
 
-	assert target.name == src.name
-	assert target.doc_id != src.doc_id
+	target = Activity( others=[src1, src2, src3] )
+	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
+	assert target.doc_id == 0
+
+	target = Activity( others=[src1, src2, src3], force=True )
+	assert target.name == 'One' and target.distance == 10 and target.calories == 100 and target.heartrate == 100
+	assert target.doc_id == 1
 
 
 def test_asdict():

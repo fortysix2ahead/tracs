@@ -14,7 +14,21 @@ def test_fetch( service ):
 	service.import_activities( skip_download=True, skip_link=True )
 	db = cast( ActivityDb, service.ctx.db )
 	assert len( db.resources.all() ) == 3
-	assert Path( service.ctx.db_dir_for( service.name ), '1/0/0/1001/1001.json' ).exists()
+
+	p = Path( service.ctx.db_dir_for( service.name ), '1/0/0/1001/1001.json' )
+	assert p.exists() and not Path( service.ctx.db_dir_for( service.name ), '1/0/0/1001/1001.gpx' ).exists()
+
+	# test force flag
+	mtime = p.stat().st_mtime
+	service.import_activities( skip_download=True, skip_link=True )
+	assert p.stat().st_mtime == mtime
+	service.import_activities( force=True, skip_download=True, skip_link=True )
+	assert p.stat().st_mtime > mtime
+
+	# test pretend flag
+	mtime = p.stat().st_mtime
+	service.import_activities( force=True, pretend=True, skip_download=True, skip_link=True )
+	assert p.stat().st_mtime == mtime
 
 def test_filter_fetched():
 	resources = [

@@ -303,17 +303,19 @@ class Strava( Service, Plugin ):
 			log.error( f'error fetching activity ids', exc_info=True )
 			return []
 
-	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
 			urls = [ f'{self._activities_url}/{summary.raw_id}/export_gpx', f'{self._activities_url}/{summary.raw_id}/export_original' ]
 			resources = [ Resource( uid=summary.uid, source=url ) for url in urls ]
 
 			for r in resources:
-				self.download_resource( r )
+				if not summary.get_child( r.type ) or force:
+					try:
+						self.download_resource( r )
+					except RuntimeError:
+						log.error( f'error fetching resource from {r.source}', exc_info=True )
 
-			summary.resources.extend( resources )
-
-			return resources
+			return [r for r in resources if r.content]
 
 		except RuntimeError:
 			log.error( f'error fetching resources', exc_info=True )

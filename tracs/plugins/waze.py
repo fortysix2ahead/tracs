@@ -191,7 +191,7 @@ class Waze( Service ):
 		log.debug( f"fetching Waze activities from {takeouts_dir}" )
 
 		takeout_files = sorted( takeouts_dir.rglob( ACTIVITY_FILE ) )
-		self.ctx.start( f'fetching activity summaries from {self.display_name}', len( takeout_files ) )
+		# self.ctx.start( f'fetching activity summaries from {self.display_name}', len( takeout_files ) )
 		# last_fetch = self.state_value( KEY_LAST_FETCH )
 
 		summaries = []
@@ -222,7 +222,7 @@ class Waze( Service ):
 
 				summaries.append( resource )
 
-		self.ctx.complete( 'done' )
+		# self.ctx.complete( 'done' )
 
 		log.debug( f'fetched {len( summaries )} Waze activities' )
 

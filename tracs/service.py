@@ -209,12 +209,8 @@ class Service( Plugin ):
 		return [ r.local_id for r in self.fetch( force=False, pretend=False ) ]
 
 	# noinspection PyMethodMayBeStatic
-	def filter_fetched( self, resources: List[Resource], **kwargs ) -> List[Resource]:
-		if uid := kwargs.get( 'uid', None ):
-			requested = next( (r for r in resources if r.uid == uid ), None )
-			return [requested] if requested else []
-		else:
-			return resources
+	def filter_fetched( self, resources: List[Resource], *uids, **kwargs ) -> List[Resource]:
+		return [r for r in resources if r.uid in uids] if uids else resources
 
 	# methods related to download()
 
@@ -242,24 +238,30 @@ class Service( Plugin ):
 		"""
 		pass
 
-	def persist_resources( self, *resources: Resource, force: bool, pretend: bool, **kwargs ) -> None:
+	def persist_resources( self, *resources: Resource, force: bool, pretend: bool, include_children: bool = True, **kwargs ) -> None:
 		if pretend:
 			log.info( f'pretending to write resources' ) # todo: improve message
 			return
 
-		for r in unarg( 'resources', resources, kwargs=kwargs ):
-			for rl in [ r, *r.resources ]:
-				path = self.path_for_resource( rl )
+		for resource in unarg( 'resources', resources, kwargs=kwargs ):
+			resource_list = [resource, *resource.resources] if include_children else [resource]
+			for r in resource_list:
+				path = self.path_for_resource( r )
 				if not force and path.exists():
 					continue
 
 				try:
-					if rl.content and len( rl.content ) > 0:
+					if pretend:
+						log.info( f'pretending to write resource {r.uid}?{r.path}' )
+						continue
+
+					if r.content and len( r.content ) > 0:
 						path.parent.mkdir( parents=True, exist_ok=True )
-						path.write_bytes( rl.content )
-						self.ctx.db.insert_resource( rl )
+						path.write_bytes( r.content )
+						self.ctx.db.upsert_resource( r )
+
 				except TypeError:
-					log.error( f'error writing resource data for resource {rl.uid}?{rl.path}', exc_info=True )
+					log.error( f'error writing resource data for resource {r.uid}?{r.path}', exc_info=True )
 
 	def postprocess_resource( self, resource: Resource = None, **kwargs ) -> None:
 		pass
@@ -303,21 +305,31 @@ class Service( Plugin ):
 		skip_fetch = kwargs.get( 'skip_fetch', False ) # not used at the moment
 		skip_download = kwargs.get( 'skip_download', False )
 		skip_link = kwargs.get( 'skip_link', False ) # not used at the moment
-		uid = kwargs.get( 'uid' )
+		uids: List[str] = kwargs.get( 'uids', [] )
 
-		if uid:
-			summary = self._db.get_resources_by_uid( uid )
-		else:
+		# fetch
+
+		if not skip_fetch:
+			self.ctx.start( f'fetching activity data from {self.display_name}' )
+
 			summaries = self.fetch( force, pretend, **kwargs ) # fetch 'main' resources for each activity
-			summaries = self.filter_fetched( summaries, **kwargs ) # if only one resource was requested: filter out everything else
+			summaries = self.filter_fetched( summaries, *uids, **kwargs ) # if only one resource was requested: filter out everything else
 
-		# update fetch timestamp
-		self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() )
+			for s in summaries:
+				self.postprocess_resource( resource=s, **kwargs )  # post process summary
+				self.persist_resources( resources=s, force=force, pretend=pretend, include_children=False, **kwargs )
+
+			self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() ) # update fetch timestamp
+			self.ctx.complete( 'done' )
+
+		# download
 
 		if not skip_download:
 			self.ctx.start( f'downloading activity data from {self.display_name}', len( summaries ) )
+
 			for summary in summaries:
 				self.ctx.advance( f'{summary.uid}' )
+
 				if not ( self._ctx.db.find_all_summaries( [summary.uid] ) ) or force:
 					self.download( summary=summary, force=force, pretend=pretend, **kwargs )
 					self.postprocess_resource( resource=summary, **kwargs )  # post process
@@ -328,6 +340,11 @@ class Service( Plugin ):
 					self.persist_activities( *activities, force=force, pretend=pretend, **kwargs )
 
 			self.ctx.complete( 'done' )
+
+		# link / vfs
+
+		if not skip_link:
+			pass # not yet implemented
 
 	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
 		if resource.type in ['gpx', 'tcx'] and resource.status == 200: # todo: make linkable resources configurable

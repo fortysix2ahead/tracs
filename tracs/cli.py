@@ -133,16 +133,9 @@ def imprt( ctx, sources, skip_download: bool = False, skip_link: bool = False, i
 
 @cli.command( help='fetches activity summaries' )
 @argument( 'sources', nargs=-1 )
-@pass_context
+@pass_obj
 def fetch( ctx, sources: List[str] ):
-	# fetch from all sources if no sources are provided
-	sources = sources or Registry.service_names()
-	for s in sources:
-		if s in Registry.service_names():
-			service = Registry.services.get( s )
-			service.import_activities( ctx=ctx.obj, force=ctx.obj.force, pretend=ctx.obj.pretend, skip_download=True )
-		else:
-			log.error( f'unable to fetch from service {s}: no such service' )
+	import_activities( ctx, importer=None, sources=sources, skip_download=True, skip_link=True )
 
 @cli.command( help='downloads activities' )
 @argument( 'filters', nargs=-1 )

@@ -202,6 +202,9 @@ class ActivityDb:
 	def insert_resource( self, r: Resource ) -> int:
 		return self.resources.insert( r )
 
+	def upsert_resource( self, r: Resource ) -> list[int]:
+		return self.resources.upsert( r, (Query().uid == r.uid) & (Query().path == r.path) )
+
 	def update( self, a: Activity ) -> None:
 		self.activities.update( dict( a ), doc_ids=[a.doc_id] )
 
@@ -309,8 +312,11 @@ class ActivityDb:
 	def find_all_resources( self, uids: List[str] ) -> List[Resource]:
 		return list( chain( * [ self.resources.search( Query()['uid'] == uid ) for uid in uids ] ) )
 
-	def find_all_summaries( self, *uids: str ) -> List[Resource]:
-		return [ r for r in self.find_all_resources( *uids ) if ( rt := cast( ResourceType, Registry.resource_types.get( r.type ) ) ) and rt.summary ]
+	def find_summaries( self, uid ) -> List[Resource]:
+		return [r for r in self.find_resources( uid ) if (rt := cast( ResourceType, Registry.resource_types.get( r.type ) )) and rt.summary]
+
+	def find_all_summaries( self, uids: List[str] ) -> List[Resource]:
+		return [ r for r in self.find_all_resources( uids ) if ( rt := cast( ResourceType, Registry.resource_types.get( r.type ) ) ) and rt.summary ]
 
 	def find_all_resources_for( self, activities: Union[Activity, List[Activity]] ) -> List[Resource]:
 		activities = [ activities ] if type( activities ) is Activity else activities

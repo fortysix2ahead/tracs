@@ -372,10 +372,6 @@ class Service( Plugin ):
 
 			log.debug( f"linked resource for activity {activity.id}: {src} -> {dest}" )
 
-	def show_data( self, activity: Activity ) -> [[]]:
-		return []
-
-	@abstractmethod
 	def setup( self, ctx: ApplicationContext ) -> None:
 		pass
 

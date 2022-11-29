@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import Field
 from dataclasses import fields
+from dataclasses import InitVar
 from datetime import datetime
 from typing import Any
 from typing import Dict
@@ -82,6 +83,10 @@ class Activity( BaseDocument ):
 	resources: List[Resource] = field( init=True, default_factory=list, metadata={ PROTECTED: True, PERSIST: False } )
 	parts: List = field( init=True, default_factory=list, metadata={ PROTECTED: True } )
 
+	others: InitVar[List[Activity]] = field( default=None )
+	other_parts: InitVar[List[Activity]] = field( default=None )
+	force: InitVar[bool] = field( default=False )
+
 	#parent_id: int = field( default=None, metadata={ PROTECTED: True } )
 	#parent_uid: str = field( default=None, metadata={ PROTECTED: True } )
 
@@ -103,11 +108,15 @@ class Activity( BaseDocument ):
 	def abbreviated_type( self ) -> str:
 		return self.type.abbreviation if self.type else ':question_mark:'
 
-	def __post_init__( self ):
+	def __post_init__( self, others: List[Activity], other_parts: List[Activity], force: bool ):
 		super().__post_init__()
 
 		if self.raw:
 			self.__raw_init__( self.raw )
+		elif others:
+			self.__init_from_others( others, force )
+		elif other_parts:
+			self.__init_from_parts( other_parts, force )
 
 	def __unserialize__( self, f: Optional[Field], k: str, v: Any ) -> Any:
 		k = f.name if f else k
@@ -127,7 +136,27 @@ class Activity( BaseDocument ):
 		"""
 		pass
 
-		#if len( self.resources ) > 0 and all( type( r ) is dict for r in self.resources ):
+	def __init_from_others( self, others: List[Activity], force: bool ) -> None:
+		"""
+		Called from __post_init__ with raw data as parameter and can be overridden in subclasses. Will not be called when raw is None.
+		:return:
+		"""
+		for f in fields( self ):
+			for o in others:
+				if value := getattr( o, f.name ):
+					if not f.metadata.get( PROTECTED, False ) or force:
+						setattr( self, f.name, value ) # todo: make a copy in case of list or dict
+					if not force:
+						break
+
+	def __init_from_parts( self, other_parts: List[Activity], force: bool ) -> None:
+		"""
+		Called from __post_init__ with raw data as parameter and can be overridden in subclasses. Will not be called when raw is None.
+		:return:
+		"""
+		pass
+
+	#if len( self.resources ) > 0 and all( type( r ) is dict for r in self.resources ):
 		#	self.resources = [ Resource( **r ) for r in self.resources ]
 
 	def init_from( self, other: Activity = None, raw: Dict = None, force: bool = False ) -> Activity:

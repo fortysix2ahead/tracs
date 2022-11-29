@@ -214,6 +214,7 @@ class Service( Plugin ):
 
 	# methods related to download()
 
+	# todo: remove activity from API as it does not exist at this point of time
 	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		"""
 		Downloads related resources like GPX recordings based on a provided activity or summary resource.
@@ -221,6 +222,7 @@ class Service( Plugin ):
 
 		:param activity: activity
 		:param summary: summary resource
+		:param existing: existing resources, belonging to the summary
 		:param force: flag force
 		:param pretend: pretend flag
 		:param kwargs: additional parameters
@@ -239,10 +241,6 @@ class Service( Plugin ):
 		pass
 
 	def persist_resources( self, *resources: Resource, force: bool, pretend: bool, include_children: bool = True, **kwargs ) -> None:
-		if pretend:
-			log.info( f'pretending to write resources' ) # todo: improve message
-			return
-
 		for resource in unarg( 'resources', resources, kwargs=kwargs ):
 			resource_list = [resource, *resource.resources] if include_children else [resource]
 			for r in resource_list:
@@ -330,14 +328,18 @@ class Service( Plugin ):
 			for summary in summaries:
 				self.ctx.advance( f'{summary.uid}' )
 
-				if not ( self._ctx.db.find_all_summaries( [summary.uid] ) ) or force:
-					self.download( summary=summary, force=force, pretend=pretend, **kwargs )
-					self.postprocess_resource( resource=summary, **kwargs )  # post process
-					self.persist_resources( resources=summary, force=force, pretend=pretend, **kwargs )
+				# find existing resources and attach it to summary
+				existing = self.ctx.db.find_resources( uid=summary.uid )
+				summary.resources = [r for r in existing if not(r.uid == summary.uid and r.path == summary.path)]
 
-					activities = self.create_activities( resource=summary, **kwargs )
-					self.postprocess_activities( *activities, **kwargs )
-					self.persist_activities( *activities, force=force, pretend=pretend, **kwargs )
+				downloaded = self.download( summary=summary, force=force, pretend=pretend, **kwargs )
+				for d in downloaded:
+					self.postprocess_resource( resource=d, **kwargs )  # post process
+					self.persist_resources( resources=d, force=force, include_children=False, pretend=pretend, **kwargs )
+
+				activities = self.create_activities( resource=summary, **kwargs )
+				self.postprocess_activities( *activities, **kwargs )
+				self.persist_activities( *activities, force=force, pretend=pretend, **kwargs )
 
 			self.ctx.complete( 'done' )
 

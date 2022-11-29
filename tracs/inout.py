@@ -51,7 +51,7 @@ MAXIMUM_OPEN = 8
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
 
-def import_activities( ctx: Optional[ApplicationContext], importer: str, sources: List[str], **kwargs ):
+def import_activities( ctx: Optional[ApplicationContext], importer: Optional[str], sources: List[str], **kwargs ):
 	# use all registered services if nothing is provided
 	# services = [ s for i in importers if ( s := Registry.services.get( i ) ) ]
 
@@ -66,7 +66,7 @@ def import_activities( ctx: Optional[ApplicationContext], importer: str, sources
 			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
 
 		elif uid.denotes_activity() and (service := Registry.service_for( uid.classifier )):
-			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, uid=src, **kwargs )
+			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, uids=[src], **kwargs )
 
 		elif uid.denotes_resource() and (service := Registry.service_for( uid.classifier )):
 			raise NotImplementedError

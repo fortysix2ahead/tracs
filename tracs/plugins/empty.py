@@ -44,7 +44,7 @@ class Empty( Service, Plugin ):
 	def fetch( self, force: bool = False, **kwargs ) -> Iterable[Activity]:
 		return []
 
-	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:

@@ -235,7 +235,7 @@ class Bikecitizens( Service, Plugin ):
 			log.error( f'error fetching activity ids', exc_info=True )
 			return []
 
-	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
 			resources = [
 				Resource( type=BIKECITIZENS_RECORDING_TYPE, path=f"{summary.raw_id}.rec.json", status=100, uid=summary.uid ),

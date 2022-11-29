@@ -228,7 +228,7 @@ class Waze( Service ):
 
 		return summaries
 
-	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
 			local_id, uid = summary.raw_id, summary.uid
 			gpx_resource = Resource( type=GPX_TYPE, path=f'{local_id}.gpx', status=100, uid=uid )

@@ -61,7 +61,7 @@ class Mock( Service ):
 			Resource( uid='mock:1003', path='1003.json', text='{}', type='application/mock+json' ),
 		]
 
-	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		return [Resource(
 			uid=summary.uid,
 			path=f'{summary.local_id}.gpx',

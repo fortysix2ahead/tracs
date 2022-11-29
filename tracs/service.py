@@ -214,15 +214,12 @@ class Service( Plugin ):
 
 	# methods related to download()
 
-	# todo: remove activity from API as it does not exist at this point of time
-	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		"""
 		Downloads related resources like GPX recordings based on a provided activity or summary resource.
 		TODO: create a method for all services to ease implementation of subclasses.
 
-		:param activity: activity
 		:param summary: summary resource
-		:param existing: existing resources, belonging to the summary
 		:param force: flag force
 		:param pretend: pretend flag
 		:param kwargs: additional parameters

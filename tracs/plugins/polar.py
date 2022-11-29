@@ -339,7 +339,7 @@ class Polar( Service ):
 			log.error( f'error fetching activity ids' )
 			return []
 
-	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
 			lid = summary.raw_id
 			uid = summary.uid

@@ -194,16 +194,16 @@ class Strava( Service, Plugin ):
 		after = int( datetime( year, 1, 1, tzinfo=UTC ).timestamp() )
 		before = int( datetime( year + 1, 1, 1, tzinfo=UTC ).timestamp() )
 		per_page = FETCH_PAGE_SIZE # we might make this configurable later ...
-		return f'{self._base_url}/api/v3/athlete/activities?before={before}&after={after}&page={page}&per_page={per_page}'
+		return f'{self.base_url}/api/v3/athlete/activities?before={before}&after={after}&page={page}&per_page={per_page}'
 
 	def all_events_url( self, page: int ) -> str:
 		after = int( datetime( 1970, 1, 1, tzinfo=UTC ).timestamp() )
 		before = int( datetime( datetime.utcnow().year + 1, 1, 1, tzinfo=UTC ).timestamp() )
 		per_page = FETCH_PAGE_SIZE  # we might make this configurable later ...
-		return f'{self._base_url}/api/v3/athlete/activities?before={before}&after={after}&page={page}&per_page={per_page}'
+		return f'{self.base_url}/api/v3/athlete/activities?before={before}&after={after}&page={page}&per_page={per_page}'
 
 	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
-		return f'{self._activities_url}/{local_id}'
+		return f'{self.activities_url}/{local_id}'
 
 	def url_for_resource_type( self, local_id: Union[int, str], type: str ) -> Optional[str]:
 		if type == GPX_TYPE:
@@ -279,10 +279,11 @@ class Strava( Service, Plugin ):
 		if not self.login():
 			return []
 
-		self.ctx.start( f'fetching activity summaries from {self.display_name}' )
+		# self.ctx.start( f'fetching activity summaries from {self.display_name}' )
+
+		resources = []
 
 		try:
-			resources = []
 			for page in range( 1, 999999 ):
 				self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to { page * FETCH_PAGE_SIZE } (page {page})' )
 
@@ -295,17 +296,17 @@ class Strava( Service, Plugin ):
 				if not json_resource.raw or len( json_resource.raw ) == 0:
 					break
 
-			self.ctx.complete( 'done' )
-
-			return resources
-
 		except RuntimeError:
 			log.error( f'error fetching activity ids', exc_info=True )
-			return []
+
+		# finally:
+		#	self.ctx.complete( 'done' )
+
+		return resources
 
 	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
-			urls = [ f'{self._activities_url}/{summary.raw_id}/export_gpx', f'{self._activities_url}/{summary.raw_id}/export_original' ]
+			urls = [ f'{self.activities_url}/{summary.local_id}/export_gpx', f'{self.activities_url}/{summary.local_id}/export_original' ]
 			resources = [ Resource( uid=summary.uid, source=url ) for url in urls ]
 
 			for r in resources:

@@ -228,24 +228,22 @@ class Waze( Service ):
 
 		return summaries
 
-	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
-		try:
-			local_id, uid = summary.raw_id, summary.uid
-			gpx_resource = Resource( type=GPX_TYPE, path=f'{local_id}.gpx', status=100, uid=uid )
-			self.download_resource( gpx_resource, summary = summary )
-			summary.resources.append( gpx_resource )
-			return [ gpx_resource ]
-
-		except RuntimeError:
-			log.error( f'error fetching resources',exc_info=True )
-			return []
+	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+		if not summary.get_child( GPX_TYPE ) or force:
+			try:
+				gpx_resource = Resource( type=GPX_TYPE, path=f'{summary.local_id}.gpx', uid=summary.uid )
+				self.download_resource( gpx_resource, summary=summary )
+				return [gpx_resource]
+			except RuntimeError:
+				log.error( f'error fetching resource from {summary.uid}', exc_info=True )
+		return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		if (summary := kwargs.get( 'summary' )) and summary.raw:
 			resource.raw, resource.content = to_gpx( summary.raw )
 			resource.status = 200
 		else:
-			local_path = Path( self.path_for( resource=resource ).parent, f'{resource.local_id}.raw.txt' )
+			local_path = Path( self.path_for( resource=resource ).parent, f'{resource.local_id}.txt' )
 			with open( local_path, mode='r', encoding='UTF-8' ) as p:
 				content = p.read()
 				drive = self.importer.read_drive( content )

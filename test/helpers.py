@@ -18,11 +18,13 @@ from typing import Union
 from pytest import mark
 from tinydb.table import Document
 
+from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.config import CONFIG_FILENAME
 from tracs.config import DB_DIRNAME
 from tracs.config import STATE_FILENAME
 from tracs.db import ActivityDb
+from tracs.plugins.gpx import GPX_TYPE
 from tracs.resources import Resource
 from tracs.service import Service
 
@@ -54,10 +56,18 @@ class Mock( Service ):
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		return [
-			Resource( uid='mock:1001', path='1001.json', text='{}' ),
-			Resource( uid='mock:1002', path='1002.json', text='{}' ),
-			Resource( uid='mock:1003', path='1003.json', text='{}' ),
+			Resource( uid='mock:1001', path='1001.json', text='{}', type='application/mock+json' ),
+			Resource( uid='mock:1002', path='1002.json', text='{}', type='application/mock+json' ),
+			Resource( uid='mock:1003', path='1003.json', text='{}', type='application/mock+json' ),
 		]
+
+	def download( self, activity: Optional[Activity] = None, summary: Optional[Resource] = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+		return [Resource(
+			uid=summary.uid,
+			path=f'{summary.local_id}.gpx',
+			text=gpx_resource,
+			type=GPX_TYPE
+		)]
 
 	def url_for_id( self, local_id: Union[int, str] ) -> str:
 		pass
@@ -247,3 +257,38 @@ def ids( doc_list: [Document] ) -> []:
 skip_live = mark.skipif(
 	not ( get_var_path( 'config_live.yaml' ).exists() and get_var_path( 'state_live.yaml' ).exists() ), reason="live test not enabled as configuration is missing"
 )
+
+# mock gpx resource
+
+gpx_resource = '''
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
+    xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v2" version="1.1" creator="Pocket Earth v2.8"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://www.topografix.com/GPX/1/1">
+    <metadata>
+        <name>Skaftafell - Vatnajökull</name>
+        <link href="http://www.geomagik.com">
+            <text>GeoMagik LLC</text>
+        </link>
+        <time>2015-08-02T12:16:20Z</time>
+    </metadata>
+    <trk>
+        <name>Skaftafell - Vatnajökull</name>
+        <trkseg>
+            <trkpt lat="64.0162580" lon="-16.9656560">
+                <ele>93.00</ele>
+                <time>2015-07-27T17:40:56Z</time>
+            </trkpt>
+            <trkpt lat="64.0162390" lon="-16.9656320">
+                <ele>93.00</ele>
+                <time>2015-07-27T17:40:57Z</time>
+            </trkpt>
+            <trkpt lat="64.0162460" lon="-16.9656300">
+                <ele>94.00</ele>
+                <time>2015-07-27T17:40:58Z</time>
+            </trkpt>
+        </trkseg>
+    </trk>
+</gpx>
+'''

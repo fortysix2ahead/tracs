@@ -4,15 +4,18 @@ from typing import cast
 from pytest import mark
 
 from test.helpers import Mock
+from tracs.activity import Activity
 from tracs.db import ActivityDb
+from tracs.registry import Registry
 from tracs.resources import Resource
+from tracs.resources import ResourceType
 from tracs.service import Service
 
 @mark.context( config='empty', library='empty', cleanup=False )
 @mark.service( cls=Mock )
 def test_fetch( service ):
-	service.import_activities( skip_download=True, skip_link=True )
 	db = cast( ActivityDb, service.ctx.db )
+	service.import_activities( skip_download=True, skip_link=True )
 	assert len( db.resources.all() ) == 3
 
 	p = Path( service.ctx.db_dir_for( service.name ), '1/0/0/1001/1001.json' )
@@ -29,6 +32,20 @@ def test_fetch( service ):
 	mtime = p.stat().st_mtime
 	service.import_activities( force=True, pretend=True, skip_download=True, skip_link=True )
 	assert p.stat().st_mtime == mtime
+
+@mark.context( config='empty', library='empty', cleanup=False )
+@mark.service( cls=Mock )
+def test_download( service ):
+	db = cast( ActivityDb, service.ctx.db )
+	Registry.resource_types['application/mock+json'] = ResourceType( type='application/mock+json', activity_cls=Activity ) # register mock type manually
+
+	service.import_activities( skip_download=False, skip_link=True )
+
+	assert len( db.resources.all() ) == 6
+	assert len( db.activities.all() ) == 3
+
+	p = Path( service.ctx.db_dir_for( service.name ), '1/0/0/1001/1001.gpx' )
+	assert p.exists()
 
 def test_filter_fetched():
 	resources = [

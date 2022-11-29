@@ -10,7 +10,7 @@ from tzlocal import get_localzone_name
 from pytest import mark
 
 from tracs.activity import Activity
-from tracs.activity import UID
+from tracs.resources import UID
 from tracs.resources import Resource
 from tracs.activity_types import ActivityTypes
 from tracs.dataclasses import as_dict

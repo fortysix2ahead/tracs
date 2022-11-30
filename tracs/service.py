@@ -285,15 +285,6 @@ class Service( Plugin ):
 			self.upsert_activity( activity=a, force=force, pretend=pretend, **kwargs )
 
 	def upsert_activity( self, activity: Activity, force: bool, pretend: bool, **kwargs ) -> None:
-		for r in activity.resources:
-			if r.dirty and not pretend:
-				r_db = self._ctx.db.find_resource( r.uid, r.path )
-				if r_db: # todo: check if we can use db.upsert here
-					self._ctx.db.update_resource( r )
-				else:
-					doc_id = self._ctx.db.insert_resource( r )
-					log.info( f'created new resource: id = {doc_id}, uid = {r.uid}, path = {r.path}' )
-
 		if not pretend:
 			a_db = self._ctx.db.get( uid=activity.uid )
 			if a_db:  # todo: check if we can use db.upsert here

@@ -251,6 +251,7 @@ class Bikecitizens( Service, Plugin ):
 		return [ r for r in resources if r.content ]
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
+		log.debug( f'downloading resource from {resource.source}' )
 		# noinspection PyUnusedLocal
 		response = options( resource.source, headers=HEADERS_OPTIONS )
 		response = self._session.get( resource.source, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } } )

@@ -1,5 +1,6 @@
 
 from datetime import datetime
+from datetime import time
 from datetime import timedelta
 from datetime import timezone
 
@@ -14,7 +15,6 @@ from tracs.resources import UID
 from tracs.resources import Resource
 from tracs.activity_types import ActivityTypes
 from tracs.dataclasses import as_dict
-from tracs.plugins.polar import PolarActivity
 
 @mark.file( 'libraries/default/activities.json' )
 def test_init( json ):
@@ -58,6 +58,20 @@ def test_init_from( json ):
 	assert target.name == 'One' and target.distance == 10 and target.calories == 100 and target.heartrate == 100
 	assert target.doc_id == 1
 
+def test_init_from_other_parts():
+	src1 = Activity( distance=10, duration=time( 1, 0, 0 ), heartrate_max=180, heartrate_min=100 )
+	src2 = Activity( distance=20, duration=time( 1, 20, 0 ) )
+	src3 = Activity( heartrate_max=160, heartrate_min=80 )
+	target = Activity( other_parts=[src1, src2, src3] )
+
+	assert target.distance == 30
+	assert target.ascent is None
+	assert target.elevation_max is None
+
+	assert target.duration == time( 2, 20, 0 )
+	assert target.duration_moving is None
+	assert target.heartrate_max == 180
+	assert target.heartrate_min == 80
 
 def test_asdict():
 	a = Activity()

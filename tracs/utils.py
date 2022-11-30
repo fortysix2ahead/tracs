@@ -146,6 +146,12 @@ def seconds_to_time( time_float: float ) -> Optional[time]:
 	gt = gmtime( round( time_float, 0 ) )
 	return time( gt.tm_hour, gt.tm_min, gt.tm_sec )
 
+def sum_times( times: List[time] ) -> Optional[time]:
+	td = timedelta( seconds=0 )
+	for t in times:
+		td += timedelta( hours=t.hour, minutes=t.minute, seconds=t.second ) if t else timedelta( seconds=0 )
+	return (datetime.min + td).time() if td.total_seconds() > 0 else None
+
 def to_isotime( timestr: str ) -> Optional[datetime]:
 	try:
 		return parse_datetime( timestr )

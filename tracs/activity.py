@@ -26,6 +26,7 @@ from .dataclasses import PROTECTED
 from .resources import Resource
 from .resources import ResourceGroup
 from .utils import fromisoformat
+from .utils import sum_times
 
 log = getLogger( __name__ )
 
@@ -114,9 +115,9 @@ class Activity( BaseDocument ):
 		if self.raw:
 			self.__raw_init__( self.raw )
 		elif others:
-			self.__init_from_others( others, force )
+			self.__init_from_others__( others, force )
 		elif other_parts:
-			self.__init_from_parts( other_parts, force )
+			self.__init_from_parts__( other_parts, force )
 
 	def __unserialize__( self, f: Optional[Field], k: str, v: Any ) -> Any:
 		k = f.name if f else k
@@ -136,9 +137,10 @@ class Activity( BaseDocument ):
 		"""
 		pass
 
-	def __init_from_others( self, others: List[Activity], force: bool ) -> None:
+	def __init_from_others__( self, others: List[Activity], force: bool ) -> None:
 		"""
-		Called from __post_init__ with raw data as parameter and can be overridden in subclasses. Will not be called when raw is None.
+		Called from __post_init__ with other activities as parameter.
+
 		:return:
 		"""
 		for f in fields( self ):
@@ -149,15 +151,35 @@ class Activity( BaseDocument ):
 					if not force:
 						break
 
-	def __init_from_parts( self, other_parts: List[Activity], force: bool ) -> None:
+	def __init_from_parts__( self, other_parts: List[Activity], force: bool ) -> None:
 		"""
-		Called from __post_init__ with raw data as parameter and can be overridden in subclasses. Will not be called when raw is None.
+		Called from __post_init__ with other activities as parts for this new activity. This method assumes that the list of parts
+		is sorted by time already.
+
 		:return:
 		"""
-		pass
 
-	#if len( self.resources ) > 0 and all( type( r ) is dict for r in self.resources ):
-		#	self.resources = [ Resource( **r ) for r in self.resources ]
+		# field selection is currently a manual process ...
+		self.time = other_parts[0].time
+		self.localtime = other_parts[0].localtime
+		self.time_end = other_parts[-1].time_end
+		self.localtime_end = other_parts[-1].localtime_end
+		self.timezone = other_parts[0].timezone
+
+		self.duration = sum_times( [o.duration for o in other_parts] ) # don't know why pycharm complains about this line
+		self.duration_moving = sum_times( [o.duration_moving for o in other_parts] ) # don't know why pycharm complains about this line
+
+		self.distance = s if (s := sum( o.distance for o in other_parts if o.distance )) else None
+		self.ascent = s if (s := sum( o.ascent for o in other_parts if o.ascent )) else None
+		self.descent = s if (s := sum( o.descent for o in other_parts if o.descent )) else None
+		self.elevation_max = max( l ) if ( l := [o.elevation_max for o in other_parts if o.elevation_max is not None] ) else None
+		self.elevation_min = min( l ) if ( l := [o.elevation_min for o in other_parts if o.elevation_min is not None] ) else None
+
+		self.speed_max = max( l ) if ( l := [o.speed_max for o in other_parts if o.speed_max is not None] ) else None
+
+		self.heartrate_max = max( l ) if ( l := [o.heartrate_max for o in other_parts if o.heartrate_max is not None] ) else None
+		self.heartrate_min = min( l ) if ( l := [o.heartrate_min for o in other_parts if o.heartrate_min is not None] ) else None
+		self.calories = s if (s := sum( o.calories for o in other_parts if o.calories )) else None
 
 	def init_from( self, other: Activity = None, raw: Dict = None, force: bool = False ) -> Activity:
 		"""

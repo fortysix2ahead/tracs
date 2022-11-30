@@ -14,6 +14,7 @@ from logging import getLogger
 from rich.prompt import Confirm
 
 from .activity import Activity
+from .activity_types import ActivityTypes
 from .config import ApplicationContext
 from .config import KEY_GROUPS as GROUPS
 from .config import console
@@ -176,7 +177,7 @@ def part_activities( activities: List[Activity], force: bool = False, pretend: b
 	for i in range( len( parts ) ):
 		part_list.append( { 'gap': gaps[i].isoformat(), 'uids': parts[i].uids } )
 
-	ctx.db.insert( Activity( parts=part_list ) )
+	ctx.db.insert( Activity( parts=part_list, type=ActivityTypes.multisport, other_parts=activities ) )
 
 def unpart_activities( activities: List[Activity], force: bool = False, pretend: bool = False, ctx: ApplicationContext = None ):
 	pass

@@ -165,6 +165,9 @@ class ApplicationContext:
 			self.progress.start()
 			self.task_id = self.progress.add_task( description=description, total=total, msg='' )
 
+	def total( self, total = None ):
+		self.progress.update( task_id=self.task_id, total=total )
+
 	def advance( self, msg: str = None, advance: float = 1 ):
 		if self.verbose:
 			self.pp( msg )

@@ -467,7 +467,7 @@ def _type_of( r: Mapping ) -> ActivityTypes:
 	return TYPES.get( id, Types.unknown )
 
 def _is_multipart_id( icon_url: str ) -> bool:
-	return True if icon_url.endswith( ICON_ID_TRIATHLON ) or icon_url.endswith( ICON_ID_MULTISPORT ) else False
+	return True if icon_url and (icon_url.endswith( ICON_ID_TRIATHLON ) or icon_url.endswith( ICON_ID_MULTISPORT )) else False
 
 def _multipart_str( self ) -> str:
 	if self.multipart:

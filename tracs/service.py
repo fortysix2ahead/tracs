@@ -313,6 +313,14 @@ class Service( Plugin ):
 			self.postprocess_resources( *summaries, **kwargs )  # post process summaries
 			self.persist_resources( *summaries, force=force, pretend=pretend, include_children=False, **kwargs )
 
+			self.ctx.total( len( summaries ) )
+
+			for summary in summaries:
+				self.ctx.advance( f'{summary.uid}' )
+				activities = self.create_activities( resource=summary, **kwargs )
+				self.postprocess_activities( *activities, **kwargs )
+				self.persist_activities( *activities, force=force, pretend=pretend, **kwargs )
+
 			self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() ) # update fetch timestamp
 			self.ctx.complete( 'done' )
 
@@ -331,10 +339,6 @@ class Service( Plugin ):
 				downloaded = self.download( summary=summary, force=force, pretend=pretend, **kwargs )
 				self.postprocess_resources( *downloaded, **kwargs )  # post process
 				self.persist_resources( *downloaded, force=force, include_children=False, pretend=pretend, **kwargs )
-
-				activities = self.create_activities( resource=summary, **kwargs )
-				self.postprocess_activities( *activities, **kwargs )
-				self.persist_activities( *activities, force=force, pretend=pretend, **kwargs )
 
 			self.ctx.complete( 'done' )
 

@@ -327,33 +327,33 @@ class Strava( Service, Plugin ):
 			log.debug( f'downloading resource from {url}' )
 			response = self._session.get( url, headers=HEADERS_LOGIN, allow_redirects=True, stream=True )
 
-			# content type is 'text/html; charset=utf-8' for .gpx resources that do not exist (i.e. for strenth training)
-			# disposition is None in such cases
 			content_type = response.headers.get( 'Content-Type' )
 			content_disposition = response.headers.get( 'content-disposition' )
 
-			ext = findall( r'^.*filename=\".+\.(\w+)\".*$', response.headers['content-disposition'] )[0]
-			resource_type = Registry.resource_type_for_suffix( ext )
-			resource.content = response.content
-			resource.type = resource_type
-			resource.path = f'{resource.local_id}.{ext}'
-			resource.status = response.status_code
+			# content type is 'text/html; charset=utf-8' for .gpx resources that do not exist (i.e. for strenth training)
+			# disposition is None in such cases
+			if content_type.startswith( 'text/html' ) and content_disposition is None:
+				resource.status = 404
+			else:
+				ext = findall( r'^.*filename=\".+\.(\w+)\".*$', content_disposition )[0]
+				resource.content = response.content
+				resource.type = Registry.resource_type_for_suffix( ext )
+				resource.path = f'{resource.local_id}.{ext}'
+				resource.status = response.status_code
 
 			# fit is binary, there's no text version to be stored
-			if resource_type == FIT_TYPE:
-				resource.text = None
+			if resource.type == FIT_TYPE:
+				pass
 
 			# fix for Strava bug where TCX documents contain whitespace before the first XML tag
 			# sample first line:
 			# '          <?xml version="1.0" encoding="UTF-8"?><TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"> ...'
 			if resource.type == TCX_TYPE:
-				if resource.text:
-					resource.text = resource.text.lstrip( ' ' )
-				if resource.content:
-					while resource.content[0:1] == b' ':
-						resource.content = resource.content[1:]
+				while resource.content[0:1] == b' ':
+					resource.content = resource.content[1:]
 
 			return response.content, response.status_code
+
 		else:
 			log.warning( f'unable to determine download url for resource {resource}' )
 			return None, 500

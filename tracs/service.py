@@ -286,8 +286,7 @@ class Service( Plugin ):
 
 	def upsert_activity( self, activity: Activity, force: bool, pretend: bool, **kwargs ) -> None:
 		if not pretend:
-			a_db = self._ctx.db.get( uid=activity.uid )
-			if a_db:  # todo: check if we can use db.upsert here
+			if self.ctx.db.contains_activity( activity.uid, use_index=True ):  # todo: check if we can use db.upsert here
 				# self._ctx.db.update( activity ) # todo: what to do here?
 				pass
 			else:

@@ -8,6 +8,7 @@ from typing import cast
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -117,6 +118,28 @@ class ActivityDb:
 		# init resources db
 		self._metadata_db: TinyDB = TinyDB( storage=JSONStorage, path=self._metadata_path, access_mode='r' )
 		self._metadata = self._metadata_db.table( TABLE_NAME_DEFAULT )
+
+		# index
+		self._index_uid_activity: Dict[str, Activity] = {}
+		self._index_uid_path_resource: Dict[Tuple[str, str], Resource] = {}
+		self.index()
+
+	def index( self ):
+		self._index_uid_activity.clear()
+		self._index_uid_path_resource.clear()
+
+		for a in self.activities.all():
+			a = cast( Activity, a )
+			for uid in a.uids:
+				if uid in self._index_uid_activity.keys():
+					log.warning( f'{uid} referenced in activity {a.doc_id}, but is also by activity {self._index_uid_activity[uid].doc_id}' )
+				self._index_uid_activity[uid] = a
+
+		for r in self.resources.all():
+			r = cast( Resource, r )
+			if (r.uid, r.path) in self._index_uid_path_resource.keys():
+				log.warning( f'{(r.uid, r.path)} referenced in resource {r.doc_id}, but is also by resource {self._index_uid_path_resource[(r.uid, r.path)].doc_id}' )
+			self._index_uid_path_resource[(r.uid, r.path)] = r
 
 	# ---- DB Properties --------------------------------------------------------
 
@@ -236,6 +259,12 @@ class ActivityDb:
 			if all( [ f( a ) for f in filters ] ):
 				return True
 		return False
+
+	def contains_activity( self, uid: str, use_index: bool = False ) -> bool:
+		if use_index:
+			return uid in self._index_uid_activity.keys()
+		else:
+			return self.activities.contains( Query()['uids'].test( lambda v: True if uid in v else False ) )
 
 	def get( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> Optional[Activity]:
 		filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )

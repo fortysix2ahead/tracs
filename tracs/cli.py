@@ -151,18 +151,6 @@ def download( ctx: ApplicationContext, filters ):
 def link( ctx, all_, filters ):
 	pass
 
-def _filter_activities( all_, filters ) -> [Activity]:
-	app = Application.instance()
-	if all_:
-		activities = app.db.all()
-	else:
-		if filters:
-			activities = app.db.find( filters )
-		else:
-			activities = app.db.find( [ f"time:{datetime.utcnow().year}" ] )
-
-	return activities
-
 @cli.command( 'list', help='lists activities' )
 @option( '-s', '--sort', is_flag=False, required=False, help='sorts the output according to an attribute' )
 @option( '-r', '--reverse', is_flag=True, required=False, help='reverses sort order' )

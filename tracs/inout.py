@@ -82,7 +82,7 @@ def import_activities( ctx: Optional[ApplicationContext], importer: Optional[str
 
 					s = Registry.services.get( importer, Registry.services.get( LOCAL_SERVICE_NAME ) )
 					s.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
-			except:
+			except RuntimeError:
 				log.error( 'unable to import from path', exc_info=True )
 
 				try:

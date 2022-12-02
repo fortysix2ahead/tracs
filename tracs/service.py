@@ -210,7 +210,8 @@ class Service( Plugin ):
 
 	# noinspection PyMethodMayBeStatic
 	def filter_fetched( self, resources: List[Resource], *uids, **kwargs ) -> List[Resource]:
-		return [r for r in resources if r.uid in uids] if uids else resources
+		# return [r for r in resources if r.uid in uids] if uids else resources
+		return [r for r in resources if r.uid in uids]
 
 	# methods related to download()
 
@@ -381,25 +382,3 @@ class Service( Plugin ):
 
 	def setup( self, ctx: ApplicationContext ) -> None:
 		pass
-
-# ------------------------------------------------------------------------------
-
-def download_activities( activities: List[Activity], ctx: ApplicationContext, force: bool = False, pretend: bool = False ):
-	for a in activities:
-		for uid in a.uids:
-			resource_group = ctx.db.find_resource_group( uid )
-			service = Registry.services.get( resource_group.summary().classifier )
-			for recording in resource_group.recordings():
-				path = Service.path_for_resource( recording )
-				if not path.exists() or force:
-					service.login() # login first ...
-					service.download_resource( recording )
-
-			a.resources = resource_group.recordings()
-			service.persist_resource_data( a, force, pretend )
-
-def link_activities( activities: [Activity], force: bool = False, pretend: bool = False ):
-	_process_activities( activities, False, True, force, pretend )
-
-def _process_activities( activities: List[Activity], ctx: ApplicationContext, download: bool, link: bool, force: bool, pretend: bool ):
-	pass

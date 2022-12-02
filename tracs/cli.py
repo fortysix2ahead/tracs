@@ -1,5 +1,6 @@
 
 from datetime import datetime
+from itertools import chain
 from logging import DEBUG
 from logging import INFO
 from logging import Formatter
@@ -50,11 +51,8 @@ from .show import show_activity
 from .list import show_config
 from .edit import rename_activities
 from .migrate import migrate_application
-from tracs.registry import Registry
 from .validate import validate_activities
 from .setup import setup as setup_application
-from .service import download_activities
-from .service import link_activities
 
 log = getLogger( __name__ )
 
@@ -141,15 +139,17 @@ def fetch( ctx, sources: List[str] ):
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def download( ctx: ApplicationContext, filters ):
-	download_activities( ctx.db.find( filters or [] ), ctx=ctx, force=ctx.force, pretend=ctx.pretend )
+	activities = list( ctx.db.find( filters or [] ) )
+	activity_uids = list( set( chain( *[a.uids for a in activities] ) ) )
+	if activity_uids:
+		import_activities( ctx, None, sources = activity_uids, skip_fetch = True )
 
 @cli.command( help='creates links for downloaded resources of activities' )
 @option( '-a', '--all', 'all_', is_flag=True, required=False, help='creates links for all activities (instead of recent ones only), overriding provided filters' )
 @argument( 'filters', nargs=-1 )
 @pass_context
 def link( ctx, all_, filters ):
-	filters = [] if all_ else filters
-	link_activities( ctx.obj.db.find( filters ), force=ctx.obj.force, pretend=ctx.obj.pretend )
+	pass
 
 def _filter_activities( all_, filters ) -> [Activity]:
 	app = Application.instance()

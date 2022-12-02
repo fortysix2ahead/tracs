@@ -21,6 +21,9 @@ from tracs.filters import resource_pattern
 from tracs.filters import true
 from tracs.filters import Filter
 from tracs.filters import filter_pattern2
+from tracs.filters import TYPES
+from tracs.plugins.polar import Polar
+from tracs.registry import Registry
 
 from .helpers import ids
 
@@ -190,6 +193,9 @@ def test_parse():
 	# special cases
 
 	# special treament for uids
+	# polar as service name is not registered yet -> do it for this test case
+	Registry.services['polar'] = Polar( base_url='http://example.com' )
+	TYPES['polar'] = 'int'
 	assert parse( 'polar:123456' ) == Filter( 'uids', 'polar:123456', regex=False )
 	# treatment of classifiers
 	assert parse( 'classifier:polar' ) == Filter( 'uids', value='^polar:\\d+$', regex=True, value_in_list=True )
@@ -313,7 +319,7 @@ def test_prepared_filters( db ):
 	assert flt( 'name:run' ) == [3]
 	assert flt( 'name:unknown' ) == [1, 4]
 
-	assert flt( 'service:waze' ) == [1, 4]
+	assert flt( 'service:polar' ) == [1, 2]
 
 	assert flt( 'calories:2904' ) == [2]
 

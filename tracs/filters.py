@@ -46,7 +46,7 @@ for f in Activity.fields():
 			ALIASES[alias] = f.name
 
 # add service names as valid filter types
-for s in Registry.services.keys():
+for s in Registry.service_names():
 	TYPES[s] = 'int'
 
 @dataclass

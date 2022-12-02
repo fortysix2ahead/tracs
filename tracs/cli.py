@@ -29,6 +29,7 @@ from tracs.inout import import_activities
 from tracs.inout import open_activities
 from tracs.list import inspect_registry
 from tracs.list import inspect_resources
+from tracs.show import show_aggregate
 from tracs.show import show_resource
 from .activity import Activity
 from .application import Application
@@ -289,6 +290,12 @@ def unequip( ctx: ApplicationContext, filters, equipment ):
 @pass_obj
 def setup( ctx: ApplicationContext, services: List[str] ):
 	setup_application( ctx, services )
+
+@cli.command( help='Shows aggregated data (experimental + work in progress)' )
+@argument( 'filters', nargs=-1 )
+@pass_obj
+def aggregate( ctx: ApplicationContext, filters ):
+	show_aggregate( list( ctx.db.find( filters ) ), ctx=ctx )
 
 @cli.command( hidden=True, help='For testing plugin system' )
 def init():

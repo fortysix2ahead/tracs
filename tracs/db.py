@@ -122,7 +122,7 @@ class ActivityDb:
 		# index
 		self._index_uid_activity: Dict[str, Activity] = {}
 		self._index_uid_path_resource: Dict[Tuple[str, str], Resource] = {}
-		self.index()
+		# self.index()
 
 	def index( self ):
 		self._index_uid_activity.clear()

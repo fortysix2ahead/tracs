@@ -45,10 +45,6 @@ for f in Activity.fields():
 			TYPES[alias] = f.type
 			ALIASES[alias] = f.name
 
-# add service names as valid filter types
-for s in Registry.service_names():
-	TYPES[s] = 'int'
-
 @dataclass
 class Filter( QueryLike ):
 
@@ -334,7 +330,7 @@ def parse( flt: Union[Filter, str] ) -> Filter:
 
 def parse_expr( filter: str, expr: str, f: Filter ) -> None:
 	# get field type, depending on being an alias
-	field_type = TYPES.get( ALIASES.get( filter, filter ) )
+	field_type = 'int' if filter in Registry.service_names() else TYPES.get( ALIASES.get( filter, filter ) )
 
 	# select parse function
 
@@ -529,14 +525,14 @@ def postprocess( f: Filter ) -> None:
 
 	# set field according to alias
 
-	f.field = f.filter if f.filter in TYPES else None
+	f.field = f.filter if (f.filter in TYPES or f.filter in Registry.service_names() ) else None
 	f.field = ALIASES.get( f.field, f.field ) # use existing field instead of alias ...
 
 	if not f.field:
 		f.valid = False
 		return
 
-	if TYPES[f.filter] in [ 'str', 'List[str]' ]:
+	if TYPES.get( f.filter ) in [ 'str', 'List[str]' ]:
 		if type( f.value ) is str:
 			f.value = f.value.lower()
 		elif type( f.value ) is list:

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field
+from datetime import datetime
 from importlib import import_module
 from importlib.resources import path as pkg_path
 from logging import getLogger
@@ -116,6 +117,8 @@ class ApplicationContext:
 	progress: Progress = field( default=None )
 	task_id: Any = field( default=None )
 
+	apptime: datetime = field( default=None )
+
 	def __post_init__( self ):
 		# directories depending on cfg_dir
 		if self.cfg_dir:
@@ -181,6 +184,14 @@ class ApplicationContext:
 		else:
 			self.progress.update( task_id=self.task_id, advance=1, msg='' if msg is None else msg )
 			self.progress.stop()
+
+	def timeit( self ):
+		if not self.apptime:
+			self.apptime = datetime.now()
+		else:
+			diff = datetime.now() - self.apptime
+			self.console.print( f'{diff}' )
+			self.apptime = datetime.now()
 
 	def dump_config_state( self ) -> None:
 		self.dump_config()

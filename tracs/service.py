@@ -286,7 +286,7 @@ class Service( Plugin ):
 
 	def upsert_activity( self, activity: Activity, force: bool, pretend: bool, **kwargs ) -> None:
 		if not pretend:
-			if self.ctx.db.contains_activity( activity.uid, use_index=True ):  # todo: check if we can use db.upsert here
+			if self.ctx.db.contains_activity( activity.uid, use_index=False ):  # todo: check if we can use db.upsert here
 				# self._ctx.db.update( activity ) # todo: what to do here?
 				pass
 			else:
@@ -303,14 +303,25 @@ class Service( Plugin ):
 
 		# fetch
 
+		self.ctx.start( f'fetching activity data from {self.display_name}' )
+
+		# fetch from remote or get items from local storage
+
 		if not skip_fetch:
-			self.ctx.start( f'fetching activity data from {self.display_name}' )
+			summaries = self.fetch( force, pretend, **kwargs )  # fetch 'main' resources for each activity
+		else:
+			summaries = self.ctx.db.all_summaries()
 
-			summaries = self.fetch( force, pretend, **kwargs ) # fetch 'main' resources for each activity
-			summaries = self.filter_fetched( summaries, *uids, **kwargs ) # if only one resource was requested: filter out everything else
+		# if only certain uids were requested: filter out everything else
 
+		if uids:
+			summaries = self.filter_fetched( summaries, *uids, **kwargs )
+
+		# process and persist fetched resources
+
+		if not skip_fetch or force:
 			self.postprocess_resources( *summaries, **kwargs )  # post process summaries
-			self.persist_resources( *summaries, force=force, pretend=pretend, include_children=False, **kwargs )
+			self.persist_resources( *summaries, force=force, pretend=pretend, include_children=False, **kwargs ) # persist summaries
 
 			self.ctx.total( len( summaries ) )
 
@@ -320,8 +331,10 @@ class Service( Plugin ):
 				self.postprocess_activities( *activities, **kwargs )
 				self.persist_activities( *activities, force=force, pretend=pretend, **kwargs )
 
-			self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() ) # update fetch timestamp
-			self.ctx.complete( 'done' )
+		# complete fetch task
+
+		self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() ) # update fetch timestamp
+		self.ctx.complete( 'done' )
 
 		# download
 

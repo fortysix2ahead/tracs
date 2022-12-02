@@ -22,7 +22,7 @@ from rich.table import Table as RichTable
 from tinydb import TinyDB
 from tinydb import Query
 from tinydb.operations import delete
-from tinydb.operations import set
+from tinydb.operations import set as set_field
 from tinydb.storages import JSONStorage
 from tinydb.table import Document
 from tinydb.table import Table
@@ -239,7 +239,7 @@ class ActivityDb:
 
 	def remove_field( self, a: Activity, field: str ) -> None:
 		if field.startswith( '_' ):
-			self._activities.update( set( field, None ), doc_ids=[a.doc_id] )
+			self._activities.update( set_field( field, None ), doc_ids=[a.doc_id] )
 		else:
 			self._activities.update( delete( field ),  doc_ids=[a.doc_id] )
 
@@ -252,6 +252,15 @@ class ActivityDb:
 		:return: list containing all activities
 		"""
 		return cast( List[Activity], self.activities.all() )
+
+	def all_resources( self ) -> List[Resource]:
+		return cast( List[Resource], self.resources.all() )
+
+	def all_summaries( self ) -> List[Resource]:
+		return [r for r in self.all_resources() if ( rt := cast( ResourceType, Registry.resource_types.get( r.type ) ) ) and rt.summary ]
+
+	def all_uids( self ) -> List[str]:
+		return list( set( [r.uid for r in self.all_resources()] ) )
 
 	def contains( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> bool:
 		filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )

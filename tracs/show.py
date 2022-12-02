@@ -128,3 +128,14 @@ def show_activity( activities: [Activity], ctx: ApplicationContext, display_raw:
 						# table.add_row( pp( r.doc_id ), f'{r.path} {path_exists}{overlay_path_exists}', absolute_path, r.type, resource_url )
 
 				console.print( table )
+
+def show_aggregate( activities: [Activity], ctx: ApplicationContext ) -> None:
+	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
+
+	aggregate = Activity( other_parts=activities )
+
+	table.add_row( *[ 'count', fmt( len( activities ) ) ] )
+	table.add_row( *[ 'distance', fmt( aggregate.distance ) ] )
+	table.add_row( *[ 'duration', fmt( aggregate.duration ) ] )
+
+	console.print( table )

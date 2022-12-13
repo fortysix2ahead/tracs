@@ -302,8 +302,6 @@ class Service( Plugin ):
 		skip_link = kwargs.get( 'skip_link', False ) # not used at the moment
 		uids: List[str] = kwargs.get( 'uids', [] )
 
-		self._import_session = ImportSession()
-
 		# fetch
 
 		self.ctx.start( f'fetching activity data from {self.display_name}' )
@@ -314,8 +312,6 @@ class Service( Plugin ):
 			summaries = self.fetch( force, pretend, **kwargs )  # fetch 'main' resources for each activity
 		else:
 			summaries = self.ctx.db.all_summaries()
-
-		self._import_session.all_summaries = summaries
 
 		# if only certain uids were requested: filter out everything else
 

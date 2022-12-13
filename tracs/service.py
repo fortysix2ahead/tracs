@@ -42,15 +42,15 @@ class Service( Plugin ):
 		super().__init__( **kwargs )
 
 		# paths + plugin filesystem area
-		self._base_path = kwargs.get( 'base_path', Path( DEFAULT_DB_DIR, self.name ) )
-		self._overlay_path = kwargs.get( 'overlay_path', Path( self._base_path.parent, OVERLAY_DIRNAME, self.name ) )
+		self._base_path: Path = kwargs.get( 'base_path', Path( DEFAULT_DB_DIR, self.name ) )
+		self._overlay_path: Path = kwargs.get( 'overlay_path', Path( self._base_path.parent, OVERLAY_DIRNAME, self.name ) )
 
-		self._fs = MultiFS()
+		self._fs: MultiFS = MultiFS()
 		self._fs.add_fs( 'base', OSFS( str( self._base_path ), create=True ), write=True )
 		self._fs.add_fs( 'overlay', OSFS( str( self._overlay_path ), create=True ), write=False )
 
-		self._base_url = kwargs.get( 'base_url' )
-		self._logged_in = False
+		self._base_url: str = kwargs.get( 'base_url' )
+		self._logged_in: bool = False
 
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
 
@@ -302,6 +302,8 @@ class Service( Plugin ):
 		skip_link = kwargs.get( 'skip_link', False ) # not used at the moment
 		uids: List[str] = kwargs.get( 'uids', [] )
 
+		self._import_session = ImportSession()
+
 		# fetch
 
 		self.ctx.start( f'fetching activity data from {self.display_name}' )
@@ -312,6 +314,8 @@ class Service( Plugin ):
 			summaries = self.fetch( force, pretend, **kwargs )  # fetch 'main' resources for each activity
 		else:
 			summaries = self.ctx.db.all_summaries()
+
+		self._import_session.all_summaries = summaries
 
 		# if only certain uids were requested: filter out everything else
 
@@ -353,6 +357,7 @@ class Service( Plugin ):
 				self.postprocess_resources( *downloaded, **kwargs )  # post process
 				self.persist_resources( *downloaded, force=force, include_children=False, pretend=pretend, **kwargs )
 
+			self.set_state_value( KEY_LAST_DOWNLOAD, datetime.utcnow().astimezone( UTC ).isoformat() )  # update download timestamp
 			self.ctx.complete( 'done' )
 
 		# link / vfs

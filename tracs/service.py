@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from typing import Any
 from typing import cast
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -34,6 +37,15 @@ from .utils import unarg
 
 log = getLogger( __name__ )
 
+@dataclass
+class ImportSession:
+
+	summaries: Dict[str, Resource] = field( default_factory=dict )
+	activities: Dict[str, Activity] = field( default_factory=dict )
+
+	def __post_init__( self ):
+		pass
+
 # ---- base class for a service ----
 
 class Service( Plugin ):
@@ -42,15 +54,17 @@ class Service( Plugin ):
 		super().__init__( **kwargs )
 
 		# paths + plugin filesystem area
-		self._base_path = kwargs.get( 'base_path', Path( DEFAULT_DB_DIR, self.name ) )
-		self._overlay_path = kwargs.get( 'overlay_path', Path( self._base_path.parent, OVERLAY_DIRNAME, self.name ) )
+		self._base_path: Path = kwargs.get( 'base_path', Path( DEFAULT_DB_DIR, self.name ) )
+		self._overlay_path: Path = kwargs.get( 'overlay_path', Path( self._base_path.parent, OVERLAY_DIRNAME, self.name ) )
 
-		self._fs = MultiFS()
+		self._fs: MultiFS = MultiFS()
 		self._fs.add_fs( 'base', OSFS( str( self._base_path ), create=True ), write=True )
 		self._fs.add_fs( 'overlay', OSFS( str( self._overlay_path ), create=True ), write=False )
 
-		self._base_url = kwargs.get( 'base_url' )
-		self._logged_in = False
+		self._base_url: str = kwargs.get( 'base_url' )
+		self._logged_in: bool = False
+
+		self._import_session: Optional[ImportSession] = None
 
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
 
@@ -272,11 +286,14 @@ class Service( Plugin ):
 		pass
 
 	# noinspection PyMethodMayBeStatic
-	def create_activities( self, resource: Resource, **kwargs ) -> List[Activity]:
-		if activity_cls := cast( ResourceType, Registry.resource_types.get( resource.type ) ).activity_cls:
-			return [ activity_cls( raw=resource.raw, resources=[resource, *resource.resources] ) ]
-		else:
-			return []
+	def create_activity( self, resource: Resource, **kwargs ) -> Optional[Activity]:
+		resource_type = cast( ResourceType, Registry.resource_types.get( resource.type ) )
+		activity_cls = resource_type.activity_cls if resource_type else Activity
+		return activity_cls( raw=resource.raw, resources=[resource, *resource.resources] )
+
+	# noinspection PyMethodMayBeStatic
+	def create_additional_activities( self, *resources: Resource, **kwargs ) -> List[Activity]:
+		return []
 
 	def postprocess_activities( self, *activities: Activity, **kwargs ) -> None:
 		pass
@@ -302,6 +319,8 @@ class Service( Plugin ):
 		skip_link = kwargs.get( 'skip_link', False ) # not used at the moment
 		uids: List[str] = kwargs.get( 'uids', [] )
 
+		self._import_session = ImportSession()
+
 		# fetch
 
 		self.ctx.start( f'fetching activity data from {self.display_name}' )
@@ -318,6 +337,10 @@ class Service( Plugin ):
 		if uids:
 			summaries = self.filter_fetched( summaries, *uids, **kwargs )
 
+		# save uid/summary
+		for s in summaries:
+			self._import_session.summaries[s.uid] = s
+
 		# process and persist fetched resources
 
 		if not skip_fetch or force:
@@ -328,9 +351,11 @@ class Service( Plugin ):
 
 			for summary in summaries:
 				self.ctx.advance( f'{summary.uid}' )
-				activities = self.create_activities( resource=summary, **kwargs )
-				self.postprocess_activities( *activities, **kwargs )
-				self.persist_activities( *activities, force=force, pretend=pretend, **kwargs )
+				activity = self.create_activity( resource=summary, **kwargs )
+				self.postprocess_activities( activity, **kwargs )
+				self.persist_activities( activity, force=force, pretend=pretend, **kwargs )
+
+				self._import_session.activities[summary.uid] = activity
 
 		# complete fetch task
 
@@ -353,6 +378,10 @@ class Service( Plugin ):
 				self.postprocess_resources( *downloaded, **kwargs )  # post process
 				self.persist_resources( *downloaded, force=force, include_children=False, pretend=pretend, **kwargs )
 
+				additional_activities = self.create_additional_activities( summary, *downloaded, force=force, pretend=pretend, **kwargs )
+				self.persist_activities( *additional_activities, force=force, pretend=pretend, **kwargs )
+
+			self.set_state_value( KEY_LAST_DOWNLOAD, datetime.utcnow().astimezone( UTC ).isoformat() )  # update download timestamp
 			self.ctx.complete( 'done' )
 
 		# link / vfs

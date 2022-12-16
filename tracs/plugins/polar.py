@@ -13,6 +13,7 @@ from typing import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from zipfile import BadZipFile
 
 from datetimerange import DateTimeRange
 from sys import exit as sysexit
@@ -24,9 +25,11 @@ from dateutil.parser import parse
 from dateutil.tz import tzlocal
 from dateutil.tz import UTC
 from fs import open_fs
+from fs.errors import CreateFailed
 from fs.zipfs import ReadZipFS
 from requests_cache import CachedSession
 from rich.prompt import Prompt
+from tinydb import Query
 
 from .gpx import GPX_TYPE
 from .handlers import JSON_TYPE
@@ -340,27 +343,49 @@ class Polar( Service ):
 			return []
 
 	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
-		if _is_multipart_id( summary.raw.get( 'iconUrl' ) ):
-			resources = [
-				Resource( uid=summary.uid, type=POLAR_ZIP_GPX_TYPE, path=f'{summary.local_id}.gpx.zip', source=f'{self.export_url}/gpx/{summary.local_id}?compress=true' ),
-				Resource( uid=summary.uid, type=POLAR_ZIP_TCX_TYPE, path=f'{summary.local_id}.tcx.zip', source=f'{self.export_url}/tcx/{summary.local_id}?compress=true' ),
-			]
-		else:
-			resources = [
+		try:
+			multipart = _is_multipart_id( summary.raw.get( 'iconUrl' ) )
+		except AttributeError:
+			multipart = False
+
+		return self.download_multipart_resources( summary ) if multipart else self.download_resources( summary )
+
+	def download_multipart_resources( self, summary: Resource ) -> List[Resource]:
+		resources = [
+			Resource( uid=summary.uid, type=POLAR_ZIP_GPX_TYPE, path=f'{summary.local_id}.gpx.zip', source=f'{self.export_url}/gpx/{summary.local_id}?compress=true' ),
+			Resource( uid=summary.uid, type=POLAR_ZIP_TCX_TYPE, path=f'{summary.local_id}.tcx.zip', source=f'{self.export_url}/tcx/{summary.local_id}?compress=true' ),
+		]
+
+		for r in list( resources ):
+			try:
+				self.download_resource( r )
+				resources.extend( decompress_resources( r ) )
+			except (CreateFailed, BadZipFile):
+				log.error( f'error fetching resource from {r.source}', exc_info=True )
+
+			if not r.content:
+				resources.remove( r )
+
+		return resources
+
+	def download_resources( self, summary: Resource ) -> List[Resource]:
+		resources = [
 				Resource( uid=summary.uid, type=POLAR_CSV_TYPE, path=f'{summary.local_id}.csv', source=f'{self.export_url}/csv/{summary.local_id}' ),
 				Resource( uid=summary.uid, type=GPX_TYPE, path=f'{summary.local_id}.gpx', source=f'{self.export_url}/gpx/{summary.local_id}' ),
 				Resource( uid=summary.uid, type=TCX_TYPE, path=f'{summary.local_id}.tcx', source=f'{self.export_url}/tcx/{summary.local_id}' ),
 				Resource( uid=summary.uid, type=POLAR_HRV_TYPE, path=f'{summary.local_id}.hrv.csv', source=f'{self.export_url}/rr/csv/{summary.local_id}' )
-			]
+		]
 
-		for r in resources:
-			if not summary.get_child( r.type ) or force:
-				try:
-					self.download_resource( r )
-				except RuntimeError:
-					log.error( f'error fetching resource from {r.source}', exc_info=True )
+		for r in list( resources ):
+			try:
+				self.download_resource( r )
+			except RuntimeError:
+				log.error( f'error fetching resource from {r.source}', exc_info=True )
 
-		return [r for r in resources if r.content]
+			if not r.content:
+				resources.remove( r )
+
+		return resources
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		log.debug( f'downloading resource from {resource.source}' )
@@ -369,24 +394,17 @@ class Polar( Service ):
 		resource.status = response.status_code
 		return response.content, response.status_code
 
-	def postprocess_resource( self, resource: Resource = None, **kwargs ) -> None:
-		resource.resources.extend( self.unzip_resources( resource.resources ) )
-
-	def create_activities( self, resource: Resource, **kwargs ) -> List[Activity]:
-		activities = super().create_activities( resource, **kwargs )
-		if activities[0].is_multipart:
-			recordings = [ r for r in resource.resources if r.type in [GPX_TYPE, TCX_TYPE] ]
-			partlist = self.create_partlist( activities[0], recordings )
-			for rp in partlist:
-				#part = Activity( time=rp.range.start_datetime, time_end=rp.range.end_datetime, uids=[f'{activities[0].uid}#{rp.index}'] )
-				part = Activity( time=rp.range.start_datetime, time_end=rp.range.end_datetime, uid=f'{activities[0].uid}#{rp.index}' )
-				activities.append( part )
-		return activities
-
-	def postprocess( self, activity: Optional[Activity] = None, resource: Optional[Resource] = None, **kwargs ) -> None:
-		resource.resources.extend( self.unzip_resources( resource.resources ) )
-		# partlist = self.create_partlist( unzipped_resources )
-		# self.update_activity_partlist( activity, partlist )
+	# noinspection PyMethodMayBeStatic
+	def create_additional_activities( self, summary: Resource, *resources: Resource, **kwargs ) -> List[Activity]:
+		if any( r.type in [POLAR_ZIP_GPX_TYPE, POLAR_ZIP_TCX_TYPE] for r in resources ):
+			recordings = [r for r in resources if r.type in [GPX_TYPE, TCX_TYPE]]
+			activity = self._import_session.activities.get( summary.uid )
+			partlist = self.create_partlist( activity, recordings )
+			# update the parent activity here -> that's not nice!
+			self.ctx.db.set_field( Query()['uids'] == [activity.uid], 'parts', activity.parts )
+			return [ Activity( time=rp.range.start_datetime, time_end=rp.range.end_datetime, uid=f'{summary.uid}#{rp.index}' ) for rp in partlist ]
+		else:
+			return []
 
 	# noinspection PyMethodMayBeStatic
 	def unzip_resources( self, resources: List[Resource] ) -> List[Resource]:

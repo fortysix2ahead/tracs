@@ -4,6 +4,7 @@ from datetime import timezone
 from importlib.resources import path as resource_path
 from itertools import chain
 from shutil import copy
+from typing import Any
 from typing import cast
 from typing import Dict
 from typing import List
@@ -242,6 +243,9 @@ class ActivityDb:
 			self._activities.update( set_field( field, None ), doc_ids=[a.doc_id] )
 		else:
 			self._activities.update( delete( field ),  doc_ids=[a.doc_id] )
+
+	def set_field( self, q: Query, field: str, value: Any ) -> list[int]:
+		return self._activities.update( set_field( field, value ), cond=q )
 
 	# -----
 

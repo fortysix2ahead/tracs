@@ -9,6 +9,11 @@ from rich.prompt import Confirm
 from tinydb import TinyDB
 
 from .config import ApplicationContext
+from .db import ACTIVITIES_NAME
+from .db import ActivityDb
+from .db import METADATA_NAME
+from .db import RESOURCES_NAME
+from .db import SCHEMA_NAME
 from .db_storage import DataClassStorage
 from .plugins.handlers import JSONHandler
 from .utils import timestring
@@ -23,11 +28,16 @@ def migrate_application( ctx: ApplicationContext, function_name: str = None, for
 			return
 
 	current_db = ctx.db
-	current_db_file = ctx.db_file
+	migration_name = f'migration_{timestring()}'
+	next_db_path = Path( current_db.path.parent, f'db_{migration_name}' )
+	next_db_path.mkdir( parents=True, exist_ok=True )
 
-	next_db_file = Path( current_db_file.parent, current_db_file.name.replace( '.json', f'.migration_{timestring()}.json' ) )
-	copy( current_db_file, next_db_file )
-	next_db = TinyDB( storage=DataClassStorage, path=next_db_file, read_only=True )
+	copy( current_db.activities_path, Path( next_db_path, ACTIVITIES_NAME ) )
+	copy( current_db.metadata_path, Path( next_db_path, METADATA_NAME ) )
+	copy( current_db.resources_path, Path( next_db_path, RESOURCES_NAME ) )
+	copy( current_db.schema_path, Path( next_db_path, SCHEMA_NAME ) )
+
+	next_db = ActivityDb( path=next_db_path )
 
 	if function_name and function_name in dir( modules[ __name__ ] ):
 		if force or Confirm.ask( f'migration function {function_name} found, would you like to execute the migration?' ):
@@ -56,6 +66,33 @@ def consolidate_ids( current_db, next_db ):
 	new_dict = { '_default': new_dict }
 
 	JSONHandler().save( data = new_dict, path=Path( current_db.activities_path.parent, 'activities_consolidated.json' ) )
+
+def deduplicate( current_db, next_db ):
+	next_db.close()
+	activities: dict = JSONHandler().load( path=next_db.activities_path ).raw
+	resources: dict = JSONHandler().load( path=next_db.resources_path ).raw
+
+	keys = {}
+	for key in sorted( activities.get( '_default' ).keys() ):
+		a = activities.get( '_default' ).get( key )
+		for uid in a.get( 'uids', [] ):
+			if uid not in keys:
+				keys[uid] = key
+			else:
+				del( activities.get( '_default' )[key] )
+				log.info( f'removed duplicate activitiy {uid}, doc_id {key}' )
+
+	keys = {}
+	for key in sorted( resources.get( '_default' ).keys() ):
+		r = resources.get( '_default' ).get( key )
+		if (r['uid'], r['path']) not in keys:
+			keys[(r['uid'], r['path'])] = key
+		else:
+			del (resources.get( '_default' )[key])
+			log.info( f"removed duplicate resource {(r['uid'], r['path'])}, doc_id {key}" )
+
+	JSONHandler().save( activities, next_db.activities_path )
+	JSONHandler().save( resources, next_db.resources_path )
 
 def migrate_resources( current_db, next_db ):
 	json = JSONHandler().load( path=current_db.activities_path ).raw

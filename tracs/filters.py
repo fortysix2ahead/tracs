@@ -495,6 +495,10 @@ def normalize( flt: str ) -> str:
 	elif m := match( int_range_pattern, flt ):
 		normalized_flt = f'id:{flt}'
 
+	# service name
+	elif flt in Registry.service_names():
+		normalized_flt = f'service:{flt}'
+
 	else:
 		normalized_flt = flt
 

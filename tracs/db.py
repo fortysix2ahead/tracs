@@ -212,6 +212,10 @@ class ActivityDb:
 		return self._metadata_path
 
 	@property
+	def schema_path( self ) -> Path:
+		return self._schema_path
+
+	@property
 	def storage( self ) -> DataClassStorage:
 		return cast( DataClassStorage, self._db.storage )
 

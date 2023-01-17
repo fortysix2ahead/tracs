@@ -1,4 +1,6 @@
-
+from dataclasses import dataclass
+from dataclasses import field
+from dataclasses import InitVar
 from datetime import datetime
 from datetime import timezone
 from importlib.resources import path as resource_path
@@ -55,9 +57,41 @@ METADATA_NAME = 'metadata.json'
 RESOURCES_NAME = 'resources.json'
 SCHEMA_NAME = 'schema.json'
 
+@dataclass
+class ActivityDbIndex:
+	activities: InitVar[Table] = field( default=None )
+	resources: InitVar[Table] = field( default=None )
+
+	uid_activity: Dict[str, Activity] = field( default_factory=dict )
+	uid_resources: Dict[str, List[Resource]] = field( default_factory=dict )
+	uid_path_resource: Dict[Tuple[str, str], Resource] = field( default_factory=dict )
+
+	def __post_init__( self, activities: Table, resources: Table ):
+
+		# clear dictionaries first, just in case we need to do a reindex later
+		self.uid_activity.clear()
+		self.uid_resources.clear()
+		self.uid_path_resource.clear()
+
+		for a in cast( List[Activity], activities.all() ):
+			for uid in a.uids:
+				if uid in self.uid_activity.keys():
+					log.warning( f'{uid} referenced in activity {a.doc_id}, but is already referenced by activity {self.uid_activity[uid].doc_id}' )
+
+				self.uid_activity[uid] = a
+
+		for r in cast( List[Resource], resources.all() ):
+			if r.uid not in self.uid_resources.keys():
+				self.uid_resources[r.uid] = list()
+			self.uid_resources[r.uid].append( r )
+
+			if (r.uid, r.path) in self.uid_path_resource.keys():
+				log.warning( f'{(r.uid, r.path)} referenced in resource {r.doc_id}, but is already referenced by resource {self.uid_path_resource[(r.uid, r.path)].doc_id}' )
+			self.uid_path_resource[(r.uid, r.path)] = r
+
 class ActivityDb:
 
-	def __init__( self, path: Path = None, activities_name: str = None, metadata_name: str = None, resources_name: str = None, schema_name: str = None, pretend: bool=False ):
+	def __init__( self, path: Path = None, activities_name: str = None, metadata_name: str = None, resources_name: str = None, schema_name: str = None, pretend: bool = False ):
 		"""
 		Creates an activity db, consisting of tiny db instances (meta + activities + resources + schema).
 
@@ -94,10 +128,10 @@ class ActivityDb:
 			else:
 				self._activities_path = Path( self._db_resource_path, ACTIVITIES_NAME )
 				self._resources_path = Path( self._db_resource_path, RESOURCES_NAME )
-				self._metadata_path = Path(  self._db_resource_path, METADATA_NAME )
+				self._metadata_path = Path( self._db_resource_path, METADATA_NAME )
 				self._schema_path = Path( self._db_resource_path, SCHEMA_NAME )
 
-				pretend = True # turn on in-memory mode when path is not provided
+				pretend = True  # turn on in-memory mode when path is not provided
 
 		# init schema db
 		self._default_schema: TinyDB = TinyDB( storage=JSONStorage, path=Path( self._db_resource_path, SCHEMA_NAME ), access_mode='r' )
@@ -121,32 +155,17 @@ class ActivityDb:
 		self._metadata = self._metadata_db.table( TABLE_NAME_DEFAULT )
 
 		# index
-		self._index_uid_activity: Dict[str, Activity] = {}
-		self._index_uid_path_resource: Dict[Tuple[str, str], Resource] = {}
-		# self.index()
-
-	def index( self ):
-		self._index_uid_activity.clear()
-		self._index_uid_path_resource.clear()
-
-		for a in self.activities.all():
-			a = cast( Activity, a )
-			for uid in a.uids:
-				if uid in self._index_uid_activity.keys():
-					log.warning( f'{uid} referenced in activity {a.doc_id}, but is also by activity {self._index_uid_activity[uid].doc_id}' )
-				self._index_uid_activity[uid] = a
-
-		for r in self.resources.all():
-			r = cast( Resource, r )
-			if (r.uid, r.path) in self._index_uid_path_resource.keys():
-				log.warning( f'{(r.uid, r.path)} referenced in resource {r.doc_id}, but is also by resource {self._index_uid_path_resource[(r.uid, r.path)].doc_id}' )
-			self._index_uid_path_resource[(r.uid, r.path)] = r
+		self._index = ActivityDbIndex( self._activities, self._resources )
 
 	# ---- DB Properties --------------------------------------------------------
 
 	@property
 	def db( self ) -> TinyDB:
 		return self._db
+
+	@property
+	def index( self ) -> ActivityDbIndex:
+		return self._index
 
 	@property
 	def activities_db( self ) -> TinyDB:
@@ -242,7 +261,7 @@ class ActivityDb:
 		if field.startswith( '_' ):
 			self._activities.update( set_field( field, None ), doc_ids=[a.doc_id] )
 		else:
-			self._activities.update( delete( field ),  doc_ids=[a.doc_id] )
+			self._activities.update( delete( field ), doc_ids=[a.doc_id] )
 
 	def set_field( self, q: Query, field: str, value: Any ) -> list[int]:
 		return self._activities.update( set_field( field, value ), cond=q )
@@ -264,7 +283,7 @@ class ActivityDb:
 		return cast( List[Resource], self.resources.all() )
 
 	def all_summaries( self ) -> List[Resource]:
-		return [r for r in self.all_resources() if ( rt := cast( ResourceType, Registry.resource_types.get( r.type ) ) ) and rt.summary ]
+		return [r for r in self.all_resources() if (rt := cast( ResourceType, Registry.resource_types.get( r.type ) )) and rt.summary]
 
 	def all_uids( self ) -> List[str]:
 		return list( set( [r.uid for r in self.all_resources()] ) )
@@ -272,7 +291,7 @@ class ActivityDb:
 	def contains( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> bool:
 		filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
 		for a in self.activities.all():
-			if all( [ f( a ) for f in filters ] ):
+			if all( [f( a ) for f in filters] ):
 				return True
 		return False
 
@@ -285,7 +304,7 @@ class ActivityDb:
 	def get( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> Optional[Activity]:
 		filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
 		for a in self.activities.all():
-			if all( [ f( a ) for f in filters ] ):
+			if all( [f( a ) for f in filters] ):
 				return cast( Activity, a )
 		return None
 
@@ -296,7 +315,7 @@ class ActivityDb:
 		activity = cast( Activity, next( a for a in self.activities.all() if uid_filter( uid )( a ) ) )
 		if activity and include_resources:
 			activity.resources = self.get_resources_by_uid( uid )
-		return  activity
+		return activity
 
 	def get_resource( self, id: int ) -> Optional[Resource]:
 		return self.resources.get( doc_id=id )
@@ -306,13 +325,13 @@ class ActivityDb:
 
 	def _create_filter( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None ) -> List[Filter]:
 		if id and id > 0:
-			return [ Filter( 'id', id ) ]
+			return [Filter( 'id', id )]
 		elif raw_id and raw_id > 0:
-			return [ uid_filter( f'{classifier}:{raw_id}' ) ] if classifier else [ raw_id_filter( raw_id ) ]
+			return [uid_filter( f'{classifier}:{raw_id}' )] if classifier else [raw_id_filter( raw_id )]
 		elif uid:
-			return [ uid_filter( uid ) ]
+			return [uid_filter( uid )]
 		else:
-			return [ false_filter() ]
+			return [false_filter()]
 
 	# ----
 
@@ -330,8 +349,8 @@ class ActivityDb:
 		return [a.doc_id for a in self.find( filters )]
 
 	def find_by_id( self, id: int = 0 ) -> Optional[Activity]:
-		a = self.get( id = id ) if id > 0 else None # try get by id
-		a = self.get( raw_id = id ) if not a else a # try get by raw id
+		a = self.get( id=id ) if id > 0 else None  # try get by id
+		a = self.get( raw_id=id ) if not a else a  # try get by raw id
 		return a
 
 	def find_last( self, service_name: Optional[str] ) -> Optional[Activity]:
@@ -344,34 +363,34 @@ class ActivityDb:
 		return max( _all, key=lambda x: x.get( 'time' ) ) if len( _all ) > 0 else None
 
 	def find_resource( self, uid: str, path: str = None ) -> Optional[Activity]:
-		return self.resources.get( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )
+		return self.resources.get( (Query()['uid'] == uid) & (Query()['path'] == path) )
 
 	def find_resources( self, uid: str, path: str = None ) -> List[Resource]:
 		if path:
-			resources = self.resources.search( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )
+			resources = self.resources.search( (Query()['uid'] == uid) & (Query()['path'] == path) )
 		else:
 			resources = self.resources.search( Query()['uid'] == uid )
 
 		return cast( List[Resource], resources )
 
 	def find_all_resources( self, uids: List[str] ) -> List[Resource]:
-		return list( chain( * [ self.resources.search( Query()['uid'] == uid ) for uid in uids ] ) )
+		return list( chain( *[self.resources.search( Query()['uid'] == uid ) for uid in uids] ) )
 
 	def find_summaries( self, uid ) -> List[Resource]:
 		return [r for r in self.find_resources( uid ) if (rt := cast( ResourceType, Registry.resource_types.get( r.type ) )) and rt.summary]
 
 	def find_all_summaries( self, uids: List[str] ) -> List[Resource]:
-		return [ r for r in self.find_all_resources( uids ) if ( rt := cast( ResourceType, Registry.resource_types.get( r.type ) ) ) and rt.summary ]
+		return [r for r in self.find_all_resources( uids ) if (rt := cast( ResourceType, Registry.resource_types.get( r.type ) )) and rt.summary]
 
 	def find_all_resources_for( self, activities: Union[Activity, List[Activity]] ) -> List[Resource]:
-		activities = [ activities ] if type( activities ) is Activity else activities
-		return self.find_all_resources( list( chain( * [ a.uids for a in activities ] ) ) )
+		activities = [activities] if type( activities ) is Activity else activities
+		return self.find_all_resources( list( chain( *[a.uids for a in activities] ) ) )
 
 	def find_resource_group( self, uid: str, path: str = None ) -> ResourceGroup:
 		return ResourceGroup( resources=self.find_resources( uid, path ) )
 
 	def contains_resource( self, uid: str, path: str ) -> bool:
-		return self.resources.contains( ( Query()['uid'] == uid ) & ( Query()['path'] == path ) )
+		return self.resources.contains( (Query()['uid'] == uid) & (Query()['path'] == path) )
 
 	# noinspection PyMethodMayBeStatic
 	def filter( self, activities: [Activity], queries: [Query] ) -> [Activity]:
@@ -401,7 +420,7 @@ class ActivityDb:
 
 def document_cls( doc: Union[Dict, Document], doc_id: int ) -> Type:
 	if classifier := doc.get( CLASSIFIER ):
-		if classifier == 'group': # ActvityGroup is registered with 'groups' todo: improve!
+		if classifier == 'group':  # ActvityGroup is registered with 'groups' todo: improve!
 			classifier = KEY_GROUPS
 		if classifier in Registry.document_classes:
 			return Registry.document_classes.get( classifier )
@@ -415,9 +434,9 @@ def document_factory( doc: Union[Dict, Document], doc_id: int ) -> Document:
 	return document_cls( doc, doc_id )( doc, doc_id )
 
 def create_metadb( path: Path = None, use_memory_storage: bool = False ) -> TinyDB:
-	return TinyDB( storage=DataClassStorage, path=path, read_only = use_memory_storage, passthrough=False )
+	return TinyDB( storage=DataClassStorage, path=path, read_only=use_memory_storage, passthrough=False )
 
-def create_db( path: Path = None, use_memory_storage: bool = False, passthrough = False ) -> TinyDB:
+def create_db( path: Path = None, use_memory_storage: bool = False, passthrough=False ) -> TinyDB:
 	return TinyDB( storage=DataClassStorage, path=path, read_only=use_memory_storage, passthrough=passthrough )
 
 # ---- DB Operations ----

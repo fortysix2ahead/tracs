@@ -55,6 +55,10 @@ def test_open_db( db ):
 		uids=['polar:1234567890', 'strava:12345678', 'waze:20210101010101'],
 	)
 
+	assert len( db.index.uid_activity.keys() ) == 3
+	assert len( db.index.uid_resources.keys() ) == 1
+	assert len( db.index.uid_path_resource.keys() ) == 1
+
 @mark.db( template='empty', inmemory=True )
 def test_write_middleware( db ):
 	a = StravaActivity( raw = { 'start_date': datetime.utcnow().isoformat() } )

@@ -26,12 +26,19 @@ class CSVHandler( ResourceHandler ):
 
 	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None, **kwargs ) -> None:
 		super().__init__( resource_type=resource_type or CSV_TYPE, activity_cls=activity_cls )
-
-		self._field_size_limit = kwargs.get( 'field_size_limit', 131072 ) # keep this later use
-		field_size_limit( self._field_size_limit )
+		self.field_size_limit = kwargs.get( 'field_size_limit', 131072 ) # keep this later use
 
 	def load_data( self, resource: Resource, **kwargs ) -> None:
 		resource.raw = [ r for r in csv_reader( self.as_str( resource.content ).splitlines() ) ]
+
+	@property
+	def field_size_limit( self ) -> int:
+		return self._field_size_limit
+
+	@field_size_limit.setter
+	def field_size_limit( self, limit: int ) -> None:
+		self._field_size_limit = limit
+		field_size_limit( self._field_size_limit )
 
 @importer( type=JSON_TYPE )
 class JSONHandler( ResourceHandler ):

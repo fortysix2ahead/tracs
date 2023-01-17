@@ -257,6 +257,9 @@ class ActivityDb:
 		"""
 		return cast( List[Activity], self.activities.all() )
 
+	def all_activities( self ) -> List[Activity]:
+		return cast( List[Activity], self.activities.all() )
+
 	def all_resources( self ) -> List[Resource]:
 		return cast( List[Resource], self.resources.all() )
 

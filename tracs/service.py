@@ -4,6 +4,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import InitVar
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
@@ -22,6 +23,7 @@ from fs.osfs import OSFS
 
 from .activity import Activity
 from .db import ActivityDb
+from .db import DbIndex
 from .plugin import Plugin
 from .resources import Resource
 from .config import DEFAULT_DB_DIR
@@ -30,7 +32,6 @@ from .config import ApplicationContext
 from .config import GlobalConfig as gc
 from .config import KEY_LAST_DOWNLOAD
 from .config import KEY_LAST_FETCH
-from .config import KEY_PLUGINS
 from .registry import Registry
 from .resources import ResourceType
 from .utils import unarg
@@ -40,11 +41,18 @@ log = getLogger( __name__ )
 @dataclass
 class ImportSession:
 
+	db: InitVar[ActivityDb] = field( default=None )
+
+	index: DbIndex = field( default=None )
 	summaries: Dict[str, Resource] = field( default_factory=dict )
 	activities: Dict[str, Activity] = field( default_factory=dict )
 
-	def __post_init__( self ):
-		pass
+	fetched_activities: Dict[Resource, Activity] = field( default_factory=dict ) # dictionary containing summaries / newly created activities after fetch
+	last_summary: Resource = field( default=None ) # last summary used when downloading
+	last_download: List[Resource] = field( default_factory=list ) # contains the resources that have been created after the last download
+
+	def __post_init__( self, db: ActivityDb ):
+		self.index = db.index
 
 # ---- base class for a service ----
 
@@ -285,6 +293,12 @@ class Service( Plugin ):
 	def postprocess_resource( self, resource: Resource = None, **kwargs ) -> None:
 		pass
 
+	def postfetch( self, ctx: ApplicationContext, import_session: ImportSession ) -> None:
+		pass
+
+	def postdownload( self, ctx: ApplicationContext, import_session: ImportSession ) -> None:
+		pass
+
 	# noinspection PyMethodMayBeStatic
 	def create_activity( self, resource: Resource, **kwargs ) -> Optional[Activity]:
 		resource_type = cast( ResourceType, Registry.resource_types.get( resource.type ) )
@@ -311,35 +325,36 @@ class Service( Plugin ):
 				new_activity = Activity().init_from( activity )
 				new_activity.uids = [activity.uid]
 				new_activity.parts = activity.parts
-				self._ctx.db.insert( new_activity )
+				activity.doc_id = self._ctx.db.insert( new_activity )
 
 	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ):
-		skip_fetch = kwargs.get( 'skip_fetch', False ) # not used at the moment
+		skip_fetch = kwargs.get( 'skip_fetch', False )
 		skip_download = kwargs.get( 'skip_download', False )
-		skip_link = kwargs.get( 'skip_link', False ) # not used at the moment
+		skip_link = kwargs.get( 'skip_link', False )
 		uids: List[str] = kwargs.get( 'uids', [] )
 
-		self._import_session = ImportSession()
+		self._import_session = ImportSession( db=self.ctx.db )
 
 		# fetch
 
 		self.ctx.start( f'fetching activity data from {self.display_name}' )
 
 		# fetch from remote or get items from local storage
-
 		if not skip_fetch:
-			summaries = self.fetch( force, pretend, **kwargs )  # fetch 'main' resources for each activity
+			summaries: List[Resource] = self.fetch( force, pretend, **kwargs )  # fetch 'main' resources for each activity
 		else:
-			summaries = self.ctx.db.all_summaries()
+			summaries: List[Resource] = self.ctx.db.all_summaries()
 
-		# if only certain uids were requested: filter out everything else
-
+		# if certain uids were requested: filter out everything else
 		if uids:
-			summaries = self.filter_fetched( summaries, *uids, **kwargs )
+			summaries: List[Resource] = self.filter_fetched( summaries, *uids, **kwargs )
 
 		# save uid/summary
 		for s in summaries:
 			self._import_session.summaries[s.uid] = s
+
+		# sort summaries by uid so that progress bar in download looks better -> todo: improve progress bar later?
+		summaries = sorted( summaries, key=lambda r: r.uid )
 
 		# process and persist fetched resources
 
@@ -351,14 +366,17 @@ class Service( Plugin ):
 
 			for summary in summaries:
 				self.ctx.advance( f'{summary.uid}' )
-				activity = self.create_activity( resource=summary, **kwargs )
-				self.postprocess_activities( activity, **kwargs )
-				self.persist_activities( activity, force=force, pretend=pretend, **kwargs )
+				if summary.uid not in self._import_session.index.activities.uid.keys() or force:
+					activity = self.create_activity( resource=summary, **kwargs )
+					self.postprocess_activities( activity, **kwargs )
+					self.persist_activities( activity, force=force, pretend=pretend, **kwargs )
 
-				self._import_session.activities[summary.uid] = activity
+					# add newly created summary/activity pair to import session
+					self._import_session.fetched_activities[summary] = activity
+
+			self.postfetch( self.ctx, self._import_session )
 
 		# complete fetch task
-
 		self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() ) # update fetch timestamp
 		self.ctx.complete( 'done' )
 
@@ -378,8 +396,13 @@ class Service( Plugin ):
 				self.postprocess_resources( *downloaded, **kwargs )  # post process
 				self.persist_resources( *downloaded, force=force, include_children=False, pretend=pretend, **kwargs )
 
-				additional_activities = self.create_additional_activities( summary, *downloaded, force=force, pretend=pretend, **kwargs )
-				self.persist_activities( *additional_activities, force=force, pretend=pretend, **kwargs )
+				# post download
+				self._import_session.last_summary = summary
+				self._import_session.last_download = downloaded
+				self.postdownload( self.ctx, self._import_session )
+
+				# additional_activities = self.create_additional_activities( summary, *downloaded, force=force, pretend=pretend, **kwargs )
+				# self.persist_activities( *additional_activities, force=force, pretend=pretend, **kwargs )
 
 			self.set_state_value( KEY_LAST_DOWNLOAD, datetime.utcnow().astimezone( UTC ).isoformat() )  # update download timestamp
 			self.ctx.complete( 'done' )

@@ -269,6 +269,12 @@ class ActivityDb:
 
 		return doc_ids if len( doc_ids ) > 1 else doc_ids[0]
 
+	def insert_activities( self, activities: List[Activity] ) -> List[int]:
+		doc_ids = self.activities.insert_multiple( activities )
+		for doc, doc_id in zip( activities, doc_ids ):
+			doc.doc_id = doc_id
+		return doc_ids
+
 	def insert_resource( self, r: Resource ) -> int:
 		return self.resources.insert( r )
 

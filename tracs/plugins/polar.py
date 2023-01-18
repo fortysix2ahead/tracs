@@ -48,6 +48,7 @@ from ..registry import Registry
 from ..registry import resourcetype
 from ..registry import service
 from ..resources import Resource
+from ..service import ImportSession
 from ..service import Service
 from ..utils import seconds_to_time
 from ..utils import seconds_to_time as stt
@@ -394,17 +395,18 @@ class Polar( Service ):
 		resource.status = response.status_code
 		return response.content, response.status_code
 
-	# noinspection PyMethodMayBeStatic
-	def create_additional_activities( self, summary: Resource, *resources: Resource, **kwargs ) -> List[Activity]:
-		if any( r.type in [POLAR_ZIP_GPX_TYPE, POLAR_ZIP_TCX_TYPE] for r in resources ):
-			recordings = [r for r in resources if r.type in [GPX_TYPE, TCX_TYPE]]
-			activity = self._import_session.activities.get( summary.uid )
+	def postdownload( self, ctx: ApplicationContext, import_session: ImportSession ) -> None:
+		if any( r.type in [POLAR_ZIP_GPX_TYPE, POLAR_ZIP_TCX_TYPE] for r in import_session.last_download ):
+			recordings = [r for r in import_session.last_download if r.type in [GPX_TYPE, TCX_TYPE]]
+			activity = import_session.fetched_activities.get( import_session.last_summary )
 			partlist = self.create_partlist( activity, recordings )
-			# update the parent activity here -> that's not nice!
-			self.ctx.db.set_field( Query()['uids'] == [activity.uid], 'parts', activity.parts )
-			return [ Activity( time=rp.range.start_datetime, time_end=rp.range.end_datetime, uid=f'{summary.uid}#{rp.index}' ) for rp in partlist ]
-		else:
-			return []
+
+			# update main activity with parts
+			self.ctx.db.set_field( Query().uids == [activity.uid], 'parts', activity.parts )
+
+			# create separate activity for each part
+			part_activities =  [ Activity( time=rp.range.start_datetime, time_end=rp.range.end_datetime, uid=f'{import_session.last_summary.uid}#{rp.index}' ) for rp in partlist ]
+			self.ctx.db.insert_activities( part_activities )
 
 	# noinspection PyMethodMayBeStatic
 	def unzip_resources( self, resources: List[Resource] ) -> List[Resource]:

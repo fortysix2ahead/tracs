@@ -305,10 +305,6 @@ class Service( Plugin ):
 		activity_cls = resource_type.activity_cls if resource_type else Activity
 		return activity_cls( raw=resource.raw, resources=[resource, *resource.resources] )
 
-	# noinspection PyMethodMayBeStatic
-	def create_additional_activities( self, *resources: Resource, **kwargs ) -> List[Activity]:
-		return []
-
 	def postprocess_activities( self, *activities: Activity, **kwargs ) -> None:
 		pass
 
@@ -400,9 +396,6 @@ class Service( Plugin ):
 				self._import_session.last_summary = summary
 				self._import_session.last_download = downloaded
 				self.postdownload( self.ctx, self._import_session )
-
-				# additional_activities = self.create_additional_activities( summary, *downloaded, force=force, pretend=pretend, **kwargs )
-				# self.persist_activities( *additional_activities, force=force, pretend=pretend, **kwargs )
 
 			self.set_state_value( KEY_LAST_DOWNLOAD, datetime.utcnow().astimezone( UTC ).isoformat() )  # update download timestamp
 			self.ctx.complete( 'done' )

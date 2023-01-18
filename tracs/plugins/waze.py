@@ -19,8 +19,10 @@ from gpxpy.gpx import GPX
 from gpxpy.gpx import GPXTrack
 from gpxpy.gpx import GPXTrackPoint
 from gpxpy.gpx import GPXTrackSegment
+from tinydb.table import Document
 
 from .gpx import GPX_TYPE
+from .gpx import GPXImporter
 from .handlers import CSVHandler
 from ..activity import Activity
 from ..activity_types import ActivityTypes
@@ -33,6 +35,7 @@ from ..registry import Registry
 from ..registry import resourcetype
 from ..registry import service
 from ..resources import Resource
+from ..service import ImportSession
 from ..service import Service
 from ..utils import as_datetime
 
@@ -152,6 +155,7 @@ class Waze( Service ):
 		log.debug( f'using {self.takeout_importer.field_size_limit} as field size limit for CSV parser in Waze service' )
 
 		self.importer: WazeImporter = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
+		self.gpx_importer: GPXImporter = cast( GPXImporter, Registry.importer_for( GPX_TYPE ) )
 
 	def path_for_id( self, local_id: int, base_path: Optional[Path] ) -> Path:
 		_id = str( local_id )
@@ -249,6 +253,15 @@ class Waze( Service ):
 				drive = self.importer.read_drive( content )
 				gpx = to_gpx( drive )
 				return gpx, 200 # return always 200
+
+	def postdownload( self, ctx: ApplicationContext, import_session: ImportSession ) -> None:
+		summary = import_session.last_summary
+		# activity = import_session.fetched_activities.get( (summary.uid, summary.path) )
+		if activity := import_session.fetched_activities.get( summary ):
+			gpx_activity = self.gpx_importer.as_activity( import_session.last_download[0] )
+			new_activity = Activity().init_from( activity ).init_from( other=gpx_activity )
+			new_activity.uids.append( activity.uid )
+			ctx.db.upsert_activity( new_activity, uid=activity.uid )
 
 	# nothing to do for now ...
 	def setup( self, ctx: ApplicationContext ):

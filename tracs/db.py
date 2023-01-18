@@ -58,36 +58,59 @@ RESOURCES_NAME = 'resources.json'
 SCHEMA_NAME = 'schema.json'
 
 @dataclass
-class ActivityDbIndex:
-	activities: InitVar[Table] = field( default=None )
-	resources: InitVar[Table] = field( default=None )
+class ActivityIndex:
 
-	uid_activity: Dict[str, Activity] = field( default_factory=dict )
-	uid_resources: Dict[str, List[Resource]] = field( default_factory=dict )
-	uid_path_resource: Dict[Tuple[str, str], Resource] = field( default_factory=dict )
+	uid: Dict[str, Activity] = field( default_factory=dict )
 
-	def __post_init__( self, activities: Table, resources: Table ):
+@dataclass
+class ResourceIndex:
+
+	uid: Dict[str, List[Resource]] = field( default_factory=dict )
+	uid_path: Dict[Tuple[str, str], Resource] = field( default_factory=dict )
+
+@dataclass
+class DbIndex:
+
+	activities_table: InitVar[Table] = field( default=None )
+	resources_table: InitVar[Table] = field( default=None )
+
+	activities: ActivityIndex = field( default_factory=ActivityIndex )
+	resources: ResourceIndex = field( default_factory=ResourceIndex )
+
+	def __post_init__( self, activities_table: Table, resources_table: Table ):
 
 		# clear dictionaries first, just in case we need to do a reindex later
-		self.uid_activity.clear()
-		self.uid_resources.clear()
-		self.uid_path_resource.clear()
+		self.activities.uid.clear()
+		self.resources.uid.clear()
+		self.resources.uid_path.clear()
 
-		for a in cast( List[Activity], activities.all() ):
+		for a in cast( List[Activity], activities_table.all() ):
 			for uid in a.uids:
-				if uid in self.uid_activity.keys():
-					log.warning( f'{uid} referenced in activity {a.doc_id}, but is already referenced by activity {self.uid_activity[uid].doc_id}' )
+				if uid in self.activities.uid.keys():
+					log.warning( f'{uid} referenced in activity {a.doc_id}, but is already referenced by activity {self.activities.uid[uid].doc_id}' )
 
-				self.uid_activity[uid] = a
+				self.activities.uid[uid] = a
 
-		for r in cast( List[Resource], resources.all() ):
-			if r.uid not in self.uid_resources.keys():
-				self.uid_resources[r.uid] = list()
-			self.uid_resources[r.uid].append( r )
+		for r in cast( List[Resource], resources_table.all() ):
+			if r.uid not in self.resources.uid.keys():
+				self.resources.uid[r.uid] = list()
+			self.resources.uid[r.uid].append( r )
 
-			if (r.uid, r.path) in self.uid_path_resource.keys():
-				log.warning( f'{(r.uid, r.path)} referenced in resource {r.doc_id}, but is already referenced by resource {self.uid_path_resource[(r.uid, r.path)].doc_id}' )
-			self.uid_path_resource[(r.uid, r.path)] = r
+			if (r.uid, r.path) in self.resources.uid_path.keys():
+				log.warning( f'{(r.uid, r.path)} referenced in resource {r.doc_id}, but is already referenced by resource {self.resources.uid_path[(r.uid, r.path)].doc_id}' )
+			self.resources.uid_path[(r.uid, r.path)] = r
+
+	def has_summaries( self, uid: str ) -> bool:
+		for r in self.resources.uid.get( uid, [] ):
+			if cast( ResourceType, Registry.resource_types.get( r.type )).summary:
+				return True
+		return False
+
+	def has_recordings( self, uid: str ) -> bool:
+		for r in self.resources.uid.get( uid, [] ):
+			if not cast( ResourceType, Registry.resource_types.get( r.type )).summary:
+				return True
+		return False
 
 class ActivityDb:
 
@@ -155,7 +178,7 @@ class ActivityDb:
 		self._metadata = self._metadata_db.table( TABLE_NAME_DEFAULT )
 
 		# index
-		self._index = ActivityDbIndex( self._activities, self._resources )
+		self._index = DbIndex( self._activities, self._resources )
 
 	# ---- DB Properties --------------------------------------------------------
 
@@ -164,7 +187,7 @@ class ActivityDb:
 		return self._db
 
 	@property
-	def index( self ) -> ActivityDbIndex:
+	def index( self ) -> DbIndex:
 		return self._index
 
 	@property
@@ -252,6 +275,18 @@ class ActivityDb:
 	def upsert_resource( self, r: Resource ) -> list[int]:
 		return self.resources.upsert( r, (Query().uid == r.uid) & (Query().path == r.path) )
 
+	def upsert_activity( self, a: Activity, doc_id: Optional[int] = None, uid: Optional[str] = None ) -> None:
+		if doc_id is not None and doc_id > 0:
+			self.activities.upsert( Document( dict( a ), doc_id=doc_id ) )
+		elif a.doc_id > 0:
+			self.activities.upsert( Document( dict( a ), doc_id=a.doc_id ) )
+		elif uid is not None:
+			self.activities.upsert( dict( a ), cond=Query().uids.any( [ uid ] ) )
+		elif a.uid is not None:
+			self.activities.upsert( dict( a ), cond=Query().uids.any( [ a.uid ] ) )
+		elif a.uids is not None:
+			self.activities.upsert( dict( a ), cond=Query().uids.test( lambda v: set( a.uids ) == set( v ) ) )
+
 	def update( self, a: Activity ) -> None:
 		self.activities.update( dict( a ), doc_ids=[a.doc_id] )
 
@@ -301,7 +336,7 @@ class ActivityDb:
 
 	def contains_activity( self, uid: str, use_index: bool = False ) -> bool:
 		if use_index:
-			return uid in self._index_uid_activity.keys()
+			return uid in self.index.activities.uid.keys()
 		else:
 			return self.activities.contains( Query()['uids'].test( lambda v: True if uid in v else False ) )
 

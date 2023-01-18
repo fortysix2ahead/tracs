@@ -124,6 +124,9 @@ class Resource( BaseDocument ):
 		super().__post_init__()
 		self.content = text.encode( encoding='UTF-8' ) if text else self.content
 
+	def __hash__( self ):
+		return hash( (self.uid, self.path) )
+
 	@property
 	def classifier( self ) -> str:
 		return self._uid()[0]

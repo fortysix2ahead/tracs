@@ -1,5 +1,4 @@
 
-from datetime import datetime
 from itertools import chain
 from logging import DEBUG
 from logging import INFO
@@ -10,13 +9,13 @@ from sys import stderr
 from typing import List
 
 from click import argument
-from click import echo
+from click import group
 from click import option
 from click import pass_context
 from click import pass_obj
 from click import Choice
 from click import Path as ClickPath
-from click_shell import shell
+from click_shell import make_click_shell
 
 from tracs.edit import equip_activities
 from tracs.edit import modify_activities
@@ -31,7 +30,6 @@ from tracs.list import inspect_registry
 from tracs.list import inspect_resources
 from tracs.show import show_aggregate
 from tracs.show import show_resource
-from .activity import Activity
 from .application import Application
 from .config import ApplicationContext
 from .config import APPNAME
@@ -57,8 +55,8 @@ from .setup import setup as setup_application
 
 log = getLogger( __name__ )
 
-#@group()
-@shell( prompt=f'{APPNAME} > ', intro=f'Starting interactive shell mode, enter <exit> to leave this mode again, use <{APPNAME} --help> for help ...' )
+@group()
+# @shell( prompt=f'{APPNAME} > ', intro=f'Starting interactive shell mode, enter <exit> to leave this mode again, use <{APPNAME} --help> for help ...' )
 @option( '-c', '--configuration', is_flag=False, required=False, help='configuration area location', metavar='PATH' )
 @option( '-l', '--library', is_flag=False, required=False, help='library location', metavar='PATH' )
 @option( '-v', '--verbose', is_flag=True, default=None, required=False, help='be more verbose when logging' )
@@ -322,6 +320,13 @@ def inspect( ctx: ApplicationContext, filters, registry: bool, resource: bool ):
 @pass_obj
 def validate( ctx: ApplicationContext, filters, function, correct ):
 	validate_activities( list( ctx.db.find( filters ) ), ctx=ctx, function=function, correct=correct )
+
+@cli.command( help='starts application in interactive mode' )
+@pass_context
+def shell( ctx ):
+	prompt=f'{APPNAME} > '
+	intro=f'Starting interactive shell mode, enter <exit> to leave this mode, use <{APPNAME} --help> for help ...'
+	make_click_shell( ctx.parent, prompt=prompt, intro=intro ).cmdloop()
 
 @cli.command( help='Displays the version number and exits.' )
 @pass_obj

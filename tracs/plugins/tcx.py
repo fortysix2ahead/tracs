@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+from datetime import time
 from logging import getLogger
 from typing import Any
 from typing import List
@@ -15,17 +16,18 @@ from lxml.objectify import ObjectPath
 from lxml.objectify import ObjectifiedElement
 
 from .handlers import XMLHandler
-from ..activity import Activity
+from ..activity import Activity as TracsActivity
 from ..resources import Resource
 from ..registry import document
 from ..registry import importer
+from ..utils import seconds_to_time
 
 log = getLogger( __name__ )
 
 TCX_TYPE = 'application/tcx+xml'
 
 @dataclass
-class TcxPoint:
+class Trackpoint:
 
 	time: Union[datetime, str] = field( default=None )
 	lat: float = field( default=None )
@@ -34,12 +36,13 @@ class TcxPoint:
 	dist: float = field( default=None )
 	hr: float = field( default=None )
 	sensor: float = field( default=None )
+	cadence: int = field( default=None )
 
 	def __post_init__( self ):
 		self.time = parse_dt( self.time ) if type( self.time ) is str else self.time
 
 @dataclass
-class TcxLap:
+class Lap:
 
 	start_time: datetime = field( default=None )
 	total_time: float = field( default=None )
@@ -49,8 +52,10 @@ class TcxLap:
 	heartrate: int = field( default=None )
 	heartrate_max: int = field( default=None )
 	cadence: int = field( default=None )
+	intensity: str = field( default=None )
+	trigger_method: str = field( default=None )
 
-	points: List[TcxPoint] = field( default_factory=list )
+	points: List[Trackpoint] = field( default_factory=list )
 
 	def __post_init__( self ):
 		pass
@@ -62,9 +67,17 @@ class TcxLap:
 		return self.points[-1].time if len( self.points ) > 0 else None
 
 @dataclass
-class TcxActivity:
+class Activity:
 
-	laps: List[TcxLap] = field( default_factory=list )
+	id: str = field( default=None )
+
+	laps: List[Lap] = field( default_factory=list )
+
+	def distance( self ) -> float:
+		return sum( l.distance for l in self.laps )
+
+	def duration( self ) -> time:
+		return seconds_to_time( ( self.time_end() - self.time() ).total_seconds() )
 
 	def time( self ) -> Optional[datetime]:
 		return self.laps[0].time() if len( self.laps ) > 0 else None
@@ -73,10 +86,12 @@ class TcxActivity:
 		return self.laps[-1].time_end() if len( self.laps ) > 0 else None
 
 @document( type=TCX_TYPE )
-class TCXActivity( Activity ):
+class TCXActivity( TracsActivity ):
 
 	def __raw_init__( self, raw: Any ) -> None:
-		tcx: TcxActivity = raw
+		tcx: Activity = raw
+		self.distance = tcx.distance()
+		self.duration = tcx.duration()
 		self.time = tcx.time()
 		self.time_end = tcx.time_end()
 		self.localtime = self.time.astimezone( tzlocal() )
@@ -94,14 +109,12 @@ class TCXImporter( XMLHandler ):
 		root: ObjectifiedElement = resource.raw.getroottree().getroot()
 
 		for a in root.Activities.iterchildren( '{*}Activity' ):
-			activity = TcxActivity()
-
-			#sport = a.get( 'Sport' )
-			#id = a.Id.text
-			#creator_name = a.get( 'Lap', {} ).get( 'Name' )
+			activity = Activity(
+				id = find( a, 'Id' )
+			)
 
 			for l in a.iterchildren( '{*}Lap' ):
-				activity.laps.append( TcxLap(
+				activity.laps.append( Lap(
 					start_time = parse_dt( l.get( 'StartTime' ) ),
 					total_time = find( l, 'TotalTimeSeconds' ),
 					distance = find( l, 'DistanceMeters' ),
@@ -110,10 +123,12 @@ class TCXImporter( XMLHandler ):
 					heartrate = find( l, 'AverageHeartRateBpm.Value' ),
 					heartrate_max = find( l, 'MaximumHeartRateBpm.Value' ),
 					cadence = find( l, 'Cadence' ),
+					intensity= find( l, 'Intensity' ),
+					trigger_method= find( l, 'TriggerMethod' ),
 				) )
 
 				for tp in l.Track.iterchildren( '{*}Trackpoint' ):
-					activity.laps[-1].points.append( TcxPoint(
+					activity.laps[-1].points.append( Trackpoint(
 						time = find( tp, 'Time' ),
 						lat = find( tp, 'Position.LatitudeDegrees' ),
 						lon = find( tp, 'Position.LongitudeDegrees' ),
@@ -121,7 +136,20 @@ class TCXImporter( XMLHandler ):
 						dist = find( tp, 'DistanceMeters' ),
 						hr = find( tp, 'HeartRateBpm.Value' ),
 						sensor = find( tp, 'SensorState' ),
+						cadence = find( tp, 'Cadence' ),
 					) )
+
+			for t in a.iterchildren( '{*}Training' ):
+				pass
+
+			for c in a.iterchildren( '{*}Creator' ):
+				creator_name = find( c, 'Name' )
+				creator_unit_id = find( c, 'UnitId' )
+				creator_product_id = find( c, 'ProductID' )
+				creator_version_major = find( c, find( a, 'Creator.Version.VersionMajor' ) )
+				creator_version_minor = find( c, find( a, 'Creator.Version.VersionMinor' ) )
+				creator_build_major = find( c, find( a, 'Creator.Version.BuildMajor' ) )
+				creator_build_minor = find( c, find( a, 'Creator.Version.BuildMinor' ) )
 
 			resource.raw = activity
 

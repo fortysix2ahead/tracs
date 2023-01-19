@@ -1,10 +1,11 @@
-
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from re import match
+from sys import exit as sysexit
+from time import time as current_time
 from typing import Any
 from typing import cast
 from typing import Dict
@@ -15,12 +16,9 @@ from typing import Tuple
 from typing import Union
 from zipfile import BadZipFile
 
-from datetimerange import DateTimeRange
-from sys import exit as sysexit
-from time import time as current_time
-
 from bs4 import BeautifulSoup
 from click import echo
+from datetimerange import DateTimeRange
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
 from dateutil.tz import UTC
@@ -43,7 +41,6 @@ from ..activity_types import ActivityTypes as Types
 from ..config import ApplicationContext
 from ..config import APPNAME
 from ..config import console
-from ..plugin import Plugin
 from ..registry import importer
 from ..registry import Registry
 from ..registry import resourcetype
@@ -71,8 +68,8 @@ POLAR_ZIP_TCX_TYPE = 'application/vnd.polar.tcx+zip'
 PED_NS = 'http://www.polarpersonaltrainer.com'
 
 # polar icon ids for identifying multipart activities: there does not seem to be any other way to identify those
-ICON_ID_TRIATHLON = '003304795bc33d808ee8e6ab8bf45d1f-2015-10-20_13_45_17' # triathlon
-ICON_ID_MULTISPORT ='20951a7d8b02def8265f5231f57f4ed9-2015-10-20_13_45_40' # multisport
+ICON_ID_TRIATHLON = '003304795bc33d808ee8e6ab8bf45d1f-2015-10-20_13_45_17'  # triathlon
+ICON_ID_MULTISPORT = '20951a7d8b02def8265f5231f57f4ed9-2015-10-20_13_45_40'  # multisport
 
 BASE_URL = 'https://flow.polar.com'
 
@@ -138,9 +135,8 @@ TYPES = {
 
 @dataclass
 class ResourcePartlist:
-
 	index: int = field( default=0 )
-	range: DateTimeRange = field( default = None )
+	range: DateTimeRange = field( default=None )
 	resources: List[Resource] = field( default_factory=list )
 
 	def start( self ) -> datetime:
@@ -195,8 +191,8 @@ class PersonalTrainerImporter( XMLHandler ):
 		data = {
 			'time': root.find( self._ns( 'calendar-items/exercise/time' ) ).text,
 			'type': root.find( self._ns( 'calendar-items/exercise/sport' ) ).text,
-			'result_type': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/sport' ) ).text, # should be the same as type
-			'duration': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/duration' ) ).text, # should be the same as type
+			'result_type': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/sport' ) ).text,  # should be the same as type
+			'duration': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/duration' ) ).text,  # should be the same as type
 			'distance': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/distance' ) ).text,
 			'calories': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/calories' ) ).text,
 			'recording_rate': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/recording-rate' ) ).text,
@@ -231,10 +227,10 @@ class Polar( Service ):
 		if pa.id:
 			utc = pa.utctime
 			parent = Path( self._lib_dir, utc.strftime( '%Y/%m/%d' ) )
-			#a = self.db.get_activity( pa )
-			#if a and a.name:
+			# a = self.db.get_activity( pa )
+			# if a and a.name:
 			#	return Path( parent, f'{utc.strftime( "%H%M%S" )} - {a.name}.polar.{ext}' )  # fully qualified path
-			#else:
+			# else:
 			return Path( parent, f'{utc.strftime( "%H%M%S" )}.{self.name}.{ext}' )  # fully qualified path
 		else:
 			return None
@@ -336,7 +332,7 @@ class Polar( Service ):
 
 			for item in json_resource.raw:
 				local_id = _local_id( item )
-				resources.append( self.importer.save( item, uid = f'{self.name}:{local_id}', resource_path=f'{local_id}.json', resource_type=POLAR_FLOW_TYPE, status = 200, source = self.url_for_id( local_id ), summary = True ) )
+				resources.append( self.importer.save( item, uid=f'{self.name}:{local_id}', resource_path=f'{local_id}.json', resource_type=POLAR_FLOW_TYPE, status=200, source=self.url_for_id( local_id ), summary=True ) )
 
 			return resources
 
@@ -372,10 +368,10 @@ class Polar( Service ):
 
 	def download_resources( self, summary: Resource ) -> List[Resource]:
 		resources = [
-				Resource( uid=summary.uid, type=POLAR_CSV_TYPE, path=f'{summary.local_id}.csv', source=f'{self.export_url}/csv/{summary.local_id}' ),
-				Resource( uid=summary.uid, type=GPX_TYPE, path=f'{summary.local_id}.gpx', source=f'{self.export_url}/gpx/{summary.local_id}' ),
-				Resource( uid=summary.uid, type=TCX_TYPE, path=f'{summary.local_id}.tcx', source=f'{self.export_url}/tcx/{summary.local_id}' ),
-				Resource( uid=summary.uid, type=POLAR_HRV_TYPE, path=f'{summary.local_id}.hrv.csv', source=f'{self.export_url}/rr/csv/{summary.local_id}' )
+			Resource( uid=summary.uid, type=POLAR_CSV_TYPE, path=f'{summary.local_id}.csv', source=f'{self.export_url}/csv/{summary.local_id}' ),
+			Resource( uid=summary.uid, type=GPX_TYPE, path=f'{summary.local_id}.gpx', source=f'{self.export_url}/gpx/{summary.local_id}' ),
+			Resource( uid=summary.uid, type=TCX_TYPE, path=f'{summary.local_id}.tcx', source=f'{self.export_url}/tcx/{summary.local_id}' ),
+			Resource( uid=summary.uid, type=POLAR_HRV_TYPE, path=f'{summary.local_id}.hrv.csv', source=f'{self.export_url}/rr/csv/{summary.local_id}' )
 		]
 
 		for r in list( resources ):
@@ -422,7 +418,7 @@ class Polar( Service ):
 
 	# noinspection PyMethodMayBeStatic
 	def create_partlist( self, activity: Activity, resources: List[Resource] ) -> List[ResourcePartlist]:
-		ranges: Dict[int, ResourcePartlist] = {}
+		ranges: Dict[int, ResourcePartlist] = { }
 		for r in resources:
 			recording = Registry.importer_for( r.type ).as_activity( r )
 			dtr = DateTimeRange( recording.time, recording.time_end )
@@ -474,7 +470,7 @@ def _local_id( r: Mapping ) -> int:
 	return _raw_id( r )
 
 def _raw_id( r: Mapping ) -> int:
-	r = r or {}
+	r = r or { }
 	eventType = r.get( 'eventType' )
 	if eventType == 'exercise' or eventType == 'fitnessData':
 		return r.get( 'listItemId' )
@@ -500,7 +496,7 @@ def _multipart_str( self ) -> str:
 		return '\u2716'
 
 def decompress_resources( r: Resource ) -> List[Resource]:
-	mem_fs = open_fs('mem://')
+	mem_fs = open_fs( 'mem://' )
 	mem_fs.writebytes( f'/{r.path}', r.content )
 	resources = []
 

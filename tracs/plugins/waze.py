@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
@@ -19,7 +18,6 @@ from gpxpy.gpx import GPX
 from gpxpy.gpx import GPXTrack
 from gpxpy.gpx import GPXTrackPoint
 from gpxpy.gpx import GPXTrackSegment
-from tinydb.table import Document
 
 from .gpx import GPX_TYPE
 from .gpx import GPXImporter
@@ -27,9 +25,7 @@ from .handlers import CSVHandler
 from ..activity import Activity
 from ..activity_types import ActivityTypes
 from ..config import ApplicationContext
-from ..config import KEY_LAST_FETCH
 from ..handlers import ResourceHandler
-from ..plugin import Plugin
 from ..registry import importer
 from ..registry import Registry
 from ..registry import resourcetype
@@ -65,13 +61,12 @@ class WazeActivity( Activity ):
 
 @dataclass
 class WazePoint:
-
 	str_format = '%y%m%d%H%M%S'
 
-	key: int = field( default = None )
-	time: datetime = field( default = None  )
-	lat: float = field( default = None  )
-	lon: float = field( default = None  )
+	key: int = field( default=None )
+	time: datetime = field( default=None )
+	lat: float = field( default=None )
+	lon: float = field( default=None )
 
 	def time_as_str( self ) -> str:
 		return self.time.strftime( WazePoint.str_format )
@@ -104,7 +99,7 @@ class WazeImporter( ResourceHandler ):
 		s = s.strip( '[]' )
 		for segment in s.split( '};{' ):
 			segment = segment.strip( '{}' )
-			key, value = segment.split( sep=':', maxsplit=1 ) # todo: what exactly is meant by the key being a number starting with 0?
+			key, value = segment.split( sep=':', maxsplit=1 )  # todo: what exactly is meant by the key being a number starting with 0?
 			key, value = key.strip( '"' ), value.strip( '"' )
 			for token in value.split( " => " ):
 				# need to match two versions:
@@ -252,7 +247,7 @@ class Waze( Service ):
 				content = p.read()
 				drive = self.importer.read_drive( content )
 				gpx = to_gpx( drive )
-				return gpx, 200 # return always 200
+				return gpx, 200  # return always 200
 
 	def postdownload( self, ctx: ApplicationContext, import_session: ImportSession ) -> None:
 		summary = import_session.last_summary
@@ -274,8 +269,8 @@ class Waze( Service ):
 # helper functions
 
 def to_gpx( points: List[WazePoint] ) -> Tuple[GPX, bytes]:
-	trackpoints = [ GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon ) for p in points ]
-	segment = GPXTrackSegment( points = trackpoints )
+	trackpoints = [GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon ) for p in points]
+	segment = GPXTrackSegment( points=trackpoints )
 	track = GPXTrack()
 	track.segments.append( segment )
 	gpx = GPX()

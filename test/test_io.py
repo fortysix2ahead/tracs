@@ -12,7 +12,7 @@ from tracs.plugins.polar import PolarActivity
 def test_load_resource( db ):
 	resources = db.find_resources( uid='polar:100001' )
 	for r in resources:
-		activity = load_resource( r )
+		activity = load_resource( r, as_activity=True )
 		if r.type == GPX_TYPE:
 			assert type( activity ) is GPXActivity
 		elif r.type == POLAR_FLOW_TYPE:

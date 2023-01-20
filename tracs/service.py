@@ -47,7 +47,7 @@ class ImportSession:
 	summaries: Dict[str, Resource] = field( default_factory=dict )
 	activities: Dict[str, Activity] = field( default_factory=dict )
 
-	fetched_activities: Dict[Resource, Activity] = field( default_factory=dict ) # dictionary containing summaries / newly created activities after fetch
+	fetched_activities: Dict[Tuple[str, str], Activity] = field( default_factory=dict ) # dictionary containing summaries / newly created activities after fetch
 	last_summary: Resource = field( default=None ) # last summary used when downloading
 	last_download: List[Resource] = field( default_factory=list ) # contains the resources that have been created after the last download
 
@@ -335,15 +335,15 @@ class Service( Plugin ):
 
 		self.ctx.start( f'fetching activity data from {self.display_name}' )
 
-		# fetch from remote or get items from local storage
-		if not skip_fetch:
-			summaries: List[Resource] = self.fetch( force, pretend, **kwargs )  # fetch 'main' resources for each activity
+		# if all uids are known, there's no need for a fetch
+		if uids and all( uid in self._import_session.index.activities.uid.keys() for uid in uids ):
+			summaries: List[Resource] = self.filter_fetched( self.ctx.db.all_summaries(), *uids, **kwargs )
 		else:
-			summaries: List[Resource] = self.ctx.db.all_summaries()
-
-		# if certain uids were requested: filter out everything else
-		if uids:
-			summaries: List[Resource] = self.filter_fetched( summaries, *uids, **kwargs )
+			if skip_fetch:
+				summaries: List[Resource] = self.ctx.db.all_summaries()
+			else:
+				summaries: List[Resource] = self.fetch( force, pretend, **kwargs )  # fetch summary resources for each activity
+			summaries = self.filter_fetched( summaries, *uids, **kwargs )
 
 		# save uid/summary
 		for s in summaries:
@@ -368,7 +368,7 @@ class Service( Plugin ):
 					self.persist_activities( activity, force=force, pretend=pretend, **kwargs )
 
 					# add newly created summary/activity pair to import session
-					self._import_session.fetched_activities[summary] = activity
+					self._import_session.fetched_activities[(summary.uid, summary.path)] = activity
 
 			self.postfetch( self.ctx, self._import_session )
 

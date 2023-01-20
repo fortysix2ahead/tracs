@@ -30,6 +30,7 @@ from rich.prompt import Prompt
 from tinydb import Query
 
 from .gpx import GPX_TYPE
+from .gpx import GPXImporter
 from .handlers import JSON_TYPE
 from .handlers import JSONHandler
 from .handlers import TCX_TYPE
@@ -41,6 +42,7 @@ from ..activity_types import ActivityTypes as Types
 from ..config import ApplicationContext
 from ..config import APPNAME
 from ..config import console
+from ..inout import load_resource
 from ..registry import importer
 from ..registry import Registry
 from ..registry import resourcetype
@@ -342,9 +344,13 @@ class Polar( Service ):
 
 	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
+			if not summary.raw:
+				load_resource( summary, update_raw=True )
 			multipart = _is_multipart_id( summary.raw.get( 'iconUrl' ) )
 		except AttributeError:
 			multipart = False
+
+		self.login()
 
 		return self.download_multipart_resources( summary ) if multipart else self.download_resources( summary )
 
@@ -395,18 +401,40 @@ class Polar( Service ):
 	def postdownload( self, ctx: ApplicationContext, import_session: ImportSession ) -> None:
 		if any( r.type in [POLAR_ZIP_GPX_TYPE, POLAR_ZIP_TCX_TYPE] for r in import_session.last_download ):
 			recordings = [r for r in import_session.last_download if r.type in [GPX_TYPE, TCX_TYPE]]
-			activity = import_session.fetched_activities.get( import_session.last_summary )
+			#activity = import_session.fetched_activities2.get( (import_session.last_summary.uid, import_session.last_summary.path) )
+			activity = import_session.index.activities.uid.get( import_session.last_summary.uid )
 			partlist = self.create_partlist( activity, recordings )
-
-			# update main activity with parts
-			self.ctx.db.set_field( Query().uids == [activity.uid], 'parts', activity.parts )
 
 			# create separate activity for each part
 			for rp in partlist:
-				tcx_resource = next( tcx for tcx in rp.resources if tcx.type == TCX_TYPE )
-				tcx_activity = cast( TCXImporter, Registry.importer_for( TCX_TYPE ) ).as_activity( tcx_resource )
-				new_activity = Activity( time=rp.range.start_datetime, time_end=rp.range.end_datetime, uid=f'{import_session.last_summary.uid}#{rp.index}' ).init_from( other=tcx_activity )
-				self.ctx.db.insert_activity( new_activity )
+				new_activity = None
+
+				# try to create activity from tcx
+				try:
+					tcx_resource = next( (tcx for tcx in rp.resources if tcx.type == TCX_TYPE), None )
+					tcx_activity = cast( TCXImporter, Registry.importer_for( TCX_TYPE ) ).as_activity( tcx_resource )
+					new_activity = Activity( time=rp.range.start_datetime, time_end=rp.range.end_datetime, uid=f'{import_session.last_summary.uid}#{rp.index}' ).init_from( other=tcx_activity )
+				except AttributeError:
+					pass
+
+				# failed, try gpx
+				if not new_activity:
+					try:
+						gpx_resource = next( (gpx for gpx in rp.resources if gpx.type == GPX_TYPE), None )
+						gpx_activity = cast( GPXImporter, Registry.importer_for( GPX_TYPE ) ).as_activity( gpx_resource )
+						new_activity = Activity( time=rp.range.start_datetime, time_end=rp.range.end_datetime, uid=f'{import_session.last_summary.uid}#{rp.index}' ).init_from( other=gpx_activity )
+					except AttributeError:
+						pass
+
+				if new_activity:
+					self.ctx.db.insert_activity( new_activity )
+				else:
+					log.error( f'unable to find TCX or GPX resources for multipart activity {import_session.last_summary.uid}, please report, this should not happen' )
+
+			# update main activity with parts
+			# self.ctx.db.set_field( Query().uids == [activity.uid], 'parts', activity.parts )
+			self.ctx.db.upsert_activity( activity )
+
 
 	# noinspection PyMethodMayBeStatic
 	def unzip_resources( self, resources: List[Resource] ) -> List[Resource]:
@@ -444,7 +472,7 @@ class Polar( Service ):
 				gap = '00:00:00'
 			else:
 				gap = seconds_to_time( (partlists[index].start() - partlists[index - 1].end()).total_seconds() ).isoformat()
-			uids = [f'{activity.uid}?{r.path}' for r in partlists[index].resources]
+			uids = [f'{activity.uids[0]}?{r.path}' for r in partlists[index].resources]
 			activity.parts.append( { str( index + 1 ): { 'gap': gap, 'uids': uids } } )
 
 		return partlists

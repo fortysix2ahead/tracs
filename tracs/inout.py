@@ -11,6 +11,7 @@ from re import compile
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Union
 from urllib.parse import urlparse as parse_url
 
 from dateutil.tz import gettz
@@ -138,14 +139,14 @@ def reimport_activities( activities: List[Activity], include_recordings: bool = 
 			for r in resources:
 				if not r.type in [ GPX_TYPE, TCX_TYPE ]:
 					log.debug( f'importing resource of type {r}' )
-					imported_activity = load_resource( r )
+					imported_activity = load_resource( r, as_activity=True )
 					activity.init_from( other=imported_activity )
 
 			# second iteration import from recording when flag is set
 			for r in resources:
 				if include_recordings and r.type in [ GPX_TYPE, TCX_TYPE ]:
 					log.debug( f'importing resource of type {r}' )
-					imported_activity = load_resource( r )
+					imported_activity = load_resource( r, as_activity=True )
 					activity.init_from( other=imported_activity )
 
 		if offset_delta:
@@ -170,15 +171,21 @@ def load_all_resources( db: ActivityDb, activity: Activity ) -> None:
 
 	activity.resources = all_resources
 
-def load_resource( resource: Resource ) -> Optional[Activity]:
+def load_resource( resource: Resource, as_activity: bool = False, update_raw: bool = False ) -> Optional[Union[Resource, Activity]]:
 	importers = Registry.importers_for( resource.type )
 	path = Service.path_for_resource( resource )
 
 	for i in importers:
-		if activity := i.load_as_activity( path = path ):
-			return activity
+		if as_activity:
+			if activity := i.load_as_activity( path=path ):
+				return activity
+		else:
+			if loaded_resource := i.load( path=path ):
+				if update_raw:
+					resource.raw = loaded_resource.raw
+				return loaded_resource
 
-	log.error( f'no importer found for resource type {resource.type}' )
+	log.error( f'unable to load resource {resource.uid}?{resource.path}, no importer found for resource type {resource.type}' )
 
 def _confirm_init( source: Activity, target: Activity, console: Console ) -> bool:
 	table = diff_table( as_dict( source, remove_protected=True ), as_dict( target, remove_protected=True ), header=('Field', 'Old Value', 'New Value') )

@@ -251,8 +251,7 @@ class Waze( Service ):
 
 	def postdownload( self, ctx: ApplicationContext, import_session: ImportSession ) -> None:
 		summary = import_session.last_summary
-		# activity = import_session.fetched_activities.get( (summary.uid, summary.path) )
-		if activity := import_session.fetched_activities.get( summary ):
+		if activity := import_session.fetched_activities.get( (summary.uid, summary.path) ):
 			gpx_activity = self.gpx_importer.as_activity( import_session.last_download[0] )
 			new_activity = Activity().init_from( activity ).init_from( other=gpx_activity )
 			new_activity.uids.append( activity.uid )

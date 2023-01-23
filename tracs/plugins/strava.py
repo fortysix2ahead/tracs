@@ -285,7 +285,7 @@ class Strava( Service, Plugin ):
 
 		try:
 			for page in range( 1, 999999 ):
-				self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to { page * FETCH_PAGE_SIZE } (page {page})' )
+				self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to { page * FETCH_PAGE_SIZE } (batch {page})' )
 
 				# status is 429 and raw['message'] = 'Rate Limit Exceeded', when rate goes out of bounds ...
 				json_resource = self.json_handler.load( url=self.all_events_url( page ), session=self._oauth_session )
@@ -306,15 +306,24 @@ class Strava( Service, Plugin ):
 
 	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
-			urls = [ f'{self.activities_url}/{summary.local_id}/export_gpx', f'{self.activities_url}/{summary.local_id}/export_original' ]
-			resources = [ Resource( uid=summary.uid, source=url ) for url in urls ]
+			resources = [
+				Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, source=f'{self.activities_url}/{summary.local_id}/export_gpx' ),
+				Resource( uid=summary.uid, source=f'{self.activities_url}/{summary.local_id}/export_original' ) # type is None as this can be tcx or fit
+			]
 
 			for r in resources:
-				if not summary.get_child( r.type ) or force:
-					try:
-						self.download_resource( r )
-					except RuntimeError:
-						log.error( f'error fetching resource from {r.source}', exc_info=True )
+				# type handling is more complicated here ...
+				if not force:
+					if r.type == GPX_TYPE and summary.get_child( r.type ):
+						continue
+
+					if r.type is None and ( summary.get_child( TCX_TYPE ) or summary.get_child( FIT_TYPE ) ):
+						continue
+
+				try:
+					self.download_resource( r )
+				except RuntimeError:
+					log.error( f'error fetching resource from {r.source}', exc_info=True )
 
 			return [r for r in resources if r.content]
 

@@ -343,7 +343,7 @@ class Service( Plugin ):
 				summaries: List[Resource] = self.ctx.db.all_summaries()
 			else:
 				summaries: List[Resource] = self.fetch( force, pretend, **kwargs )  # fetch summary resources for each activity
-			summaries = self.filter_fetched( summaries, *uids, **kwargs )
+			# summaries = self.filter_fetched( summaries, *uids, **kwargs )
 
 		# save uid/summary
 		for s in summaries:

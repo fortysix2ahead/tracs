@@ -13,18 +13,18 @@ from rule_engine import SymbolResolutionError
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
-from tracs.rules_parser import DATE_PATTERN
-from tracs.rules_parser import FUZZY_DATE_PATTERN
-from tracs.rules_parser import INT_LIST_PATTERN
-from tracs.rules_parser import INT_PATTERN
-from tracs.rules_parser import KEYWORD_PATTERN
-from tracs.rules_parser import normalize
-from tracs.rules_parser import parse_date_range_as_str
-from tracs.rules_parser import parse_rule
-from tracs.rules_parser import RANGE_PATTERN
-from tracs.rules_parser import RESOLVERS
-from tracs.rules_parser import RULE_PATTERN
-from tracs.rules_parser import TIME_PATTERN
+from tracs.rules import DATE_PATTERN
+from tracs.rules import FUZZY_DATE_PATTERN
+from tracs.rules import INT_LIST_PATTERN
+from tracs.rules import INT_PATTERN
+from tracs.rules import KEYWORD_PATTERN
+from tracs.rules import normalize
+from tracs.rules import parse_date_range_as_str
+from tracs.rules import parse_rule
+from tracs.rules import RANGE_PATTERN
+from tracs.rules import RESOLVERS
+from tracs.rules import RULE_PATTERN
+from tracs.rules import TIME_PATTERN
 
 NOW = datetime.utcnow()
 

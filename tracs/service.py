@@ -3,14 +3,11 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from dataclasses import field
-from dataclasses import InitVar
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from typing import Any
 from typing import cast
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -22,36 +19,18 @@ from fs.multifs import MultiFS
 from fs.osfs import OSFS
 
 from .activity import Activity
-from .db import ActivityDb
-from .db import DbIndex
-from .plugin import Plugin
-from .resources import Resource
-from .config import DEFAULT_DB_DIR
-from .config import OVERLAY_DIRNAME
 from .config import ApplicationContext
+from .config import DEFAULT_DB_DIR
 from .config import GlobalConfig as gc
 from .config import KEY_LAST_DOWNLOAD
 from .config import KEY_LAST_FETCH
+from .config import OVERLAY_DIRNAME
+from .db import ActivityDb
+from .plugin import Plugin
 from .registry import Registry
-from .resources import ResourceType
+from .resources import Resource
 
 log = getLogger( __name__ )
-
-@dataclass
-class ImportSession:
-
-	db: InitVar[ActivityDb] = field( default=None )
-
-	index: DbIndex = field( default=None )
-	summaries: Dict[str, Resource] = field( default_factory=dict )
-	activities: Dict[str, Activity] = field( default_factory=dict )
-
-	fetched_activities: Dict[Tuple[str, str], Activity] = field( default_factory=dict ) # dictionary containing summaries / newly created activities after fetch
-	last_summary: Resource = field( default=None ) # last summary used when downloading
-	last_download: List[Resource] = field( default_factory=list ) # contains the resources that have been created after the last download
-
-	def __post_init__( self, db: ActivityDb ):
-		self.index = db.index
 
 @dataclass
 
@@ -72,8 +51,6 @@ class Service( Plugin ):
 
 		self._base_url: str = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
-
-		self._import_session: Optional[ImportSession] = None
 
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
 
@@ -307,12 +284,6 @@ class Service( Plugin ):
 		[ self.postprocess_resource( resource, **kwargs ) for resource in resources ]
 
 	def postprocess_resource( self, resource: Resource = None, **kwargs ) -> None:
-		pass
-
-	def postfetch( self, ctx: ApplicationContext, import_session: ImportSession ) -> None:
-		pass
-
-	def postdownload( self, ctx: ApplicationContext, import_session: ImportSession ) -> None:
 		pass
 
 	# noinspection PyMethodMayBeStatic,PyUnresolvedReferences

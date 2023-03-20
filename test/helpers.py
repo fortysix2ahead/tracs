@@ -2,12 +2,11 @@
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+from importlib.resources import path
 from json import load as load_json
 from pathlib import Path
 from shutil import copy
 from shutil import copytree
-
-from importlib.resources import path
 from shutil import rmtree
 from typing import Dict
 from typing import List
@@ -16,9 +15,7 @@ from typing import Tuple
 from typing import Union
 
 from pytest import mark
-from tinydb.table import Document
 
-from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.config import CONFIG_FILENAME
 from tracs.config import DB_DIRNAME
@@ -259,9 +256,6 @@ def var_run_path( file_name = None ) -> Path:
 def cleanup( run_path: Path = None ) -> None:
 	if run_path and run_path.parent.name == 'run' and run_path.parent.parent.name == 'var': # sanity check: only remove when in test/var/run
 		rmtree( run_path, ignore_errors=True )
-
-def ids( doc_list: [Document] ) -> []:
-	return [a.doc_id for a in doc_list]
 
 skip_live = mark.skipif(
 	not ( get_var_path( 'config_live.yaml' ).exists() and get_var_path( 'state_live.yaml' ).exists() ), reason="live test not enabled as configuration is missing"

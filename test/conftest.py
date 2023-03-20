@@ -10,32 +10,30 @@ from bottle import Bottle
 from confuse import ConfigReadError
 from confuse import Configuration
 from pytest import fixture
-from yaml import SafeLoader
 from yaml import load as load_yaml
+from yaml import SafeLoader
 
 from tracs.config import ApplicationConfig as cfg
 from tracs.config import ApplicationConfig as state
 from tracs.config import ApplicationContext
 from tracs.config import KEY_PLUGINS
 from tracs.db import ActivityDb
-from tracs.registry import Registry
 from tracs.plugins.bikecitizens import Bikecitizens
 from tracs.plugins.polar import Polar
+from tracs.registry import Registry
 from tracs.service import Service
-
 from .bikecitizens_server import bikecitizens_server
 from .bikecitizens_server import bikecitizens_server_thread
-from .helpers import cleanup as cleanup_path, get_db
+from .helpers import cleanup as cleanup_path
+from .helpers import get_db
 from .helpers import get_db_as_json
 from .helpers import get_file_as_json
-from .helpers import get_file_db
 from .helpers import get_file_path
-from .helpers import get_inmemory_db
 from .helpers import prepare_context
+from .polar_server import LIVE_BASE_URL as POLAR_LIVE_BASE_URL
 from .polar_server import polar_server
 from .polar_server import polar_server_thread
 from .polar_server import TEST_BASE_URL as POLAR_TEST_BASE_URL
-from .polar_server import LIVE_BASE_URL as POLAR_LIVE_BASE_URL
 from .strava_server import strava_server
 from .strava_server import strava_server_thread
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field
-from dataclasses import InitVar
 from datetime import datetime
 from datetime import timezone
 from itertools import chain
@@ -16,8 +15,6 @@ from typing import cast
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Type
 from typing import Union
 
 from click import confirm
@@ -37,31 +34,16 @@ from orjson import OPT_SORT_KEYS
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
-from tinydb import Query
-from tinydb import TinyDB
-from tinydb.operations import delete
-from tinydb.operations import set as set_field
-from tinydb.table import Document
-from tinydb.table import Table
 
 from .activity import Activity
 from .activity_types import ActivityTypes
 from .config import APPNAME
-from .config import CLASSIFIER
 from .config import console
-from .config import KEY_GROUPS
 from .config import KEY_SERVICE
-from .filters import classifier as classifier_filter
-from .filters import false as false_filter
-from .filters import Filter
-from .filters import parse_filters
-from .filters import raw_id as raw_id_filter
-from .filters import uid as uid_filter
 from .registry import Registry
 from .resources import Resource
-from .resources import ResourceGroup
 from .resources import ResourceType
-from .rules_parser import parse_rules
+from .rules import parse_rules
 
 log = getLogger( __name__ )
 
@@ -89,61 +71,6 @@ class Schema:
 
 	version: int = field( default_factory=dict )
 	# unknown: Dict = field( default_factory=dict )
-
-@dataclass
-class ActivityIndex:
-
-	uid: Dict[str, Activity] = field( default_factory=dict )
-
-@dataclass
-class ResourceIndex:
-
-	uid: Dict[str, List[Resource]] = field( default_factory=dict )
-	uid_path: Dict[Tuple[str, str], Resource] = field( default_factory=dict )
-
-@dataclass
-class DbIndex:
-
-	activities_table: InitVar[Table] = field( default=None )
-	resources_table: InitVar[Table] = field( default=None )
-
-	activities: ActivityIndex = field( default_factory=ActivityIndex )
-	resources: ResourceIndex = field( default_factory=ResourceIndex )
-
-	def __post_init__( self, activities_table: Table, resources_table: Table ):
-
-		# clear dictionaries first, just in case we need to do a reindex later
-		self.activities.uid.clear()
-		self.resources.uid.clear()
-		self.resources.uid_path.clear()
-
-		for a in cast( List[Activity], activities_table.all() ):
-			for uid in a.uids:
-				if uid in self.activities.uid.keys():
-					log.warning( f'{uid} referenced in activity {a.doc_id}, but is already referenced by activity {self.activities.uid[uid].doc_id}' )
-
-				self.activities.uid[uid] = a
-
-		for r in cast( List[Resource], resources_table.all() ):
-			if r.uid not in self.resources.uid.keys():
-				self.resources.uid[r.uid] = list()
-			self.resources.uid[r.uid].append( r )
-
-			if (r.uid, r.path) in self.resources.uid_path.keys():
-				log.warning( f'{(r.uid, r.path)} referenced in resource {r.doc_id}, but is already referenced by resource {self.resources.uid_path[(r.uid, r.path)].doc_id}' )
-			self.resources.uid_path[(r.uid, r.path)] = r
-
-	def has_summaries( self, uid: str ) -> bool:
-		for r in self.resources.uid.get( uid, [] ):
-			if cast( ResourceType, Registry.resource_types.get( r.type )).summary:
-				return True
-		return False
-
-	def has_recordings( self, uid: str ) -> bool:
-		for r in self.resources.uid.get( uid, [] ):
-			if not cast( ResourceType, Registry.resource_types.get( r.type )).summary:
-				return True
-		return False
 
 class ActivityDb:
 
@@ -301,10 +228,6 @@ class ActivityDb:
 	@property
 	def schema( self ) -> Schema:
 		return self._schema
-
-	@property
-	def metadata( self ) -> Table:
-		return self._metadata
 
 	# path properties
 
@@ -564,42 +487,6 @@ class ActivityDb:
 	def find_all_resources_for( self, activities: Union[Activity, List[Activity]] ) -> List[Resource]:
 		activities = [activities] if type( activities ) is Activity else activities
 		return self.find_all_resources( list( chain( *[a.uids for a in activities] ) ) )
-
-	def find_resource_group( self, uid: str, path: str = None ) -> ResourceGroup:
-		return ResourceGroup( resources=self.find_resources( uid, path ) )
-
-	# noinspection PyMethodMayBeStatic
-	def filter( self, activities: [Activity], queries: [Query] ) -> [Activity]:
-		for q in queries or []:
-			activities = list( filter( q, activities or [] ) )
-		return activities
-
-	def query( self, queries: [Query] ) -> [Activity]:
-		if len( queries ) == 0:
-			query = Query().noop()
-		else:
-			query = queries[0]
-			for q in queries[1:]:
-				query = query & q
-
-		return self._activities.search( query )
-
-# ---- DB Factory ---
-
-def document_cls( doc: Union[Dict, Document], doc_id: int ) -> Type:
-	if classifier := doc.get( CLASSIFIER ):
-		if classifier == 'group':  # ActvityGroup is registered with 'groups' todo: improve!
-			classifier = KEY_GROUPS
-		if classifier in Registry.document_classes:
-			return Registry.document_classes.get( classifier )
-	elif groups := doc.get( KEY_GROUPS ):
-		if 'ids' in groups.keys() or 'uids' in groups.keys():
-			return Registry.document_classes.get( KEY_GROUPS )
-
-	return Document
-
-def document_factory( doc: Union[Dict, Document], doc_id: int ) -> Document:
-	return document_cls( doc, doc_id )( doc, doc_id )
 
 # ---- DB Operations ----
 

@@ -27,15 +27,12 @@ from fs.errors import CreateFailed
 from fs.zipfs import ReadZipFS
 from requests_cache import CachedSession
 from rich.prompt import Prompt
-from tinydb import Query
 
 from .gpx import GPX_TYPE
-from .gpx import GPXImporter
 from .handlers import JSON_TYPE
 from .handlers import JSONHandler
 from .handlers import TCX_TYPE
 from .handlers import XMLHandler
-from .tcx import TCXImporter
 from ..activity import Activity
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types
@@ -48,7 +45,6 @@ from ..registry import Registry
 from ..registry import resourcetype
 from ..registry import service
 from ..resources import Resource
-from ..service import ImportSession
 from ..service import Service
 from ..utils import seconds_to_time
 from ..utils import seconds_to_time as stt

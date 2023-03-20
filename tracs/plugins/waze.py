@@ -32,7 +32,6 @@ from ..registry import Registry
 from ..registry import resourcetype
 from ..registry import service
 from ..resources import Resource
-from ..service import ImportSession
 from ..service import Service
 from ..utils import as_datetime
 
@@ -255,7 +254,7 @@ class Waze( Service ):
 				gpx = to_gpx( drive )
 				return gpx, 200  # return always 200
 
-	def postdownload( self, ctx: ApplicationContext, import_session: ImportSession ) -> None:
+	def postdownload( self, ctx: ApplicationContext ) -> None:
 		summary = import_session.last_summary
 		if activity := import_session.fetched_activities.get( (summary.uid, summary.path) ):
 			gpx_activity = self.gpx_importer.as_activity( import_session.last_download[0] )

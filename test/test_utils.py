@@ -5,17 +5,17 @@ from datetime import time
 from datetime import timedelta
 from datetime import timezone
 from typing import List
-from urllib.parse import urlparse
 
 from dateutil.tz import gettz
 
 from tracs.activity_types import ActivityTypes
 from tracs.utils import as_datetime
 from tracs.utils import fmt
-from tracs.utils import seconds_to_time
 from tracs.utils import fromisoformat
+from tracs.utils import seconds_to_time
 from tracs.utils import toisoformat
 from tracs.utils import unarg
+from tracs.utils import urlparse
 
 def test_fmt():
 	assert fmt( None ) == ''

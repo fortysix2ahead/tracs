@@ -13,7 +13,8 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
-from urllib.parse import urlparse
+
+from .utils import urlparse
 
 # todo: not sure if we still need the status
 class ResourceStatus( Enum ):

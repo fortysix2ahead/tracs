@@ -18,13 +18,16 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from urllib.parse import ParseResult
+from urllib.parse import ParseResultBytes
+from urllib.parse import urlparse as urllibparse
 
-from babel.dates import format_datetime
 from babel.dates import format_date
+from babel.dates import format_datetime
 from babel.dates import format_time
 from babel.dates import format_timedelta
-from babel.numbers import format_decimal
 from babel.dates import get_timezone
+from babel.numbers import format_decimal
 from click import style
 from confuse import Configuration
 from dateutil.parser import parse as parse_datetime
@@ -224,6 +227,14 @@ def colored_diff( left: str, right: str ) -> Tuple[str, str]:
 
 def unarg( key: str, *args, kwargs: Dict ) -> List[Any]:
 	return [*args[0]] or value if type( value := kwargs.get( key, [] ) ) is list else [value]
+
+# work around for urlparse()-inconsistencies between python 3.8 and later versions
+def urlparse( url ) -> ParseResult:
+	url: ParseResultBytes = urllibparse( url )
+	if url.scheme == '' and ':' in url.path:
+		scheme, path = url.path.split( ':', maxsplit=1 )
+		url = ParseResultBytes( scheme=scheme, netloc=url.netloc, path=path, params=url.params, query=url.query, fragment=url.fragment )
+	return url
 
 # styling helpers
 

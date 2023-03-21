@@ -2,16 +2,12 @@
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+
 from pytest import mark
-from tinydb.table import Table
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.db import ActivityDb
-
-from tracs.plugins.strava import StravaActivity
-
-from .helpers import ids
 from .helpers import get_db_path
 
 def test_new_db_without_path():

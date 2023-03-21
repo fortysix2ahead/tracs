@@ -1,31 +1,19 @@
 
+from datetime import datetime
+from datetime import time
 from re import match
 from sys import float_info
+from sys import maxsize
 from typing import List
 
 from arrow import Arrow as dt
 from arrow import now
-from datetime import datetime
-from datetime import time
-
 from dateutil.tz import UTC
 from pytest import mark
-from sys import maxsize
-from tinydb.queries import QueryLike
 
 from tracs.activity_types import ActivityTypes
-from tracs.filters import false
-from tracs.filters import invalid
-from tracs.filters import parse
-from tracs.filters import resource_pattern
-from tracs.filters import true
-from tracs.filters import Filter
-from tracs.filters import filter_pattern2
-from tracs.filters import TYPES
 from tracs.plugins.polar import Polar
 from tracs.registry import Registry
-
-from .helpers import ids
 
 def test_predefined_filters():
 	assert false().callable is not None

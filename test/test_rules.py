@@ -111,6 +111,12 @@ def test_rule_pattern():
 	assert match( RULE_PATTERN, 'id:1000' )
 	assert match( RULE_PATTERN, 'ID:1000' )
 
+	assert match( RULE_PATTERN, 'id:1000,1001,1002' )
+	assert match( RULE_PATTERN, 'id:1000..1002' )
+
+	assert match( RULE_PATTERN, 'date:2020-01-15..2021-09-01' )
+	assert match( RULE_PATTERN, 'date:2020..2021-09' )
+
 	assert match( RULE_PATTERN, 'id=1000' )
 	assert match( RULE_PATTERN, 'id==1000' )
 	assert match( RULE_PATTERN, 'id!=1000' )
@@ -119,11 +125,21 @@ def test_rule_pattern():
 	assert match( RULE_PATTERN, 'id<1000' )
 	assert match( RULE_PATTERN, 'id<=1000' )
 
+	assert match( RULE_PATTERN, 'name:berlin' )
 	assert match( RULE_PATTERN, 'name=Berlin' )
 	assert match( RULE_PATTERN, 'name="Morning Run"' )
 	assert match( RULE_PATTERN, 'name!="Morning Run"' )
 	assert match( RULE_PATTERN, 'name=~"^.*Run$"' )
 	assert match( RULE_PATTERN, 'name!~"^.*Run$"' )
+
+	assert match( RULE_PATTERN, 'type:run,hike,walk' )
+
+def test_rule_resource_pattern():
+	assert match( RESOURCE_PATTERN, 'polar:1000#1' )
+	assert match( RESOURCE_PATTERN, 'polar:1000#gpx' )
+	# assert match( RESOURCE_PATTERN, 'polar:1000?1001.gpx' )
+	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx' )
+	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx-polar' )
 
 def test_normalize():
 	assert normalize( '1000' ) == 'id == 1000'
@@ -194,9 +210,6 @@ def test_range():
 	assert parse_eval( 'heartrate:100.0..200.0', A1 )
 
 def test_date_time():
-	from arrow import arrow
-	from dateutil.parser import parse
-
 	assert parse_eval( 'date=2023-01-13', A1 )
 	assert parse_eval( 'date:2023', A1 )
 	assert not parse_eval( 'date:2022', A1 )

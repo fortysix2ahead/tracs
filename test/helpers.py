@@ -103,26 +103,17 @@ def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: st
 def prepare_context( cfg_name: str, lib_name: str ) -> ApplicationContext:
 	with path( 'test', '__init__.py' ) as test_path:
 		cfg_path = var_run_path()
-		lib_path = None
+		cfg_src_path = Path( test_path.parent, 'configurations', cfg_name )
+		if (p := Path( cfg_src_path, CONFIG_FILENAME )) and p.exists():
+			copy( Path( cfg_src_path, CONFIG_FILENAME ), cfg_path )
+		if (p := Path( cfg_src_path, STATE_FILENAME )) and p.exists():
+			copy( Path( cfg_src_path, STATE_FILENAME ), cfg_path )
 
-		if cfg_name:
-			cfg_src_path = Path( test_path.parent, 'configurations', cfg_name )
-			try:
-				copy( Path( cfg_src_path, CONFIG_FILENAME ), cfg_path )
-			except FileNotFoundError as error:
-				pass
+		lib_src_path = Path( test_path.parent, 'libraries', lib_name )
+		lib_path = Path( cfg_path )
+		copytree( lib_src_path, Path( lib_path, DB_DIRNAME ) )
 
-			try:
-				copy( Path( cfg_src_path, STATE_FILENAME ), cfg_path )
-			except FileNotFoundError as error:
-				pass
-
-		if lib_name:
-			lib_src_path = Path( test_path.parent, 'libraries', lib_name )
-			lib_path = Path( cfg_path )
-			copytree( lib_src_path, Path( lib_path, DB_DIRNAME ) )
-
-		return ApplicationContext( cfg_dir=cfg_path, lib_dir=lib_path, db=ActivityDb( path=lib_path ) )
+		return ApplicationContext( config_dir=str( cfg_path ), lib_dir=str( lib_path ), db=ActivityDb( path=lib_path ) )
 
 def get_config_path( name: str, writable: bool = False ) -> Path:
 	with path( 'test', '__init__.py' ) as test_path:

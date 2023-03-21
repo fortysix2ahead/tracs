@@ -27,6 +27,7 @@ from tracs.rules import RULE_PATTERN
 from tracs.rules import TIME_PATTERN
 
 NOW = datetime.utcnow()
+ATTRIBUTE_CONTEXT = Context(resolver=resolve_attribute)
 
 A1 = Activity(
 	id=1000,
@@ -38,18 +39,32 @@ A1 = Activity(
 	uids=['polar:123456', 'strava:123456']
 )
 
-def test_rule_engine():
-	rule = Rule( 'heartrate == 180' )
-	a = Activity( heartrate=180, time=datetime.utcnow(), tags=['morning', 'salomon', 'tired'], uids=['polar:1234', 'strava:3456'] )
-	assert rule.matches( a )
+d2 = {
+	'heartrate': 180,
+	'time': datetime.utcnow(),
+	'tags': ['morning', 'salomon', 'tired'],
+	'uids': ['polar:1234', 'strava:3456']
+}
 
-	rule = Rule( 'heartrate_max == 180' )
-	assert not rule.matches( a )
+a2 = Activity(
+	heartrate=180,
+	time=datetime.utcnow(),
+	tags=['morning', 'salomon', 'tired'],
+	uids=['polar:1234', 'strava:3456']
+)
+
+def test_rule_engine():
+	# plain case does not work with classes, only with dictionaries
+	with raises( SymbolResolutionError ):
+		assert Rule( 'heartrate == 180' ).matches( a2 )
+	assert Rule( 'heartrate == 180' ).matches( d2 )
+	assert Rule( 'heartrate == 180', context=ATTRIBUTE_CONTEXT ).matches( a2 )
+	assert not Rule( 'heartrate_max == 180', context=ATTRIBUTE_CONTEXT ).matches( a2 )
 
 	# how to get around a SymbolResolutionError:
 	context = Context( default_value=None )
 	rule = Rule( 'year == 2023', context=context )
-	assert not rule.matches( a )
+	assert not rule.matches( a2 )
 
 	# how to use a custom resolver
 	def resolve_year( thing, name ):
@@ -61,17 +76,17 @@ def test_rule_engine():
 			return resolve_attribute( thing, name )
 
 	context = Context( default_value=None, resolver=resolve_year )
-	assert Rule( 'heartrate == 180', context=context ).matches( a )
-	assert Rule( 'year == 2023', context=context ).matches( a )
-	assert Rule( 'heartrate == 180 and year == 2023', context=context ).matches( a )
-	assert not Rule( 'heartrate == 170 and year == 2023', context=context ).matches( a )
+	assert Rule( 'heartrate == 180', context=context ).matches( a2 )
+	assert Rule( 'year == 2023', context=context ).matches( a2 )
+	assert Rule( 'heartrate == 180 and year == 2023', context=context ).matches( a2 )
+	assert not Rule( 'heartrate == 170 and year == 2023', context=context ).matches( a2 )
 
-	assert Rule( '"tired" in tags', context=context ).matches( a )
-	assert not Rule( '"evening" in tags', context=context ).matches( a )
+	assert Rule( '"tired" in tags', context=context ).matches( a2 )
+	assert not Rule( '"evening" in tags', context=context ).matches( a2 )
 
-	assert Rule( '"polar:1234" in uids', context=context ).matches( a )
-	assert not Rule( '"polar" in uids', context=context ).matches( a )
-	assert Rule( '"polar" in uids.classifiers', context=context ).matches( a )
+	assert Rule( '"polar:1234" in uids', context=context ).matches( a2 )
+	assert not Rule( '"polar" in uids', context=context ).matches( a2 )
+	assert Rule( '"polar" in uids.classifiers', context=context ).matches( a2 )
 
 def test_rule_pattern():
 	# special cases

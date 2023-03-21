@@ -1,19 +1,12 @@
 
 from datetime import datetime
 from datetime import time
-from datetime import timedelta
-from datetime import timezone
-
-from dateutil.tz import UTC
-from dateutil.tz import tzlocal
-from tzlocal import get_localzone_name
 
 from pytest import mark
 
 from tracs.activity import Activity
-from tracs.resources import UID
 from tracs.resources import Resource
-from tracs.activity_types import ActivityTypes
+from tracs.resources import UID
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
 def test_union( json ):

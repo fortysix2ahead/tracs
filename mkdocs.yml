@@ -1,9 +1,14 @@
+
 site_name: Tracs - Documentation
 site_url: https://github.com/fortysix2ahead/tracs
+
 nav:
     - Home: index.md
     - Command Line Interface: cli.md
     - Plugins: plugins.md
-theme: readthedocs
+    - Internals: internals.md
+
+# theme: readthedocs
+theme: material
 markdown_extensions:
     - mkdocs-click

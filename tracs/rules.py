@@ -26,6 +26,8 @@ from rule_engine import RuleSyntaxError
 
 log = getLogger( __name__ )
 
+YEAR_RANGE = range( 2000, datetime.utcnow().year + 1 )
+
 INT_PATTERN = '^(?P<value>\d+)$'
 INT_LIST_PATTERN = '^(?P<values>(\d+,)+(\d+))$'
 INT_RANGE_PATTERN = '^(?P<range_from>\d+)?\.\.(?P<range_to>\d+)?$'
@@ -36,15 +38,17 @@ QUOTED_STRING_PATTERN = '^"(?P<value>.*)"$'
 
 KEYWORD_PATTERN = '^[a-zA-Z][\w-]*$'
 
+LIST_PATTERN = '^(\w+)(,(\w+))+$'
 RANGE_PATTERN = '^(?P<range_from>\d[\d\.\:-]+)?(\.\.)(?P<range_to>\d[\d\.\:-]+)?$'
 
 DATE_PATTERN = '^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)-(?P<day>[0-3]\d)$'
 DATE_YEAR_PATTERN = '^(?P<year>[12]\d\d\d)$'
 DATE_YEAR_MONTH_PATTERN = '^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)$'
 DATE_YEAR_MONTH_DAY_PATTERN = DATE_PATTERN
-
 FUZZY_DATE_PATTERN = '^(?P<year>[12]\d\d\d)(-(?P<month>[01]\d))?(-(?P<day>[0-3]\d))?$'
+
 TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d):(?P<second>[0-5]\d)$'
+FUZZY_TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4])(:(?P<minute>[0-5]\d)(:(?P<second>[0-5]\d))?)?$'
 
 SHORT_RULE_PATTERN = r'^(\w+)(:|=)([\w\"\.].+)$' # short version: id=10 or id:10 for convenience, value must begin with alphanum or "
 RULE_PATTERN = '^(\w+)(==|!=|=~|!~|>=|<=|>|<|=|:)([\w\"\.].+)$'
@@ -140,7 +144,11 @@ def normalize( rule: str ) -> str:
 	normalized_rule = None
 
 	if match( INT_PATTERN, rule ): # integer number only
-		normalized_rule = f'id == {rule}'
+		# treat numbers from 2000 ... current year as years
+		if int( rule ) in YEAR_RANGE:
+			normalized_rule = f'year == {rule}'
+		else:
+			normalized_rule = f'id == {rule}'
 
 	elif match( KEYWORD_PATTERN, rule ):  # keywords
 		if rule in KEYWORDS:

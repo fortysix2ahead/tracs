@@ -9,15 +9,18 @@ from rich.pretty import pprint
 from rule_engine import Context
 from rule_engine import resolve_attribute
 from rule_engine import Rule
+from rule_engine import RuleSyntaxError
 from rule_engine import SymbolResolutionError
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.rules import DATE_PATTERN
 from tracs.rules import FUZZY_DATE_PATTERN
+from tracs.rules import FUZZY_TIME_PATTERN
 from tracs.rules import INT_LIST_PATTERN
 from tracs.rules import INT_PATTERN
 from tracs.rules import KEYWORD_PATTERN
+from tracs.rules import LIST_PATTERN
 from tracs.rules import normalize
 from tracs.rules import parse_date_range_as_str
 from tracs.rules import parse_rule
@@ -90,11 +93,22 @@ def test_rule_engine():
 
 def test_rule_pattern():
 	# special cases
-	# numbers shall be treated as ids
+
+	# numbers are allowed and are treated as ids
 	assert match( INT_PATTERN, '1000' )
+
+	# list are comma-separated and need to contain more than one element
+	assert match( LIST_PATTERN, '100,101')
+	assert match( LIST_PATTERN, '100,101,102')
+	assert match( LIST_PATTERN, 'a,b,c')
+	assert not match( LIST_PATTERN, '100')
+	assert not match( LIST_PATTERN, '100,101,102,')
+
+	# remove??
 	assert match( INT_LIST_PATTERN, '1000,1001,1002' )
 	assert not match( INT_LIST_PATTERN, '1000,1001,1002,' )
 
+	# ranges are separated by two dots, where start and end might be missing
 	assert match( RANGE_PATTERN, '1000..1002' )
 	assert match( RANGE_PATTERN, '1000..' )
 	assert match( RANGE_PATTERN, '..1002' )
@@ -102,18 +116,27 @@ def test_rule_pattern():
 	assert match( RANGE_PATTERN, '2020-01-01..2020-06-30' )
 	assert match( RANGE_PATTERN, '10:00:00..11:00:00' )
 
+	# dates always contain year, month and day
+	assert match( DATE_PATTERN, '2022-03-13' )
 	assert not match( DATE_PATTERN, '2022' )
 	assert not match( DATE_PATTERN, '2022-03' )
-	assert match( DATE_PATTERN, '2022-03-13' )
-	assert match( FUZZY_DATE_PATTERN, '2022' )
+
+	# fuzzy dates may omit month and day and are treated as ranges
+	assert match( FUZZY_DATE_PATTERN, '2022' ) # beware: this is also a number!
 	assert match( FUZZY_DATE_PATTERN, '2022-03' )
 	assert match( FUZZY_DATE_PATTERN, '2022-03-13' )
 
+	# same is true for times: always contain hours, minutes and seconds
+	assert match( TIME_PATTERN, '13:10:42' )
 	assert not match( TIME_PATTERN, '13' )
 	assert not match( TIME_PATTERN, '13:10' )
-	assert match( TIME_PATTERN, '13:10:42' )
 
-	# keywords, must begin with a letter and may contain letters, numbers, dash und underscores
+	# fuzzy times are also treated as ranges
+	assert match( FUZZY_TIME_PATTERN, '13' )
+	assert match( FUZZY_TIME_PATTERN, '13:10' )
+	assert match( FUZZY_TIME_PATTERN, '13:10:42' )
+
+	# keywords must begin with a letter and may contain letters, numbers, dashes und underscores
 
 	assert match( KEYWORD_PATTERN, 'polar' )
 	assert match( KEYWORD_PATTERN, 'polar_2022' )
@@ -158,6 +181,14 @@ def test_rule_resource_pattern():
 
 def test_normalize():
 	assert normalize( '1000' ) == 'id == 1000'
+	assert normalize( '1999' ) == 'id == 1999'
+	assert normalize( '2000' ) == 'year == 2000'
+	assert normalize( str( datetime.utcnow().year ) ) == f'year == {datetime.utcnow().year}'
+
+	assert normalize( 'polar' ) == f'"polar" in __classifiers__'
+	with raises( RuleSyntaxError ):
+		normalize( 'unknown_keyword' )
+
 	assert normalize( 'id:1000' ) == 'id == 1000'
 	assert normalize( 'id=1000' ) == 'id == 1000'
 

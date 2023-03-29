@@ -1,22 +1,23 @@
 
 from itertools import chain
 from logging import DEBUG
-from logging import INFO
 from logging import Formatter
-from logging import StreamHandler
 from logging import getLogger
+from logging import INFO
+from logging import StreamHandler
 from sys import stderr
 from typing import List
 from typing import Optional
 
 from click import argument
+from click import Choice
 from click import group
 from click import option
 from click import pass_context
 from click import pass_obj
-from click import Choice
 from click import Path as ClickPath
 from click_shell import make_click_shell
+from rule_engine import RuleSyntaxError
 
 from tracs.edit import equip_activities
 from tracs.edit import modify_activities
@@ -38,21 +39,21 @@ from .db import backup_db
 from .db import restore_db
 from .db import status_db
 from .edit import edit_activities
+from .edit import rename_activities
 from .group import group_activities
-from .group import ungroup_activities
 from .group import part_activities
+from .group import ungroup_activities
 from .group import unpart_activities
 from .inout import DEFAULT_IMPORTER
 from .inout import reimport_activities
 from .list import inspect_activities
 from .list import list_activities
-from .list import show_fields
-from .show import show_activities
 from .list import show_config
-from .edit import rename_activities
+from .list import show_fields
 from .migrate import migrate_application
-from .validate import validate_activities
 from .setup import setup as setup_application
+from .show import show_activities
+from .validate import validate_activities
 
 log = getLogger( __name__ )
 
@@ -162,7 +163,10 @@ def link( ctx, all_, filters ):
 @argument('filters', nargs=-1)
 @pass_obj
 def ls( ctx: ApplicationContext, sort, reverse, format_name, filters ):
-	list_activities( list( ctx.db.find( filters ) ), sort=sort, reverse=reverse, format_name=format_name, ctx=ctx )
+	try:
+		list_activities( list( ctx.db.find( filters ) ), sort=sort, reverse=reverse, format_name=format_name, ctx=ctx )
+	except RuleSyntaxError as rse:
+		ctx.console.print( rse )
 
 @cli.command( help='shows details about activities and resources' )
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )

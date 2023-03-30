@@ -11,7 +11,6 @@ from pytest import mark
 
 from tracs.cli import cli
 from tracs.config import ApplicationContext
-
 from .helpers import skip_live
 
 cfg_path: Optional[Path] = None
@@ -85,7 +84,7 @@ def invoke( ctx: ApplicationContext, options: str = None, cmd: str = None, cmd_o
 
 	full_cmd = []
 	full_cmd.extend( options.split( ' ' ) if options else [] )
-	full_cmd.extend( [ '-c', str( ctx.cfg_dir ) ] )
+	full_cmd.extend( [ '-c', str( ctx.config_dir ) ] )
 	full_cmd.extend( cmd.split( ' ' ) if cmd else [] )
 	full_cmd.extend( cmd_options.split( ' ' ) if cmd_options else [] )
 

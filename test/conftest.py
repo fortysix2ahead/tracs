@@ -90,7 +90,7 @@ def ctx( request ) -> Optional[ApplicationContext]:
 		context.db.close()
 
 		if do_cleanup:
-			cleanup_path( context.cfg_dir )
+			cleanup_path( Path( context.config_dir ) )
 
 	except ValueError:
 		log.error( 'unable to run fixture context', exc_info=True )

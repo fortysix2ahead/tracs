@@ -1,11 +1,11 @@
 
 from dataclasses import fields
+from logging import getLogger
 from pathlib import Path
 from re import split
 from typing import List
 
 from confuse.exceptions import NotFoundError
-from logging import getLogger
 from rich import box
 from rich.pretty import Pretty as pp
 from rich.table import Table
@@ -104,8 +104,8 @@ def show_config( ctx: ApplicationContext ):
 	table.add_column( justify='left', no_wrap=True )
 	table.add_column( justify='left', no_wrap=True )
 
-	table.add_row( 'configuration dir', pp( ctx.cfg_dir ) )
-	table.add_row( 'configuration file', pp( ctx.cfg_file ) )
+	table.add_row( 'configuration dir', ctx.config_dir )
+	table.add_row( 'configuration file', pp( ctx.config_file ) )
 	table.add_row( 'state file', pp( ctx.state_file ) )
 
 	table.add_section()

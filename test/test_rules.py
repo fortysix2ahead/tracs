@@ -3,6 +3,7 @@ from datetime import datetime
 from re import match
 from typing import cast
 
+from dateutil.tz import tzlocal
 from dateutil.tz import UTC
 from pytest import raises
 from rich.pretty import pprint
@@ -39,6 +40,7 @@ A1 = Activity(
 	description="Morning Run in Berlin",
 	type=ActivityTypes.run,
 	time=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ),
+	localtime=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ).astimezone( tzlocal() ),
 	heartrate=160,
 	uids=['polar:123456', 'strava:123456']
 )

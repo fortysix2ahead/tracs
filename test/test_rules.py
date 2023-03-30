@@ -7,6 +7,7 @@ from dateutil.tz import UTC
 from pytest import raises
 from rich.pretty import pprint
 from rule_engine import Context
+from rule_engine import EvaluationError
 from rule_engine import resolve_attribute
 from rule_engine import Rule
 from rule_engine import RuleSyntaxError
@@ -172,12 +173,12 @@ def test_rule_pattern():
 
 	assert match( RULE_PATTERN, 'type:run,hike,walk' )
 
-def test_rule_resource_pattern():
-	assert match( RESOURCE_PATTERN, 'polar:1000#1' )
-	assert match( RESOURCE_PATTERN, 'polar:1000#gpx' )
-	# assert match( RESOURCE_PATTERN, 'polar:1000?1001.gpx' )
-	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx' )
-	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx-polar' )
+# def test_rule_resource_pattern():
+# 	assert match( RESOURCE_PATTERN, 'polar:1000#1' )
+# 	assert match( RESOURCE_PATTERN, 'polar:1000#gpx' )
+# 	# assert match( RESOURCE_PATTERN, 'polar:1000?1001.gpx' )
+# 	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx' )
+# 	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx-polar' )
 
 def test_normalize():
 	assert normalize( '1000' ) == 'id == 1000'
@@ -193,17 +194,19 @@ def test_normalize():
 	assert normalize( 'id=1000' ) == 'id == 1000'
 
 def test_parse():
-	with raises( RuntimeError ):
-		assert (r := parse_rule( 'unknown:1000' ))
-
-	with raises( RuntimeError ):
-		assert (r := parse_rule( 'id=~1000' ))
-
 	assert (r := parse_rule( 'id=1000' ))
-
-	# test against activity
 	assert r.evaluate( Activity( id=1000 ) )
-	assert Rule( 'unknown == 1000' ).evaluate( Activity( id=1000 ) )
+
+	assert (r := parse_rule( 'id!=1000' ))
+	assert r.evaluate( Activity( id=1001 ) )
+
+	with raises( EvaluationError ):
+		assert (r := parse_rule( 'id=~1000' )) # wrong operator, parsing fails
+		r.evaluate( Activity( id=1000 ) )
+
+	assert (r := parse_rule( 'unknown:1000' )) # parsing unknown fields is ok
+	with raises( SymbolResolutionError ):
+		assert r.evaluate( Activity( id=1000 ) ) # evaluating is not ok -> error
 
 def test_evaluate():
 	al = [

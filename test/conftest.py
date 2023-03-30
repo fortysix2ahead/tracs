@@ -137,7 +137,7 @@ def service( request, ctx ) -> Optional[Service]:
 		base_url = marker.kwargs.get( 'url' )
 
 		if ctx:
-			service_config = ctx.cfg_file
+			service_config = ctx.config_file
 			service_state = ctx.state_file
 		else:
 			service_config = marker.kwargs.get( 'config' )

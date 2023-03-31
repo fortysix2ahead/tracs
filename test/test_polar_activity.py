@@ -5,11 +5,10 @@ from datetime import timezone
 
 from dataclass_factory import Factory
 from dateutil.tz import tzlocal
-
 from pytest import mark
 
-from tracs.plugins.polar import PolarActivity, PolarFlowExercise
 from tracs.activity_types import ActivityTypes
+from tracs.plugins.polar import PolarFlowExercise
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
 def test_exercise( json ):
@@ -34,10 +33,14 @@ def test_fitnessdata( json ):
 
 @mark.file( 'libraries/default/polar/1/0/0/100013/100013.json' )
 def test_orthostatic( json ):
-	pa = PolarActivity( raw=json )
-	assert pa.raw_id == 100013
+	pa = Factory().load( json, PolarFlowExercise )
+	assert pa.title == json.get( 'title' )
+	assert pa.local_id == 100013
+	assert pa.datetime == '2016-09-28T21:11:04.000'
 
 @mark.file( 'libraries/default/polar/1/0/0/100014/100014.json' )
 def test_rrrecording( json ):
-	pa = PolarActivity( raw=json )
-	assert pa.raw_id == 100014
+	pa = Factory().load( json, PolarFlowExercise )
+	assert pa.title == json.get( 'title' )
+	assert pa.local_id == 100014
+	assert pa.datetime == '2017-01-16T21:34:58.000'

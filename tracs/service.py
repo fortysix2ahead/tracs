@@ -52,6 +52,14 @@ class Service( Plugin ):
 		self._base_url: str = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
 
+		for k, v in kwargs.items():
+			if k in ['ctx', 'cls']:
+				continue
+			try:
+				setattr( self, k, v )
+			except AttributeError:
+				pass
+
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
 
 	# properties
@@ -80,11 +88,16 @@ class Service( Plugin ):
 	def base_url( self ) -> str:
 		return self._base_url
 
+	@base_url.setter
+	def base_url( self, url: str ) -> None:
+		self._base_url = url
+
+	# todo: still needed?
 	@property
 	def _db( self ) -> ActivityDb:
 		return self.ctx.db
 
-	# fs properties
+	# fs properties (read-only)
 
 	@property
 	def fs( self ) -> FS:

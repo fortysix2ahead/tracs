@@ -12,33 +12,27 @@ from .helpers import skip_live
 from .strava_server import TEST_BASE_URL
 from .strava_server import LIVE_BASE_URL
 
-def test_constructor():
-	strava = Strava()
+# noinspection PyUnresolvedReferences
+@mark.context( library='empty', config='empty', cleanup=True )
+@mark.service( cls=Strava )
+def test_constructor( service ):
+	assert service.base_url == f'{LIVE_BASE_URL}'
+	assert service.login_url == f'{LIVE_BASE_URL}/login'
+	assert service.session_url == f'{LIVE_BASE_URL}/session'
+	assert service.activities_url == f'{LIVE_BASE_URL}/activities'
+	assert service.auth_url == f'{LIVE_BASE_URL}/oauth/authorize'
+	assert service.token_url == f'{LIVE_BASE_URL}/oauth/token'
 
-	assert strava._base_url == f'{LIVE_BASE_URL}'
-	assert strava._login_url == f'{LIVE_BASE_URL}/login'
-	assert strava._session_url == f'{LIVE_BASE_URL}/session'
-	assert strava._activities_url == f'{LIVE_BASE_URL}/activities'
-	assert strava._auth_url == f'{LIVE_BASE_URL}/oauth/authorize'
-	assert strava._token_url == f'{LIVE_BASE_URL}/oauth/token'
-
-	strava.base_url = TEST_BASE_URL
-
-	assert strava._base_url == f'{TEST_BASE_URL}'
-	assert strava._login_url == f'{TEST_BASE_URL}/login'
-	assert strava._session_url == f'{TEST_BASE_URL}/session'
-	assert strava._activities_url == f'{TEST_BASE_URL}/activities'
-	assert strava._auth_url == f'{TEST_BASE_URL}/oauth/authorize'
-	assert strava._token_url == f'{TEST_BASE_URL}/oauth/token'
-
-	strava = Strava( base_url = TEST_BASE_URL )
-
-	assert strava._base_url == f'{TEST_BASE_URL}'
-	assert strava._login_url == f'{TEST_BASE_URL}/login'
-	assert strava._session_url == f'{TEST_BASE_URL}/session'
-	assert strava._activities_url == f'{TEST_BASE_URL}/activities'
-	assert strava._auth_url == f'{TEST_BASE_URL}/oauth/authorize'
-	assert strava._token_url == f'{TEST_BASE_URL}/oauth/token'
+# noinspection PyUnresolvedReferences
+@mark.context( library='empty', config='empty', cleanup=True )
+@mark.service( cls=Strava, base_url=TEST_BASE_URL )
+def test_constructor_test( service ):
+	assert service.base_url == f'{TEST_BASE_URL}'
+	assert service.login_url == f'{TEST_BASE_URL}/login'
+	assert service.session_url == f'{TEST_BASE_URL}/session'
+	assert service.activities_url == f'{TEST_BASE_URL}/activities'
+	assert service.auth_url == f'{TEST_BASE_URL}/oauth/authorize'
+	assert service.token_url == f'{TEST_BASE_URL}/oauth/token'
 
 @mark.skip( reason='HTTP test not supported by OAuth lib' )
 @mark.context( library='empty', config='default', cleanup=True )
@@ -80,7 +74,7 @@ def test_workflow( strava_server, service ):
 
 @skip_live
 @mark.context( library='empty', config='live', cleanup=True )
-@mark.service( cls=Strava, url=LIVE_BASE_URL )
+@mark.service( cls=Strava )
 def test_live_workflow( service ):
 	service.login()
 	assert service.logged_in

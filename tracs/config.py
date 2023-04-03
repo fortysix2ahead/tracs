@@ -222,6 +222,9 @@ class ApplicationContext:
 		if self.verbose:
 			self.pp( msg )
 		else:
+			if not self.progress: # todo: improve, this might happen during testing strava ...
+				return
+
 			self.progress.update( task_id=self.task_id, advance=advance, msg=msg )
 
 	def complete( self, msg: str = None ):

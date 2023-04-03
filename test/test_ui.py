@@ -8,7 +8,7 @@ from rich.console import Console
 from tracs.config import ApplicationContext
 from tracs.ui import diff_table
 
-@mark.file( 'libraries/default/polar/1/0/0/100001/100001.raw.json' )
+@mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
 def test_diff_dict( json ):
 	json1, json2 = deepcopy( json ), deepcopy( json )
 	json1['country'] = 'Germany'

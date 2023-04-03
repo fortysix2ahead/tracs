@@ -278,11 +278,8 @@ class PersonalTrainerImporter( XMLHandler ):
 @service
 class Polar( Service ):
 
-	def __init__( self, base_url=None, **kwargs ):
-		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
-		self._base_url = kwargs.get( 'base_url', BASE_URL )
-		self._username = kwargs.get( 'username' )
-		self._password = kwargs.get( 'password' )
+	def __init__( self, **kwargs ):
+		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
 
 		self._session = None
 		self._logged_in = False
@@ -371,14 +368,14 @@ class Polar( Service ):
 			echo( "CSRF Token not found" )
 			return False
 
-		if not self._username and not self._password:
+		if not self.cfg_value( 'username' ) and not self.cfg_value( 'password' ):
 			log.error( f"application setup not complete for Polar Flow, consider running {APPNAME} setup" )
 			sysexit( -1 )
 
 		data = {
 			'csrfToken': token,
-			'email': self._username,
-			'password': self._password,
+			'email': self.cfg_value( 'username' ),
+			'password': self.cfg_value( 'password' ),
 			'returnUrl': '/'
 		}
 

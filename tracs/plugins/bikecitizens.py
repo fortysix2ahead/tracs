@@ -126,12 +126,8 @@ class BikecitizensImporter( JSONHandler ):
 class Bikecitizens( Service, Plugin ):
 
 	def __init__( self, **kwargs ):
-		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
+		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
 
-		self._username = kwargs.get( 'username' )
-		self._password = kwargs.get( 'password' )
-
-		self._base_url = kwargs.get( 'base_url', BASE_URL )
 		self._saved_session = kwargs.get( 'session' )
 		self._user_id = kwargs.get( 'user_id' )
 		self._api_url = kwargs.get( 'api_url', API_URL )

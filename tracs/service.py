@@ -49,7 +49,6 @@ class Service( Plugin ):
 		self._fs.add_fs( 'base', OSFS( str( self._base_path ), create=True ), write=True )
 		self._fs.add_fs( 'overlay', OSFS( str( self._overlay_path ), create=True ), write=False )
 
-		self._base_url: str = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
 
 		for k, v in kwargs.items():

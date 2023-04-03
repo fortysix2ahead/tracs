@@ -11,7 +11,7 @@ from .bikecitizens_server import TEST_BASE_URL
 from .helpers import skip_live
 
 @mark.context( library='empty', config='empty', cleanup=True )
-@mark.service( cls=Bikecitizens, url=TEST_BASE_URL, api_url=TEST_API_URL )
+@mark.service( cls=Bikecitizens, base_url=TEST_BASE_URL, api_url=TEST_API_URL )
 def test_testservice_creation( service: Bikecitizens ):
 	assert type( service ) is Bikecitizens
 
@@ -21,7 +21,7 @@ def test_testservice_creation( service: Bikecitizens ):
 	assert service.user_url == f'{TEST_BASE_URL}/api/v1/users/None'
 
 @mark.context( library='empty', config='live', cleanup=False )
-@mark.service( cls=Bikecitizens, url=BASE_URL )
+@mark.service( cls=Bikecitizens )
 def test_service_creation( service: Bikecitizens ):
 	assert type( service ) is Bikecitizens
 

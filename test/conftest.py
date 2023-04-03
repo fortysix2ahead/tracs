@@ -134,11 +134,10 @@ def service( request, ctx ) -> Optional[Service]:
 		marker = request.node.get_closest_marker( 'service' )
 		service_class = marker.kwargs.get( 'cls' )
 		service_class_name = service_class.__name__.lower()
-		base_url = marker.kwargs.get( 'url' )
+		base_path = Path( ctx.db_dir, service_class_name )
 
-		s = service_class( ctx=ctx, base_url=base_url, base_path=Path( ctx.db_dir, service_class_name ), **marker.kwargs )
-		Registry.services[s.name] = s
-		return s
+		Registry.services[service_class_name] = service_class( ctx=ctx, **{'base_path': base_path, **marker.kwargs} )
+		return Registry.services[service_class_name]
 
 	except ValueError:
 		log.error( 'unable to run fixture service', exc_info=True )

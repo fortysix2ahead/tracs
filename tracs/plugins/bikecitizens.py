@@ -190,15 +190,15 @@ class Bikecitizens( Service, Plugin ):
 		else:
 			log.debug( f"Found authenticity token for {self.name}: {token}" )
 
-		if not self._username and not self._password:
+		if not self.cfg_value( 'username' ) and not self.cfg_value( 'password' ):
 			log.error( f'setup not complete for {self.display_name}, consider running {APPNAME} setup' )
 			sysexit( -1 )
 
 		data = {
 			'utf8': '✓',
 			'authenticity_token': token,
-			'user[login]': self._username,
-			'user[password]': self._password,
+			'user[login]': self.cfg_value( 'username' ),
+			'user[password]': self.cfg_value( 'password' ),
 			'commit': 'Login'
 		}
 

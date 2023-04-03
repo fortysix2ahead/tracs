@@ -136,33 +136,9 @@ def service( request, ctx ) -> Optional[Service]:
 		service_class_name = service_class.__name__.lower()
 		base_url = marker.kwargs.get( 'url' )
 
-		if ctx:
-			service_config = ctx.config_file
-			service_state = ctx.state_file
-		else:
-			service_config = marker.kwargs.get( 'config' )
-			service_state = marker.kwargs.get( 'state' )
-
-		with resource_path( 'test', '__init__.py' ) as test_pkg_path:
-			try:
-				config_path = Path( test_pkg_path.parent.parent, service_config )
-				config = Configuration( f'test.{service_class_name}', __name__, read=False )
-				config.set_file( config_path )
-				ctx.config = config
-			except ConfigReadError:
-				pass
-
-			try:
-				state_path = Path( test_pkg_path.parent.parent, service_state )
-				state = Configuration( f'test.{service_class_name}', __name__, read=False )
-				state.set_file( state_path )
-				ctx.state = state
-			except ConfigReadError:
-				pass
-
-			s = service_class( ctx=ctx, base_url=base_url, base_path=Path( ctx.db_dir, service_class_name ), config=config, state=state, **marker.kwargs )
-			Registry.services[s.name] = s
-			return s
+		s = service_class( ctx=ctx, base_url=base_url, base_path=Path( ctx.db_dir, service_class_name ), **marker.kwargs )
+		Registry.services[s.name] = s
+		return s
 
 	except ValueError:
 		log.error( 'unable to run fixture service', exc_info=True )

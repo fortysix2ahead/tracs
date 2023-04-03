@@ -220,12 +220,8 @@ class StravaImporter( JSONHandler ):
 @service
 class Strava( Service, Plugin ):
 
-	def __init__( self, base_url=None, **kwargs ):
-		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
-
-		self._base_url = kwargs.get( 'base_url', BASE_URL )
-		self._username = kwargs.get( 'username' )
-		self._password = kwargs.get( 'password' )
+	def __init__( self, **kwargs ):
+		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
 
 		self._scope = 'activity:read_all'
 		self._session = None
@@ -305,7 +301,7 @@ class Strava( Service, Plugin ):
 				echo( "CSRF Token not found" )
 				return None
 
-			if not self._username and not self._password:
+			if not self.cfg_value( 'username' ) and not self.cfg_value( 'password' ):
 				log.error( f"setup not complete for Strava, consider running {APPNAME} setup --strava" )
 				sysexit( -1 )
 
@@ -313,8 +309,8 @@ class Strava( Service, Plugin ):
 				'utf8': '✓',
 				'authenticity_token': token,
 				'plan': '',
-				'email': self._username,
-				'password': self._password
+				'email': self.cfg_value( 'username' ),
+				'password': self.cfg_value( 'password' )
 			}
 			response = self._session.post( self.session_url, headers=HEADERS_LOGIN, data=data )
 

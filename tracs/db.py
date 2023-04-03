@@ -163,15 +163,15 @@ class ActivityDb:
 		)
 
 	def _load_db( self ):
-		json = loads( self.overlay_fs.readbytes( SCHEMA_NAME ) )
+		json = loads( self.dbfs.readbytes( SCHEMA_NAME ) )
 		self._schema = self._factory.load( json, Schema )
 
-		json = loads( self.overlay_fs.readbytes( RESOURCES_NAME ) )
+		json = loads( self.dbfs.readbytes( RESOURCES_NAME ) )
 		self._resources = self._factory.load( json, Dict[int, Resource] )
 		for id, resource in self._resources.items():
 			resource.id = id
 
-		json = loads( self.overlay_fs.readbytes( ACTIVITIES_NAME ) )
+		json = loads( self.dbfs.readbytes( ACTIVITIES_NAME ) )
 		self._activities = self._factory.load( json, Dict[int, Activity] )
 		for id, activity in self._activities.items():
 			activity.id = id
@@ -376,11 +376,8 @@ class ActivityDb:
 				return True
 		return False
 
-	def contains_activity( self, uid: str, use_index: bool = False ) -> bool:
-		if use_index:
-			return uid in self.index.activities.uid.keys()
-		else:
-			return self.activities.contains( Query()['uids'].test( lambda v: True if uid in v else False ) )
+	def contains_activity( self, uid: str ) -> bool:
+		return any( uid in a.uids for a in self.activities )
 
 	def contains_resource( self, uid: str, path: str ) -> bool:
 		return any( r.uid == uid and r.path == path for r in self.resources )

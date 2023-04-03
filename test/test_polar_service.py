@@ -9,25 +9,28 @@ from .helpers import skip_live
 
 from .polar_server import TEST_BASE_URL
 
-def test_constructor():
-	polar = Polar()
+# noinspection PyUnresolvedReferences
+@mark.context( library='empty', config='empty', cleanup=True )
+@mark.service( cls=Polar )
+def test_constructor( service ):
+	assert service.base_url == f'{BASE_URL}'
+	assert service.login_url == f'{BASE_URL}/login'
+	assert service.ajax_login_url.startswith( f'{BASE_URL}/ajaxLogin?_=' )
+	assert service.events_url == f'{BASE_URL}/training/getCalendarEvents'
+	assert service.export_url == f'{BASE_URL}/api/export/training'
 
-	assert polar.base_url == f'{BASE_URL}'
-	assert polar._login_url == f'{BASE_URL}/login'
-	assert polar._ajax_login_url.startswith( f'{BASE_URL}/ajaxLogin?_=' )
-	assert polar._events_url == f'{BASE_URL}/training/getCalendarEvents'
-	assert polar._export_url == f'{BASE_URL}/api/export/training'
-
-	polar = Polar( base_url = TEST_BASE_URL )
-
-	assert polar.base_url == f'{TEST_BASE_URL}'
-	assert polar._login_url == f'{TEST_BASE_URL}/login'
-	assert polar._ajax_login_url.startswith( f'{TEST_BASE_URL}/ajaxLogin?_=' )
-	assert polar._events_url == f'{TEST_BASE_URL}/training/getCalendarEvents'
-	assert polar._export_url == f'{TEST_BASE_URL}/api/export/training'
+# noinspection PyUnresolvedReferences
+@mark.context( library='empty', config='empty', cleanup=True )
+@mark.service( cls=Polar, base_url=TEST_BASE_URL )
+def test_constructor_test( service ):
+	assert service.base_url == f'{TEST_BASE_URL}'
+	assert service.login_url == f'{TEST_BASE_URL}/login'
+	assert service.ajax_login_url.startswith( f'{TEST_BASE_URL}/ajaxLogin?_=' )
+	assert service.events_url == f'{TEST_BASE_URL}/training/getCalendarEvents'
+	assert service.export_url == f'{TEST_BASE_URL}/api/export/training'
 
 @mark.context( library='empty', config='default', cleanup=True )
-@mark.service( cls=Polar, url=TEST_BASE_URL )
+@mark.service( cls=Polar, base_url=TEST_BASE_URL )
 def test_service( polar_server, service ):
 	# login
 	service.login()
@@ -44,7 +47,7 @@ def test_service( polar_server, service ):
 	assert r.uid == 'polar:300003'
 
 @mark.context( library='empty', config='default', cleanup=True )
-@mark.service( cls=Polar, url=TEST_BASE_URL )
+@mark.service( cls=Polar, base_url=TEST_BASE_URL )
 def test_workflow( polar_server, service ):
 	service.login()
 	fetched = service.fetch( True, False )
@@ -52,7 +55,7 @@ def test_workflow( polar_server, service ):
 
 @skip_live
 @mark.context( library='empty', config='live', cleanup=True )
-@mark.service( cls=Polar, url=BASE_URL )
+@mark.service( cls=Polar )
 def test_live_workflow( service ):
 	service.login()
 	assert service.logged_in

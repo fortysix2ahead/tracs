@@ -70,22 +70,14 @@ def test_insert( db ):
 	del( db.activity_map[0] )
 	assert db.insert( Activity() ) == 0
 
-@mark.db( template='default', inmemory=True )
+@mark.db( template='default', read_only=True )
 def test_contains( db ):
 	# check activity table
-	assert db.contains( 1 ) is True
-	assert db.contains( 111 ) is False
 
-	assert db.contains( raw_id=1234567890 ) is True
-	assert db.contains( raw_id=9999 ) is False
+	assert db.contains_activity( uid='polar:1234567890' ) is True
+	assert db.contains_activity( uid='polar:9999' ) is False
 
-	assert db.contains( raw_id=1234567890, classifier='polar' ) is True
-	assert db.contains( raw_id=9999, classifier='polar' ) is False
-
-	assert db.contains( uid='polar:1234567890' ) is True
-	assert db.contains( uid='polar:9999' ) is False
-
-@mark.db( template='default', inmemory=True )
+@mark.db( template='default', read_only=True )
 def test_get( db ):
 	# existing activity -> 1 is considered the doc_id
 	a = db.get( 1 )

@@ -120,7 +120,7 @@ class Resource:
 	name: Optional[str] = field( default=None )
 	type: str = field( default=None )
 	path: str = field( default=None )
-	source: str = field( default=None )
+	source: Optional[str] = field( default=None )
 	status: int = field( default=None )
 	summary: bool = field( default=False )
 	uid: str = field( default=None )

@@ -108,16 +108,15 @@ def prepare_context( config_name: Optional[str], lib_name: Optional[str], takeou
 
 		if config_name:
 			config_src_path = Path( test_path, 'configurations', config_name )
-			copy( Path( config_src_path, CONFIG_FILENAME ), target_path )
-			copy( Path( config_src_path, STATE_FILENAME ), target_path )
+			copytree( config_src_path, target_path, dirs_exist_ok=True )
 
 		if lib_name:
 			lib_src_path = Path( test_path, 'libraries', lib_name )
-			copytree( lib_src_path, Path( target_path, DB_DIRNAME ) )
+			copytree( lib_src_path, Path( target_path, DB_DIRNAME ), dirs_exist_ok=True )
 
 		if takeout_name:
 			takeout_src_path = Path( test_path, 'takeouts', takeout_name )
-			copytree( takeout_src_path, Path( target_path, TAKEOUT_DIRNAME ) )
+			copytree( takeout_src_path, Path( target_path, TAKEOUT_DIRNAME ), dirs_exist_ok=True )
 
 		config_dir = str( target_path )
 		lib_dir = config_dir

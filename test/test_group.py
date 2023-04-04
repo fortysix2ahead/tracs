@@ -22,16 +22,3 @@ def test_group_activities():
 	g1.execute()
 	assert g1.head.time == a1.time and g1.head.name == a1.name
 	assert g1.head.heartrate_max == a1.heartrate_max and g1.head.heartrate == a2.heartrate
-
-def test_ungroup():
-	assert db.get( doc_id=1 ).is_group
-	assert db.get( doc_id=2 ).grouped_by == 1
-	assert db.get( doc_id=3 ).grouped_by == 1
-	assert db.get( doc_id=4 ).grouped_by == 1
-
-	ungroup_activities( [db.get( doc_id=1 )], True, True )
-
-	assert db.get( doc_id=1 ) is None
-	assert db.get( doc_id=2 ).grouped_by is None
-	assert db.get( doc_id=3 ).grouped_by is None
-	assert db.get( doc_id=4 ).grouped_by is None

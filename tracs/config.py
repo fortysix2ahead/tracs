@@ -197,7 +197,7 @@ class ApplicationContext:
 	# path helpers
 
 	def db_dir_for( self, service_name: str ) -> Path:
-		return Path( self.db_dir, service_name )
+		return Path( self.db_dir_path, service_name )
 
 	def takeouts_dir_for( self, service_name: str ) -> Path:
 		return Path( self.lib_dir, self.takeout_dir, service_name )

@@ -51,7 +51,7 @@ class Service( Protocol ):
 		"""
 		pass
 
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path], resource_path: Optional[Path] ) -> Path:
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
 		"""
 		Returns the path in the local db for the provided local id. If the base_path is
 		provided, it will be prepended to the path. If a resource path is provided, it will be appended.

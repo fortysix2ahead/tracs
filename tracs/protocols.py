@@ -43,13 +43,23 @@ class Plugin( Protocol ):
 
 class Service( Protocol ):
 
-	def path_for_id( self, local_id: int, base_path: Optional[Path] ) -> Path:
+	@property
+	def name( self ) -> str:
+		"""
+		Returns the name of the service.
+		The name should only consist of lower-case alphanumeric characters.
+		"""
+		pass
+
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path], resource_path: Optional[Path] ) -> Path:
 		"""
 		Returns the path in the local db for the provided local id. If the base_path is
-		provided, the method returns an abolute path, if not a path relative to the db path
-		of the service.
+		provided, it will be prepended to the path. If a resource path is provided, it will be appended.
+		If the local_id has less than 3 characters, zeros are added to the left.
 
-		Example: local_id = 1001, return value = '1/0/0/1001'
+		Examples:
+		local_id = 1001, return value = '1/0/0/1001'
+		local_id = 1001, base_path = service, resource_path = recording.gpx, return value = 'service/1/0/0/1001/recording.gpx'
 		:return: path for the provided local id
 		"""
 		pass

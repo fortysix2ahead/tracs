@@ -333,21 +333,11 @@ class ActivityDb:
 
 	# remove items
 
-	def remove( self, a: Activity ) -> None:
-		self._activities.remove( doc_ids=[a.doc_id] )
+	def remove_activity( self, a: Activity ) -> None:
+		del self.activity_map[a.id]
 
 	def remove_activities( self, activities: List[Activity] ) -> None:
-		for a in activities:
-			del self._activities[a.id]
-
-	def remove_field( self, a: Activity, field: str ) -> None:
-		if field.startswith( '_' ):
-			self._activities.update( set_field( field, None ), doc_ids=[a.doc_id] )
-		else:
-			self._activities.update( delete( field ), doc_ids=[a.doc_id] )
-
-	def set_field( self, q: Query, field: str, value: Any ) -> List[int]:
-		return self._activities.update( set_field( field, value ), cond=q )
+		[self.remove_activity( a ) for a in activities]
 
 	# -----
 

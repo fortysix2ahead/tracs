@@ -67,6 +67,7 @@ _DTISO = r'^(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]
 
 def fmt( value, locale = None ) -> str:
 	_rval = ''
+	locale = locale if locale else UCFG.locale
 
 	if value is None or value == '':
 		_r_val = ''
@@ -85,19 +86,19 @@ def fmt( value, locale = None ) -> str:
 		_rval = str( value )
 
 	if type( value ) is float:
-		_rval = format_decimal( value, format='#,###.#', locale=UCFG.locale )
+		_rval = format_decimal( value, format='#,###.#', locale=locale )
 
 	if type( value ) is datetime:
-		_rval = format_datetime( value, locale=UCFG.locale, format=UCFG.time_format )
+		_rval = format_datetime( value, locale=locale, format=UCFG.time_format )
 
 	if type( value ) is date:
-		_rval = format_date( value, locale=UCFG.locale, format=UCFG.time_format )
+		_rval = format_date( value, locale=locale, format=UCFG.time_format )
 
 	if type( value ) is time:
-		_rval = format_time( value, locale=UCFG.locale, format=UCFG.time_format )
+		_rval = format_time( value, locale=locale, format=UCFG.time_format )
 
 	if type( value ) is timedelta:
-		_rval = format_timedelta( value, locale=UCFG.locale, format=UCFG.timedelta_format, granularity='second', threshold=3 )
+		_rval = format_timedelta( value, locale=locale, format=UCFG.timedelta_format, granularity='second', threshold=3 )
 		#_rval = format_timedelta( value, locale=UCFG.locale, format=_timedelta_fmt, granularity='second', add_direction=True )
 
 	if type( value ) is ActivityTypes:

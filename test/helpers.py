@@ -20,6 +20,7 @@ from tracs.config import ApplicationContext
 from tracs.config import CONFIG_FILENAME
 from tracs.config import DB_DIRNAME
 from tracs.config import STATE_FILENAME
+from tracs.config import TAKEOUT_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.resources import Resource
@@ -100,20 +101,29 @@ def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: st
 
 	return cfg_path, lib_path
 
-def prepare_context( cfg_name: str, lib_name: str ) -> ApplicationContext:
+def prepare_context( config_name: Optional[str], lib_name: Optional[str], takeout_name: Optional[str] ) -> ApplicationContext:
 	with path( 'test', '__init__.py' ) as test_path:
-		cfg_path = var_run_path()
-		cfg_src_path = Path( test_path.parent, 'configurations', cfg_name )
-		if (p := Path( cfg_src_path, CONFIG_FILENAME )) and p.exists():
-			copy( Path( cfg_src_path, CONFIG_FILENAME ), cfg_path )
-		if (p := Path( cfg_src_path, STATE_FILENAME )) and p.exists():
-			copy( Path( cfg_src_path, STATE_FILENAME ), cfg_path )
+		test_path = test_path.parent
+		target_path = var_run_path()
 
-		lib_src_path = Path( test_path.parent, 'libraries', lib_name )
-		lib_path = Path( cfg_path )
-		copytree( lib_src_path, Path( lib_path, DB_DIRNAME ) )
+		if config_name:
+			config_src_path = Path( test_path, 'configurations', config_name )
+			copy( Path( config_src_path, CONFIG_FILENAME ), target_path )
+			copy( Path( config_src_path, STATE_FILENAME ), target_path )
 
-		return ApplicationContext( config_dir=str( cfg_path ), lib_dir=str( lib_path ), db=ActivityDb( path=lib_path ) )
+		if lib_name:
+			lib_src_path = Path( test_path, 'libraries', lib_name )
+			copytree( lib_src_path, Path( target_path, DB_DIRNAME ) )
+
+		if takeout_name:
+			takeout_src_path = Path( test_path, 'takeouts', takeout_name )
+			copytree( takeout_src_path, Path( target_path, TAKEOUT_DIRNAME ) )
+
+		config_dir = str( target_path )
+		lib_dir = config_dir
+		db_dir = Path( lib_dir, DB_DIRNAME )
+
+		return ApplicationContext( config_dir=config_dir, lib_dir=lib_dir, db=ActivityDb( path=db_dir ) )
 
 def get_config_path( name: str, writable: bool = False ) -> Path:
 	with path( 'test', '__init__.py' ) as test_path:

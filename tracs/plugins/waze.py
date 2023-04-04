@@ -46,6 +46,8 @@ DISPLAY_NAME = 'Waze'
 WAZE_TYPE = 'text/vnd.waze+txt'
 WAZE_TAKEOUT_TYPE = 'text/vnd.waze+csv'
 
+DEFAULT_FIELD_SIZE_LIMIT = 131072
+
 @dataclass
 class WazePoint:
 	str_format = '%y%m%d%H%M%S'
@@ -147,15 +149,16 @@ class WazeTakeoutImporter( CSVHandler ):
 class Waze( Service ):
 
 	def __init__( self, **kwargs ):
-		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
-		self._logged_in = True
+		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME}, **kwargs } )
 
 		self.takeout_importer: WazeTakeoutImporter = cast( WazeTakeoutImporter, Registry.importer_for( WAZE_TAKEOUT_TYPE ) )
-		self.takeout_importer.field_size_limit = kwargs.get( 'field_size_limit' )
+		self.takeout_importer.field_size_limit = kwargs.get( 'field_size_limit' ) or DEFAULT_FIELD_SIZE_LIMIT
 		log.debug( f'using {self.takeout_importer.field_size_limit} as field size limit for CSV parser in Waze service' )
 
 		self.importer: WazeImporter = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
 		self.gpx_importer: GPXImporter = cast( GPXImporter, Registry.importer_for( GPX_TYPE ) )
+
+		self._logged_in = True
 
 	def path_for_id( self, local_id: int, base_path: Optional[Path] ) -> Path:
 		_id = str( local_id )
@@ -191,7 +194,7 @@ class Waze( Service ):
 		return self._logged_in
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		takeouts_dir = Path( self.ctx.takeout_dir, self.name )
+		takeouts_dir = self.ctx.takeouts_dir_for( self.name )
 		log.debug( f"fetching Waze activities from {takeouts_dir}" )
 
 		takeout_files = sorted( takeouts_dir.rglob( ACTIVITY_FILE ) )
@@ -254,13 +257,13 @@ class Waze( Service ):
 				gpx = to_gpx( drive )
 				return gpx, 200  # return always 200
 
-	def postdownload( self, ctx: ApplicationContext ) -> None:
-		summary = import_session.last_summary
-		if activity := import_session.fetched_activities.get( (summary.uid, summary.path) ):
-			gpx_activity = self.gpx_importer.as_activity( import_session.last_download[0] )
-			new_activity = Activity().init_from( activity ).init_from( other=gpx_activity )
-			new_activity.uids.append( activity.uid )
-			ctx.db.upsert_activity( new_activity, uid=activity.uid )
+	# def postdownload( self, ctx: ApplicationContext ) -> None:
+	# 	summary = import_session.last_summary
+	# 	if activity := import_session.fetched_activities.get( (summary.uid, summary.path) ):
+	# 		gpx_activity = self.gpx_importer.as_activity( import_session.last_download[0] )
+	# 		new_activity = Activity().init_from( activity ).init_from( other=gpx_activity )
+	# 		new_activity.uids.append( activity.uid )
+	# 		ctx.db.upsert_activity( new_activity, uid=activity.uid )
 
 	# nothing to do for now ...
 	def setup( self, ctx: ApplicationContext ):

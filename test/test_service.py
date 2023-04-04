@@ -24,7 +24,8 @@ def test_path_for( service ):
 	assert Service.path_for_uid( 'mock:1001' ) == Path( 'mock/1/0/0/1001' )
 	assert Service.path_for_uid( 'mock:0' ) == Path( 'mock/0/0/0/0' )
 
-	assert Service.path_for_uid( 'unknown:1001' ) is None
+	# assert Service.path_for_uid( 'unknown:1001' ) is None
+	assert Service.path_for_uid( 'unknown:1001' ) == Path( 'unknown/1/0/0/1001' ) # uids for unregistered services are supported as well
 
 @mark.context( config='empty', library='empty', cleanup=False )
 @mark.service( cls=Mock )

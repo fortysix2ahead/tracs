@@ -7,7 +7,6 @@ from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from typing import Any
-from typing import cast
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -114,8 +113,12 @@ class Service( Plugin ):
 
 	@classmethod
 	def path_for_uid( cls, uid: str ) -> Optional[Path]:
+		"""
+		Returns the relative path for a given uid.
+		A service with the classifier of the uid has to exist, otherwise None will be returned.
+		"""
 		classifier, local_id = uid.split( ':', 1 )
-		if service := cast( cls, Registry.services.get( classifier ) ):
+		if service := Registry.services.get( classifier ):
 			return service.path_for_id( local_id, Path( service.name ) )
 		else:
 			return None
@@ -123,8 +126,9 @@ class Service( Plugin ):
 	@classmethod
 	def path_for_resource( cls, resource: Resource ) -> Optional[Path]:
 		if service := Registry.services.get( resource.classifier ):
-			#return Path( service.path_for_id( raw_id, service.base_path ), resource.path )
 			return service.path_for( resource=resource ).resolve()
+		else:
+			return None
 
 	@classmethod
 	def url_for_uid( cls, uid: str ) -> Optional[str]:
@@ -141,10 +145,12 @@ class Service( Plugin ):
 		activity = importer.load_as_activity( path=path )
 		return activity.as_activity()
 
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] = None ) -> Path:
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
 		local_id_rjust = str( local_id ).rjust( 3, '0' )
-		rel_path = Path( f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}' )
-		return Path( base_path, rel_path ) if base_path else rel_path
+		path = Path( f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}' )
+		path = Path( base_path, path ) if base_path else path
+		path = Path( path, resource_path ) if resource_path else path
+		return path
 
 	def path_for( self, resource: Resource = None, ignore_overlay: bool = True, absolute: bool = True ) -> Optional[Path]:
 		"""

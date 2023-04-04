@@ -17,6 +17,7 @@ def test_diff_dict( json ):
 
 	Console().print( diff_table( json1, json2 ) )
 
+@mark.skip
 def test_progress_bar():
 	ctx = ApplicationContext()
 

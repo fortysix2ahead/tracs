@@ -38,7 +38,7 @@ class Fields:
 		else:
 			return super().__getattribute__( name )
 
-@dataclass
+@dataclass( eq=True ) # todo: mark fields with proper eq attributes
 class Activity:
 
 	id: int = field( default=0 ) # integer id of this activity, same as key in dict which holds activities
@@ -94,11 +94,11 @@ class Activity:
 	others: InitVar = field( default=None )
 	other_parts: InitVar = field( default=None )
 
-	__id__: int = field( init=False, default=0, repr=False )
+	__id__: int = field( init=False, default=0, repr=False, compare=False )
 	__dirty__: bool = field( init=False, default=False, repr=False )
 	__metadata__: Dict[str, Any] = field( init=False, default_factory=dict )
 	__parts__: List[Activity] = field( init=False, default_factory=list, repr=False )
-	__resources__: List[Resource] = field( init=False, default_factory=list, repr=False )
+	__resources__: List[Resource] = field( init=False, default_factory=list, repr=False, compare=False )
 	__parent__: Activity = field( init=False, default=0 )
 	__parent_id__: int = field( init=False, default=0 )
 

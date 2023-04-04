@@ -199,6 +199,9 @@ class ApplicationContext:
 	def db_dir_for( self, service_name: str ) -> Path:
 		return Path( self.db_dir, service_name )
 
+	def takeouts_dir_for( self, service_name: str ) -> Path:
+		return Path( self.lib_dir, self.takeout_dir, service_name )
+
 	def pp( self, *objects ):
 		self.console.print( *objects )
 

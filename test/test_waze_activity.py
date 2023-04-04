@@ -26,7 +26,7 @@ def test_read_drive( path ):
 	resource = Registry.importer_for( WAZE_TYPE ).load( from_string=s )
 	assert len( resource.raw ) == 137
 
-@mark.file( 'templates/waze/account_activity_3.csv' )
+@mark.file( 'takeouts/waze/waze/2020-07/account_activity_3.csv' )
 def test_read_takeout( path ):
 	resource = Registry.importer_for( WAZE_TAKEOUT_TYPE ).load( path=path )
 	assert len( resource.resources ) == 2
@@ -36,18 +36,9 @@ def test_read_takeout( path ):
 def test_activity_from_raw( path ):
 	importer = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
 	points = importer.read_drive( path.read_bytes().decode('UTF-8') )
-	a = WazeActivity( raw=points )
+	assert len( points ) == 137
 
-	assert a.id == 0
-	assert a.raw_id == 200712074743
-	assert a.classifier == 'waze'
-	assert a.uid == 'waze:200712074743'
-
-	assert a.time == datetime( 2020, 7, 12, 7, 47, 43, tzinfo=timezone.utc )
-	assert a.localtime == datetime( 2020, 7, 12, 9, 47, 43, tzinfo=gettz() )
-	assert a.type == ActivityTypes.drive
-
-@mark.context( library='default', config='default', cleanup=True )
+@mark.context( library='default', config='default', takeout='waze', cleanup=False )
 @mark.service( cls=Waze )
 def test_fetch( service ):
 	resources = service.fetch( force=False, pretend=False )

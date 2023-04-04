@@ -79,11 +79,12 @@ def config( request ) -> None:
 def ctx( request ) -> Optional[ApplicationContext]:
 	try:
 		marker = request.node.get_closest_marker( 'context' )
-		lib_template = marker.kwargs.get( 'library' )
-		cfg_template = marker.kwargs.get( 'config' )
+		config = marker.kwargs.get( 'config' )
+		lib = marker.kwargs.get( 'library' )
+		takeout = marker.kwargs.get( 'takeout' )
 		do_cleanup = marker.kwargs.get( 'cleanup' )
 
-		context: ApplicationContext = prepare_context( cfg_template, lib_template )
+		context: ApplicationContext = prepare_context( config, lib, takeout )
 
 		yield context
 

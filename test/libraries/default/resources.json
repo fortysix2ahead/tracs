@@ -1,32 +1,30 @@
 {
-	"_default": {
-		"1": {
-			"name": null,
-			"path": "100001.gpx",
-			"type": "application/xml+gpx",
-			"status": 200,
-			"uid": "polar:100001"
-		},
-		"2": {
-			"name": null,
-			"path": "100001.raw.json",
-			"type": "application/json+polar",
-			"status": 200,
-			"uid": "polar:100001"
-		},
-		"3": {
-			"name": null,
-			"path": "200002.gpx",
-			"type": "application/xml+gpx",
-			"status": 200,
-			"uid": "strava:200002"
-		},
-		"4": {
-			"name": null,
-			"path": "200002.raw.json",
-			"type": "application/json+strava",
-			"status": 200,
-			"uid": "strava:200002"
-		}
+	"1": {
+		"name": null,
+		"path": "100001.gpx",
+		"type": "application/xml+gpx",
+		"status": 200,
+		"uid": "polar:100001"
+	},
+	"2": {
+		"name": null,
+		"path": "100001.raw.json",
+		"type": "application/json+polar",
+		"status": 200,
+		"uid": "polar:100001"
+	},
+	"3": {
+		"name": null,
+		"path": "200002.gpx",
+		"type": "application/xml+gpx",
+		"status": 200,
+		"uid": "strava:200002"
+	},
+	"4": {
+		"name": null,
+		"path": "200002.raw.json",
+		"type": "application/json+strava",
+		"status": 200,
+		"uid": "strava:200002"
 	}
 }

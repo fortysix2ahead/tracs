@@ -1,208 +1,192 @@
 {
-	"_default": {
-		"1": {
-			"metadata": {},
-			"name": "Frankfurt",
-			"resources": [
-				1,
-				2,
-				3,
-				4
-			],
-			"localtime": "2012-10-24T22:29:40+01:00",
-			"time": "2012-10-24T23:29:40+00:00",
-			"type": "run",
-			"uid": "activity:121042232940",
-			"uids": [
-				"polar:100001",
-				"strava:200002"
-			]
-		},
-		"2": {
-			"metadata": {},
-			"name": "Frankfurt",
-			"resources": [
-				1,
-				2,
-				3,
-				4
-			],
-			"time": "2012-10-24T23:29:40+00:00"
-		},
-		"3": {
-			"calories": 100,
-			"metadata": {},
-			"name": "Berlin",
-			"resources": [
-				2
-			],
-			"time": "2012-10-24T23:29:40+00:00",
-			"uids": [
-				"polar:100001"
-			]
-		},
-		"100": {
-			"name": "Combined Waze Drive",
-			"parts": [
-				101,
-				102
-			],
-			"parts2": [
-				"waze:200712074743",
-				"waze:200712102429"
-			],
-			"parts3": {
-				"1": {
-					"gap": "00:00:00",
-					"uids": [
-						"waze:200712074743"
-					]
-				},
-				"2": {
-					"gap": "00:10:00",
-					"uids": [
-						"waze:200712102429"
-					]
-				}
+	"1": {
+		"metadata": {},
+		"name": "Frankfurt",
+		"resources": [
+			1, 2, 3, 4
+		],
+		"localtime": "2012-10-24T22:29:40+01:00",
+		"time": "2012-10-24T23:29:40+00:00",
+		"type": "run",
+		"uid": "activity:121042232940",
+		"uids": [
+			"polar:100001", "strava:200002"
+		]
+	},
+	"2": {
+		"metadata": {},
+		"name": "Frankfurt",
+		"resources": [
+			1, 2, 3, 4
+		],
+		"time": "2012-10-24T23:29:40+00:00"
+	},
+	"3": {
+		"calories": 100,
+		"metadata": {},
+		"name": "Berlin",
+		"resources": [
+			2
+		],
+		"time": "2012-10-24T23:29:40+00:00",
+		"uids": [
+			"polar:100001"
+		]
+	},
+	"100": {
+		"name": "Combined Waze Drive",
+		"parts": [
+			101, 102
+		],
+		"parts2": [
+			"waze:200712074743", "waze:200712102429"
+		],
+		"parts3": {
+			"1": {
+				"gap": "00:00:00",
+				"uids": [
+					"waze:200712074743"
+				]
 			},
-			"parts4": {
-				"1": {
-					"gap": "00:00:00",
-					"resource_uids": [
-						"waze:200712074743?200712074743.raw.txt"
-					]
-				},
-				"2": {
-					"gap": "00:10:00",
-					"resource_uids": [
-						"waze:200712102429?200712102429.raw.txt"
-					]
-				}
+			"2": {
+				"gap": "00:10:00",
+				"uids": [
+					"waze:200712102429"
+				]
+			}
+		},
+		"parts4": {
+			"1": {
+				"gap": "00:00:00",
+				"resource_uids": [
+					"waze:200712074743?200712074743.raw.txt"
+				]
 			},
-			"parts5": {
-				"1": {
-					"gap": "00:00:00",
-					"uids": [
-						"waze:200712074743"
-					]
-				},
-				"2": {
-					"gap": "00:10:00",
-					"uids": [
-						"waze:200712102429?200712102429.raw.txt"
-					]
-				}
+			"2": {
+				"gap": "00:10:00",
+				"resource_uids": [
+					"waze:200712102429?200712102429.raw.txt"
+				]
+			}
+		},
+		"parts5": {
+			"1": {
+				"gap": "00:00:00",
+				"uids": [
+					"waze:200712074743"
+				]
 			},
-			"time": "2020-07-12T07:47:43+00:00",
-			"type": "drive"
+			"2": {
+				"gap": "00:10:00",
+				"uids": [
+					"waze:200712102429?200712102429.raw.txt"
+				]
+			}
 		},
-		"101": {
-			"name": "Waze One",
-			"resource_uids": [
-				"waze:200712074743?200712074743.gpx",
-				"waze:200712074743?200712074743.raw.txt"
-			],
-			"time": "2020-07-12T07:47:43+00:00",
-			"type": "drive",
-			"uids": [
-				"waze:200712074743"
-			]
-		},
-		"102": {
-			"name": "Waze Two",
-			"time": "2020-07-12T10:24:29+00:00",
-			"type": "drive",
-			"uids": [
-				"waze:200712102429"
-			]
-		},
-		"200": {
-			"name": "Polar Multipart",
-			"time": "2021-01-12T10:00:00+00:00",
-			"calories": 600,
-			"distance": 4.0,
-			"parts": [
-				{
-					"gap": "00:01:00",
-					"uids": [ "polar:201" ]
-				},
-				{
-					"gap": "00:02:00",
-					"uids": [ "polar:202" ]
-				},
-				{
-					"gap": "00:03:00",
-					"uids": [ "polar:203" ]
-				}
-			]
-		},
-		"201": {
-			"name": "Polar Multipart - Part 1",
-			"time": "2021-01-12T10:00:00+00:00",
-			"type": "run",
-			"calories": 100,
-			"distance": 1.0,
-			"uids": [ "polar:200000?200001.gpx", "polar:200000?200001.tcx" ]
-		},
-		"202": {
-			"name": "Polar Multipart - Part 2",
-			"time": "2021-01-12T11:00:00+00:00",
-			"calories": 200,
-			"type": "gym",
-			"uids": [ "polar:200000?200002.tcx" ]
-		},
-		"203": {
-			"name": "Polar Multipart - Part 3",
-			"time": "2021-01-12T12:00:00+00:00",
-			"calories": 300,
-			"distance": 3.0,
-			"type": "run",
-			"uids": [ "polar:200000?200003.gpx", "polar:200000?200003.tcx" ]
-		},
-		"300": {
-			"name": "Polar Multipart",
-			"time": "2021-01-12T10:00:00+00:00",
-			"calories": 600,
-			"distance": 4.0,
-			"parts": [
-				{
-					"gap": "00:01:00",
-					"uids": [ "polar:200000?200001.gpx", "polar:200000?200001.tcx" ]
-				},
-				{
-					"gap": "00:02:00",
-					"uids": [ "polar:200000?200002.tcx" ]
-				},
-				{
-					"gap": "00:03:00",
-					"uids": [ "polar:200000?200003.gpx", "polar:200000?200003.tcx" ]
-				}
-			],
-			"resources": [ "polar:200000?200000.zip" ],
-			"uids": [ "polar:200000" ]
-		},
-		"301": {
-			"name": "Polar Multipart - Part 1",
-			"time": "2021-01-12T10:00:00+00:00",
-			"type": "run",
-			"calories": 100,
-			"distance": 1.0,
-			"uids": [ "polar:200000#1" ]
-		},
-		"302": {
-			"name": "Polar Multipart - Part 2",
-			"time": "2021-01-12T11:00:00+00:00",
-			"calories": 200,
-			"type": "gym",
-			"uids": [ "polar:200000#2" ]
-		},
-		"303": {
-			"name": "Polar Multipart - Part 3",
-			"time": "2021-01-12T12:00:00+00:00",
-			"calories": 300,
-			"distance": 3.0,
-			"type": "run",
-			"uids": [ "polar:200000#3" ]
-		}
+		"time": "2020-07-12T07:47:43+00:00",
+		"type": "drive"
+	},
+	"101": {
+		"name": "Waze One",
+		"resource_uids": [
+			"waze:200712074743?200712074743.gpx", "waze:200712074743?200712074743.raw.txt"
+		],
+		"time": "2020-07-12T07:47:43+00:00",
+		"type": "drive",
+		"uids": [
+			"waze:200712074743"
+		]
+	},
+	"102": {
+		"name": "Waze Two",
+		"time": "2020-07-12T10:24:29+00:00",
+		"type": "drive",
+		"uids": [
+			"waze:200712102429"
+		]
+	},
+	"200": {
+		"name": "Polar Multipart",
+		"time": "2021-01-12T10:00:00+00:00",
+		"calories": 600,
+		"distance": 4.0,
+		"parts": [
+			{
+				"gap": "00:01:00",
+				"uids": ["polar:201"]
+			}, {
+				"gap": "00:02:00",
+				"uids": ["polar:202"]
+			}, {
+				"gap": "00:03:00",
+				"uids": ["polar:203"]
+			}
+		]
+	},
+	"201": {
+		"name": "Polar Multipart - Part 1",
+		"time": "2021-01-12T10:00:00+00:00",
+		"type": "run",
+		"calories": 100,
+		"distance": 1.0,
+		"uids": ["polar:200000?200001.gpx", "polar:200000?200001.tcx"]
+	},
+	"202": {
+		"name": "Polar Multipart - Part 2",
+		"time": "2021-01-12T11:00:00+00:00",
+		"calories": 200,
+		"type": "gym",
+		"uids": ["polar:200000?200002.tcx"]
+	},
+	"203": {
+		"name": "Polar Multipart - Part 3",
+		"time": "2021-01-12T12:00:00+00:00",
+		"calories": 300,
+		"distance": 3.0,
+		"type": "run",
+		"uids": ["polar:200000?200003.gpx", "polar:200000?200003.tcx"]
+	},
+	"300": {
+		"name": "Polar Multipart",
+		"time": "2021-01-12T10:00:00+00:00",
+		"calories": 600,
+		"distance": 4.0,
+		"parts": [
+			{
+				"gap": "00:01:00",
+				"uids": ["polar:200000?200001.gpx", "polar:200000?200001.tcx"]
+			}, {
+				"gap": "00:02:00",
+				"uids": ["polar:200000?200002.tcx"]
+			}, {
+				"gap": "00:03:00",
+				"uids": ["polar:200000?200003.gpx", "polar:200000?200003.tcx"]
+			}
+		],
+		"resources": ["polar:200000?200000.zip"],
+		"uids": ["polar:200000"]
+	},
+	"301": {
+		"name": "Polar Multipart - Part 1",
+		"time": "2021-01-12T10:00:00+00:00",
+		"type": "run",
+		"calories": 100,
+		"distance": 1.0,
+		"uids": ["polar:200000#1"]
+	},
+	"302": {
+		"name": "Polar Multipart - Part 2",
+		"time": "2021-01-12T11:00:00+00:00",
+		"calories": 200,
+		"type": "gym",
+		"uids": ["polar:200000#2"]
+	},
+	"303": {
+		"name": "Polar Multipart - Part 3",
+		"time": "2021-01-12T12:00:00+00:00",
+		"calories": 300,
+		"distance": 3.0,
+		"type": "run",
+		"uids": ["polar:200000#3"]
 	}
 }

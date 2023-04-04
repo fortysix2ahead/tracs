@@ -4,15 +4,14 @@ from typing import cast
 
 from pytest import mark
 
-from test.helpers import Mock
-from test.helpers import MockActivity
+from test.mock_service import Mock
+from test.mock_service import MOCK_TYPE
+from test.mock_service import MockActivity
 from tracs.db import ActivityDb
 from tracs.registry import Registry
 from tracs.resources import Resource
 from tracs.resources import ResourceType
 from tracs.service import Service
-
-from test.helpers import MOCK_TYPE
 
 @mark.context( config='empty', library='empty', cleanup=False )
 @mark.service( cls=Mock )

@@ -116,7 +116,7 @@ class Service( Plugin ):
 	def path_for_uid( cls, uid: str ) -> Optional[Path]:
 		classifier, local_id = uid.split( ':', 1 )
 		if service := cast( cls, Registry.services.get( classifier ) ):
-			return Path( service.name, service.path_for_id( local_id, None ) )
+			return service.path_for_id( local_id, Path( service.name ) )
 		else:
 			return None
 
@@ -141,9 +141,9 @@ class Service( Plugin ):
 		activity = importer.load_as_activity( path=path )
 		return activity.as_activity()
 
-	def path_for_id( self, local_id: int, base_path: Optional[Path] ) -> Path:
-		_id = str( local_id )
-		rel_path = Path( _id[0], _id[1], _id[2], _id )
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] = None ) -> Path:
+		local_id_rjust = str( local_id ).rjust( 3, '0' )
+		rel_path = Path( f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}' )
 		return Path( base_path, rel_path ) if base_path else rel_path
 
 	def path_for( self, resource: Resource = None, ignore_overlay: bool = True, absolute: bool = True ) -> Optional[Path]:

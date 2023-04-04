@@ -13,6 +13,17 @@ from tracs.resources import Resource
 from tracs.resources import ResourceType
 from tracs.service import Service
 
+@mark.service( cls=Mock )
+def test_path_for( service ):
+	assert service.path_for_id( '1001' ) == Path( '1/0/0/1001' )
+	assert service.path_for_id( '1' ) == Path( '0/0/1/1' )
+	assert service.path_for_id( '1001', Path( 'test' ) ) == Path( 'test/1/0/0/1001' )
+
+	assert Service.path_for_uid( 'mock:1001' ) == Path( 'mock/1/0/0/1001' )
+	assert Service.path_for_uid( 'mock:0' ) == Path( 'mock/0/0/0/0' )
+
+	assert Service.path_for_uid( 'unknown:1001' ) is None
+
 @mark.context( config='empty', library='empty', cleanup=False )
 @mark.service( cls=Mock )
 def test_fetch( service ):

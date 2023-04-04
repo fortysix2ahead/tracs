@@ -1,5 +1,4 @@
 
-from importlib.resources import path as resource_path
 from logging import getLogger
 from pathlib import Path
 from typing import Dict
@@ -7,8 +6,6 @@ from typing import Optional
 from typing import Tuple
 
 from bottle import Bottle
-from confuse import ConfigReadError
-from confuse import Configuration
 from pytest import fixture
 from yaml import load as load_yaml
 from yaml import SafeLoader
@@ -30,6 +27,7 @@ from .helpers import get_db_as_json
 from .helpers import get_file_as_json
 from .helpers import get_file_path
 from .helpers import prepare_context
+from .helpers import var_run_path
 from .polar_server import LIVE_BASE_URL as POLAR_LIVE_BASE_URL
 from .polar_server import polar_server
 from .polar_server import polar_server_thread
@@ -79,16 +77,22 @@ def config( request ) -> None:
 def ctx( request ) -> Optional[ApplicationContext]:
 	try:
 		marker = request.node.get_closest_marker( 'context' )
-		config = marker.kwargs.get( 'config' )
-		lib = marker.kwargs.get( 'library' )
-		takeout = marker.kwargs.get( 'takeout' )
-		do_cleanup = marker.kwargs.get( 'cleanup' )
 
-		context: ApplicationContext = prepare_context( config, lib, takeout )
+		if marker:
+			config = marker.kwargs.get( 'config' )
+			lib = marker.kwargs.get( 'library' )
+			takeout = marker.kwargs.get( 'takeout' )
+			do_cleanup = marker.kwargs.get( 'cleanup' )
+
+			context: ApplicationContext = prepare_context( config, lib, takeout )
+		else:
+			do_cleanup = True
+			context: ApplicationContext = ApplicationContext( config_dir=str( var_run_path() ) )
 
 		yield context
 
-		context.db.close()
+		if context.db is not None:
+			context.db.close()
 
 		if do_cleanup:
 			cleanup_path( Path( context.config_dir ) )

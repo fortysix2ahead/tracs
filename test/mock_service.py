@@ -49,9 +49,9 @@ class Mock( Service ):
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		return [
-			Resource( uid='mock:1001', path='1001.json', type=MOCK_TYPE ),
-			Resource( uid='mock:1002', path='1002.json', type=MOCK_TYPE ),
-			Resource( uid='mock:1003', path='1003.json', type=MOCK_TYPE ),
+			Resource( uid='mock:1001', path='1001.json', type=MOCK_TYPE, text='mock:1001' ),
+			Resource( uid='mock:1002', path='1002.json', type=MOCK_TYPE, text='mock:1001' ),
+			Resource( uid='mock:1003', path='1003.json', type=MOCK_TYPE, text='mock:1001' ),
 		]
 
 	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:

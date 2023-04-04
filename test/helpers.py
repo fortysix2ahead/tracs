@@ -14,15 +14,21 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+from dateutil.tz import tzlocal
 from pytest import mark
 
+from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.config import CONFIG_FILENAME
 from tracs.config import DB_DIRNAME
 from tracs.config import STATE_FILENAME
 from tracs.config import TAKEOUT_DIRNAME
 from tracs.db import ActivityDb
+from tracs.handlers import ResourceHandler
 from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugins.handlers import JSONHandler
+from tracs.registry import importer
+from tracs.registry import resourcetype
 from tracs.resources import Resource
 from tracs.service import Service
 
@@ -30,6 +36,8 @@ DATABASES = 'databases'
 LIBRARIES = 'libraries'
 VAR = 'var'
 VAR_RUN = 'var/run'
+
+MOCK_TYPE = 'application/mock+json'
 
 @dataclass
 class DbPath:
@@ -47,6 +55,29 @@ class DbPath:
 			self.resources = Path( self.parent, 'resources.json' )
 			self.schema = Path( self.parent, 'schema.json' )
 
+@resourcetype( type=MOCK_TYPE, summary=True )
+@dataclass
+class MockActivity:
+
+	uid: str = field( default=None )
+
+	# noinspection PyMethodMayBeStatic
+	def as_activity( self ) -> Activity:
+		return Activity(
+			uids = [self.uid],
+			time = datetime.utcnow(),
+			localtime = datetime.utcnow().astimezone( tzlocal() ),
+		)
+
+@importer( type=MOCK_TYPE )
+class MockImporter( ResourceHandler ):
+
+	def __init__( self ) -> None:
+		super().__init__( resource_type=MOCK_TYPE, activity_cls=MockActivity )
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		return MockActivity( uid=resource.uid )
+
 class Mock( Service ):
 
 	def __init__( self, **kwargs ):
@@ -54,16 +85,15 @@ class Mock( Service ):
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		return [
-			Resource( uid='mock:1001', path='1001.json', text='{}', type='application/mock+json' ),
-			Resource( uid='mock:1002', path='1002.json', text='{}', type='application/mock+json' ),
-			Resource( uid='mock:1003', path='1003.json', text='{}', type='application/mock+json' ),
+			Resource( uid='mock:1001', path='1001.json', type=MOCK_TYPE ),
+			Resource( uid='mock:1002', path='1002.json', type=MOCK_TYPE ),
+			Resource( uid='mock:1003', path='1003.json', type=MOCK_TYPE ),
 		]
 
 	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		return [Resource(
 			uid=summary.uid,
 			path=f'{summary.local_id}.gpx',
-			text=gpx_resource,
 			type=GPX_TYPE
 		)]
 

@@ -26,7 +26,7 @@ from tracs.plugins.tcx import Activity as InternalTCXActivity
 from tracs.plugins.waze import WAZE_TYPE
 from tracs.plugins.waze import WazeActivity
 
-@mark.file( 'templates/waze/account_activity_3.csv' )
+@mark.file( 'takeouts/waze/waze/2020-07/account_activity_3.csv' )
 def test_csv_handler( path ):
 	resource = Registry.importer_for( CSV_TYPE ).load( path=path )
 	assert type( resource.raw ) is list and len( resource.raw ) == 25

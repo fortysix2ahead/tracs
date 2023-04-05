@@ -121,7 +121,7 @@ class Service( Plugin ):
 		if service := Registry.services.get( classifier ):
 			return service.path_for_id( local_id, Path( service.name ) )
 		else:
-			return Service.default_path_for_id( local_id, Path( classifier ) )
+			return path_for_id( local_id, Path( classifier ) )
 
 	@classmethod
 	def path_for_resource( cls, resource: Resource ) -> Optional[Path]:
@@ -145,18 +145,10 @@ class Service( Plugin ):
 		activity = importer.load_as_activity( path=path )
 		return activity.as_activity()
 
-	@classmethod
-	def default_path_for_id( cls, local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
-		local_id_rjust = str( local_id ).rjust( 3, '0' )
-		path = Path( f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}' )
-		path = Path( base_path, path ) if base_path else path
-		path = Path( path, resource_path ) if resource_path else path
-		return path
-
 	# service methods
 
 	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
-		return Service.default_path_for_id( local_id, base_path, resource_path ) # use the default path calculation
+		return path_for_id( local_id, base_path, resource_path ) # use the default path calculation
 
 	def path_for( self, resource: Resource, ignore_overlay: bool = True, absolute: bool = True, omit_classifier: bool = False ) -> Optional[Path]:
 		"""
@@ -411,3 +403,12 @@ class Service( Plugin ):
 
 	def setup( self, ctx: ApplicationContext ) -> None:
 		pass
+
+# helper functions
+
+def path_for_id( local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
+	local_id_rjust = str( local_id ).rjust( 3, '0' )
+	path = Path( f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}' )
+	path = Path( base_path, path ) if base_path else path
+	path = Path( path, resource_path ) if resource_path else path
+	return path

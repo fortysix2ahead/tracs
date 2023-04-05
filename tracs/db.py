@@ -326,7 +326,7 @@ class ActivityDb:
 
 	def upsert_resource( self, resource: Resource ) -> int:
 		if existing := self.get_resource_by_uid_path( resource.uid, resource.path ):
-			self.resources[existing.id] = resource
+			self.resource_map[existing.id] = resource
 			return existing.id
 		else:
 			return self.insert_resource( resource )

@@ -15,17 +15,25 @@ from tracs.service import Service
 
 @mark.service( cls=Mock )
 def test_path_for( service ):
+	# path for a given id
 	assert service.path_for_id( '1001' ) == Path( '1/0/0/1001' )
 	assert service.path_for_id( '1' ) == Path( '0/0/1/1' )
 	assert service.path_for_id( '1001', Path( 'test' ) ) == Path( 'test/1/0/0/1001' )
 	assert service.path_for_id( '1001', resource_path=Path( 'recording.gpx' ) ) == Path( '1/0/0/1001/recording.gpx' )
 	assert service.path_for_id( '1001', Path( 'test' ), Path( 'recording.gpx' ) ) == Path( 'test/1/0/0/1001/recording.gpx' )
 
+	# path for a uid (this calls path_for_id internally)
 	assert Service.path_for_uid( 'mock:1001' ) == Path( 'mock/1/0/0/1001' )
 	assert Service.path_for_uid( 'mock:0' ) == Path( 'mock/0/0/0/0' )
-
 	# assert Service.path_for_uid( 'unknown:1001' ) is None
 	assert Service.path_for_uid( 'unknown:1001' ) == Path( 'unknown/1/0/0/1001' ) # uids for unregistered services are supported as well
+
+	# paths for resources
+	r = Resource( uid='mock:1001', path='recording.gpx' )
+	assert service.path_for( r, absolute=False ) == Path( 'mock/1/0/0/1001/recording.gpx' )
+	assert service.path_for( r, absolute=True ) == Path( Path( service.ctx.db_dir_path ), 'mock/1/0/0/1001/recording.gpx' )
+	assert service.path_for( r, absolute=False, omit_classifier=True ) == Path( '1/0/0/1001/recording.gpx' )
+	assert service.path_for( r, absolute=True, omit_classifier=True ) == Path( Path( service.ctx.db_dir_path ), 'mock/1/0/0/1001/recording.gpx' )
 
 @mark.context( config='empty', library='empty', cleanup=False )
 @mark.service( cls=Mock )

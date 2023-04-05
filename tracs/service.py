@@ -158,22 +158,29 @@ class Service( Plugin ):
 	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
 		return Service.default_path_for_id( local_id, base_path, resource_path ) # use the default path calculation
 
-	def path_for( self, resource: Resource = None, ignore_overlay: bool = True, absolute: bool = True ) -> Optional[Path]:
+	def path_for( self, resource: Resource, ignore_overlay: bool = True, absolute: bool = True, omit_classifier: bool = False ) -> Optional[Path]:
 		"""
 		Returns the path in the local file system where all artefacts of a provided activity are located.
 
 		:param resource: resource for which the path shall be calculated
 		:param ignore_overlay: if True ignores the overlay
 		:param absolute: if True returns an absolute path
+		:param omit_classifier: if True, the relative path will not include the leading name of the service
 		:return: path of the resource in the local file system
 		"""
-		rel_path = Path( self.path_for_id( resource.local_id, base_path=None ), resource.path )
-		return Path( self.base_fs.getsyspath( str( rel_path ) ) ) if absolute else rel_path
-
-		if ignore_overlay:
-			return path
+		if resource.classifier == self.name:
+			path = Path( self.path_for_id( resource.local_id, base_path=Path( self.name ) ), resource.path )
 		else:
-			return overlay_path if overlay_path else path
+			if s := Registry.services.get( resource.classifier ):
+				path = s.path_for_id( resource.local_id, Path( resource.classifier ), Path( resource.path ) )
+			else:
+				return None
+
+		if not absolute and omit_classifier:
+			path = path.relative_to( path.parts[0] )
+
+		# return Path( self.base_fs.getsyspath( str( path ) ) ) if absolute else path
+		return Path( Path( self.ctx.db_dir_path ), path ) if absolute else path
 
 	def link_for( self, activity: Optional[Activity], resource: Optional[Resource], ext: Optional[str] = None ) -> Optional[Path]:
 		ts = activity.time.strftime( '%Y%m%d%H%M%S' )

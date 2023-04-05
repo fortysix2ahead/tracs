@@ -16,7 +16,7 @@ cmd_version = 'version'
 @mark.context( library='default', config='default', takeout='default', cleanup=True )
 def test_nocommand( ctx ):
 	code, out, err = invoke2( ctx, '' )
-	assert code == 0 and 'Usage' in out[0]
+	assert code != 0 and 'Usage' in err[0]
 
 # list
 

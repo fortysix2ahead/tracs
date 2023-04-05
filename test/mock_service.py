@@ -19,6 +19,14 @@ from tracs.service import Service
 
 MOCK_TYPE = 'application/mock+json'
 
+MINIMAL_GPX = \
+	r'<?xml version="1.0" encoding="UTF-8"?>' \
+	r'<gpx version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.topografix.com/GPX/1/1" ' \
+	r'xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd" ' \
+	r'xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">' \
+	r'<wpt lat="37.778259000" lon="-122.391386000"><time>2016-06-17T23:41:03Z</time></wpt>' \
+	r'</gpx>'
+
 @resourcetype( type=MOCK_TYPE, summary=True )
 @dataclass
 class MockActivity:
@@ -58,7 +66,8 @@ class Mock( Service ):
 		return [Resource(
 			uid=summary.uid,
 			path=f'{summary.local_id}.gpx',
-			type=GPX_TYPE
+			type=GPX_TYPE,
+			text=MINIMAL_GPX
 		)]
 
 	def url_for_id( self, local_id: Union[int, str] ) -> str:

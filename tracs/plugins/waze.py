@@ -78,6 +78,97 @@ class WazeActivity:
 			uids = [f'{SERVICE_NAME}:{p0.time_as_int()}']
 		)
 
+@dataclass
+class DriveSummary:
+
+	date: str = field( default=None )
+	destination: str = field( default=None )
+	source: str = field( default=None )
+
+@dataclass
+class Favourites:
+
+	place: str = field( default=None )
+	name: str = field( default=None )
+	type: str = field( default=None )
+
+@dataclass
+class LocationDetails:
+
+	date: str = field( default=None )
+	coordinates: str = field( default=None )
+
+@dataclass
+class LoginDetails:
+
+	login_time: str = field( default=None )
+	logout_time: str = field( default=None )
+	total_distance: str = field( default=None )
+	device_manufacturer: str = field( default=None )
+	device_model: str = field( default=None )
+	device_os_version: str = field( default=None )
+	waze_version: str = field( default=None )
+
+@dataclass
+class CarpoolPreferences:
+
+	free_text: str = field( default=None )
+	max_seats_available: str = field( default=None )
+	spoken_language: str = field( default=None )
+	quiet_ride: str = field( default=None )
+	pets_allowed: str = field( default=None )
+	smoking_allowed: str = field( default=None )
+
+@dataclass
+class UserReports:
+
+	event_date: str = field( default=None )
+	type: str = field( default=None )
+	pos_x: str = field( default=None )
+	pos_y: str = field( default=None )
+	subtype: str = field( default=None )
+
+@dataclass
+class UserFeedback:
+
+	event_date: str = field( default=None )
+	type: str = field( default=None )
+	alert_type: str = field( default=None )
+
+@dataclass
+class UserCounters:
+
+	traffic_feedback: int = field( default=None )
+	gas_prices: int = field( default=None )
+	report: int = field( default=None )
+	points: int = field( default=None )
+	drive: int = field( default=None )
+
+@dataclass
+class AccountInfo:
+
+	email: str = field( default=None )
+	entry_date: str = field( default=None )
+	user_name: str = field( default=None )
+	first_name: str = field( default=None )
+	last_name: str = field( default=None )
+	last_login: str = field( default=None )
+	connected_accounts: List[str] = field( default_factory=list )
+	user_reports: UserReports = field( default=UserReports() )
+	user_feedback: UserFeedback = field( default=UserFeedback() )
+	user_counters: UserCounters = field( default=UserCounters() )
+
+@dataclass
+class WazeTakeout:
+
+	drive_summary: DriveSummary = field( default=DriveSummary() )
+	favourites: Favourites = field( default=Favourites() )
+	location_details: LocationDetails = field( default=LocationDetails() )
+	login_details: LoginDetails = field( default=LoginDetails() )
+	carpool_preferences: CarpoolPreferences = field( default=CarpoolPreferences() )
+	
+	account_info: AccountInfo = field( default=AccountInfo() )
+	
 @importer( type=WAZE_TYPE )
 class WazeImporter( ResourceHandler ):
 

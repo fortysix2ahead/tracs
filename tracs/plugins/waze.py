@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+from enum import Enum
 from logging import getLogger
 from pathlib import Path
 from re import match
+from re import sub
 from typing import Any
 from typing import cast
 from typing import List
@@ -45,6 +47,8 @@ DISPLAY_NAME = 'Waze'
 
 WAZE_TYPE = 'text/vnd.waze+txt'
 WAZE_TAKEOUT_TYPE = 'text/vnd.waze+csv'
+WAZE_ACCOUNT_ACTIVITY_TYPE = 'text/vnd.waze.activity+csv'
+WAZE_ACCOUNT_INFO_TYPE = 'text/vnd.waze.info+csv'
 
 DEFAULT_FIELD_SIZE_LIMIT = 131072
 
@@ -120,7 +124,7 @@ class CarpoolPreferences:
 	smoking_allowed: str = field( default=None )
 
 @dataclass
-class UserReports:
+class UserReport:
 
 	event_date: str = field( default=None )
 	type: str = field( default=None )
@@ -138,11 +142,11 @@ class UserFeedback:
 @dataclass
 class UserCounters:
 
-	traffic_feedback: int = field( default=None )
-	gas_prices: int = field( default=None )
-	report: int = field( default=None )
-	points: int = field( default=None )
-	drive: int = field( default=None )
+	traffic_feedback: str = field( default=None )
+	gas_prices: str = field( default=None )
+	report: str = field( default=None )
+	points: str = field( default=None )
+	drive: str = field( default=None )
 
 @dataclass
 class AccountInfo:
@@ -154,8 +158,8 @@ class AccountInfo:
 	last_name: str = field( default=None )
 	last_login: str = field( default=None )
 	connected_accounts: List[str] = field( default_factory=list )
-	user_reports: UserReports = field( default=UserReports() )
-	user_feedback: UserFeedback = field( default=UserFeedback() )
+	user_reports: List[UserReport] = field( default_factory=list )
+	user_feedback: List[UserFeedback] = field( default_factory=list )
 	user_counters: UserCounters = field( default=UserCounters() )
 
 @dataclass
@@ -168,7 +172,69 @@ class WazeTakeout:
 	carpool_preferences: CarpoolPreferences = field( default=CarpoolPreferences() )
 	
 	account_info: AccountInfo = field( default=AccountInfo() )
-	
+
+@importer( type=WAZE_ACCOUNT_ACTIVITY_TYPE )
+class WazeAccountActivityImporter( CSVHandler ):
+
+	pass
+
+@importer( type=WAZE_ACCOUNT_INFO_TYPE )
+class WazeAccountInfoImporter( CSVHandler ):
+
+	class Mode( Enum ):
+		NONE = 'NONE'
+		GENERAL_INFO = '\ufeffgeneral info'
+		CONNECTED_ACCOUNTS = 'connected accounts'
+		USER_REPORTS = 'user reports'
+		USER_FEEDBACK = 'user feedback'
+		USER_COUNTERS = 'user counters'
+
+		@classmethod
+		def mode_by_value( cls, line: str ):
+			if len( line ) != 1:
+				return cls.NONE
+			return next( iter( [m for m in cls if m.value == line[0].lower()] ), cls.NONE )
+
+	def __init__( self ) -> None:
+		super().__init__( resource_type=WAZE_ACCOUNT_INFO_TYPE, activity_cls=AccountInfo )
+
+	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
+		account_info = AccountInfo()
+		while resource.raw:
+			line = resource.raw.pop( 0 )
+			mode = WazeAccountInfoImporter.Mode.mode_by_value( line )
+
+			if mode == WazeAccountInfoImporter.Mode.GENERAL_INFO:
+				while line:
+					if line := resource.raw.pop( 0 ):
+						setattr( account_info, self._snake( line[0] ), line[1] )
+
+			elif mode == WazeAccountInfoImporter.Mode.CONNECTED_ACCOUNTS:
+				while line:
+					if line := resource.raw.pop( 0 ):
+						account_info.connected_accounts.append( line[0] )
+
+			elif mode == WazeAccountInfoImporter.Mode.USER_REPORTS:
+				while line:
+					if (line := resource.raw.pop( 0 )) and line != ['Event Date', 'Type', 'Pos X', 'Pos Y', 'Subtype']:
+						account_info.user_reports.append( UserReport( *line ) )
+
+			elif mode == WazeAccountInfoImporter.Mode.USER_FEEDBACK:
+				while line:
+					if (line := resource.raw.pop( 0 )) and line != ['Event Date','Type','Alert Type']:
+						account_info.user_feedback.append( UserFeedback( *line ) )
+
+			elif mode == WazeAccountInfoImporter.Mode.USER_COUNTERS:
+				while line:
+					if (line := resource.raw.pop( 0 )) and line != ['Count','Name']:
+						setattr( account_info.user_counters, line[1], line[0] )
+
+		resource.raw = account_info
+
+	# noinspection PyMethodMayBeStatic
+	def _snake( self, s: str ) -> str:
+		return s.lower().replace( ' ', '_' )
+
 @importer( type=WAZE_TYPE )
 class WazeImporter( ResourceHandler ):
 

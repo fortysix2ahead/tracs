@@ -14,6 +14,7 @@ from typing import Tuple
 from typing import Union
 
 from click import echo
+from dateutil.parser import parse as parse_datetime
 from dateutil.tz import gettz
 from dateutil.tz import UTC
 from gpxpy.gpx import GPX
@@ -87,13 +88,20 @@ class Point:
 
 	str_format = '%y%m%d%H%M%S'
 
-	key: int = field( default=None )
 	time: datetime = field( default=None )
 	lat: float = field( default=None )
 	lon: float = field( default=None )
 
+	def __post_init__(self):
+		self.lat = float( self.lat ) if type( self.lat ) is str else self.lat
+		self.lon = float( self.lon ) if type( self.lon ) is str else self.lon
+		if type( self.time ) is str:
+			self.time = parse_datetime( self.time )
+			# self.time = datetime.strptime( self.time, '%Y-%m-%d %H:%M:%S' ).replace( tzinfo=UTC ) if type( self.time ) is str else self.time
+
+
 	def time_as_str( self ) -> str:
-		return self.time.strftime( WazePoint.str_format )
+		return self.time.strftime( Point.str_format )
 
 	def time_as_int( self ) -> int:
 		return int( self.time_as_str() )

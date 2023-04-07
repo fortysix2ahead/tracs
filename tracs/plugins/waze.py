@@ -90,38 +90,83 @@ class DriveSummary:
 	source: str = field( default=None )
 
 @dataclass
-class Favourites:
+class Favourite:
 
 	place: str = field( default=None )
 	name: str = field( default=None )
 	type: str = field( default=None )
 
 @dataclass
-class LocationDetails:
+class LocationDetail:
 
 	date: str = field( default=None )
 	coordinates: str = field( default=None )
 
 @dataclass
-class LoginDetails:
+class LoginDetail:
 
 	login_time: str = field( default=None )
 	logout_time: str = field( default=None )
-	total_distance: str = field( default=None )
+	total_distance_kilometers: str = field( default=None )
 	device_manufacturer: str = field( default=None )
 	device_model: str = field( default=None )
+	unknown: str = field( default=None )
 	device_os_version: str = field( default=None )
 	waze_version: str = field( default=None )
+
+@dataclass
+class UsageData:
+
+	driven_kilometers: str = field( default=None )
+	reports: str = field( default=None )
+	map_edits: str = field( default=None )
+	munched_meters: str = field( default=None )
+
+@dataclass
+class EditHistoryEntry:
+
+	time: str = field( default=None )
+	operation: str = field( default=None )
+	unknown_field_1: str = field( default=None )
+	unknown_field_2: str = field( default=None )
+
+@dataclass
+class Photo:
+
+	name: str = field( default=None )
+	image: str = field( default=None )
+
+@dataclass
+class SearchHistoryEntry:
+
+	time: str = field( default=None )
+	unknown_field_1: str = field( default=None )
+	unknown_field_2: str = field( default=None )
+	unknown_field_3: str = field( default=None )
+	term: str = field( default=None )
+	term_2: str = field( default=None )
 
 @dataclass
 class CarpoolPreferences:
 
 	free_text: str = field( default=None )
 	max_seats_available: str = field( default=None )
-	spoken_language: str = field( default=None )
+	spoken_languages: str = field( default=None )
 	quiet_ride: str = field( default=None )
 	pets_allowed: str = field( default=None )
 	smoking_allowed: str = field( default=None )
+
+@dataclass
+class AccountActivity:
+	drive_summaries: List[DriveSummary] = field( default_factory=list )
+	favourites: List[Favourite] = field( default_factory=list )
+	location_details: List[LocationDetail] = field( default_factory=list )
+	login_details: List[LoginDetail] = field( default_factory=list )
+	usage_data: UsageData = field( default=UsageData() )
+	edit_history: List[EditHistoryEntry] = field( default_factory=list )
+	photos_added: List[Photo] = field( default_factory=list )
+	search_history: List[SearchHistoryEntry] = field( default_factory=list )
+	carpool_preferences: CarpoolPreferences = field( default=CarpoolPreferences() )
 
 @dataclass
 class UserReport:
@@ -163,20 +208,88 @@ class AccountInfo:
 	user_counters: UserCounters = field( default=UserCounters() )
 
 @dataclass
-class WazeTakeout:
-
-	drive_summary: DriveSummary = field( default=DriveSummary() )
-	favourites: Favourites = field( default=Favourites() )
-	location_details: LocationDetails = field( default=LocationDetails() )
-	login_details: LoginDetails = field( default=LoginDetails() )
-	carpool_preferences: CarpoolPreferences = field( default=CarpoolPreferences() )
-	
+class Takeout:
+	account_activity: AccountActivity = field( default=AccountActivity() )
 	account_info: AccountInfo = field( default=AccountInfo() )
 
 @importer( type=WAZE_ACCOUNT_ACTIVITY_TYPE )
 class WazeAccountActivityImporter( CSVHandler ):
 
-	pass
+	class Mode( Enum ):
+		NONE = 'NONE'
+		DRIVE_SUMMARY = '\ufeffdrive summary'
+		FAVOURITES = 'favorites'
+		LOCATION_DETAILS = 'location details'
+		LOGIN_DETAILS = 'login details'
+		USAGE_DATA_SNAPSHOT = 'snapshot of your waze usage'
+		EDIT_HISTORY = 'edit history'
+		PHOTOS_ADDED = 'photos added to the map'
+		SEARCH_HISTORY = 'search history'
+		CARPOOL_PREFERENCES = 'carpool preferences'
+
+		@classmethod
+		def mode_by_value( cls, line: str ):
+			if len( line ) != 1:
+				return cls.NONE
+			return next( iter( [m for m in cls if m.value == line[0].lower()] ), cls.NONE )
+
+	def __init__( self ) -> None:
+		super().__init__( resource_type=WAZE_ACCOUNT_ACTIVITY_TYPE, activity_cls=AccountActivity )
+
+	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
+		account_activity = AccountActivity()
+		while resource.raw:
+			line = resource.raw.pop( 0 )
+			mode = WazeAccountActivityImporter.Mode.mode_by_value( line )
+
+			if mode == WazeAccountActivityImporter.Mode.DRIVE_SUMMARY:
+				while line:
+					if (line := resource.raw.pop( 0 )) and line != ['Date', 'Destination', 'Source']:
+						account_activity.drive_summaries.append( DriveSummary( *line ) )
+
+			elif mode == WazeAccountActivityImporter.Mode.FAVOURITES:
+				while line:
+					if (line := resource.raw.pop( 0 )) and line != ['Place', 'Name', 'Type']:
+						account_activity.favourites.append( Favourite( *line ) )
+
+			elif mode == WazeAccountActivityImporter.Mode.LOCATION_DETAILS:
+				while line:
+					if (line := resource.raw.pop( 0 )) and line != ['Date', 'Coordinates']:
+						account_activity.location_details.append( LocationDetail( *line ) )
+
+			elif mode == WazeAccountActivityImporter.Mode.LOGIN_DETAILS:
+				while line:
+					if (line := resource.raw.pop( 0 )) and line[0] != 'Login Time' and line[1] != 'Logout Time':
+						account_activity.login_details.append( LoginDetail( *line ) )
+
+			elif mode == WazeAccountActivityImporter.Mode.USAGE_DATA_SNAPSHOT:
+				header = resource.raw.pop( 0 )
+				data = resource.raw.pop( 0 )
+				for h, d in zip( header, data ):
+					setattr( account_activity.usage_data, _snake( h ), d )
+
+			elif mode == WazeAccountActivityImporter.Mode.EDIT_HISTORY:
+				while line:
+					if line := resource.raw.pop( 0 ):
+						account_activity.edit_history.append( EditHistoryEntry( *line ) )
+
+			elif mode == WazeAccountActivityImporter.Mode.PHOTOS_ADDED:
+				while line:
+					if (line := resource.raw.pop( 0 )) and line != ['Name', 'Image']:
+						account_activity.photos_added.append( Photo( *line ) )
+
+			elif mode == WazeAccountActivityImporter.Mode.SEARCH_HISTORY:
+				while line:
+					if line := resource.raw.pop( 0 ):
+						account_activity.search_history.append( SearchHistoryEntry( *line ) )
+
+			elif mode == WazeAccountActivityImporter.Mode.CARPOOL_PREFERENCES:
+				header = resource.raw.pop( 0 )
+				data = resource.raw.pop( 0 )
+				for h, d in zip( header, data ):
+					setattr( account_activity.carpool_preferences, _snake( h ), d )
+
+		resource.raw = account_activity
 
 @importer( type=WAZE_ACCOUNT_INFO_TYPE )
 class WazeAccountInfoImporter( CSVHandler ):
@@ -207,7 +320,7 @@ class WazeAccountInfoImporter( CSVHandler ):
 			if mode == WazeAccountInfoImporter.Mode.GENERAL_INFO:
 				while line:
 					if line := resource.raw.pop( 0 ):
-						setattr( account_info, self._snake( line[0] ), line[1] )
+						setattr( account_info, _snake( line[0] ), line[1] )
 
 			elif mode == WazeAccountInfoImporter.Mode.CONNECTED_ACCOUNTS:
 				while line:
@@ -230,10 +343,6 @@ class WazeAccountInfoImporter( CSVHandler ):
 						setattr( account_info.user_counters, line[1], line[0] )
 
 		resource.raw = account_info
-
-	# noinspection PyMethodMayBeStatic
-	def _snake( self, s: str ) -> str:
-		return s.lower().replace( ' ', '_' )
 
 @importer( type=WAZE_TYPE )
 class WazeImporter( ResourceHandler ):
@@ -440,3 +549,8 @@ def to_gpx( points: List[WazePoint] ) -> Tuple[GPX, bytes]:
 	gpx = GPX()
 	gpx.tracks.append( track )
 	return gpx, bytes( gpx.to_xml(), 'UTF-8' )
+
+# helper
+
+def _snake( s: str ) -> str:
+	return s.lower().replace( ' ', '_' )

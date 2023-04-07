@@ -4,6 +4,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
+from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
 from typing import Any
@@ -43,6 +44,7 @@ class Service( Plugin ):
 		# paths + plugin filesystem area
 		self._base_path: Path = kwargs.get( 'base_path', Path( DEFAULT_DB_DIR, self.name ) )
 		self._overlay_path: Path = kwargs.get( 'overlay_path', Path( self._base_path.parent, OVERLAY_DIRNAME, self.name ) )
+		self._base_url = None
 
 		self._fs: MultiFS = MultiFS()
 		self._fs.add_fs( 'base', OSFS( str( self._base_path ), create=True ), write=True )
@@ -50,13 +52,10 @@ class Service( Plugin ):
 
 		self._logged_in: bool = False
 
-		for k, v in kwargs.items():
-			if k in ['ctx', 'cls']:
-				continue
-			try:
-				setattr( self, k, v )
-			except AttributeError:
-				pass
+		# set service properties from kwargs, if a setter exists
+		for p in getmembers( self.__class__, lambda p: type( p ) is property and p.fset is not None ):
+			if p[0] in kwargs.keys() and not p[0].startswith( '_' ):
+				setattr( self, p[0], kwargs.get( p[0] ) )
 
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
 
@@ -337,7 +336,7 @@ class Service( Plugin ):
 		self.ctx.start( f'fetching activity data from {self.display_name}' )
 
 		# fetch summaries
-		summaries = self.fetch_summary_resources( skip_fetch, force, pretend, uids )
+		summaries = self.fetch_summary_resources( skip_fetch, force, pretend, uids, **kwargs )
 		summaries = self.postprocess_summaries( summaries, **kwargs )  # post process summaries
 
 		# filter out summaries that are already known

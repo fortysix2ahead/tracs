@@ -54,36 +54,6 @@ WAZE_ACCOUNT_INFO_TYPE = 'text/vnd.waze.info+csv'
 DEFAULT_FIELD_SIZE_LIMIT = 131072
 
 @dataclass
-class WazePoint:
-	str_format = '%y%m%d%H%M%S'
-
-	key: int = field( default=None )
-	time: datetime = field( default=None )
-	lat: float = field( default=None )
-	lon: float = field( default=None )
-
-	def time_as_str( self ) -> str:
-		return self.time.strftime( WazePoint.str_format )
-
-	def time_as_int( self ) -> int:
-		return int( self.time_as_str() )
-
-@resourcetype( type=WAZE_TYPE, summary=True )
-@dataclass
-class WazeActivity:
-
-	points: List[WazePoint] = field( default_factory=list )
-
-	def as_activity( self ) -> Activity:
-		p0 = cast( WazePoint, self.points[0] )
-		return Activity(
-			time = p0.time,
-			localtime=as_datetime( p0.time, tz=gettz() ),
-			type = ActivityTypes.drive,
-			uids = [f'{SERVICE_NAME}:{p0.time_as_int()}']
-		)
-
-@dataclass
 class Point:
 
 	str_format = '%y%m%d%H%M%S'
@@ -99,12 +69,26 @@ class Point:
 			self.time = parse_datetime( self.time )
 			# self.time = datetime.strptime( self.time, '%Y-%m-%d %H:%M:%S' ).replace( tzinfo=UTC ) if type( self.time ) is str else self.time
 
-
 	def time_as_str( self ) -> str:
 		return self.time.strftime( Point.str_format )
 
 	def time_as_int( self ) -> int:
 		return int( self.time_as_str() )
+
+@resourcetype( type=WAZE_TYPE, summary=True )
+@dataclass
+class WazeActivity:
+
+	points: List[Point] = field( default_factory=list )
+
+	def as_activity( self ) -> Activity:
+		p0 = cast( Point, self.points[0] )
+		return Activity(
+			time = p0.time,
+			localtime=as_datetime( p0.time, tz=gettz() ),
+			type = ActivityTypes.drive,
+			uids = [f'{SERVICE_NAME}:{p0.time_as_int()}']
+		)
 
 @dataclass
 class DriveSummary:
@@ -168,6 +152,9 @@ class LocationDetail:
 				raise RuntimeError( f'unsupported format error, example: {points[0]}' )
 
 		return points
+
+	def id( self ):
+		return self.as_point_list()[0].time_as_str()
 
 	# this is just for testing
 	def validate( self ) -> bool:
@@ -233,6 +220,7 @@ class CarpoolPreferences:
 
 @dataclass
 class AccountActivity:
+
 	drive_summaries: List[DriveSummary] = field( default_factory=list )
 	favourites: List[Favourite] = field( default_factory=list )
 	location_details: List[LocationDetail] = field( default_factory=list )
@@ -288,6 +276,7 @@ class Takeout:
 	account_activity: AccountActivity = field( default=AccountActivity() )
 	account_info: AccountInfo = field( default=AccountInfo() )
 
+@importer( type=WAZE_TAKEOUT_TYPE )
 @importer( type=WAZE_ACCOUNT_ACTIVITY_TYPE )
 class WazeAccountActivityImporter( CSVHandler ):
 
@@ -453,54 +442,8 @@ class WazeImporter( ResourceHandler ):
 	def load_data( self, resource: Resource, **kwargs ) -> Any:
 		resource.raw = self.read_drive( self.as_str( resource.content ) )
 
-	# noinspection PyMethodMayBeStatic
-	def read_drive( self, s: str ) -> List[WazePoint]:
-		points: List[WazePoint] = []
-
-		s = s.strip( '[]' )
-		for segment in s.split( '};{' ):
-			segment = segment.strip( '{}' )
-			key, value = segment.split( sep=':', maxsplit=1 )  # todo: what exactly is meant by the key being a number starting with 0?
-			key, value = key.strip( '"' ), value.strip( '"' )
-			for token in value.split( " => " ):
-				# need to match two versions:
-				# version 1 (2020): 2020-01-01 12:34:56(50.000000; 10.000000)
-				# version 2 (2022): 2022-01-01 12:34:56 GMT(50.000000; 10.000000)
-				if m := match( '(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d).*\((\d+\.\d+); (\d+\.\d+)\)', token ):
-					timestamp, lat, lon = m.groups()
-					points.append( WazePoint( int( key ), datetime.strptime( timestamp, '%Y-%m-%d %H:%M:%S' ).replace( tzinfo=UTC ), float( lat ), float( lon ) ) )
-				else:
-					raise RuntimeError( f'Error parsing Waze drive while processing token {token}' )
-
-		return points
-
 	def as_activity( self, resource: Resource ) -> Optional[SpecificActivity]:
-		return WazeActivity( points=resource.raw )
-
-@importer( type=WAZE_TAKEOUT_TYPE )
-class WazeTakeoutImporter( CSVHandler ):
-
-	def __init__( self ) -> None:
-		super().__init__( resource_type=WAZE_TAKEOUT_TYPE )
-		self.importer = WazeImporter()
-
-	def load_data( self, resource: Resource, **kwargs ) -> None:
-		super().load_data( resource, **kwargs )
-
-		parse_mode = False
-		for row in resource.raw:
-			if len( row ) == 3 and row[0] == 'Location details (date':
-				parse_mode = True
-
-			elif parse_mode and row:
-				try:
-					r = Resource( raw=self.importer.read_drive( row[0] ), text=row[0], type=WAZE_TAKEOUT_TYPE )
-					self.resource.resources.append( r )
-				except RuntimeError:
-					log.error( 'Error parsing row' )
-
-			elif parse_mode and not row:
-				parse_mode = False
+		return WazeActivity( points=resource.raw.as_point_list() )
 
 @service
 class Waze( Service ):
@@ -508,14 +451,22 @@ class Waze( Service ):
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME}, **kwargs } )
 
-		self.takeout_importer: WazeTakeoutImporter = cast( WazeTakeoutImporter, Registry.importer_for( WAZE_TAKEOUT_TYPE ) )
-		self.takeout_importer.field_size_limit = kwargs.get( 'field_size_limit' ) or DEFAULT_FIELD_SIZE_LIMIT
-		log.debug( f'using {self.takeout_importer.field_size_limit} as field size limit for CSV parser in Waze service' )
+		self._takeout_importer: WazeAccountActivityImporter = cast( WazeAccountActivityImporter, Registry.importer_for( WAZE_TAKEOUT_TYPE ) )
+		self._drive_importer: WazeImporter = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
+		self._gpx_importer: GPXImporter = cast( GPXImporter, Registry.importer_for( GPX_TYPE ) )
 
-		self.importer: WazeImporter = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
-		self.gpx_importer: GPXImporter = cast( GPXImporter, Registry.importer_for( GPX_TYPE ) )
+		self._takeout_importer.field_size_limit = kwargs.get( 'field_size_limit' ) or DEFAULT_FIELD_SIZE_LIMIT
 
 		self._logged_in = True
+
+	@property
+	def field_size_limit( self ) -> int:
+		return self._takeout_importer.field_size_limit
+
+	@field_size_limit.setter
+	def field_size_limit( self, field_size_limit: int ) -> None:
+		if hasattr( self, '_takeout_importer' ):
+			self._takeout_importer.field_size_limit = field_size_limit
 
 	def path_for_id( self, local_id: int, base_path: Optional[Path] ) -> Path:
 		_id = str( local_id )
@@ -551,6 +502,9 @@ class Waze( Service ):
 		return self._logged_in
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
+		if not kwargs.get( 'from_takeouts', False ):
+			return []
+
 		takeouts_dir = self.ctx.takeouts_dir_for( self.name )
 		log.debug( f"fetching Waze activities from {takeouts_dir}" )
 
@@ -564,27 +518,18 @@ class Waze( Service ):
 			self.ctx.advance( f'{file}' )
 			log.debug( f'fetching activities from Waze takeout in {file}' )
 
-			rel_path = file.relative_to( takeouts_dir ).parent
-			if (_takeouts := self.state_value( 'takeouts' )) and rel_path.name in _takeouts:
-				continue
-
-			# don't look at mtime, not convenient during development
-			# mtime = datetime.fromtimestamp( getmtime( file ), UTC )
-			# if last_fetch and datetime.fromisoformat( last_fetch ) >= mtime and not force:
-			#	log.debug( f"skipping Waze takeout in {file} as it is older than the last_fetch timestamp, consider --force to ignore timestamps"  )
-			#	continue
-
-			takeout_resource = self.takeout_importer.load( path=file )
-			for resource in takeout_resource.resources:
-				local_id = cast( WazePoint, resource.raw[0] ).time_as_int()
-				resource.path = f'{local_id}.txt'
-				resource.status = 200
-				# resource.source = file.as_uri() # don't save the source right now
-				resource.summary = True
-				resource.type = WAZE_TYPE
-				resource.uid = f'{self.name}:{local_id}'
-
-				summaries.append( resource )
+			takeout_resource = self._takeout_importer.load( path=file )
+			account_activity = cast( AccountActivity, takeout_resource.raw )
+			for ld in account_activity.location_details:
+				summaries.append( Resource(
+					content=ld.coordinates.encode( 'UTF-8' ),
+					path=f'{ld.id()}.txt',
+					raw=ld, # this allows to skip parsing again
+					source=str( file.relative_to( takeouts_dir ) ),
+					summary=True,
+					type=WAZE_TYPE,
+					uid=f'{self.name}:{ld.id()}'
+				) )
 
 		# self.ctx.complete( 'done' )
 
@@ -593,7 +538,7 @@ class Waze( Service ):
 		return summaries
 
 	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
-		if not summary.get_child( GPX_TYPE ) or force:
+		if not summary.get_child( GPX_TYPE ) or force: # todo: not sure if this can be false any longer?
 			try:
 				gpx_resource = Resource( type=GPX_TYPE, path=f'{summary.local_id}.gpx', uid=summary.uid )
 				self.download_resource( gpx_resource, summary=summary )
@@ -604,13 +549,13 @@ class Waze( Service ):
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		if (summary := kwargs.get( 'summary' )) and summary.raw:
-			resource.raw, resource.content = to_gpx( summary.raw )
+			resource.raw, resource.content = to_gpx( cast( LocationDetail, summary.raw ).as_point_list() )
 			resource.status = 200
 		else:
 			local_path = Path( self.path_for( resource=resource ).parent, f'{resource.local_id}.txt' )
 			with open( local_path, mode='r', encoding='UTF-8' ) as p:
 				content = p.read()
-				drive = self.importer.read_drive( content )
+				drive = self._drive_importer.read_drive( content )
 				gpx = to_gpx( drive )
 				return gpx, 200  # return always 200
 
@@ -632,7 +577,7 @@ class Waze( Service ):
 
 # helper functions
 
-def to_gpx( points: List[WazePoint] ) -> Tuple[GPX, bytes]:
+def to_gpx( points: List[Point] ) -> Tuple[GPX, bytes]:
 	trackpoints = [GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon ) for p in points]
 	segment = GPXTrackSegment( points=trackpoints )
 	track = GPXTrack()

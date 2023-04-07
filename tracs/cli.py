@@ -129,10 +129,14 @@ def fields():
 @option( '-r', '--as-resource', required=False, hidden=True, is_flag=False, help='import as resource for an existing activity (experimental, local imports only)' )
 @option( '-sd', '--skip-download', required=False, is_flag=True, help='skips download of activities' )
 @option( '-sl', '--skip-link', required=False, is_flag=True, help='skips linking of downloaded activities' )
+@option( '-t', '--from-takeouts', required=False, is_flag=True, help='imports activities from takeouts folder (service plugin needs to support this)' )
 @argument( 'sources', nargs=-1 ) #, help='list of sources to import from, can be names of services, files in the local file system or URLs (currently unsupported)' )
 @pass_context
-def imprt( ctx, sources, skip_download: bool = False, skip_link: bool = False, importer = DEFAULT_IMPORTER, move: bool = False, as_overlay: str = None, as_resource: str = None ):
-	import_activities( ctx.obj, sources=sources, skip_download=skip_download, skip_link=skip_link, importer=importer, move=move, as_overlay=as_overlay, as_resource=as_resource )
+def imprt( ctx, sources, skip_download: bool = False, skip_link: bool = False,
+           importer = DEFAULT_IMPORTER, move: bool = False,
+           as_overlay: str = None, as_resource: str = None, from_takeouts: str = None ):
+	import_activities( ctx.obj, sources=sources, skip_download=skip_download, skip_link=skip_link,
+	                   importer=importer, move=move, as_overlay=as_overlay, as_resource=as_resource, from_takeouts=from_takeouts )
 
 @cli.command( help='fetches activity summaries' )
 @argument( 'sources', nargs=-1 )

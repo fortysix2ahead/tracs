@@ -4,8 +4,8 @@ from datetime import datetime
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
+from re import compile as regex_compile
 from re import match
-from re import sub
 from typing import Any
 from typing import cast
 from typing import List
@@ -83,6 +83,22 @@ class WazeActivity:
 		)
 
 @dataclass
+class Point:
+
+	str_format = '%y%m%d%H%M%S'
+
+	key: int = field( default=None )
+	time: datetime = field( default=None )
+	lat: float = field( default=None )
+	lon: float = field( default=None )
+
+	def time_as_str( self ) -> str:
+		return self.time.strftime( WazePoint.str_format )
+
+	def time_as_int( self ) -> int:
+		return int( self.time_as_str() )
+
+@dataclass
 class DriveSummary:
 
 	date: str = field( default=None )
@@ -99,8 +115,44 @@ class Favourite:
 @dataclass
 class LocationDetail:
 
+	DATE = regex_compile( r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} (GMT|UTC)$' )
+	COORDS_1 = regex_compile( r'^\(\d+\.\d+ \d+\.\d+\)$' )
+	COORDS_2 = regex_compile( r'^\d{4}-\d{2}-\d{2} \d{2}\:\d{2}\:\d{2} UTC\(\d+\.\d+ \d+\.\d+\)$' )
+	COORDS_LIST_1 = regex_compile( r'^\([\d\. ]+\)(\|\([\d\. ]+\))*$' )
+	COORDS_LIST_2 = regex_compile( r'^[\d-]+ [\d\:]+ UTC\([\d\. ]+\)(\|[\d-]+ [\d\:]+ UTC\([\d\. ]+\))*' )
+
+	# date format can be:
+	# - 2023-02-19 13:40:19 GMT
+	# - 2023-02-19 13:40:19 UTC
 	date: str = field( default=None )
+
+	# - (10.0 50.0)|(10.1 50.1)| ...
+	# sep: --------^
+	# - 2023-02-23 13:49:52 UTC(50.0 10.0)|2023-02-23 13:49:55 UTC(50.1 10.1)| ...
+	# sep: -------------------------------^
 	coordinates: str = field( default=None )
+
+	def as_point_list( self ) -> List[Point]:
+		points = self.coordinates.split( '|' )
+		if points and self.__class__.COORDS_1.match( points[0] ):
+			points = [p[1:-1].split( ' ' ) for p in points]  # format: lon lat!!
+			points = [Point( lon=float( p[0] ), lat=float( p[1] ) ) for p in points]
+		elif points and self.__class__.COORDS_2.match( points[0] ):
+			points = [p[:-1].split( '(' ) for p in points ]
+			points = [[p[0], *p[1].split( ' ' ) ] for p in points] # format lat lon!!
+			points = [ Point( time=p[0], lat=p[1], lon=p[2] ) for p in points ]
+		else:
+			raise RuntimeError( f'unsupported format error, example: {points[0]}' )
+
+		return points
+
+	# this is just for testing
+	def validate( self ) -> bool:
+		b1 = bool( self.__class__.DATE.match( self.date ) )
+		b2 = bool( self.__class__.COORDS_LIST_1.match( self.coordinates ) )
+		b3 = bool( self.__class__.COORDS_LIST_2.match( self.coordinates ) )
+		b = b1 and ( b2 or b3 )
+		return b
 
 @dataclass
 class LoginDetail:
@@ -209,6 +261,7 @@ class AccountInfo:
 
 @dataclass
 class Takeout:
+
 	account_activity: AccountActivity = field( default=AccountActivity() )
 	account_info: AccountInfo = field( default=AccountInfo() )
 

@@ -121,28 +121,43 @@ class LocationDetail:
 	COORDS_LIST_1 = regex_compile( r'^\([\d\. ]+\)(\|\([\d\. ]+\))*$' )
 	COORDS_LIST_2 = regex_compile( r'^[\d-]+ [\d\:]+ UTC\([\d\. ]+\)(\|[\d-]+ [\d\:]+ UTC\([\d\. ]+\))*' )
 
+	CURLY_BRACES = regex_compile( r'\{.+?\}' )
+
 	# date format can be:
 	# - 2023-02-19 13:40:19 GMT
 	# - 2023-02-19 13:40:19 UTC
 	date: str = field( default=None )
 
-	# - (10.0 50.0)|(10.1 50.1)| ...
-	# sep: --------^
-	# - 2023-02-23 13:49:52 UTC(50.0 10.0)|2023-02-23 13:49:55 UTC(50.1 10.1)| ...
-	# sep: -------------------------------^
+	# coordinate formats:
+	# - 2020: [{"0":"2020-07-03 09:30:26(50.0; 10.0) => 2020-07-03 09:30:32(50.1; 10.1) ...
+	# - 2022: [{"0":"2020-07-03 09:30:26 GMT(50.0; 10.0) => 2020-07-03 09:30:32 GMT(50.1; 10.1) ...
+	# - 2023 V1: (10.0 50.0)|(10.1 50.1)| ...
+	# - 2023 V2: 2023-02-23 13:49:52 UTC(50.0 10.0)|2023-02-23 13:49:55 UTC(50.1 10.1)| ...
 	coordinates: str = field( default=None )
 
 	def as_point_list( self ) -> List[Point]:
-		points = self.coordinates.split( '|' )
-		if points and self.__class__.COORDS_1.match( points[0] ):
-			points = [p[1:-1].split( ' ' ) for p in points]  # format: lon lat!!
-			points = [Point( lon=float( p[0] ), lat=float( p[1] ) ) for p in points]
-		elif points and self.__class__.COORDS_2.match( points[0] ):
-			points = [p[:-1].split( '(' ) for p in points ]
-			points = [[p[0], *p[1].split( ' ' ) ] for p in points] # format lat lon!!
-			points = [ Point( time=p[0], lat=p[1], lon=p[2] ) for p in points ]
+		if self.coordinates[0] == '[' and self.coordinates[-1] == ']':
+			# split above has failed ... third variant
+			segments = self.__class__.CURLY_BRACES.findall( self.coordinates )
+			segments = [s[6:-2] for s in segments]
+			all_points = []
+			for s in segments:
+				points = s.split( ' => ' )
+				points = [p[:-1].split( '(' ) for p in points]
+				points = [[p[0], *p[1].split( '; ' ) ] for p in points]
+				all_points.extend( [Point( time=p[0], lat=p[1], lon=p[2] ) for p in points] )
+			points = all_points
 		else:
-			raise RuntimeError( f'unsupported format error, example: {points[0]}' )
+			points = self.coordinates.split( '|' )
+			if points and self.__class__.COORDS_1.match( points[0] ):
+				points = [p[1:-1].split( ' ' ) for p in points]  # format: lon lat!!
+				points = [Point( lon=float( p[0] ), lat=float( p[1] ) ) for p in points]
+			elif points and self.__class__.COORDS_2.match( points[0] ):
+				points = [p[:-1].split( '(' ) for p in points ]
+				points = [[p[0], *p[1].split( ' ' ) ] for p in points] # format lat lon!!
+				points = [ Point( time=p[0], lat=p[1], lon=p[2] ) for p in points ]
+			else:
+				raise RuntimeError( f'unsupported format error, example: {points[0]}' )
 
 		return points
 
@@ -273,6 +288,7 @@ class WazeAccountActivityImporter( CSVHandler ):
 		DRIVE_SUMMARY = '\ufeffdrive summary'
 		FAVOURITES = 'favorites'
 		LOCATION_DETAILS = 'location details'
+		LOCATION_DETAILS_2 = 'location details (date, time, coordinates)'
 		LOGIN_DETAILS = 'login details'
 		USAGE_DATA_SNAPSHOT = 'snapshot of your waze usage'
 		EDIT_HISTORY = 'edit history'
@@ -281,9 +297,14 @@ class WazeAccountActivityImporter( CSVHandler ):
 		CARPOOL_PREFERENCES = 'carpool preferences'
 
 		@classmethod
-		def mode_by_value( cls, line: str ):
+		def mode_by_value( cls, line: Union[str, List[str]] ):
+			# special treatment ...
+			if line == [ 'Location details (date', ' time', ' coordinates)' ]:
+				line = [ 'Location details (date, time, coordinates)' ]
+
 			if len( line ) != 1:
 				return cls.NONE
+
 			return next( iter( [m for m in cls if m.value == line[0].lower()] ), cls.NONE )
 
 	def __init__( self ) -> None:
@@ -309,6 +330,11 @@ class WazeAccountActivityImporter( CSVHandler ):
 				while line:
 					if (line := resource.raw.pop( 0 )) and line != ['Date', 'Coordinates']:
 						account_activity.location_details.append( LocationDetail( *line ) )
+
+			elif mode == WazeAccountActivityImporter.Mode.LOCATION_DETAILS_2:
+				while line:
+					if line := resource.raw.pop( 0 ):
+						account_activity.location_details.append( LocationDetail( coordinates=line[0] ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.LOGIN_DETAILS:
 				while line:
@@ -341,6 +367,10 @@ class WazeAccountActivityImporter( CSVHandler ):
 				data = resource.raw.pop( 0 )
 				for h, d in zip( header, data ):
 					setattr( account_activity.carpool_preferences, _snake( h ), d )
+
+			else:
+				if line:
+					log.error( f'unsupported CSV section detected: "{line}"' )
 
 		resource.raw = account_activity
 

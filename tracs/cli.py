@@ -270,13 +270,19 @@ def unset( filters ):
 	pass
 
 @cli.command( help='Tags activities' )
-@option( '-t', '--tag', 'tags', is_flag=False, required=True, multiple=True, help='tag to add to an activity' )
+@option( '-a', '--all', 'all_tags', is_flag=True, required=False, help='lists all existing tags' )
+@option( '-t', '--tag', 'tags', is_flag=False, required=False, multiple=True, help='tag to add to an activity' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
-def tag( ctx: ApplicationContext, filters, tags ):
-	tags = list( set( chain( *[ t.split( ',' ) for t in tags ] ) ) )
-	tag_activities( list( ctx.db.find( filters ) ), tags=tags, ctx=ctx )
-	ctx.db.commit()
+def tag( ctx: ApplicationContext, filters, tags, all_tags: bool = False ):
+	if not tags:
+		all_tags = True
+	if all_tags:
+		ctx.console.print( sorted( set().union( *[a.tags for a in ctx.db.activities] ) ) )
+	else:
+		tags = list( set( chain( *[ t.split( ',' ) for t in tags ] ) ) )
+		tag_activities( list( ctx.db.find( filters ) ), tags=tags, ctx=ctx )
+		ctx.db.commit()
 
 @cli.command( help='Removes tags from activities' )
 @option( '-t', '--tag', 'tags', is_flag=False, required=True, multiple=True, help='tag to remove from an activity' )

@@ -221,19 +221,6 @@ class CarpoolPreferences:
 	smoking_allowed: str = field( default=None )
 
 @dataclass
-class AccountActivity:
-
-	drive_summaries: List[DriveSummary] = field( default_factory=list )
-	favourites: List[Favourite] = field( default_factory=list )
-	location_details: List[LocationDetail] = field( default_factory=list )
-	login_details: List[LoginDetail] = field( default_factory=list )
-	usage_data: UsageData = field( default=UsageData() )
-	edit_history: List[EditHistoryEntry] = field( default_factory=list )
-	photos_added: List[Photo] = field( default_factory=list )
-	search_history: List[SearchHistoryEntry] = field( default_factory=list )
-	carpool_preferences: CarpoolPreferences = field( default=CarpoolPreferences() )
-
-@dataclass
 class UserReport:
 
 	event_date: str = field( default=None )
@@ -257,6 +244,21 @@ class UserCounters:
 	report: str = field( default=None )
 	points: str = field( default=None )
 	drive: str = field( default=None )
+
+@dataclass
+class AccountActivity:
+
+	drive_summaries: List[DriveSummary] = field( default_factory=list )
+	favourites: List[Favourite] = field( default_factory=list )
+	location_details: List[LocationDetail] = field( default_factory=list )
+	login_details: List[LoginDetail] = field( default_factory=list )
+	usage_data: UsageData = field( default=UsageData() )
+	edit_history: List[EditHistoryEntry] = field( default_factory=list )
+	photos_added: List[Photo] = field( default_factory=list )
+	search_history: List[SearchHistoryEntry] = field( default_factory=list )
+	user_reports: List[UserReport] = field( default_factory=list )
+	user_feedback: List[UserFeedback] = field( default_factory=list )
+	carpool_preferences: CarpoolPreferences = field( default=CarpoolPreferences() )
 
 @dataclass
 class AccountInfo:
@@ -292,11 +294,15 @@ class WazeAccountActivityImporter( CSVHandler ):
 		USAGE_DATA_SNAPSHOT = 'snapshot of your waze usage'
 		EDIT_HISTORY = 'edit history'
 		PHOTOS_ADDED = 'photos added to the map'
+		USER_REPORTS = 'user reports'
+		USER_FEEDBACK = 'user feedback'
 		SEARCH_HISTORY = 'search history'
 		CARPOOL_PREFERENCES = 'carpool preferences'
 
 		@classmethod
 		def mode_by_value( cls, line: Union[str, List[str]] ):
+			# print( f'mode by value for: {line}' )
+
 			# special treatment ...
 			if line == [ 'Location details (date', ' time', ' coordinates)' ]:
 				line = [ 'Location details (date, time, coordinates)' ]
@@ -350,6 +356,16 @@ class WazeAccountActivityImporter( CSVHandler ):
 				while line:
 					if line := resource.raw.pop( 0 ):
 						account_activity.edit_history.append( EditHistoryEntry( *line ) )
+
+			elif mode == WazeAccountActivityImporter.Mode.USER_REPORTS:
+				while line:
+					if line := resource.raw.pop( 0 ):
+						account_activity.user_reports.append( UserReport( *line ) )
+
+			elif mode == WazeAccountActivityImporter.Mode.USER_FEEDBACK:
+				while line:
+					if line := resource.raw.pop( 0 ):
+						account_activity.user_feedback.append( UserFeedback( *line ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.PHOTOS_ADDED:
 				while line:

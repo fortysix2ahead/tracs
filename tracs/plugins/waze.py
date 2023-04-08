@@ -487,28 +487,10 @@ class Waze( Service ):
 		if hasattr( self, '_takeout_importer' ):
 			self._takeout_importer.field_size_limit = field_size_limit
 
-	def path_for_id( self, local_id: int, base_path: Optional[Path] ) -> Path:
-		_id = str( local_id )
-		path = Path( _id[0:2], _id[2:4], _id[4:6], _id )
-		if base_path:
-			path = Path( base_path, path )
-		return path
-
-	def path_for( self, activity: Activity = None, resource: Resource = None, ext: Optional[str] = None ) -> Optional[Path]:
-		"""
-		Returns the path for an activity.
-
-		:param activity: activity for which the path shall be calculated
-		:param resource: resource
-		:param ext: file extension
-		:return: path for activity
-		"""
-		_id = str( activity.raw_id ) if activity else str( resource.raw_id )
-		path = Path( self.base_path, _id[0:2], _id[2:4], _id[4:6], _id )
-		if resource:
-			path = Path( path, resource.path )
-		elif ext:
-			path = Path( path, f'{id}.{ext}' )
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
+		path = Path( str( local_id )[0:2], str( local_id )[2:4], str( local_id )[4:6], str( local_id ) )
+		path = Path( base_path, path ) if base_path else path
+		path = Path( path, resource_path ) if resource_path else path
 		return path
 
 	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:

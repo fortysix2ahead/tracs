@@ -91,11 +91,9 @@ def show_fields():
 	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
 	table.add_column( 'field' )
 	table.add_column( 'type' )
-	table.add_column( 'aliases' )
-	table.add_column( 'usable for filtering' )
 
 	for f in fields( Activity ):
-		table.add_row( f.name, f.type, pp( f.metadata.get( FILTER_ALIAS, None ) ), pp( f.metadata.get( FILTERABLE, False ) ) )
+		table.add_row( f.name, pp( f.type ) )
 
 	console.print( table )
 

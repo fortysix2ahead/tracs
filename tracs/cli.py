@@ -275,9 +275,7 @@ def unset( filters ):
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def tag( ctx: ApplicationContext, filters, tags, all_tags: bool = False ):
-	if not tags:
-		all_tags = True
-	if all_tags:
+	if all_tags or not tags:
 		ctx.console.print( sorted( set().union( *[a.tags for a in ctx.db.activities] ) ) )
 	else:
 		tags = list( set( chain( *[ t.split( ',' ) for t in tags ] ) ) )
@@ -294,13 +292,17 @@ def untag( ctx: ApplicationContext, filters, tags ):
 	ctx.db.commit()
 
 @cli.command( help='Add equipment to an activity' )
-@option( '-e', '--equipment', 'equipments', is_flag=False, required=True, multiple=True, help='equipment to add to an activity' )
+@option( '-a', '--all', 'all_equipments', is_flag=True, required=False, help='lists all equipments' )
+@option( '-e', '--equipment', 'equipments', is_flag=False, required=False, multiple=True, help='equipment to add to an activity' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
-def equip( ctx: ApplicationContext, filters, equipments ):
-	equipments = list( set( chain( *[ e.split( ',' ) for e in equipments ] ) ) )
-	equip_activities( list( ctx.db.find( filters ) ), equipments=equipments, ctx=ctx )
-	ctx.db.commit()
+def equip( ctx: ApplicationContext, filters, equipments, all_equipments: bool = False ):
+	if all_equipments or not equipments:
+		ctx.console.print( sorted( set().union( *[a.equipment for a in ctx.db.activities] ) ) )
+	else:
+		equipments = list( set( chain( *[ e.split( ',' ) for e in equipments ] ) ) )
+		equip_activities( list( ctx.db.find( filters ) ), equipments=equipments, ctx=ctx )
+		ctx.db.commit()
 
 @cli.command( help='Removes equipment from activities' )
 @option( '-e', '--equipment', 'equipments', is_flag=False, required=True, multiple=True, help='equipment to remove from an activity' )

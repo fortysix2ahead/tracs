@@ -127,9 +127,11 @@ class LocationDetail:
 	# - 2023 V2: 2023-02-23 13:49:52 UTC(50.0 10.0)|2023-02-23 13:49:55 UTC(50.1 10.1)| ...
 	coordinates: str = field( default=None )
 
+	def __post_init__(self):
+		self.coordinates = self.coordinates.strip()
+
 	def as_point_list( self ) -> List[Point]:
 		if self.coordinates[0] == '[' and self.coordinates[-1] == ']':
-			# split above has failed ... third variant
 			segments = self.__class__.CURLY_BRACES.findall( self.coordinates )
 			segments = [s[6:-2] for s in segments]
 			all_points = []
@@ -440,7 +442,8 @@ class WazeImporter( ResourceHandler ):
 		return self.resource
 
 	def load_data( self, resource: Resource, **kwargs ) -> Any:
-		resource.raw = self.read_drive( self.as_str( resource.content ) )
+		ld = LocationDetail( coordinates=resource.as_text() )
+		resource.raw = ld.as_point_list()
 
 	def as_activity( self, resource: Resource ) -> Optional[SpecificActivity]:
 		return WazeActivity( points=resource.raw.as_point_list() )
@@ -521,6 +524,10 @@ class Waze( Service ):
 			takeout_resource = self._takeout_importer.load( path=file )
 			account_activity = cast( AccountActivity, takeout_resource.raw )
 			for ld in account_activity.location_details:
+				# ignore drives without timestamps, see issue #74
+				if not all( p.time for p in ld.as_point_list() ):
+					continue
+
 				summaries.append( Resource(
 					content=ld.coordinates.encode( 'UTF-8' ),
 					path=f'{ld.id()}.txt',

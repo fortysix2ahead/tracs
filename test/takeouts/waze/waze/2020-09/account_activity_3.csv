@@ -1,0 +1,38 @@
+﻿Drive summary
+Date,Destination,Source
+2020-07-03 15:12:52 GMT,,
+2020-07-12 10:23:39 GMT,Germany MV Dranske (13.229578 54.63071),
+2020-09-15 15:21:49 GMT,EZ Děčín Děčín Děčín VIII-Dolní Oldřichov (14.170955 50.779355),
+
+Favorites
+Place,Name,Type
+GM Regensburg (12.150872 48.995309),Shell Regensburg,Favorite
+München Oberbayern Schenkendorfstraße 15 (11.589459 48.177387),Aral München,Favorite
+Schweitenkirchen Robert-Koch-Straße 1 (11.582108 48.510456),Shell Schweitenkirchen,Favorite
+
+Location details (date, time, coordinates)
+[{"0":"2020-07-12 10:24:29(54.669430; 13.328030) => 2020-07-12 10:24:40(54.669518; 13.328110) => 2020-07-12 10:24:46(54.669441; 13.328264) => 2020-07-12 10:25:03(54.668643; 13.328720) => 2020-07-12 10:25:23(54.667714; 13.329221) => 2020-07-12 10:25:25(54.667618; 13.329281) => 2020-07-12 10:25:41(54.666935; 13.329712) => 2020-07-12 10:25:48(54.666745; 13.329802) => 2020-07-12 10:25:53(54.666720; 13.329973) => 2020-07-12 10:26:01(54.666854; 13.330440) => 2020-07-12 10:26:19(54.667238; 13.331908) => 2020-07-12 10:26:47(54.667692; 13.334125) => 2020-07-12 10:26:54(54.667421; 13.334373) => 2020-07-12 10:26:56(54.667333; 13.334757) => 2020-07-12 10:27:02(54.666947; 13.335105) => 2020-07-12 10:27:10(54.666491; 13.335316) => 2020-07-12 10:27:18(54.665872; 13.335585) => 2020-07-12 10:27:19(54.665782; 13.335625) => 2020-07-12 10:27:30(54.664688; 13.336132) => 2020-07-12 10:27:39(54.663797; 13.336525) => 2020-07-12 10:27:45(54.663407; 13.336702) => 2020-07-12 10:27:46(54.663362; 13.336726) => 2020-07-12 10:27:55(54.662955; 13.336881) => 2020-07-12 10:28:05(54.662573; 13.337088) => 2020-07-12 10:28:13(54.662089; 13.337306)"}]
+
+Login details
+Login Time,Logout Time,Total Distance (Kilometers),Device Manufacturer,Device Model,Device OS Version,Waze Version
+2020-08-17 15:44:50 GMT,2020-08-17 15:44:52 GMT,0,Apple,iPhone6,4,13.6.1,4.65.2.0
+
+Snapshot of your Waze usage
+Driven kilometers,Reports,Map edits,Munched meters
+100000.589,200,1,6000
+
+Edit history
+Time: 17-10-08 18:53:58.502 GMT,Operations: Action:UPDATE; Coordinates:[51.000000;13.000000]; Type:Point; Object Type:Segment,,
+Time: 17-10-08 18:53:34.460 GMT,Operations: Action:UPDATE; Coordinates:[51.000000;13.000000]; Type:Point; Object Type:Segment,,
+
+User Reports
+Event Date,Pos X,Pos Y,Type,Subtype
+2020-08-29 08:19:25 GMT,12.000000,51.000000,JAM,JAM_HEAVY_TRAFFIC
+
+Search History
+2020-08-30 13:19:27,,51.000000,13.000000,Hamburg
+
+Carpool Preferences
+Free Text,Max Seats Available,Spoken Languages,Quiet Ride,Pets Allowed,Smoking Allowed
+,3,,Unknown Quiet Ride Preference,Unknown Pets Preference,Unknown Smoking Preference
+

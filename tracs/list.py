@@ -54,10 +54,10 @@ def inspect_activities( activities: [Activity] ) -> None:
 	for a in activities:
 		table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 
-		table.add_row( '[blue]field[/blue]', '[blue]type[/blue]', '[blue]value[/blue]', '[blue]protected[/blue]', '[blue]persist[/blue]' )
+		table.add_row( '[blue]field[/blue]', '[blue]type[/blue]', '[blue]value[/blue]' )
 
 		for f in sorted( Activity.fields(), key=lambda field: field.name ):
-			table.add_row( f.name, f.type, pp( getattr( a, f.name ) ), pp( f.metadata.get( PROTECTED, False ) ), pp( f.metadata.get( PERSIST, True ) ) )
+			table.add_row( f.name, pp( f.type ), pp( getattr( a, f.name ) ) )
 
 		console.print( table )
 

@@ -138,13 +138,13 @@ def imprt( ctx, sources, skip_download: bool = False, skip_link: bool = False,
 	import_activities( ctx.obj, sources=sources, skip_download=skip_download, skip_link=skip_link,
 	                   importer=importer, move=move, as_overlay=as_overlay, as_resource=as_resource, from_takeouts=from_takeouts )
 
-@cli.command( help='fetches activity summaries' )
+@cli.command( help='fetches activity summaries', hidden=True )
 @argument( 'sources', nargs=-1 )
 @pass_obj
 def fetch( ctx, sources: List[str] ):
 	import_activities( ctx, importer=None, sources=sources, skip_download=True, skip_link=True )
 
-@cli.command( help='downloads activities' )
+@cli.command( help='downloads activities', hidden=True )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def download( ctx: ApplicationContext, filters ):
@@ -153,7 +153,7 @@ def download( ctx: ApplicationContext, filters ):
 	if activity_uids:
 		import_activities( ctx, None, sources = activity_uids, skip_fetch = True )
 
-@cli.command( help='creates links for downloaded resources of activities' )
+@cli.command( help='creates links for downloaded resources of activities', hidden=True )
 @option( '-a', '--all', 'all_', is_flag=True, required=False, help='creates links for all activities (instead of recent ones only), overriding provided filters' )
 @argument( 'filters', nargs=-1 )
 @pass_context

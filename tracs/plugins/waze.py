@@ -75,20 +75,10 @@ class Point:
 	def time_as_int( self ) -> int:
 		return int( self.time_as_str() )
 
-@resourcetype( type=WAZE_TYPE, summary=True )
 @dataclass
 class WazeActivity:
 
 	points: List[Point] = field( default_factory=list )
-
-	def as_activity( self ) -> Activity:
-		p0 = cast( Point, self.points[0] )
-		return Activity(
-			time = p0.time,
-			localtime=as_datetime( p0.time, tz=gettz() ),
-			type = ActivityTypes.drive,
-			uids = [f'{SERVICE_NAME}:{p0.time_as_int()}']
-		)
 
 @dataclass
 class DriveSummary:
@@ -442,11 +432,8 @@ class WazeAccountInfoImporter( CSVHandler ):
 
 		resource.raw = account_info
 
-@importer( type=WAZE_TYPE )
+@importer( type=WAZE_TYPE, activity_cls=WazeActivity, summary=True )
 class WazeImporter( ResourceHandler ):
-
-	def __init__( self ) -> None:
-		super().__init__( resource_type=WAZE_TYPE, activity_cls=WazeActivity )
 
 	def load( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
 		if from_str := kwargs.get( 'from_string', False ):
@@ -458,11 +445,19 @@ class WazeImporter( ResourceHandler ):
 		return self.resource
 
 	def load_data( self, resource: Resource, **kwargs ) -> Any:
-		ld = LocationDetail( coordinates=resource.as_text() )
-		resource.raw = ld.as_point_list()
+		resource.raw = LocationDetail( coordinates=resource.as_text() ).as_point_list()
 
-	def as_activity( self, resource: Resource ) -> Optional[SpecificActivity]:
-		return WazeActivity( points=resource.raw.as_point_list() )
+	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
+		resource.data = WazeActivity( resource.raw )
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		wa: WazeActivity = resource.data
+		return Activity(
+			time=wa.points[0].time,
+			localtime=as_datetime( wa.points[0].time, tz=gettz() ),
+			type=ActivityTypes.drive,
+			uids=[f'{SERVICE_NAME}:{wa.points[0].time_as_int()}']
+		)
 
 @service
 class Waze( Service ):

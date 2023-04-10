@@ -125,11 +125,14 @@ class Resource:
 	summary: bool = field( default=False )
 	uid: str = field( default=None )
 
-	# additional field holding data of a resource, used when loading, but won't be persisted in db
-	raw: Any = field( default=None, repr=False )  # structured data making up this resource
+	# additional fields holding data of a resource, used during load
 	content: bytes = field( default=None, repr=False )  # raw content as bytes
-	text: InitVar = field( default=None, repr=False )  # decoded content as string, to be removed
+	text: InitVar = field( default=None, repr=False )  # decoded content as string, can be used to initialize a resource from string
+	raw: Any = field( default=None, repr=False ) # structured data making up this resource, will be converted from content
+	# secondary field, companion to raw, might contain another form of structured data, i.e. a dataclass in parallel to a json
+	data: Any = field( default=None, repr=False )
 
+	# todo: remove later?
 	resources: List[Resource] = field( default_factory=list, repr=False )
 
 	__parent_activity__: List = field( default_factory=list, repr=False )

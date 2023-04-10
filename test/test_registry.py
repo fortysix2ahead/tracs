@@ -1,7 +1,7 @@
+
 from pytest import raises
 
 from tracs.handlers import ResourceHandler
-from tracs.registry import importer
 from tracs.registry import importer2
 from tracs.registry import Registry
 from tracs.registry import resourcetype
@@ -45,9 +45,17 @@ def test_importer2():
 		class ImporterWithArgsOnly:
 			pass
 
-	@importer2( resource_type='TYPE_1' )
+	# plain importer without any specific resource type information
+
+	@importer2( type='TYPE_1' )
 	class ImporterOne( ResourceHandler ):
 		pass
 
 	assert type( Registry.importer_for( 'TYPE_1' ) ) == ImporterOne
-	assert isinstance( Registry.importer_for( 'TYPE_1' ), ImporterOne )
+
+	@importer2( type='TYPE_2', activity_cls=ActivityThree, summary=True )
+	class ImporterTwo( ResourceHandler ):
+		pass
+
+	assert type( Registry.importer_for( 'TYPE_2' ) ) == ImporterTwo
+	assert Registry.resource_types.get( 'TYPE_2' ) == ResourceType( type='TYPE_2', activity_cls=ActivityThree, summary=True )

@@ -337,7 +337,9 @@ def importer( *args, **kwargs ):
 def importer2( *args, **kwargs ):
 	def importer_cls( cls ):
 		try:
-			Registry.register_importer( cls(), kwargs['resource_type'] )
+			Registry.register_importer( cls(), kwargs['type'] )
+			if 'activity_cls' in kwargs:
+				Registry.register_resource_type( ResourceType( **kwargs ) )
 			return cls
 		except (KeyError, NameError, TypeError):
 			raise RuntimeError( '@importer decorator must be properly configured and can only be used on classes' )

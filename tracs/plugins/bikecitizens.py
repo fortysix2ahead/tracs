@@ -30,7 +30,6 @@ from ..config import console
 from ..plugin import Plugin
 from ..registry import importer
 from ..registry import Registry
-from ..registry import resourcetype
 from ..registry import service
 from ..resources import Resource
 from ..service import Service
@@ -80,7 +79,6 @@ HEADERS_OPTIONS = { **HEADERS_TEMPLATE, **{
 	}
 }
 
-@resourcetype( type=BIKECITIZENS_TYPE, summary=True )
 @dataclass
 class BikecitizensActivity:
 
@@ -100,27 +98,25 @@ class BikecitizensActivity:
 	def local_id( self ) -> int:
 		return self.id
 
-	def as_activity( self ) -> Activity:
-		time = parse( self.start_time )
-		duration = seconds_to_time( self.duration )
+@importer( type=BIKECITIZENS_TYPE, activity_cls=BikecitizensActivity, summary=True )
+class BikecitizensImporter( JSONHandler ):
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		activity: BikecitizensActivity = resource.data
+		time = parse( activity.start_time )
+		duration = seconds_to_time( activity.duration )
 		return Activity(
 			type = ActivityTypes.bike,
-			speed = self.average_speed,
-			distance = self.distance,
+			speed = activity.average_speed,
+			distance = activity.distance,
 			duration = duration,
 			time = time,
 			time_end = time + timedelta( hours=duration.hour, minutes=duration.minute, seconds=duration.second ),
 			localtime = time.astimezone( tzlocal() ),
 			localtime_end = time.astimezone( tzlocal() ) + timedelta( hours=duration.hour, minutes=duration.minute, seconds=duration.second ),
-			tags = self.tags,
-			uids=[f'{SERVICE_NAME}:{self.local_id}'],
+			tags = activity.tags,
+			uids=[f'{SERVICE_NAME}:{activity.local_id}'],
 		)
-
-@importer( type=BIKECITIZENS_TYPE )
-class BikecitizensImporter( JSONHandler ):
-
-	def __init__( self ) -> None:
-		super().__init__( resource_type=BIKECITIZENS_TYPE, activity_cls=BikecitizensActivity )
 
 @service
 class Bikecitizens( Service, Plugin ):

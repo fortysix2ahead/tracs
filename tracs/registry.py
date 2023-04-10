@@ -334,6 +334,22 @@ def importer( *args, **kwargs ):
 	elif len( args ) == 1:
 		importer_class( args[0] )
 
+def importer2( *args, **kwargs ):
+	def importer_cls( cls ):
+		try:
+			Registry.register_importer( cls(), kwargs['resource_type'] )
+			return cls
+		except (KeyError, NameError, TypeError):
+			raise RuntimeError( '@importer decorator must be properly configured and can only be used on classes' )
+
+	# return importer_cls if (not args and kwargs) else importer_cls( args[0] )
+	if not args and kwargs:
+		return importer_cls
+	elif args:
+		importer_cls( args[0] )
+	else:
+		raise RuntimeError( f'error in decorator @importer: {args}, {kwargs}' ) # should not happen
+
 def fetch( fn ):
 	return Registry.register_function( _spec( fn ), fn, Registry.fetchers )
 

@@ -36,9 +36,9 @@ from ..registry import resourcetype
 from ..registry import service
 from .gpx import GPX_TYPE
 from .fit import FIT_TYPE
-from .handlers import JSON_TYPE
-from .handlers import JSONHandler
-from .handlers import TCX_TYPE
+from tracs.plugins.json import JSON_TYPE
+from tracs.plugins.json import JSONHandler
+from tracs.plugins.tcx import TCX_TYPE
 from ..plugin import Plugin
 from ..activity import Activity
 from ..resources import Resource

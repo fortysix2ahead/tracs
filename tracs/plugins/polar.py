@@ -29,9 +29,9 @@ from requests_cache import CachedSession
 from rich.prompt import Prompt
 
 from .gpx import GPX_TYPE
-from .handlers import JSON_TYPE
-from .handlers import JSONHandler
-from .handlers import TCX_TYPE
+from tracs.plugins.json import JSONHandler
+from tracs.plugins.json import JSON_TYPE
+from tracs.plugins.tcx import TCX_TYPE
 from tracs.plugins.xml import XMLHandler
 from ..activity import Activity
 from ..activity_types import ActivityTypes

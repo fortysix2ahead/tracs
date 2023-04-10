@@ -24,7 +24,7 @@ from gpxpy.gpx import GPXTrackSegment
 
 from .gpx import GPX_TYPE
 from .gpx import GPXImporter
-from .handlers import CSVHandler
+from .csv import CSVHandler
 from ..activity import Activity
 from ..activity_types import ActivityTypes
 from ..config import ApplicationContext

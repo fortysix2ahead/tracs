@@ -453,7 +453,7 @@ class WazeImporter( ResourceHandler ):
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		wa: WazeActivity = resource.data
 		return Activity(
-			time=wa.points[0].time,
+			time=as_datetime( wa.points[0].time, tz=UTC ),
 			localtime=as_datetime( wa.points[0].time, tz=gettz() ),
 			type=ActivityTypes.drive,
 			uids=[f'{SERVICE_NAME}:{wa.points[0].time_as_int()}']

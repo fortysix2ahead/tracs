@@ -106,4 +106,5 @@ def test_waze_importer( path ):
 	assert importer.activity_cls == WazeActivity
 
 	activity = importer.load_as_activity( path=path )
-	assert activity.time.isoformat() == '2020-07-12T07:47:43+00:00'
+	assert activity.time.isoformat() == '2020-07-12T05:47:43+00:00'
+	assert activity.localtime.isoformat() == '2020-07-12T07:47:43+02:00'

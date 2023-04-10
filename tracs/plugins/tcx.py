@@ -15,7 +15,7 @@ from lxml.objectify import fromstring
 from lxml.objectify import ObjectPath
 from lxml.objectify import ObjectifiedElement
 
-from .handlers import XMLHandler
+from tracs.plugins.xml import XMLHandler
 from ..activity import Activity
 from ..resources import Resource
 from ..registry import importer

@@ -5,7 +5,6 @@ from typing import Any
 from typing import Optional
 from typing import Type
 
-from lxml.objectify import fromstring
 from orjson import loads as load_json
 from orjson import dumps as save_json
 from orjson import OPT_APPEND_NEWLINE
@@ -53,9 +52,3 @@ class JSONHandler( ResourceHandler ):
 
 	def save_data( self, data: Any, **kwargs ) -> bytes:
 		return save_json( data, option=JSONHandler.options )
-
-@importer( type=XML_TYPE )
-class XMLHandler( ResourceHandler ):
-
-	def load_data( self, resource: Resource, **kwargs ) -> None:
-		resource.raw = fromstring( resource.content )

@@ -1,4 +1,8 @@
+from pytest import raises
 
+from tracs.handlers import ResourceHandler
+from tracs.registry import importer
+from tracs.registry import importer2
 from tracs.registry import Registry
 from tracs.registry import resourcetype
 from tracs.resources import ResourceType
@@ -26,3 +30,24 @@ def test_resource_type():
 
 	rt = Registry.resource_type_for_extension( 'one' )
 	assert rt == Registry.resource_types['application/one']
+
+def test_importer2():
+
+	# importer without type is not allowed
+	with raises( RuntimeError ):
+		@importer2
+		class ImporterWithoutArgs:
+			pass
+
+	# this is also not possible: without kwargs there is no way to identify the caller ...
+	with raises( RuntimeError ):
+		@importer2( 'TYPE_2' )
+		class ImporterWithArgsOnly:
+			pass
+
+	@importer2( resource_type='TYPE_1' )
+	class ImporterOne( ResourceHandler ):
+		pass
+
+	assert type( Registry.importer_for( 'TYPE_1' ) ) == ImporterOne
+	assert isinstance( Registry.importer_for( 'TYPE_1' ), ImporterOne )

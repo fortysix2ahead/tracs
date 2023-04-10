@@ -86,7 +86,7 @@ class ResourceHandler:
 
 	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
 		try:
-			if resource.raw and self._activity_cls:
+			if isinstance( resource.raw, dict ) and self._activity_cls:
 				resource.data = self._factory.load( resource.raw, self._activity_cls )
 			else:
 				resource.data = resource.raw

@@ -57,8 +57,5 @@ class JSONHandler( ResourceHandler ):
 @importer( type=XML_TYPE )
 class XMLHandler( ResourceHandler ):
 
-	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
-		super().__init__( resource_type=resource_type or XML_TYPE, activity_cls=activity_cls )
-
 	def load_data( self, resource: Resource, **kwargs ) -> None:
 		resource.raw = fromstring( resource.content )

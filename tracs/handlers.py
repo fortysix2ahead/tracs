@@ -105,6 +105,10 @@ class ResourceHandler:
 	def type( self ) -> Optional[str]:
 		return self._type
 
+	@type.setter
+	def type( self, value: str ) -> None :
+		self._type = value
+
 	@property
 	def activity_cls( self ) -> Optional[Type]:
 		return self._activity_cls

@@ -323,7 +323,9 @@ def document( *args, **kwargs ):
 def importer( *args, **kwargs ):
 	def importer_cls( cls ):
 		try:
-			Registry.register_importer( cls(), kwargs['type'] )
+			_importer = cls()
+			_importer.type = _importer.type if _importer.type else kwargs['type']
+			Registry.register_importer( _importer, _importer.type )
 			Registry.register_resource_type( ResourceType( **kwargs ) )
 			return cls
 		except (KeyError, NameError, TypeError) as ex:

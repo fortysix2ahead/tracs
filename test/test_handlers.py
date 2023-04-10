@@ -88,7 +88,7 @@ def test_strava_importer( path ):
 	assert importer.activity_cls == StravaActivity
 
 	activity = importer.load_as_activity( path=path )
-	assert type( activity ) is StravaActivity and activity.local_id == 200002
+	assert activity.time.isoformat() == '2018-12-16T13:15:12+00:00'
 
 @mark.file( 'libraries/default/bikecitizens/1/0/0/1000001/1000001.json' )
 def test_bikecitizens_importer( path ):

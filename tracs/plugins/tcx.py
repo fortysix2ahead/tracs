@@ -87,9 +87,6 @@ class TCXActivity:
 @importer( type=TCX_TYPE, activity_cls=TCXActivity, recording=True )
 class TCXImporter( XMLHandler ):
 
-	def __init__( self ) -> None:
-		super().__init__( resource_type=TCX_TYPE, activity_cls=TCXActivity )
-
 	def load_data( self, resource: Resource, **kwargs ) -> None:
 		resource.raw = fromstring( resource.content )
 

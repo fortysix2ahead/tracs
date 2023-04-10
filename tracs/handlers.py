@@ -37,11 +37,13 @@ class ResourceHandler:
 
 		# try transform content in resource into structured data (i.e. from bytes to a dict)
 		# by default this does nothing and has to be implemented in subclasses
+		# this method expects that the attribute resource.raw is populated
 		self.load_data( self.resource, **kwargs )
 
 		# postprocess data
 		# if resource.raw is dict-like and there's a dataclass class factory and a class
-		# the factory will be used to transfrom the data
+		# the factory will be used to transfrom the data from raw and populate the data field
+		# if not, data will be set to raw
 		self.postprocess_data( self.resource, **kwargs )
 
 		# return the result
@@ -85,9 +87,9 @@ class ResourceHandler:
 	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
 		try:
 			if resource.raw and self._activity_cls:
-				# use data variable, in case of failure resource.raw stays untouched
-				data = self._factory.load( resource.raw, self._activity_cls )
-				resource.raw = data
+				resource.data = self._factory.load( resource.raw, self._activity_cls )
+			else:
+				resource.data = resource.raw
 		except RuntimeError:
 			log.error( f'unable to transform resource content into structured data by using the factory for {self._activity_cls}', exc_info=True )
 

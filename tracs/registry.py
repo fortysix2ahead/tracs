@@ -321,25 +321,10 @@ def document( *args, **kwargs ):
 		raise RuntimeError( 'only classes can be used with the @document decorator' )
 
 def importer( *args, **kwargs ):
-	def importer_class( cls ):
-		if isclass( cls ):
-			instance: Importer = cast( Importer, cls() )
-			Registry.register_importer( instance, kwargs['type'] )
-			return cls
-		else:
-			raise RuntimeError( 'only classes can be decorated with the @handler decorator' )
-
-	if len( args ) == 0 and 'type' in kwargs:
-		return importer_class
-	elif len( args ) == 1:
-		importer_class( args[0] )
-
-def importer2( *args, **kwargs ):
 	def importer_cls( cls ):
 		try:
 			Registry.register_importer( cls(), kwargs['type'] )
-			if 'activity_cls' in kwargs:
-				Registry.register_resource_type( ResourceType( **kwargs ) )
+			Registry.register_resource_type( ResourceType( **kwargs ) )
 			return cls
 		except (KeyError, NameError, TypeError):
 			raise RuntimeError( '@importer decorator must be properly configured and can only be used on classes' )
@@ -350,7 +335,7 @@ def importer2( *args, **kwargs ):
 	elif args:
 		importer_cls( args[0] )
 	else:
-		raise RuntimeError( f'error in decorator @importer: {args}, {kwargs}' ) # should not happen
+		raise RuntimeError( f'error in decorator @importer: {args}, {kwargs} (this should not happen!)' ) # should not happen
 
 def fetch( fn ):
 	return Registry.register_function( _spec( fn ), fn, Registry.fetchers )

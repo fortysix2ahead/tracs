@@ -162,7 +162,6 @@ class PolarActivity( Activity ):
 	def is_multipart( self ):
 		return _is_multipart_id( self.raw.get( 'iconUrl' ) )
 
-@resourcetype( type=POLAR_FLOW_TYPE, summary=True )
 @dataclass
 class PolarFlowExercise:
 
@@ -205,20 +204,6 @@ class PolarFlowExercise:
 	def get_type( self ) -> ActivityTypes:
 		return TYPES.get( self.iconUrl.rsplit( '/', 1 )[1], Types.unknown ) if self.iconUrl else Types.unknown
 
-	def as_activity( self ) -> Activity:
-		return Activity(
-			local_id=self.local_id,
-			# uid = f'{SERVICE_NAME}:{self.local_id}', # todo: remove later?
-			uids = [f'{SERVICE_NAME}:{self.local_id}'],
-			name = self.title,
-			type = self.get_type(),
-			time = parse( self.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
-			localtime = parse( self.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
-			distance = self.distance,
-			duration = stt( self.duration / 1000 ) if self.duration else None,
-			calories = self.calories,
-		)
-
 @resourcetype( type=POLAR_CSV_TYPE )
 @dataclass
 class PolarFlowExerciseCsv:
@@ -240,11 +225,23 @@ class PolarExerciseDataActivity( Activity ):
 		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
 		self.uid = f'{self.classifier}:{self.raw_id}'
 
-@importer( type=POLAR_FLOW_TYPE )
+@importer( type=POLAR_FLOW_TYPE, activity_cls=PolarFlowExercise, summary=True )
 class PolarFlowImporter( JSONHandler ):
 
-	def __init__( self ) -> None:
-		super().__init__( resource_type=POLAR_FLOW_TYPE, activity_cls=PolarFlowExercise )
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		activity: PolarFlowExercise = resource.data
+		return Activity(
+			local_id=activity.local_id,
+			# uid = f'{SERVICE_NAME}:{activity.local_id}', # todo: remove later?
+			uids = [f'{SERVICE_NAME}:{activity.local_id}'],
+			name = activity.title,
+			type = activity.get_type(),
+			time = parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
+			localtime = parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
+			distance = activity.distance,
+			duration = stt( activity.duration / 1000 ) if activity.duration else None,
+			calories = activity.calories,
+		)
 
 @importer( type=POLAR_EXERCISE_DATA_TYPE )
 class PersonalTrainerImporter( XMLHandler ):

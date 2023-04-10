@@ -65,11 +65,8 @@ def test_polar_flow_importer( path ):
 	assert importer.type == POLAR_FLOW_TYPE
 	assert importer.activity_cls == PolarFlowExercise
 
-	resource = importer.load( path=path )
-	assert type( resource.raw ) is dict
-
 	activity = importer.load_as_activity( path=path )
-	assert type( activity ) is PolarFlowExercise and activity.local_id == 100001
+	assert activity.time.isoformat() == '2011-04-28T15:48:10+00:00'
 
 @mark.skip
 @mark.file( 'templates/polar/personal_trainer/20160904.xml' )

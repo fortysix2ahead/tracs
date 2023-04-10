@@ -17,7 +17,7 @@ log = getLogger( __name__ )
 
 GPX_TYPE = 'application/gpx+xml'
 
-@importer( type=GPX_TYPE, activity_type=GPX, recording=True )
+@importer( type=GPX_TYPE, activity_cls=GPX, recording=True )
 class GPXImporter( ResourceHandler ):
 
 	def load_data( self, resource: Resource, **kwargs ) -> None:

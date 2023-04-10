@@ -32,7 +32,7 @@ from .gpx import GPX_TYPE
 from .handlers import JSON_TYPE
 from .handlers import JSONHandler
 from .handlers import TCX_TYPE
-from .handlers import XMLHandler
+from tracs.plugins.xml import XMLHandler
 from ..activity import Activity
 from ..activity_types import ActivityTypes
 from ..activity_types import ActivityTypes as Types

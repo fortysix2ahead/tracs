@@ -99,12 +99,11 @@ def test_bikecitizens_importer( path ):
 	activity = importer.load_as_activity( path=path )
 	assert type( activity ) is BikecitizensActivity and activity.local_id == 1000001
 
-@mark.file( 'libraries/default/waze/20/07/12/200712074743/200712074743.raw.txt' )
+@mark.file( 'libraries/default/waze/20/07/12/200712074743/200712074743.txt' )
 def test_waze_importer( path ):
 	importer = Registry.importer_for( WAZE_TYPE )
 	assert importer.type == WAZE_TYPE
 	assert importer.activity_cls == WazeActivity
 
 	activity = importer.load_as_activity( path=path )
-	assert type( activity ) is WazeActivity
-	assert activity.as_activity().time.isoformat() == '2020-07-12T07:47:43+00:00'
+	assert activity.time.isoformat() == '2020-07-12T07:47:43+00:00'

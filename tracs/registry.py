@@ -325,6 +325,8 @@ def importer( *args, **kwargs ):
 		try:
 			_importer = cls()
 			_importer.type = _importer.type if _importer.type else kwargs['type']
+			if 'activity_cls' in kwargs:
+				_importer.activity_cls = kwargs['activity_cls']
 			Registry.register_importer( _importer, _importer.type )
 			Registry.register_resource_type( ResourceType( **kwargs ) )
 			return cls

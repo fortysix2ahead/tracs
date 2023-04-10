@@ -53,8 +53,8 @@ class ResourceHandler:
 		return self.as_activity( self.load( path, url, **kwargs ) )
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
-		if self._activity_cls:
-			return self._factory.load( resource.raw, self._activity_cls )
+		if self.activity_cls:
+			return self._factory.load( resource.raw, self.activity_cls )
 		else:
 			return None
 

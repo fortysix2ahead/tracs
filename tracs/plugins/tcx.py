@@ -16,11 +16,8 @@ from lxml.objectify import ObjectPath
 from lxml.objectify import ObjectifiedElement
 
 from .handlers import XMLHandler
-from ..activity import Activity as TracsActivity
-from ..protocols import SpecificActivity
-from ..registry import resourcetype
+from ..activity import Activity
 from ..resources import Resource
-from ..registry import document
 from ..registry import importer
 from ..utils import seconds_to_time
 
@@ -69,7 +66,7 @@ class Lap:
 		return self.points[-1].time if len( self.points ) > 0 else None
 
 @dataclass
-class Activity:
+class TCXActivity:
 
 	id: str = field( default=None )
 
@@ -87,24 +84,7 @@ class Activity:
 	def time_end( self ) -> Optional[datetime]:
 		return self.laps[-1].time_end() if len( self.laps ) > 0 else None
 
-@resourcetype( type=TCX_TYPE, recording=True )
-@dataclass
-class TCXActivity:
-
-	tcx: Activity = field( default=None )
-
-	def as_activity( self ) -> Activity:
-		return TracsActivity(
-			distance = self.tcx.distance(),
-			duration = self.tcx.duration(),
-			time = self.tcx.time(),
-			time_end = self.tcx.time_end(),
-			localtime = self.tcx.time().astimezone( tzlocal() ),
-			localtime_end = self.tcx.time_end().astimezone( tzlocal() ),
-			uid = f'tcx:{self.tcx.time().strftime( "%y%m%d%H%M%S" )}',
-		)
-
-@importer( type=TCX_TYPE )
+@importer( type=TCX_TYPE, activity_cls=TCXActivity, recording=True )
 class TCXImporter( XMLHandler ):
 
 	def __init__( self ) -> None:
@@ -112,10 +92,11 @@ class TCXImporter( XMLHandler ):
 
 	def load_data( self, resource: Resource, **kwargs ) -> None:
 		resource.raw = fromstring( resource.content )
-		root: ObjectifiedElement = resource.raw.getroottree().getroot()
 
+	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
+		root: ObjectifiedElement = resource.raw.getroottree().getroot()
 		for a in root.Activities.iterchildren( '{*}Activity' ):
-			activity = Activity(
+			activity = TCXActivity(
 				id = find( a, 'Id' )
 			)
 
@@ -157,10 +138,19 @@ class TCXImporter( XMLHandler ):
 				creator_build_major = find( c, find( a, 'Creator.Version.BuildMajor' ) )
 				creator_build_minor = find( c, find( a, 'Creator.Version.BuildMinor' ) )
 
-			resource.raw = activity
+			resource.data = activity
 
-	def as_activity( self, resource: Resource ) -> Optional[SpecificActivity]:
-		return TCXActivity( tcx=resource.raw )
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		tcx: TCXActivity = resource.data
+		return Activity(
+			distance=tcx.distance(),
+			duration=tcx.duration(),
+			time=tcx.time(),
+			time_end=tcx.time_end(),
+			localtime=tcx.time().astimezone( tzlocal() ),
+			localtime_end=tcx.time_end().astimezone( tzlocal() ),
+			uid=f'tcx:{tcx.time().strftime( "%y%m%d%H%M%S" )}',
+		)
 
 # helper
 

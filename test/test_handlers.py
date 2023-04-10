@@ -12,7 +12,6 @@ from tracs.registry import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE
 from tracs.plugins.bikecitizens import BikecitizensActivity
 from tracs.plugins.handlers import CSV_TYPE
-from tracs.plugins.gpx import GPXActivity
 from tracs.plugins.handlers import JSON_TYPE
 from tracs.plugins.handlers import XML_TYPE
 from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE
@@ -52,8 +51,7 @@ def test_gpx_importer( path ):
 	assert type( resource.raw ) is GPX
 
 	activity = Registry.importer_for( GPX_TYPE ).load_as_activity( path=path )
-	assert type( activity ) is GPXActivity
-	assert activity.as_activity().time.isoformat() == '2012-10-24T23:29:40+00:00'
+	assert activity.time.isoformat() == '2012-10-24T23:29:40+00:00'
 
 @mark.file( 'templates/tcx/sample.tcx' )
 def test_tcx_importer( path ):

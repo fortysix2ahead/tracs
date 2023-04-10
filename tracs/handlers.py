@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+from logging import getLogger
 from pathlib import Path
 from typing import Any
 from typing import Optional
@@ -12,6 +13,8 @@ from requests import Session
 
 from .activity import Activity
 from .resources import Resource
+
+log = getLogger( __name__ )
 
 class ResourceHandler:
 
@@ -29,11 +32,16 @@ class ResourceHandler:
 			self.resource = self.load_from_path( path, **kwargs )
 		elif url:
 			self.resource = self.load_from_url( url, **kwargs )
+		else:
+			return None
 
-		# try load data from content in resource
+		# try transform content in resource into structured data (i.e. from bytes to a dict)
+		# by default this does nothing and has to be implemented in subclasses
 		self.load_data( self.resource, **kwargs )
 
 		# postprocess data
+		# if resource.raw is dict-like and there's a dataclass class factory and a class
+		# the factory will be used to transfrom the data
 		self.postprocess_data( self.resource, **kwargs )
 
 		# return the result
@@ -63,20 +71,25 @@ class ResourceHandler:
 		)
 
 	def load_from_path( self, path: Path, **kwargs ) -> Optional[Resource]:
-		content = path.read_bytes()
 		return Resource(
 			type=self._type,
 			path=path.name,
 			source=path.as_uri(),
 			status=200,
-			content=content
+			content=path.read_bytes()
 		)
 
 	def load_data( self, resource: Resource, **kwargs ) -> None:
 		pass
 
 	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
-		pass
+		try:
+			if resource.raw and self._activity_cls:
+				# use data variable, in case of failure resource.raw stays untouched
+				data = self._factory.load( resource.raw, self._activity_cls )
+				resource.raw = data
+		except RuntimeError:
+			log.error( f'unable to transform resource content into structured data by using the factory for {self._activity_cls}', exc_info=True )
 
 	# noinspection PyMethodMayBeStatic
 	def as_str( self, content: bytes, encoding: str = 'UTF-8' ) -> str:
@@ -93,6 +106,10 @@ class ResourceHandler:
 	@property
 	def activity_cls( self ) -> Optional[Type]:
 		return self._activity_cls
+
+	@activity_cls.setter
+	def activity_cls( self, cls: Type ) -> None:
+		self._activity_cls = cls
 
 	# noinspection PyMethodMayBeStatic
 	def preprocess_data( self, data: Any, **kwargs ) -> Any:

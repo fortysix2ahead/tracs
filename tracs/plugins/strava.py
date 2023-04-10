@@ -32,7 +32,6 @@ from rich.prompt import Prompt
 
 from ..registry import Registry
 from ..registry import importer
-from ..registry import resourcetype
 from ..registry import service
 from .gpx import GPX_TYPE
 from .fit import FIT_TYPE
@@ -126,7 +125,6 @@ TYPES = {
 	'Yoga': Types.yoga,
 }
 
-@resourcetype( type=STRAVA_TYPE, summary=True )
 @dataclass
 class StravaActivity:
 
@@ -185,37 +183,35 @@ class StravaActivity:
 	def local_id( self ) -> int:
 		return self.id
 
-	def as_activity( self ) -> Activity:
-		tz_str = TIMEZONE_REGEX.sub( '', self.timezone )
+@importer( type=STRAVA_TYPE, activity_cls=StravaActivity, summary=True )
+class StravaImporter( JSONHandler ):
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		activity: StravaActivity = resource.data
+		tz_str = TIMEZONE_REGEX.sub( '', activity.timezone )
 		if not (tz := gettz( tz_str ) ):
 			tz = tzlocal()
 
 		return Activity(
-			name = self.name,
-			type = TYPES.get( self.type, ActivityTypes.unknown ),
-			time = to_isotime( self.start_date ),
-			localtime = to_isotime( self.start_date ).astimezone( tz ),
+			name = activity.name,
+			type = TYPES.get( activity.type, ActivityTypes.unknown ),
+			time = to_isotime( activity.start_date ),
+			localtime = to_isotime( activity.start_date ).astimezone( tz ),
 			timezone = tz_str,
-			distance = self.distance if self.distance > 0 else None,
-			speed = self.average_speed if self.average_speed > 0 else None,
-			speed_max = self.max_speed if self.max_speed > 0 else None,
-			ascent = self.total_elevation_gain if self.total_elevation_gain > 0 else None,
-			descent = self.total_elevation_gain if self.total_elevation_gain > 0 else None,
-			elevation_max = self.elev_high,
-			elevation_min = self.elev_low,
-			duration = stt( self.elapsed_time ) if self.elapsed_time else None,
-			duration_moving = stt( self.moving_time ) if self.moving_time else None,
-			heartrate = int( self.average_heartrate ) if self.average_heartrate else None,
-			heartrate_max = int( self.max_heartrate ) if self.max_heartrate else None,
-			location_country = self.location_country,
-			uids = [f'{SERVICE_NAME}:{self.id}'],
+			distance = activity.distance if activity.distance > 0 else None,
+			speed = activity.average_speed if activity.average_speed > 0 else None,
+			speed_max = activity.max_speed if activity.max_speed > 0 else None,
+			ascent = activity.total_elevation_gain if activity.total_elevation_gain > 0 else None,
+			descent = activity.total_elevation_gain if activity.total_elevation_gain > 0 else None,
+			elevation_max = activity.elev_high,
+			elevation_min = activity.elev_low,
+			duration = stt( activity.elapsed_time ) if activity.elapsed_time else None,
+			duration_moving = stt( activity.moving_time ) if activity.moving_time else None,
+			heartrate = int( activity.average_heartrate ) if activity.average_heartrate else None,
+			heartrate_max = int( activity.max_heartrate ) if activity.max_heartrate else None,
+			location_country = activity.location_country,
+			uids = [f'{SERVICE_NAME}:{activity.id}'],
 		)
-
-@importer( type=STRAVA_TYPE )
-class StravaImporter( JSONHandler ):
-
-	def __init__( self ) -> None:
-		super().__init__( resource_type=STRAVA_TYPE, activity_cls=StravaActivity )
 
 @service
 class Strava( Service, Plugin ):

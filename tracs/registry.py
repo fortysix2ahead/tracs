@@ -326,8 +326,9 @@ def importer( *args, **kwargs ):
 			Registry.register_importer( cls(), kwargs['type'] )
 			Registry.register_resource_type( ResourceType( **kwargs ) )
 			return cls
-		except (KeyError, NameError, TypeError):
-			raise RuntimeError( '@importer decorator must be properly configured and can only be used on classes' )
+		except (KeyError, NameError, TypeError) as ex:
+			log.error( 'improper use of @importer decorator', exc_info=True )
+			raise RuntimeError( f'improper use of @importer decorator on {cls} with kwargs = {kwargs}' )
 
 	# return importer_cls if (not args and kwargs) else importer_cls( args[0] )
 	if not args and kwargs:

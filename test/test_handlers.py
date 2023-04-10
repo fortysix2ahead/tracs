@@ -1,10 +1,8 @@
 
-from datetime import datetime
-
 from gpxpy.gpx import GPX
+from lxml.objectify import ObjectifiedElement
 from pytest import mark
 
-from tracs.activity import Activity
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.polar import PolarFlowExercise
 from tracs.plugins.tcx import TCX_TYPE
@@ -16,12 +14,10 @@ from tracs.plugins.handlers import JSON_TYPE
 from tracs.plugins.handlers import XML_TYPE
 from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE
 from tracs.plugins.polar import POLAR_FLOW_TYPE
-from tracs.plugins.polar import PolarActivity
 from tracs.plugins.polar import PolarExerciseDataActivity
 from tracs.plugins.strava import STRAVA_TYPE
 from tracs.plugins.strava import StravaActivity
 from tracs.plugins.tcx import TCXActivity
-from tracs.plugins.tcx import Activity as InternalTCXActivity
 from tracs.plugins.waze import WAZE_TYPE
 from tracs.plugins.waze import WazeActivity
 
@@ -49,6 +45,7 @@ def test_xml_importer( path ):
 def test_gpx_importer( path ):
 	resource = Registry.importer_for( GPX_TYPE ).load( path=path )
 	assert type( resource.raw ) is GPX
+	assert resource.raw is resource.data
 
 	activity = Registry.importer_for( GPX_TYPE ).load_as_activity( path=path )
 	assert activity.time.isoformat() == '2012-10-24T23:29:40+00:00'
@@ -56,11 +53,11 @@ def test_gpx_importer( path ):
 @mark.file( 'templates/tcx/sample.tcx' )
 def test_tcx_importer( path ):
 	resource = Registry.importer_for( TCX_TYPE ).load( path=path )
-	assert type( resource.raw ) is InternalTCXActivity
+	assert type( resource.raw ) is ObjectifiedElement
+	assert type( resource.data ) is TCXActivity
 
 	activity = Registry.importer_for( TCX_TYPE ).load_as_activity( path=path )
-	assert type( activity ) is TCXActivity
-	assert activity.as_activity().time.isoformat() == '2010-06-26T10:06:11+00:00'
+	assert activity.time.isoformat() == '2010-06-26T10:06:11+00:00'
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
 def test_polar_flow_importer( path ):

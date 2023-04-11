@@ -139,10 +139,10 @@ class Service( Plugin ):
 
 	@classmethod
 	def as_activity( cls, resource: Resource ) -> Optional[Activity]:
-		importer = Registry.importer_for( resource.type )
-		path = Service.path_for_resource( resource )
-		activity = importer.load_as_activity( path=path )
-		return activity.as_activity()
+		"""
+		Loads a resource and transforms it into an activity by using the importer indicated by the resource type.
+		"""
+		return Registry.importer_for( resource.type ).load_as_activity( Service.path_for_resource( resource ) )
 
 	# service methods
 

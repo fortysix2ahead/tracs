@@ -343,7 +343,7 @@ class Service( Plugin ):
 		self.ctx.start( f'fetching activity data from {self.display_name}' )
 
 		# fetch summaries
-		summaries = self.fetch_summary_resources( skip_fetch, force, pretend, uids, **kwargs )
+		summaries = self.fetch_summary_resources( skip_fetch, force, pretend, **{'uids': uids, **kwargs} )
 		summaries = self.postprocess_summaries( summaries, **kwargs )  # post process summaries
 
 		# filter out summaries that are already known

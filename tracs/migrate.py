@@ -13,7 +13,7 @@ from .db import ActivityDb
 from .db import METADATA_NAME
 from .db import RESOURCES_NAME
 from .db import SCHEMA_NAME
-from .plugins.csv import JSONHandler
+from tracs.plugins.json import JSONHandler
 from .utils import timestring
 
 log = getLogger( __name__ )

@@ -2,7 +2,7 @@
 from pytest import raises
 
 from tracs.handlers import ResourceHandler
-from tracs.registry import importer2
+from tracs.registry import importer
 from tracs.registry import Registry
 from tracs.registry import resourcetype
 from tracs.resources import ResourceType
@@ -35,25 +35,25 @@ def test_importer2():
 
 	# importer without type is not allowed
 	with raises( RuntimeError ):
-		@importer2
+		@importer
 		class ImporterWithoutArgs:
 			pass
 
 	# this is also not possible: without kwargs there is no way to identify the caller ...
 	with raises( RuntimeError ):
-		@importer2( 'TYPE_2' )
+		@importer( 'TYPE_2' )
 		class ImporterWithArgsOnly:
 			pass
 
 	# plain importer without any specific resource type information
 
-	@importer2( type='TYPE_1' )
+	@importer( type='TYPE_1' )
 	class ImporterOne( ResourceHandler ):
 		pass
 
 	assert type( Registry.importer_for( 'TYPE_1' ) ) == ImporterOne
 
-	@importer2( type='TYPE_2', activity_cls=ActivityThree, summary=True )
+	@importer( type='TYPE_2', activity_cls=ActivityThree, summary=True )
 	class ImporterTwo( ResourceHandler ):
 		pass
 

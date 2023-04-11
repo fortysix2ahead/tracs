@@ -5,7 +5,6 @@ from enum import Enum
 from logging import getLogger
 from pathlib import Path
 from re import compile as regex_compile
-from re import match
 from typing import Any
 from typing import cast
 from typing import List
@@ -29,10 +28,8 @@ from ..activity import Activity
 from ..activity_types import ActivityTypes
 from ..config import ApplicationContext
 from ..handlers import ResourceHandler
-from ..protocols import SpecificActivity
 from ..registry import importer
 from ..registry import Registry
-from ..registry import resourcetype
 from ..registry import service
 from ..resources import Resource
 from ..service import Service
@@ -47,9 +44,9 @@ SERVICE_NAME = 'waze'
 DISPLAY_NAME = 'Waze'
 
 WAZE_TYPE = 'text/vnd.waze+txt'
-WAZE_TAKEOUT_TYPE = 'text/vnd.waze+csv'
 WAZE_ACCOUNT_ACTIVITY_TYPE = 'text/vnd.waze.activity+csv'
 WAZE_ACCOUNT_INFO_TYPE = 'text/vnd.waze.info+csv'
+WAZE_TAKEOUT_TYPE = WAZE_ACCOUNT_ACTIVITY_TYPE # for backward compatibility
 
 DEFAULT_FIELD_SIZE_LIMIT = 131072
 
@@ -270,7 +267,6 @@ class Takeout:
 	account_activity: AccountActivity = field( default=AccountActivity() )
 	account_info: AccountInfo = field( default=AccountInfo() )
 
-@importer( type=WAZE_TAKEOUT_TYPE )
 @importer( type=WAZE_ACCOUNT_ACTIVITY_TYPE )
 class WazeAccountActivityImporter( CSVHandler ):
 
@@ -465,7 +461,8 @@ class Waze( Service ):
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME}, **kwargs } )
 
-		self._takeout_importer: WazeAccountActivityImporter = cast( WazeAccountActivityImporter, Registry.importer_for( WAZE_TAKEOUT_TYPE ) )
+		self._takeout_importer: WazeAccountActivityImporter = Registry.importer_for( WAZE_ACCOUNT_ACTIVITY_TYPE )
+		self._info_importer: WazeAccountInfoImporter = Registry.importer_for( WAZE_ACCOUNT_INFO_TYPE ) # don't need this at the moment
 		self._drive_importer: WazeImporter = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
 		self._gpx_importer: GPXImporter = cast( GPXImporter, Registry.importer_for( GPX_TYPE ) )
 

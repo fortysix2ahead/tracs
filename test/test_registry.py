@@ -36,13 +36,13 @@ def test_importer2():
 	# importer without type is not allowed
 	with raises( RuntimeError ):
 		@importer
-		class ImporterWithoutArgs:
+		class ImporterWithoutArgs( ResourceHandler ):
 			pass
 
 	# this is also not possible: without kwargs there is no way to identify the caller ...
 	with raises( RuntimeError ):
 		@importer( 'TYPE_2' )
-		class ImporterWithArgsOnly:
+		class ImporterWithArgsOnly( ResourceHandler ):
 			pass
 
 	# plain importer without any specific resource type information

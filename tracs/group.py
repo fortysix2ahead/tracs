@@ -16,6 +16,7 @@ from .activity import Activity
 from .activity_types import ActivityTypes
 from .config import ApplicationContext
 from .config import KEY_GROUPS as GROUPS
+from tracs.service import Service
 from .ui import Choice
 from .ui import diff_table2
 from .utils import seconds_to_time
@@ -114,30 +115,22 @@ def ungroup_activities( ctx: ApplicationContext, activities: List[Activity], for
 	:param pretend: when true does not persist changes to db
 	:return:
 	"""
-	ungrouped_parents = []
-	ungrouped_children = []
+	all_parents, all_children = [], []
 	for a in activities:
 		if a.is_group:
-			grouped = [ ctx.db.get( doc_id=id ) for id in a.group_for ]
-			if not force:
-				answer = Confirm.ask( f'Ungroup activity {a.id} ({a.name})?' )
-			else:
-				answer = True
-
-			if answer:
-				_ungroup( a, grouped )
-				ungrouped_parents.append( a )
-				ungrouped_children.extend( grouped )
+			if Confirm.ask( f'Ungroup activity {a.id} ({a.name})?' ) if not force else True:
+				parent, children = _ungroup( ctx, a )
+				all_parents.append( parent )
+				all_children.extend( children )
 				log.debug( f'ungrouped activity {a.id}' )
 
 	# persist changes
 	if not pretend:
-		for a in ungrouped_parents:
-			ctx.db.remove( a )
-		for a in ungrouped_children:
-			ctx.db.remove_field( a, GROUPS )
-	else:
-		return ungrouped_parents, ungrouped_children
+		ctx.db.remove_activities( all_parents )
+		ctx.db.insert_activities( all_children )
+		ctx.db.commit()
+
+	return all_parents, all_children
 
 # parting / unparting
 
@@ -184,7 +177,8 @@ def _delta( target_time: datetime, src_time: datetime ) -> Tuple[bool, float]:
 	else:
 		return False, delta
 
-def _ungroup( parent: Activity, children: [Activity] ) -> None:
-	del parent[GROUPS]
-	for c in children:
-		del c[GROUPS]
+def _ungroup( ctx: ApplicationContext, activity: Activity ) -> Tuple[Activity, List[Activity]]:
+	children = []
+	for uid in activity.uids:
+		children.append( Service.as_activity( ctx.db.get_summary( uid ) ) )
+	return activity, children

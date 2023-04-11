@@ -471,11 +471,11 @@ class Polar( Service ):
 			# try to create activity from tcx
 			try:
 				tcx_resource = next( (tcx for tcx in rp.resources if tcx.type == TCX_TYPE), None )
-				new_activity = Registry.importer_for( TCX_TYPE ).as_activity( tcx_resource ).as_activity()
+				new_activity = Service.as_activity_from( tcx_resource )
 			except AttributeError:
 				try:
 					gpx_resource = next( (gpx for gpx in rp.resources if gpx.type == GPX_TYPE), None )
-					new_activity = Registry.importer_for( GPX_TYPE ).as_activity( gpx_resource ).as_activity()
+					new_activity = Service.as_activity_from( gpx_resource )
 				except AttributeError:
 					new_activity = None
 

@@ -9,17 +9,20 @@ from pytest import mark
 
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.polar import PolarFlowExercise
+from tracs.plugins.polar import PolarFlowImporter
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
-def test_exercise( json ):
-	pfe = Factory().load(json, PolarFlowExercise)
+def test_exercise( path ):
+	importer = PolarFlowImporter( activity_cls=PolarFlowExercise )
+	resource = importer.load( path )
+	pfe = resource.data
 	assert pfe.local_id == 100001
 	assert pfe.title == '00:25:34;0.0 km'
 	assert pfe.type == 'EXERCISE'
 	assert pfe.distance == 12000.3
 	assert pfe.calories == 456
 
-	pa = pfe.as_activity()
+	pa = importer.as_activity( resource )
 	assert pa.type == ActivityTypes.run
 	assert pa.time == datetime(2011, 4, 28, 15, 48, 10, tzinfo=timezone.utc)
 	assert pa.localtime == datetime(2011, 4, 28, 17, 48, 10, tzinfo=tzlocal())

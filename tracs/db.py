@@ -409,6 +409,9 @@ class ActivityDb:
 	def get_resource_by_uid_path( self, uid: str, path: str ) -> Optional[Resource]:
 		return next( (r for r in self.resources if r.uid == uid and r.path == path), None )
 
+	def get_summary( self, uid ) -> Resource:
+		return next( iter( self.find_summaries( uid ) ), None )
+
 	def _create_filter( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None ) -> List[Filter]:
 		if id and id > 0:
 			return [Filter( 'id', id )]

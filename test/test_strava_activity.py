@@ -2,17 +2,19 @@
 from datetime import datetime
 from datetime import time
 from datetime import timezone
-from typing import Dict
 
 from dateutil.tz import tzlocal
 from pytest import mark
 
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.strava import StravaActivity
+from tracs.plugins.strava import StravaImporter
 
 @mark.file( 'libraries/default/strava/2/0/0/200002/200002.json' )
-def test_init_from_raw( json: Dict ):
-	sa = StravaActivity( **json ).as_activity()
+def test_init_from_raw( path ):
+	importer = StravaImporter( activity_cls=StravaActivity )
+	resource = importer.load( path )
+	sa = importer.as_activity( resource )
 
 	assert sa.id == 0
 	assert sa.classifiers == ['strava']

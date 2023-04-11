@@ -22,8 +22,9 @@ class ResourceHandler:
 		self._activity_cls: Optional[Type] = activity_cls
 		self._type: Optional[str] = resource_type
 		self._factory: Factory = Factory( debug_path=True, schemas={} )
-		self.content: Optional[bytes] = None
+
 		self.resource: Optional[Resource] = None
+		self.content: Optional[bytes] = None
 		self.data: Any = None
 
 	def load( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
@@ -50,7 +51,18 @@ class ResourceHandler:
 		return self.resource
 
 	def load_as_activity( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Activity]:
-		return self.as_activity( self.load( path, url, **kwargs ) )
+		if resource := kwargs.get( 'resource' ):
+			# lazy (re-)loading of an existing resource
+			if resource.content and not resource.raw and not resource.data:
+				self.load_data( resource )
+			if resource.raw and not resource.data:
+				self.postprocess_data( resource )
+			if resource.data:
+				return self.as_activity( resource )
+			else:
+				return None
+		else:
+			return self.as_activity( self.load( path, url, **kwargs ) )
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		if self.activity_cls:

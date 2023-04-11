@@ -155,7 +155,8 @@ class ActivityDb:
 				# name_mapping={}
 				Activity: DataclassFactorySchema( exclude=['id'], omit_default=True, skip_internal=True, unknown='unknown' ),
 				ActivityTypes: DataclassFactorySchema( parser=ActivityTypes.from_str, serializer=ActivityTypes.to_str ),
-				Resource: DataclassFactorySchema( exclude=['content', 'id', 'raw', 'resources', 'summary', 'text'], omit_default=True, skip_internal=True, unknown='unknown' ),
+				Resource: DataclassFactorySchema( omit_default=True, skip_internal=True, unknown='unknown',
+				                                  exclude=['content', 'data', 'id', 'raw', 'resources', 'status', 'summary', 'text'] ),
 				Schema: DataclassFactorySchema( skip_internal=True ),
 				# tiny db compatibility:
 				# Schema: FactorySchema( name_mapping={ 'version': ( '_default', '1', 'version' ) }, skip_internal=False, unknown='unknown' ),

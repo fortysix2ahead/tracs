@@ -441,10 +441,10 @@ class WazeImporter( ResourceHandler ):
 		return self.resource
 
 	def load_data( self, resource: Resource, **kwargs ) -> Any:
-		resource.raw = LocationDetail( coordinates=resource.as_text() ).as_point_list()
+		resource.raw = LocationDetail( coordinates=resource.as_text() )
 
 	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
-		resource.data = WazeActivity( resource.raw )
+		resource.data = WazeActivity( resource.raw.as_point_list() )
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		wa: WazeActivity = resource.data

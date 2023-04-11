@@ -138,11 +138,18 @@ class Service( Plugin ):
 			return None
 
 	@classmethod
-	def as_activity( cls, resource: Resource ) -> Optional[Activity]:
+	def as_activity( cls, resource: Resource, **kwargs ) -> Optional[Activity]:
 		"""
 		Loads a resource and transforms it into an activity by using the importer indicated by the resource type.
 		"""
-		return Registry.importer_for( resource.type ).load_as_activity( Service.path_for_resource( resource ) )
+		return Registry.importer_for( resource.type ).load_as_activity( Service.path_for_resource( resource ), **kwargs )
+
+	@classmethod
+	def as_activity_from( cls, resource: Resource, **kwargs ) -> Optional[Activity]:
+		"""
+		Loads a resource to an activity in a 'lazy' manner, reusing the existing content of the resource.
+		"""
+		return Registry.importer_for( resource.type ).load_as_activity( resource=resource, **kwargs )
 
 	# service methods
 
@@ -310,7 +317,7 @@ class Service( Plugin ):
 
 	# noinspection PyMethodMayBeStatic,PyUnresolvedReferences
 	def create_activities( self, summary: Resource, resources: List[Resource], **kwargs ) -> List[Activity]:
-		return [ Registry.importer_for( summary.type ).as_activity( summary ).as_activity() ]
+		return [ Service.as_activity_from( summary ) ]
 
 	# noinspection PyMethodMayBeStatic
 	def postprocess_activities( self, activities: List[Activity], resources: List[Resource], **kwargs ) -> List[Activity]:

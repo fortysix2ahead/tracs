@@ -508,7 +508,7 @@ class Polar( Service ):
 	def create_partlist( self, activity: Activity, resources: List[Resource] ) -> List[ResourcePartlist]:
 		ranges: Dict[int, ResourcePartlist] = { }
 		for r in resources:
-			recording = Registry.importer_for( r.type ).as_activity( r ).as_activity()
+			recording = Service.as_activity_from( r )
 			dtr = DateTimeRange( recording.time, recording.time_end )
 
 			found_key = None

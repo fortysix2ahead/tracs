@@ -40,9 +40,8 @@ def test_read_account_info( path ):
 
 @mark.file( 'libraries/default/waze/20/07/12/200712074743/200712074743.txt' )
 def test_activity_from_raw( path ):
-	importer = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
-	resource = importer.load( path )
-	assert len( resource.raw ) == 137
+	resource = Registry.importer_for( WAZE_TYPE ).load( path )
+	assert len( resource.data.points ) == 137
 
 @mark.context( library='default', config='default', takeout='waze', cleanup=False )
 @mark.service( cls=Waze )

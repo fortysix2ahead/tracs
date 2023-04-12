@@ -483,27 +483,20 @@ class ActivityDb:
 
 def backup_db( ctx: ApplicationContext ) -> None:
 	source = ctx.db_path
-	target = Path( ctx.backup_path, f"backup.{datetime.now( timezone.utc ).strftime( '%Y%m%d_%H%M%S' )}" )
+	target = Path( ctx.backup_path, f"{datetime.now( timezone.utc ).strftime( '%Y%m%d_%H%M%S' )}" )
 	copytree( source, target, ignore=lambda root, content: [c for c in content if c not in DB_FILES.keys()] )
 	ctx.console.print( f'created database backup in {target}' )
 
-def restore_db( db: TinyDB, db_file: Path, backup_dir: Path, force: bool ) -> None:
-	backup_dir.mkdir( parents=True, exist_ok=True )
-	glob_pattern = f'{APPNAME}.db.[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9].json'
-	files = list( backup_dir.glob( glob_pattern ) )
-	if len( files ) > 0:
-		files.sort( reverse=True )
-		log.info( f'restoring backup from {files[0].name}' )
-		if not force:
-			if not confirm( f'Restore database from {files[0].name}? The current state will be overwritten!' ):
-				log.info( f"database restore from {files[0].name} aborted ..." )
-				return
-
-		db.close()
-		copy( files[0], db_file )
-		log.info( f"database restored from {files[0].name}" )
-	else:
-		log.info( f"no backups found in {backup_dir}" )
+def restore_db( ctx: ApplicationContext ) -> None:
+	target = ctx.db_path
+	try:
+		source = sorted( list( ctx.backup_path.glob( '[0-9]*_[0-9]*' ) ), key=lambda p: p.name )[-1]
+		if ctx.force or confirm( f'Restore database from {source}? The current state will be overwritten.' ):
+			copytree( source, target, ignore=lambda root, content: [c for c in content if c not in DB_FILES.keys()], dirs_exist_ok=True )
+			log.info( f"database restored from {source}" )
+	except RuntimeError:
+		log.error( 'failed to restore backup', exc_info=True )
+		ctx.console.print( f'no backups found in {ctx.backup_path}' )
 
 def status_db( ctx: ApplicationContext ) -> None:
 	table = RichTable( box=box.MINIMAL, show_header=False, show_footer=False )

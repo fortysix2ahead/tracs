@@ -106,7 +106,7 @@ def db( ctx: ApplicationContext, backup: bool, migrate: str, restore: bool, stat
 	elif migrate:
 		migrate_application( ctx, function_name=migrate, force=ctx.force )
 	elif restore:
-		restore_db( app.db.db, app.db_file, app.backup_dir, app.cfg['force'].get() )
+		restore_db( ctx )
 	elif status:
 		status_db( ctx )
 

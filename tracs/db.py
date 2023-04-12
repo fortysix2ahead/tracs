@@ -37,6 +37,7 @@ from rich.table import Table as RichTable
 
 from .activity import Activity
 from .activity_types import ActivityTypes
+from .config import ApplicationContext
 from .config import APPNAME
 from .config import console
 from .config import KEY_SERVICE
@@ -431,8 +432,8 @@ class ActivityDb:
 			all_activities = r.filter( all_activities )
 		return list( all_activities )
 
-	def find_by_classifier( self, classifier: str ) -> [Activity]:
-		return self.find( classifier_filter( classifier ) )
+	def find_by_classifier( self, classifier: str ) -> List[Activity]:
+		return [a for a in self.activities if any( uid.startswith( classifier ) for uid in a.uids ) ]
 
 	def find_ids( self, filters: Union[List[str], List[Filter], str, Filter] = None ) -> [int]:
 		return [a.doc_id for a in self.find( filters )]
@@ -505,11 +506,12 @@ def restore_db( db: TinyDB, db_file: Path, backup_dir: Path, force: bool ) -> No
 	else:
 		log.info( f"no backups found in {backup_dir}" )
 
-def status_db( db: ActivityDb ) -> None:
+def status_db( ctx: ApplicationContext ) -> None:
 	table = RichTable( box=box.MINIMAL, show_header=False, show_footer=False )
-	table.add_row( 'activities in database', pp( len( db.all() ) ) )
+	table.add_row( 'activities', pp( len( ctx.db.activity_map ) ) )
 	for s in Registry.service_names():
-		activities = list( db.find_by_classifier( s ) )
-		table.add_row( f'activities from {s}', pp( len( activities ) ) )
+		table.add_row( f'activities ({s})', pp( len( list( ctx.db.find_by_classifier( s ) ) ) ) )
 
-	console.print( table )
+	table.add_row( 'resources', pp( len( ctx.db.resource_map ) ) )
+
+	ctx.console.print( table )

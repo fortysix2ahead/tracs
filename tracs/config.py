@@ -27,8 +27,8 @@ APPNAME = 'tracs'
 APP_PKG_NAME = 'tracs'
 APPDIRS = AppDirs( appname=APPNAME )
 
-BACKUP_DIRNAME = '.backup'
-CACHE_DIRNAME = '.cache'
+BACKUP_DIRNAME = 'backup'
+CACHE_DIRNAME = 'cache'
 DB_DIRNAME = 'db'
 DB_FILENAME = 'db.json'
 LOG_DIRNAME = 'logs'
@@ -36,7 +36,7 @@ LOG_FILENAME = f'{APPNAME}.log'
 OVERLAY_DIRNAME = 'overlay'
 RESOURCES_DIRNAME = 'resources'
 TAKEOUT_DIRNAME = 'takeouts'
-TMP_DIRNAME = '.tmp'
+TMP_DIRNAME = 'tmp'
 VAR_DIRNAME = 'var'
 
 CONFIG_FILENAME = 'config.yaml'
@@ -111,7 +111,10 @@ class ApplicationContext:
 	log_file: Path = field( default=f'{LOG_DIRNAME}/{LOG_FILENAME}' )
 	overlay_dir: Path = field( default=OVERLAY_DIRNAME )
 	takeout_dir: Path = field( default=TAKEOUT_DIRNAME )
-	var_dir: Path = field( default=VAR_DIRNAME )
+	var_dir: str = field( default=VAR_DIRNAME )
+	backup_dir: str = field( default=f'{VAR_DIRNAME}/{BACKUP_DIRNAME}' )
+	cache_dir: str = field( default=f'{VAR_DIRNAME}/{CACHE_DIRNAME}' )
+	tmp_dir: str = field( default=f'{VAR_DIRNAME}/{TMP_DIRNAME}' )
 
 	# database
 	db: Any = field( default=None )
@@ -172,11 +175,20 @@ class ApplicationContext:
 		# create directories depending on config_dir
 		self.config_fs.makedir( str( self.log_dir ), recreate=True )
 
-		# create directories depending on log_dir
+		# create directories depending on lib_dir
 		self.lib_fs.makedir( str( self.db_dir ), recreate=True )
 		self.lib_fs.makedir( str( self.overlay_dir ), recreate=True )
 		self.lib_fs.makedir( str( self.takeout_dir ), recreate=True )
-		self.lib_fs.makedir( str( self.var_dir ), recreate=True )
+
+		# var and its children
+		self.lib_fs.makedir( self.var_dir, recreate=True )
+		self.lib_fs.makedir( self.backup_dir, recreate=True )
+		self.lib_fs.makedir( self.cache_dir, recreate=True )
+		self.lib_fs.makedir( self.tmp_dir, recreate=True )
+
+	@property
+	def db_path( self ) -> Path:
+		return Path( self.lib_fs.getsyspath( str( self.db_dir ) ) )
 
 	@property
 	def db_dir_path( self ) -> Path:
@@ -193,6 +205,14 @@ class ApplicationContext:
 	@property
 	def log_file_path( self ) -> Path:
 		return Path( self.config_fs.getsyspath( str( self.log_file ) ) )
+
+	@property
+	def var_path( self ) -> Path:
+		return Path( self.lib_fs.getsyspath( '/' ), self.var_dir )
+
+	@property
+	def backup_path( self ) -> Path:
+		return Path( self.lib_fs.getsyspath( '/' ), self.backup_dir )
 
 	# path helpers
 

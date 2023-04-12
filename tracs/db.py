@@ -9,8 +9,8 @@ from itertools import chain
 from logging import getLogger
 from pathlib import Path
 from shutil import copy
+from shutil import copytree
 from sys import exit as sysexit
-from typing import Any
 from typing import cast
 from typing import Dict
 from typing import List
@@ -39,7 +39,6 @@ from .activity import Activity
 from .activity_types import ActivityTypes
 from .config import ApplicationContext
 from .config import APPNAME
-from .config import console
 from .config import KEY_SERVICE
 from .registry import Registry
 from .resources import Resource
@@ -482,11 +481,11 @@ class ActivityDb:
 
 # ---- DB Operations ----
 
-def backup_db( db_file: Path, backup_dir: Path ) -> None:
-	backup_dir.mkdir( parents=True, exist_ok=True )
-	backup_file = Path( backup_dir, f"{APPNAME}.db.{datetime.now( timezone.utc ).strftime( '%Y%m%d_%H%M%S' )}.json" )
-	copy( db_file, backup_file )
-	log.info( f"created database backup in {backup_file}" )
+def backup_db( ctx: ApplicationContext ) -> None:
+	source = ctx.db_path
+	target = Path( ctx.backup_path, f"backup.{datetime.now( timezone.utc ).strftime( '%Y%m%d_%H%M%S' )}" )
+	copytree( source, target, ignore=lambda root, content: [c for c in content if c not in DB_FILES.keys()] )
+	ctx.console.print( f'created database backup in {target}' )
 
 def restore_db( db: TinyDB, db_file: Path, backup_dir: Path, force: bool ) -> None:
 	backup_dir.mkdir( parents=True, exist_ok=True )

@@ -95,17 +95,14 @@ def cli( ctx, configuration, library, force, verbose, pretend, debug ):
 
 @cli.command( hidden=True )
 @option( '-b', '--backup', is_flag=True, required=False, help='creates a backup of the internal database' )
-@option( '-f', '--fields', is_flag=True, required=False, hidden=True, help='shows available fields, which can be used for queries (EXPERIMENTAL!)' )
 @option( '-m', '--migrate', is_flag=False, required=False, type=str, help='performs a database migration', metavar='FUNCTION' )
 @option( '-r', '--restore', is_flag=True, required=False, help='restores the last version of the database from the backup' )
 @option( '-s', '--status', is_flag=True, required=False, help='prints some db status information' )
 @pass_obj
-def db( ctx: ApplicationContext, backup: bool, fields: bool, migrate: str, restore: bool, status: bool ):
+def db( ctx: ApplicationContext, backup: bool, migrate: str, restore: bool, status: bool ):
 	app = Application.instance()
 	if backup:
-		backup_db( app.db_file, app.backup_dir )
-	elif fields:
-		show_fields()
+		backup_db( ctx )
 	elif migrate:
 		migrate_application( ctx, function_name=migrate, force=ctx.force )
 	elif restore:

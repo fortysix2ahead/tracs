@@ -6,6 +6,9 @@ from datetime import datetime
 from typing import List
 
 from gpxpy.gpx import GPX
+from gpxpy.gpx import GPXTrack
+from gpxpy.gpx import GPXTrackPoint
+from gpxpy.gpx import GPXTrackSegment
 
 @dataclass
 class Point:
@@ -30,3 +33,12 @@ class Stream:
 	@property
 	def length( self ) -> int:
 		return len( self.points )
+
+	def as_gpx( self ) -> GPX:
+		gpx = GPX()
+		track = GPXTrack()
+		segment = GPXTrackSegment( points = [GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon ) for p in self.points] )
+		track.segments.append( segment )
+		gpx.tracks.append( track )
+		return gpx
+	

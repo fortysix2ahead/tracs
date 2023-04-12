@@ -188,9 +188,9 @@ def _confirm_init( source: Activity, target: Activity, ctx: ApplicationContext )
 	table = diff_table( src_dict, target_dict, header=('Field', 'Old Value', 'New Value') )
 	if len( table.rows ) > 0:
 		ctx.console.print( table )
-		answer = Confirm.ask( f'Would you like to reimport activity {source.uids[0]}?', default=False )
+		answer = Confirm.ask( f'Would you like to reimport activity {source.id} \[{", ".join( source.uids)}]?', default=False )
 	else:
-		cs.print( f'no difference found during reimport of activity {source.uids[0]}, skipping reimport' )
+		ctx.console.print( f'no difference found during reimport of activity {source.id} \[{", ".join( source.uids)}], skipping reimport' )
 		answer = False
 	return answer
 

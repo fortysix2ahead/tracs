@@ -36,6 +36,8 @@ from .registry import Registry
 from .plugins.gpx import GPX_TYPE
 from .plugins.local import SERVICE_NAME as LOCAL_SERVICE_NAME
 from .service import Service
+from .streams import as_gpx
+from .streams import as_streams
 from .ui import diff_table
 
 log = getLogger( __name__ )
@@ -194,11 +196,20 @@ def _confirm_init( source: Activity, target: Activity, ctx: ApplicationContext )
 		answer = False
 	return answer
 
-def export_activities( activities: Iterable[Activity], force: bool = False, pretend: bool = False, **kwargs ):
-	pass
+def export_activities( ctx: ApplicationContext, activities: List[Activity], fmt: str = None, output: str = None, aggregate: bool = True, overlay: bool = False, **kwargs ):
+	if fmt not in [ 'gpx', 'geojson' ]:
+		ctx.console.print( f'unable to export, unsupported format {fmt}' )
+		return
 
-def export_resources( resources: Iterable[Activity], force: bool = False, pretend: bool = False, **kwargs ):
-	pass
+	importer = Registry.importer_for( GPX_TYPE )
+	resources = [ctx.db.get_resource_of_type( a.uids, GPX_TYPE ) for a in activities]
+	resources = [ importer.load( Service.path_for_resource( r ) ) for r in resources ]
+
+	# todo: extend for geojson
+	path = Path( ctx.var_path, f'export_{datetime.now().strftime( "%Y%m%d_%H%M%S" )}.{fmt}' )  # todo: created proper name
+	gpx = as_gpx( as_streams( resources ) )
+	path.write_text( gpx.to_xml( prettyprint=True ) )
+	ctx.console.print( f'successfully exported to {str( path )}' )
 
 def export_csv( activities: Iterable[Activity], output: Path ):
 	csv = [['longitude', 'latitude']]

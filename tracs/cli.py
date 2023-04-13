@@ -25,7 +25,6 @@ from tracs.edit import tag_activities
 from tracs.edit import unequip_activities
 from tracs.edit import untag_activities
 from tracs.inout import export_activities
-from tracs.inout import export_resources
 from tracs.inout import import_activities
 from tracs.inout import open_activities
 from tracs.list import inspect_registry
@@ -241,20 +240,15 @@ def reimport( ctx: ApplicationContext, filters, recordings: bool = False, strate
 def open_cmd( ctx, filters ):
 	open_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.db )
 
-@cli.command( help='export activities/resources (experimental)' )
-@option( '-f', '--format', 'fmt', required=False, type=Choice( ['csv', 'geojson', 'gpx', 'kml', 'shp'], case_sensitive=False ), metavar='FORMAT' )
-@option( '-g', '--aggregate', required=False, is_flag=True )
+@cli.command( help='export activities/resources' )
+@option( '-a', '--aggregate', required=False, is_flag=True )
+@option( '-f', '--format', 'fmt', required=False, type=Choice( ['geojson', 'gpx'], case_sensitive=False ), metavar='FORMAT' )
 @option( '-l', '--overlay', required=False, is_flag=True, hidden=True )
 @option( '-o', '--output', required=False, type=ClickPath(), metavar='PATH' )
-@option( '-r', '--resource', required=False, is_flag=True )
-@option( '-t', '--type', required=False, is_flag=False )
 @argument( 'filters', nargs=-1 )
 @pass_obj
-def export( ctx: ApplicationContext, fmt: str, output: str, aggregate: bool, overlay: bool, resource: bool, type: str, filters: List[str] ):
-	if resource:
-		export_resources( ctx.db.find_resources( filters ) )
-	else:
-		export_activities( ctx.db.find( filters ), type=type, force=ctx.force, pretend=ctx.pretend )
+def export( ctx: ApplicationContext, fmt: str, output: str, aggregate: bool, overlay: bool, filters ):
+	export_activities( ctx, ctx.db.find( filters ), fmt=fmt, output=output, aggregate=aggregate, overlay=overlay )
 
 @cli.command( 'set', hidden=True, help='sets field values manually' )
 @argument( 'filters', nargs=-1 )

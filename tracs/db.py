@@ -409,6 +409,9 @@ class ActivityDb:
 	def get_resource_by_uid_path( self, uid: str, path: str ) -> Optional[Resource]:
 		return next( (r for r in self.resources if r.uid == uid and r.path == path), None )
 
+	def get_resource_of_type( self, uids: List[str], type: str ) -> Optional[Resource]:
+		return next( iter( [ r for r in self.find_all_resources( uids ) if r.type == type] ), None )
+
 	def get_summary( self, uid ) -> Resource:
 		return next( iter( self.find_summaries( uid ) ), None )
 

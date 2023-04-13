@@ -1,4 +1,5 @@
 
+from csv import writer as csv_writer
 from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import InitVar
@@ -17,7 +18,6 @@ from gpxpy.gpx import GPXTrack
 from gpxpy.gpx import GPXTrackPoint
 from gpxpy.gpx import GPXTrackSegment
 
-from tracs.plugins.gpx import GPX_TYPE
 from tracs.resources import Resource
 
 # todo: no need to reinvent the wheel: chosse another point class here
@@ -45,6 +45,9 @@ class Stream:
 	def length( self ) -> int:
 		return len( self.points )
 
+	def as_csv_list( self ) -> List[List[str]]:
+		return [ [ str( p.lon ), str( p.lat ) ] for p in self.points ]
+
 	def as_feature( self ) -> Feature:
 		# return [ GeojsonPoint( (p.lon, p.lat) ) for p in self.points ] # todo: check that lat/lon order is correct
 		segment = [ (p.lon, p.lat) for p in self.points ] # todo: check that lat/lon order is correct
@@ -64,6 +67,13 @@ class Stream:
 def as_streams( resources: List[Resource] ) -> List[Stream]:
 	return [ Stream( gpx=r.raw ) for r in resources ]
 
+def as_csv( streams: List[Stream] ) -> str:
+	csv = [ ['longitude', 'latitude'], *[line for s in streams for line in s.as_csv_list()]]
+	io = StringIO()
+	writer = csv_writer( io, delimiter=';', lineterminator='\n' )
+	writer.writerows( csv )
+	return io.getvalue()
+
 def as_gpx( streams: List[Stream] ) -> GPX:
 	gpx = GPX()
 	gpx.tracks.extend( [s.as_gpx_track() for s in streams] )
@@ -73,7 +83,9 @@ def as_feature_collection( streams: List[Stream] ) -> FeatureCollection:
 	return FeatureCollection( [ s.as_feature() for s in streams ] )
 
 def as_str( resources: List[Resource], fmt: str ) -> Optional[str]:
-	if fmt == 'gpx':
+	if fmt == 'csv':
+		return as_csv( as_streams( resources ) )
+	elif fmt == 'gpx':
 		return as_gpx( as_streams( resources ) ).to_xml( prettyprint=False )
 	elif fmt == 'geojson':
 		io = StringIO()

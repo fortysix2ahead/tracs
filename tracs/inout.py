@@ -1,39 +1,29 @@
-
 from datetime import datetime
 from datetime import time
 from datetime import timedelta
 from logging import getLogger
-
-from csv import writer as csv_writer
 from os import system
+from pathlib import Path
 from re import compile
 from typing import cast
-from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Union
 from urllib.parse import urlparse as parse_url
 
 from dateutil.tz import gettz
-from geojson import dump as dump_geojson
-from geojson import Feature
-from geojson import FeatureCollection
-from geojson import LineString
-from pathlib import Path
-
 from rich.prompt import Confirm
 from tzlocal import get_localzone_name
 
 from .activity import Activity
-from .resources import UID
-from .resources import Resource
-from .resources import ResourceType
-from .config import ApplicationConfig as cfg
 from .config import ApplicationContext
 from .db import ActivityDb
-from .registry import Registry
 from .plugins.gpx import GPX_TYPE
 from .plugins.local import SERVICE_NAME as LOCAL_SERVICE_NAME
+from .registry import Registry
+from .resources import Resource
+from .resources import ResourceType
+from .resources import UID
 from .service import Service
 from .streams import as_str
 from .ui import diff_table
@@ -195,7 +185,7 @@ def _confirm_init( source: Activity, target: Activity, ctx: ApplicationContext )
 	return answer
 
 def export_activities( ctx: ApplicationContext, activities: List[Activity], fmt: str = None, output: str = None, aggregate: bool = True, overlay: bool = False, **kwargs ):
-	if fmt not in [ 'gpx', 'geojson' ]:
+	if fmt not in [ 'csv', 'gpx', 'geojson' ]:
 		ctx.console.print( f'unable to export, unsupported format {fmt}' )
 		return
 
@@ -206,22 +196,3 @@ def export_activities( ctx: ApplicationContext, activities: List[Activity], fmt:
 	path = Path( ctx.var_path, f'export_{datetime.now().strftime( "%Y%m%d_%H%M%S" )}.{fmt}' )  # todo: created proper name
 	path.write_text( as_str( resources, fmt ) )
 	ctx.console.print( f'successfully exported to {str( path )}' )
-
-def export_csv( activities: Iterable[Activity], output: Path ):
-	csv = [['longitude', 'latitude']]
-
-	merged_gpx = None
-
-	for t in merged_gpx.tracks:
-		for s in t.segments:
-			for p in s.points:
-				csv.append( [ p.longitude, p.latitude ] )
-
-	if not output.is_absolute():
-		output = Path( Path.cwd(), output )
-
-	if not cfg['pretend'].get():
-		with open( output, 'w', encoding='utf8' ) as f:
-			cw = csv_writer( f, delimiter=';', lineterminator='\n' )
-			cw.writerows( csv )
-			log.debug( f'wrote merged csv to {str( output )}' )

@@ -242,7 +242,7 @@ def open_cmd( ctx, filters ):
 
 @cli.command( help='export activities/resources' )
 @option( '-a', '--aggregate', required=False, is_flag=True )
-@option( '-f', '--format', 'fmt', required=False, type=Choice( ['geojson', 'gpx'], case_sensitive=False ), metavar='FORMAT' )
+@option( '-f', '--format', 'fmt', required=False, type=Choice( ['csv', 'geojson', 'gpx'], case_sensitive=False ), metavar='FORMAT' )
 @option( '-l', '--overlay', required=False, is_flag=True, hidden=True )
 @option( '-o', '--output', required=False, type=ClickPath(), metavar='PATH' )
 @argument( 'filters', nargs=-1 )

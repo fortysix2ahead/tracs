@@ -3,8 +3,11 @@ from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import InitVar
 from datetime import datetime
+from io import StringIO
 from typing import List
+from typing import Optional
 
+from geojson import dump as dump_geojson
 from geojson import Feature
 from geojson import FeatureCollection
 from geojson import LineString
@@ -42,10 +45,10 @@ class Stream:
 	def length( self ) -> int:
 		return len( self.points )
 
-	def as_geojson( self ) -> FeatureCollection:
+	def as_feature( self ) -> Feature:
 		# return [ GeojsonPoint( (p.lon, p.lat) ) for p in self.points ] # todo: check that lat/lon order is correct
 		segment = [ (p.lon, p.lat) for p in self.points ] # todo: check that lat/lon order is correct
-		return FeatureCollection( [Feature( 'id_1', LineString( segment ), properties={} )] )
+		return Feature( 'id_1', LineString( segment ), properties={} )
 
 	def as_gpx_track( self ) -> GPXTrack:
 		track = GPXTrack()
@@ -65,3 +68,16 @@ def as_gpx( streams: List[Stream] ) -> GPX:
 	gpx = GPX()
 	gpx.tracks.extend( [s.as_gpx_track() for s in streams] )
 	return gpx
+
+def as_feature_collection( streams: List[Stream] ) -> FeatureCollection:
+	return FeatureCollection( [ s.as_feature() for s in streams ] )
+
+def as_str( resources: List[Resource], fmt: str ) -> Optional[str]:
+	if fmt == 'gpx':
+		return as_gpx( as_streams( resources ) ).to_xml( prettyprint=False )
+	elif fmt == 'geojson':
+		io = StringIO()
+		dump_geojson( as_feature_collection( as_streams( resources ) ), io )
+		return io.getvalue()
+	else:
+		return None

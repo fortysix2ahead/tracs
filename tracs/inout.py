@@ -30,14 +30,12 @@ from .resources import Resource
 from .resources import ResourceType
 from .config import ApplicationConfig as cfg
 from .config import ApplicationContext
-from .config import cs
 from .db import ActivityDb
 from .registry import Registry
 from .plugins.gpx import GPX_TYPE
 from .plugins.local import SERVICE_NAME as LOCAL_SERVICE_NAME
 from .service import Service
-from .streams import as_gpx
-from .streams import as_streams
+from .streams import as_str
 from .ui import diff_table
 
 log = getLogger( __name__ )
@@ -205,10 +203,8 @@ def export_activities( ctx: ApplicationContext, activities: List[Activity], fmt:
 	resources = [ctx.db.get_resource_of_type( a.uids, GPX_TYPE ) for a in activities]
 	resources = [ importer.load( Service.path_for_resource( r ) ) for r in resources ]
 
-	# todo: extend for geojson
 	path = Path( ctx.var_path, f'export_{datetime.now().strftime( "%Y%m%d_%H%M%S" )}.{fmt}' )  # todo: created proper name
-	gpx = as_gpx( as_streams( resources ) )
-	path.write_text( gpx.to_xml( prettyprint=True ) )
+	path.write_text( as_str( resources, fmt ) )
 	ctx.console.print( f'successfully exported to {str( path )}' )
 
 def export_csv( activities: Iterable[Activity], output: Path ):
@@ -229,43 +225,3 @@ def export_csv( activities: Iterable[Activity], output: Path ):
 			cw = csv_writer( f, delimiter=';', lineterminator='\n' )
 			cw.writerows( csv )
 			log.debug( f'wrote merged csv to {str( output )}' )
-
-def export_geojson( activities: Iterable[Activity], output: Path ):
-	features = []
-	merged_gpx = None
-
-	for t in merged_gpx.tracks:
-		for s in t.segments:
-			segment = [(p.longitude, p.latitude) for p in s.points]
-			# example: LineString( [ (8.919, 44.4074), (8.923, 44.4075) ] ) -> takes a list of tuples
-			geometry = LineString( segment )
-			# geometry = MultiLineString( [tuple( segment )] )  # that's messy ... :-(
-			properties = {
-			#	'time': r.time,
-			}
-			features.append( Feature( '', geometry, properties ) )
-
-	if not cfg['pretend'].get():
-		with open( output, 'w', encoding='utf8' ) as f:
-			dump_geojson( FeatureCollection( features ), f )
-			log.debug( f'wrote merged geojson to {str( output )}' )
-
-def export_kml( activities, output ):
-	pass
-
-def export_gpx( activities: Iterable[Activity], output: Path ):
-	#pf = perf_counter()
-	merged_gpx = None
-
-	if not output.is_absolute():
-		output = Path( Path.cwd(), output )
-
-	if not cfg['pretend'].get():
-		with open( output, 'w', encoding='utf8' ) as f:
-			f.write( merged_gpx.to_xml() )
-			log.debug( f'wrote merged gpx to {str( output )}' )
-
-	#log.info( f'reading gpx files took {perf_counter() - pf}' )
-
-def export_shp( activities, output: str = None ):
-	pass

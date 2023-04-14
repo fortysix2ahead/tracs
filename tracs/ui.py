@@ -22,6 +22,7 @@ from rich.text import Text
 from rich.text import TextType
 
 from tracs.utils import colored_diff
+from tracs.utils import colored_diff_2
 from tracs.utils import fmt
 from .config import console as cs
 
@@ -80,6 +81,43 @@ def diff_table2( result: Dict, sources: List[Dict], sort_entries: bool = True, s
 				left, row[index] = colored_diff( row[1], row[index] )
 
 			table.add_row( *row )
+
+	return table
+
+def diff_table_3( sources: List[Dict], result: Dict, sort_entries: bool = True, show_equals: bool = False ) -> Table:
+	table = Table( box=None, show_header=True, show_footer=False )
+
+	field_header = '[blue bold]Field[/blue bold]'
+	source_headers = [ f'[blue bold]Source {i + 1}[/blue bold]' for i in range( len( sources ) ) ]
+	result_header = '[blue bold]Value after Grouping[/blue bold]'
+
+	table.add_column( field_header, justify="left", no_wrap=True )
+	for header in source_headers:
+		table.add_column( header, justify="left", no_wrap=True )
+	table.add_column( result_header, justify="left", no_wrap=True )
+
+	keys = result.keys()
+	for source in sources:
+		keys = keys | source.keys()
+	keys = sorted( list( keys ) ) if sort_entries else list( keys )
+
+	for k in keys:
+		src_values, result_value = [ fmt( s.get( k ) ) for s in sources], fmt( result.get( k ) )
+		if not show_equals and all( [ src == result_value for src in src_values ] ):
+			continue
+
+		# not sure yet, what look best ...
+
+		# row = [ f'[bold]{k}[/bold]', *[ colored_diff( s, result_value )[0] for s in src_values ], result_value ]
+		row = [ f'[bold]{k}[/bold]' ]
+		for s in src_values:
+			# row.append( s if s == result_value else f'[red]{s}[/red]' )
+			row.append( s if s == result_value else colored_diff_2( s, result_value )[0] )
+
+		row.append( f'[green]{result_value}[/green]' )
+		# row.append( f'{result_value}' )
+
+		table.add_row( *row )
 
 	return table
 

@@ -6,7 +6,9 @@ from datetime import time
 from decimal import Decimal
 from decimal import InvalidOperation
 from logging import getLogger
+from re import compile as rxc
 from re import match
+from re import split
 from sys import maxsize
 from typing import Any
 from typing import Callable
@@ -29,7 +31,7 @@ log = getLogger( __name__ )
 YEAR_RANGE = range( 2000, datetime.utcnow().year + 1 )
 
 INT_PATTERN = '^(?P<value>\d+)$'
-INT_LIST_PATTERN = '^(?P<values>(\d+,)+(\d+))$'
+INT_LIST = rxc( '^\d+(,\d+)*$' )
 INT_RANGE_PATTERN = '^(?P<range_from>\d+)?\.\.(?P<range_to>\d+)?$'
 
 NUMBER_PATTERN = '^(?P<value>\d+(\.\d+)?)$'
@@ -144,11 +146,11 @@ def normalize( rule: str ) -> str:
 	normalized_rule = None
 
 	if match( INT_PATTERN, rule ): # integer number only
-		# treat numbers from 2000 ... current year as years
-		if int( rule ) in YEAR_RANGE:
-			normalized_rule = f'year == {rule}'
-		else:
-			normalized_rule = f'id == {rule}'
+		# treat numbers from 2000 to current year as years, else treat it as id
+		normalized_rule = f'year == {rule}' if int( rule ) in YEAR_RANGE else f'id == {rule}'
+
+	elif INT_LIST.fullmatch( rule ):
+		normalized_rule = f'id in [{rule}]'
 
 	elif match( KEYWORD_PATTERN, rule ):  # keywords
 		if rule in KEYWORDS:

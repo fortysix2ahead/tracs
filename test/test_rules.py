@@ -19,7 +19,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.rules import DATE_PATTERN
 from tracs.rules import FUZZY_DATE_PATTERN
 from tracs.rules import FUZZY_TIME_PATTERN
-from tracs.rules import INT_LIST_PATTERN
+from tracs.rules import INT_LIST
 from tracs.rules import INT_PATTERN
 from tracs.rules import KEYWORD_PATTERN
 from tracs.rules import LIST_PATTERN
@@ -107,9 +107,8 @@ def test_rule_pattern():
 	assert not match( LIST_PATTERN, '100')
 	assert not match( LIST_PATTERN, '100,101,102,')
 
-	# remove??
-	assert match( INT_LIST_PATTERN, '1000,1001,1002' )
-	assert not match( INT_LIST_PATTERN, '1000,1001,1002,' )
+	assert INT_LIST.match( '1000,1001,1002' )
+	assert not INT_LIST.match( '1000,1001,1002,' )
 
 	# ranges are separated by two dots, where start and end might be missing
 	assert match( RANGE_PATTERN, '1000..1002' )
@@ -247,6 +246,10 @@ def test_evaluate():
 def test_type():
 	assert parse_eval( 'type=run', A1 )
 	assert parse_eval( 'type:run', A1 )
+
+def test_list():
+	assert parse_eval( '1000,1001,1002', A1 )
+	assert not parse_eval( '100,101,102', A1 )
 
 def test_range():
 	assert not parse_eval( 'id=999..1001', A1 )

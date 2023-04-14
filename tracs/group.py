@@ -19,6 +19,7 @@ from .config import KEY_GROUPS as GROUPS
 from tracs.service import Service
 from .ui import Choice
 from .ui import diff_table2
+from .ui import diff_table_3
 from .utils import seconds_to_time
 
 log = getLogger( __name__ )
@@ -93,7 +94,7 @@ def confirm_grouping( ctx: ApplicationContext, group: ActivityGroup, force: bool
 	result = ctx.db.factory.dump( group.head.union( group.tail, copy=True ), Activity )
 	sources = [ctx.db.factory.dump( a, Activity ) for a in group.members]
 
-	ctx.console.print( diff_table2( result = result, sources = sources ) )
+	ctx.console.print( diff_table_3( result = result, sources = sources ) )
 
 	answer = Confirm.ask( f'Continue grouping?' )
 	names = sorted( list( set( [member.name for member in group.members] ) ) )

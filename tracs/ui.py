@@ -112,10 +112,11 @@ def diff_table_3( sources: List[Dict], result: Dict, sort_entries: bool = True, 
 		row = [ f'[bold]{k}[/bold]' ]
 		for s in src_values:
 			# row.append( s if s == result_value else f'[red]{s}[/red]' )
-			row.append( s if s == result_value else colored_diff_2( s, result_value )[0] )
+			# row.append( s if s == result_value else colored_diff_2( s, result_value )[0] )
+			row.append( f'[green]{s}[/green]' if s == result_value else colored_diff_2( s, result_value )[0] )
 
-		row.append( f'[green]{result_value}[/green]' )
-		# row.append( f'{result_value}' )
+		# row.append( f'[green]{result_value}[/green]' )
+		row.append( f'{result_value}' )
 
 		table.add_row( *row )
 

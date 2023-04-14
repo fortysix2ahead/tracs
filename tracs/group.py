@@ -92,6 +92,7 @@ def confirm_grouping( ctx: ApplicationContext, group: ActivityGroup, force: bool
 		return True
 
 	result = ctx.db.factory.dump( group.head.union( group.tail, copy=True ), Activity )
+	result['uids'] = sorted( list( { *group.head.uids, *[uid for t in group.tail for uid in t.uids] } ) )
 	sources = [ctx.db.factory.dump( a, Activity ) for a in group.members]
 
 	ctx.console.print( diff_table_3( result = result, sources = sources ) )

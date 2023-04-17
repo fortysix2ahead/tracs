@@ -118,7 +118,13 @@ def reimport_activities( activities: List[Activity], include_recordings: bool = 
 		offset_delta = None
 		timezone = None
 
+	# when non-interactive (a.k.a. force) show a progress bar
+	if force:
+		ctx.start( f'reimporting activity data', total=len( activities ) )
+
 	for a in activities:
+		ctx.advance( f'{a.uids}' )
+
 		resources = ctx.db.find_all_resources( a.uids )
 		new_activity = Activity()
 
@@ -149,6 +155,7 @@ def reimport_activities( activities: List[Activity], include_recordings: bool = 
 			ctx.db.upsert_activity( new_activity )
 
 	ctx.db.commit()
+	ctx.complete( 'done' )
 
 def load_all_resources( db: ActivityDb, activity: Activity ) -> List[Resource]:
 	resources = []

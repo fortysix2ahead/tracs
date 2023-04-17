@@ -53,7 +53,7 @@ TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d):(?P<second>[0-5]\d
 FUZZY_TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4])(:(?P<minute>[0-5]\d)(:(?P<second>[0-5]\d))?)?$'
 
 SHORT_RULE_PATTERN = r'^(\w+)(:|=)([\w\"\.].+)$' # short version: id=10 or id:10 for convenience, value must begin with alphanum or "
-RULE_PATTERN = '^(\w+)(==|!=|=~|!~|>=|<=|>|<|=|:)([\w\"\.].+)$'
+RULE_PATTERN = '^(\w+)(==|!=|=~|!~|>=|<=|>|<|=|:)([\w\"\.].+)*$'
 
 # mapping of keywords to normalized expressions
 # this enables operations like 'list thisyear'
@@ -173,6 +173,9 @@ def normalize( rule: str ) -> str:
 		elif op == ':':
 			if left in NORMALIZERS:
 				normalized_rule = NORMALIZERS[left]( right )
+
+			elif right is None:
+				normalized_rule = f'{left} == null'
 
 			elif match( NUMBER_PATTERN, right ):
 				if RESOLVER_TYPES.get( left ) is datetime: # years are caught by this regex already ...

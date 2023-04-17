@@ -226,7 +226,7 @@ def rename( ctx: ApplicationContext, filters: str ):
 
 @cli.command( help='reimports activities' )
 @option( '-o', '--offset', is_flag=False, required=False, help='offset for correcting value for time' )
-@option( '-r', '--recordings', is_flag=True, required=False, help='includes data from GPX, TCX etc. for reimporting' )
+@option( '-r', '--recordings', is_flag=True, required=False, help='include data from recordings like GPX or TCX when reimporting' )
 @option( '-s', '--strategy', is_flag=False, required=False, hidden=True, help='strategy to use when calculating fields (experimental)' )
 @option( '-tz', '--timezone', is_flag=False, required=False, help='timezone for calculating value for local time' )
 @argument( 'filters', nargs=-1 )

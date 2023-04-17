@@ -148,6 +148,9 @@ def test_rule_pattern():
 
 	# normal expressions
 
+	# empty value is allowed
+	assert match( RULE_PATTERN, 'id:' )
+
 	assert match( RULE_PATTERN, 'id:1000' )
 	assert match( RULE_PATTERN, 'ID:1000' )
 
@@ -190,6 +193,8 @@ def test_normalize():
 	assert normalize( 'polar' ) == f'"polar" in __classifiers__'
 	with raises( RuleSyntaxError ):
 		normalize( 'unknown_keyword' )
+
+	assert normalize( 'id:' ) == 'id == null'
 
 	assert normalize( 'id:1000' ) == 'id == 1000'
 	assert normalize( 'id=1000' ) == 'id == 1000'
@@ -237,6 +242,8 @@ def test_evaluate():
 
 	assert list( parse_rule( 'name:berlin' ).filter( al ) ) == [ al[0] ]
 	assert not parse_rule( 'location_place:hamburg' ).evaluate( A1 )
+
+	assert list( parse_rule( 'name:' ).filter( al ) ) == [ al[1] ]
 
 	with raises( SymbolResolutionError ):
 		parse_rule( 'invalid=1000' ).evaluate( A1 )

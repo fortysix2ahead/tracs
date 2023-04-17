@@ -272,6 +272,9 @@ class ApplicationContext:
 			if msg:
 				self.pp( msg )
 		else:
+			if not self.progress: # todo: improve, this might happen during testing strava ...
+				return
+
 			self.progress.update( task_id=self.task_id, advance=1, msg='' if msg is None else msg )
 			self.progress.stop()
 

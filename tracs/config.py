@@ -7,6 +7,10 @@ from datetime import datetime
 from importlib.resources import path as pkg_path
 from logging import getLogger
 from pathlib import Path
+
+from rich.progress import BarColumn
+from rich.progress import TaskProgressColumn
+from rich.progress import TimeRemainingColumn
 from typing import Any, Optional
 from typing import List
 from typing import Tuple
@@ -234,7 +238,17 @@ class ApplicationContext:
 				self.pp( description )
 		else:
 			# create progress and start as start/stop/reuse does not seem to work
-			self.progress = Progress( *Progress.get_default_columns(), TextColumn( '/' ), TimeElapsedColumn(), TextColumn( "{task.fields[msg]}" ), console=self.console )
+			columns = [
+				TextColumn( '[progress.description]{task.description}' ),
+				BarColumn(),
+				TaskProgressColumn(),
+				TimeElapsedColumn(),
+				TextColumn( '/' ),
+				TimeRemainingColumn(),
+				TextColumn( '[cyan]to go[/cyan]' ),
+				TextColumn( '{task.fields[msg]}' )
+			]
+			self.progress = Progress( *columns, console=self.console )
 			self.progress.start()
 			self.task_id = self.progress.add_task( description=description, total=total, msg='' )
 

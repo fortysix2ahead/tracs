@@ -132,6 +132,10 @@ class Activity:
 		return sorted( list( set( [uid.split( ':', maxsplit=1 )[0] for uid in self.uids] ) ) )
 
 	@property
+	def local_ids( self ) -> List[int]:
+		return sorted( list( set( [int( uid.split( ':', maxsplit=1 )[1] ) for uid in self.uids] ) ) )
+
+	@property
 	def resources( self ) -> List[Resource]:
 		return self.__resources__
 

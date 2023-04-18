@@ -41,20 +41,27 @@ class Fields:
 @dataclass( eq=True ) # todo: mark fields with proper eq attributes
 class Activity:
 
-	id: int = field( default=0 ) # integer id of this activity, same as key in dict which holds activities
+	id: int = field( default=0 )
+	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
 	uid: str = field( default=None ) # unique id of this activity in the form of <classifier:number> # todo: can this be removed?
-	uids: List[str] = field( default_factory=list ) # uids of activities which belong to this activity
+	uids: List[str] = field( default_factory=list )
+	"""List of uids of resources which belong to this activity"""
 
 	raw: Any = field( default=None )  # structured raw data used for initialization from external data
 	raw_id: int = field( default=None )  # raw id as raw data might not contain all data necessary
 
 	local_id: int = field( default=None )  # same as raw_id
 
-	name: Optional[str] = field( default=None ) # activity name
-	type: Optional[ActivityTypes] = field( default=None ) # activity type
-	description: str = field( default=None ) # description
-	tags: List[str] = field( default_factory=list ) # list of tags
-	equipment: List[str] = field( default_factory=list ) # list of equipment tags
+	name: Optional[str] = field( default=None )
+	"""activity name"""
+	type: Optional[ActivityTypes] = field( default=None )
+	"""activity type"""
+	description: str = field( default=None )
+	"""description"""
+	tags: List[str] = field( default_factory=list )
+	"""list of tags"""
+	equipment: List[str] = field( default_factory=list )
+	"""list of equipment tags"""
 
 	location_country: Optional[str] = field( default=None ) #
 	location_state: Optional[str] = field( default=None ) #
@@ -66,11 +73,16 @@ class Activity:
 	location_longitude_end: float = field( default=None ) #
 	route: str = field( default=None ) #
 
-	time: datetime = field( default=None ) # activity time (UTC)
-	time_end: Optional[datetime] = field( default=None ) # activity end time (UTC)
-	localtime: datetime = field( default=None ) # activity time (local)
-	localtime_end: Optional[datetime] = field( default=None ) # activity end time (local)
-	timezone: str = field( default=get_localzone_name() ) # timezone of the activity, local timezone by default
+	time: datetime = field( default=None )
+	"""activity time (UTC)"""
+	time_end: Optional[datetime] = field( default=None )
+	"""activity end time (UTC)"""
+	localtime: datetime = field( default=None )
+	"""activity time (local)"""
+	localtime_end: Optional[datetime] = field( default=None )
+	"""activity end time (local)"""
+	timezone: str = field( default=get_localzone_name() )
+	"""timezone of the activity, local timezone by default"""
 
 	duration: Optional[time] = field( default=None ) #
 	duration_moving: Optional[time] = field( default=None ) #

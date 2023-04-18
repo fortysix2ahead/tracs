@@ -10,18 +10,24 @@ from tracs.resources import UID
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
 def test_union( json ):
-	src1 = Activity( id=1, name='One' )
-	src2 = Activity( id=2, distance=10, calories=20 )
-	src3 = Activity( id=3, calories=100, heartrate= 100 )
+	src1 = Activity( id=1, name='One', uids=[ 'a1' ] )
+	src2 = Activity( id=2, distance=10, calories=20, uids=['a2'] )
+	src3 = Activity( id=3, calories=100, heartrate= 100, uids=[ 'a2', 'a3' ] )
 
-	target = src1.union( [src2, src3] )
+	target = src1.union( [src2, src3], copy=True )
 	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
 	assert target.id == 1
+	assert target.uids == [ 'a1', 'a2', 'a3' ]
+	assert src1.distance is None # source should be untouched
 
-	src1 = Activity( id=1, name='One' )
-	target = src1.union( others=[src2, src3], force=True )
+	target = src1.union( others=[src2, src3], force=True, copy=True )
 	assert target.name == 'One' and target.distance == 10 and target.calories == 100 and target.heartrate == 100
 	assert target.id == 3
+	assert src1.distance is None # source should be untouched
+
+	src1.union( [src2, src3], copy=False )
+	assert src1.name == 'One' and src1.distance == 10 and src1.calories == 20 and src1.heartrate == 100
+	assert src1.id == 1
 
 	# test constructor
 	src1 = Activity( id=1, name='One' )

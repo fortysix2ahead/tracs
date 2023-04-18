@@ -1,21 +1,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from dataclasses import field
-from dataclasses import Field
-from dataclasses import fields
-from dataclasses import InitVar
-from dataclasses import replace
-from datetime import datetime, time
-from typing import Any
-from typing import Callable
-from typing import ClassVar
-from typing import Dict
-
+from dataclasses import dataclass, field, Field, fields, InitVar, MISSING, replace
+from datetime import datetime
 from logging import getLogger
-from typing import List
-from typing import Optional
+from typing import Any, Callable, ClassVar, Dict, List, Optional
 
 from tzlocal import get_localzone_name
 
@@ -25,7 +14,7 @@ from .utils import sum_times
 
 log = getLogger( __name__ )
 
-PROTECTED_FIELDS = [ 'id', 'uid', 'uids', 'local_id' ]
+PROTECTED_FIELDS = [ 'id' ]
 
 @dataclass
 class Fields:
@@ -177,16 +166,31 @@ class Activity:
 			if not force and f.name in PROTECTED_FIELDS: # only overwrite protected fields when forced
 				continue
 
+			value = getattr( this, f.name )
 
-			if (value := getattr( this, f.name )) != f.default and not force: # do not overwrite when a value is already set
-				continue
+			# case 1: non-factory types
+			if f.default != MISSING and f.default_factory == MISSING:
+				if not force and value != f.default:  # do not overwrite when a value is already set
+					continue
 
-			for other in others:
-				# overwrite when other value is different and different from default
-				if (other_value := getattr( other, f.name )) != value and other_value != f.default:
-					setattr( this, f.name, other_value )
-					if not force: # with force the last value wins
-						break
+				for other in others:
+					# overwrite when other value is different and different from default
+					if (other_value := getattr( other, f.name )) != value and other_value != f.default:
+						setattr( this, f.name, other_value )
+						if not force: # with force the last value wins
+							break
+
+			# case 2: factory types
+			elif f.default == MISSING and f.default_factory != MISSING:
+				for other in others:
+					other_value = getattr( other, f.name )
+					if f.default_factory is list:
+						setattr( this, f.name, sorted( list( set().union( value, other_value ) ) ) )
+					elif f.default_factory is dict:
+						setattr( this, f.name, { **value, **other_value } )
+					else:
+						raise RuntimeError( f'unsupported factory datatype: {f.default_factory}' )
+
 		return this
 
 	def add( self, others: List[Activity], force: bool = False ) -> Activity:

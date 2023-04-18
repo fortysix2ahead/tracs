@@ -125,15 +125,12 @@ def reimport_activities( activities: List[Activity], include_recordings: bool = 
 	for a in activities:
 		ctx.advance( f'{a.uids}' )
 
-		resources = ctx.db.find_all_resources( a.uids )
 		new_activity = Activity()
 
-		src_activities = []
-		for r in resources:
-			resource_type = cast( ResourceType, Registry.resource_types.get( r.type ) )
-			if resource_type.summary or ( resource_type.recording and include_recordings ):
-				if activity := Service.as_activity( r ):
-					src_activities.append( activity )
+		all_resources = ctx.db.find_all_resources( a.uids )
+		resources = [ r for r in all_resources if Registry.resource_types.get( r.type ).summary ]
+		resources.extend( [ r for r in all_resources if include_recordings and Registry.resource_types.get( r.type ).recording ] )
+		src_activities = [ a for r in resources if ( a:= Service.as_activity( r ) ) ]
 
 		new_activity.union( others=src_activities )
 		new_activity.local_id = None # todo: remove later

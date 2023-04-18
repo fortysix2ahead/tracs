@@ -79,6 +79,21 @@ HEADERS_OPTIONS = { **HEADERS_TEMPLATE, **{
 	}
 }
 
+# data classes
+
+@dataclass
+class Point:
+
+	lon: float = field( default=None )
+	lat: float = field( default=None )
+	delta: int = field( default=None )
+	ele: int = field( default=None )
+
+@dataclass
+class BikecitizensRecording:
+
+	points: List[Point] = field( default_factory=list )
+
 @dataclass
 class BikecitizensActivity:
 
@@ -97,6 +112,15 @@ class BikecitizensActivity:
 	@property
 	def local_id( self ) -> int:
 		return self.id
+
+# resource handlers
+
+# todo: actually we can import this, but currently there are no timestamps and it's of no better use compared to the gpx
+# that's why recording is currently set to False
+@importer( type=BIKECITIZENS_RECORDING_TYPE, activity_cls=BikecitizensRecording, recording=False )
+class BikecitizensRecordingImporter( JSONHandler ):
+
+	pass
 
 @importer( type=BIKECITIZENS_TYPE, activity_cls=BikecitizensActivity, summary=True )
 class BikecitizensImporter( JSONHandler ):
@@ -117,6 +141,8 @@ class BikecitizensImporter( JSONHandler ):
 			tags = activity.tags,
 			uids=[f'{SERVICE_NAME}:{activity.local_id}'],
 		)
+
+# service
 
 @service
 class Bikecitizens( Service, Plugin ):

@@ -54,7 +54,7 @@ class Registry:
 	fetchers = {}
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
-	resource_types: Dict[str, Type] = {}
+	resource_types: Dict[str, ResourceType] = {}
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
 

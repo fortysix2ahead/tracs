@@ -180,7 +180,7 @@ def _confirm_init( source: Activity, target: Activity, ignore: List[str], ctx: A
 	src_dict = { k: v for k, v in src_dict.items() if k not in ignore }
 	target_dict = { k: v for k, v in target_dict.items() if k not in ignore }
 
-	table = diff_table( src_dict, target_dict, header=('Field', 'Old Value', 'New Value') )
+	table = diff_table( src_dict, target_dict, header=('Field', 'Old Value', 'New Value'), sort_entries=True )
 	if len( table.rows ) > 0:
 		ctx.console.print( table )
 		answer = Confirm.ask( f'Would you like to reimport activity {source.id} \[{", ".join( source.uids)}]?', default=False )

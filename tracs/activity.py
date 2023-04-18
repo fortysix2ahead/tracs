@@ -156,11 +156,11 @@ class Activity:
 	# additional methods
 
 	# def union( self, others: List[Activity], strategy: Literal['first', 'last'] = 'first' ) -> Activity: # todo: are different strategies useful?
-	def union( self, others: List[Activity], copy: bool = False, force: bool = False ) -> Activity:
+	def union( self, others: List[Activity], ignore: List[str] = None, copy: bool = False, force: bool = False ) -> Activity:
 		this = replace( self ) if copy else self
 
 		for f in this.fields():
-			if f.name.startswith( '__' ): # never touch internal fields
+			if f.name.startswith( '__' ) or f.name in ignore: # never touch internal or ignored fields
 				continue
 
 			if not force and f.name in PROTECTED_FIELDS: # only overwrite protected fields when forced

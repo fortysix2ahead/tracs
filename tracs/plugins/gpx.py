@@ -33,5 +33,10 @@ class GPXImporter( ResourceHandler ):
 			localtime_end = gpx.get_time_bounds().end_time.astimezone( tzlocal() ),
 			distance = round( gpx.length_2d(), 1 ),
 			duration = seconds_to_time( gpx.get_duration() ) if gpx.get_duration() else None,
-			uid = f'gpx:{gpx.get_time_bounds().start_time.astimezone( UTC ).strftime( "%y%m%d%H%M%S" )}',
+			location_latitude_start=gpx.get_points_data()[0].point.latitude,
+			location_longitude_start=gpx.get_points_data()[0].point.longitude,
+			location_latitude_end=gpx.get_points_data()[-1].point.latitude,
+			location_longitude_end=gpx.get_points_data()[-1].point.longitude,
+			# todo: don't add a gpx id as this field is currently of no use, maybe we can activate it later
+			# uid = f'gpx:{gpx.get_time_bounds().start_time.astimezone( UTC ).strftime( "%y%m%d%H%M%S" )}',
 		)

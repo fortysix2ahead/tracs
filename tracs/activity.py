@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, Field, fields, InitVar, MISSING, replace
-from datetime import datetime
+from datetime import datetime, time
 from logging import getLogger
 from typing import Any, Callable, ClassVar, Dict, List, Optional
 
@@ -185,7 +185,7 @@ class Activity:
 				for other in others:
 					other_value = getattr( other, f.name )
 					if f.default_factory is list:
-						setattr( this, f.name, sorted( list( set().union( value, other_value ) ) ) )
+						setattr( this, f.name, sorted( list( set().union( getattr( this, f.name ), other_value ) ) ) )
 					elif f.default_factory is dict:
 						setattr( this, f.name, { **value, **other_value } )
 					else:

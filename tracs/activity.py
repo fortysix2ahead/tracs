@@ -48,7 +48,6 @@ class Activity:
 	"""List of uids of resources which belong to this activity"""
 
 	raw: Any = field( default=None )  # structured raw data used for initialization from external data
-	raw_id: int = field( default=None )  # raw id as raw data might not contain all data necessary
 
 	local_id: int = field( default=None )  # same as raw_id
 

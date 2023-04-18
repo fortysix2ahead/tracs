@@ -213,7 +213,7 @@ class PolarFlowImporter( JSONHandler ):
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: PolarFlowExercise = resource.data
 		return Activity(
-			local_id=activity.local_id,
+			# local_id=activity.local_id,
 			# uid = f'{SERVICE_NAME}:{activity.local_id}', # todo: remove later?
 			uids = [f'{SERVICE_NAME}:{activity.local_id}'],
 			name = activity.title,

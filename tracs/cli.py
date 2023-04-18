@@ -6,7 +6,7 @@ from logging import getLogger
 from logging import INFO
 from logging import StreamHandler
 from sys import stderr
-from typing import List
+from typing import List, Tuple
 from typing import Optional
 
 from click import argument
@@ -225,14 +225,23 @@ def rename( ctx: ApplicationContext, filters: str ):
 	ctx.db.commit()
 
 @cli.command( help='reimports activities' )
+@option( '-if', '--ignore-field', is_flag=False, required=False, multiple=True, help='fields to be ignored when calculating new field values' )
 @option( '-o', '--offset', is_flag=False, required=False, help='offset for correcting value for time' )
 @option( '-r', '--recordings', is_flag=True, required=False, help='include data from recordings like GPX or TCX when reimporting' )
 @option( '-s', '--strategy', is_flag=False, required=False, hidden=True, help='strategy to use when calculating fields (experimental)' )
 @option( '-tz', '--timezone', is_flag=False, required=False, help='timezone for calculating value for local time' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
-def reimport( ctx: ApplicationContext, filters, recordings: bool = False, strategy: str = None, offset: str = None, timezone: str = None ):
-	reimport_activities( list( ctx.db.find( filters ) ), include_recordings=recordings, strategy=strategy, offset=offset, timezone=timezone, ctx=ctx )
+def reimport( ctx: ApplicationContext, filters, recordings: bool = False, strategy: str = None, offset: str = None, timezone: str = None, ignore_field: Tuple = None ):
+	reimport_activities(
+		activities=list( ctx.db.find( filters ) ),
+		include_recordings=recordings,
+		ignore_fields=list( ignore_field ),
+		strategy=strategy,
+		offset=offset,
+		timezone=timezone,
+		ctx=ctx
+	)
 
 @cli.command( 'open', help='opens activities in an external application' )
 @argument( 'filters', nargs=-1 )

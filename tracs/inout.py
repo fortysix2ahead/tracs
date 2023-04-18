@@ -99,8 +99,9 @@ def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 		# os.system( "open " + shlex.quote( filename ) )  # MacOS/X
 		# os.system( "start " + filename )  # windows
 
-def reimport_activities( activities: List[Activity], include_recordings: bool = False, strategy: str = None, offset: str = None, timezone: str = None, ctx: ApplicationContext = None ):
+def reimport_activities( activities: List[Activity], include_recordings: bool = False, strategy: str = None, offset: str = None, timezone: str = None, ignore_fields: List[str] = None, ctx: ApplicationContext = None ):
 	force = ctx.force
+	ignore_fields = ignore_fields if ignore_fields is not None else []
 	log.debug( f'reimporting {len( activities )} activities, with force={force}' )
 
 	try:
@@ -130,7 +131,7 @@ def reimport_activities( activities: List[Activity], include_recordings: bool = 
 		resources.extend( [ r for r in all_resources if include_recordings and Registry.resource_types.get( r.type ).recording ] )
 		src_activities = [ a2 for r in resources if ( a2:= Service.as_activity( r ) ) ]
 
-		new_activity = Activity().union( others=src_activities, copy=True )
+		new_activity = a.union( others=src_activities, copy=True, ignore=ignore_fields )
 
 		if offset_delta:
 			new_activity.time = new_activity.time + offset_delta
@@ -144,7 +145,7 @@ def reimport_activities( activities: List[Activity], include_recordings: bool = 
 			new_activity.timezone = get_localzone_name()
 			new_activity.localtime = new_activity.time.astimezone( gettz( a.timezone ) )
 
-		if force or _confirm_init( a, new_activity, ctx ):
+		if force or _confirm_init( a, new_activity, ignore_fields, ctx ):
 			ctx.db.upsert_activity( new_activity )
 
 	ctx.db.commit()
@@ -172,9 +173,13 @@ def load_resource( resource: Resource, as_activity: bool = False, update_raw: bo
 
 	log.error( f'unable to load resource {resource.uid}?{resource.path}, no importer found for resource type {resource.type}' )
 
-def _confirm_init( source: Activity, target: Activity, ctx: ApplicationContext ) -> bool:
+def _confirm_init( source: Activity, target: Activity, ignore: List[str], ctx: ApplicationContext ) -> bool:
 	src_dict = ctx.db.factory.dump( source, Activity )
 	target_dict = ctx.db.factory.dump( target, Activity )
+	# don't display ignored fields
+	src_dict = { k: v for k, v in src_dict.items() if k not in ignore }
+	target_dict = { k: v for k, v in target_dict.items() if k not in ignore }
+
 	table = diff_table( src_dict, target_dict, header=('Field', 'Old Value', 'New Value') )
 	if len( table.rows ) > 0:
 		ctx.console.print( table )

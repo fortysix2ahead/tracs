@@ -47,8 +47,6 @@ class Activity:
 	uids: List[str] = field( default_factory=list )
 	"""List of uids of resources which belong to this activity"""
 
-	raw: Any = field( default=None )  # structured raw data used for initialization from external data
-
 	local_id: int = field( default=None )  # same as raw_id
 
 	name: Optional[str] = field( default=None )

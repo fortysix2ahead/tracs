@@ -143,25 +143,6 @@ class ResourcePartlist:
 	def end( self ) -> datetime:
 		return self.range.end_datetime
 
-#@resourcetype( type=POLAR_FLOW_TYPE, summary=True )
-class PolarActivity( Activity ):
-
-	def __raw_init__( self, raw: Any ) -> None:
-		self.raw_id = _raw_id( self.raw )
-		self.uid = f'{SERVICE_NAME}:{self.raw_id}'
-
-		self.name = self.raw.get( 'title' )
-		self.type = _type_of( self.raw )
-		self.time = parse( self.raw['datetime'], ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC )
-		self.localtime = parse( self.raw['datetime'], ignoretz=True ).replace( tzinfo=tzlocal() )
-		self.distance = self.raw.get( 'distance' )
-		self.duration = stt( self.raw['duration'] / 1000 ) if self.raw.get( 'duration' ) else None
-		self.calories = self.raw.get( 'calories' )
-
-	@property
-	def is_multipart( self ):
-		return _is_multipart_id( self.raw.get( 'iconUrl' ) )
-
 @dataclass
 class PolarFlowExercise:
 
@@ -216,6 +197,7 @@ class PolarFlowExerciseHrv:
 
 	pass
 
+# todo: this needs an update, but has low priority
 @resourcetype( type=POLAR_EXERCISE_DATA_TYPE, summary=True )
 class PolarExerciseDataActivity( Activity ):
 

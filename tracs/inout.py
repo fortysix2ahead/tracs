@@ -133,7 +133,6 @@ def reimport_activities( activities: List[Activity], include_recordings: bool = 
 		src_activities = [ a for r in resources if ( a:= Service.as_activity( r ) ) ]
 
 		new_activity.union( others=src_activities )
-		new_activity.local_id = None # todo: remove later
 		new_activity.uids = a.uids # manually copy uids
 
 		if offset_delta:

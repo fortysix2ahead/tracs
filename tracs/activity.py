@@ -47,8 +47,6 @@ class Activity:
 	uids: List[str] = field( default_factory=list )
 	"""List of uids of resources which belong to this activity"""
 
-	local_id: int = field( default=None )  # same as raw_id
-
 	name: Optional[str] = field( default=None )
 	"""activity name"""
 	type: Optional[ActivityTypes] = field( default=None )

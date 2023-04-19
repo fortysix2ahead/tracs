@@ -19,24 +19,14 @@ from click import Path as ClickPath
 from click_shell import make_click_shell
 from rule_engine import RuleSyntaxError
 
-from tracs.edit import equip_activities
-from tracs.edit import modify_activities
-from tracs.edit import tag_activities
-from tracs.edit import unequip_activities
-from tracs.edit import untag_activities
-from tracs.inout import export_activities
-from tracs.inout import import_activities
-from tracs.inout import open_activities
-from tracs.list import inspect_registry
-from tracs.list import inspect_resources
-from tracs.show import show_aggregate
-from tracs.show import show_resources
+from tracs.db import backup_db, maintain_db, restore_db, status_db
+from tracs.edit import equip_activities, modify_activities, tag_activities, unequip_activities, untag_activities
+from tracs.inout import export_activities, import_activities, open_activities
+from tracs.list import inspect_registry, inspect_resources
+from tracs.show import show_aggregate, show_resources
 from .application import Application
 from .config import ApplicationContext
 from .config import APPNAME
-from .db import backup_db
-from .db import restore_db
-from .db import status_db
 from .edit import edit_activities
 from .edit import rename_activities
 from .group import group_activities
@@ -49,7 +39,6 @@ from .list import inspect_activities
 from .list import list_activities
 from .list import show_config
 from .list import show_fields
-from .migrate import migrate_application
 from .setup import setup as setup_application
 from .show import show_activities
 from .validate import validate_activities
@@ -94,16 +83,15 @@ def cli( ctx, configuration, library, force, verbose, pretend, debug ):
 
 @cli.command( hidden=True )
 @option( '-b', '--backup', is_flag=True, required=False, help='creates a backup of the internal database' )
-@option( '-m', '--migrate', is_flag=False, required=False, type=str, help='performs a database migration', metavar='FUNCTION' )
+@option( '-m', '--maintenance', is_flag=False, flag_value='__show_maintenance_functions__', required=False, type=str, help='executes database maintenance', metavar='FUNCTION' )
 @option( '-r', '--restore', is_flag=True, required=False, help='restores the last version of the database from the backup' )
 @option( '-s', '--status', is_flag=True, required=False, help='prints some db status information' )
 @pass_obj
-def db( ctx: ApplicationContext, backup: bool, migrate: str, restore: bool, status: bool ):
-	app = Application.instance()
+def db( ctx: ApplicationContext, backup: bool, maintenance: str, restore: bool, status: bool ):
 	if backup:
 		backup_db( ctx )
-	elif migrate:
-		migrate_application( ctx, function_name=migrate, force=ctx.force )
+	elif maintenance:
+		maintain_db( ctx, maintenance=maintenance if maintenance != '__show_maintenance_functions__' else None )
 	elif restore:
 		restore_db( ctx )
 	elif status:

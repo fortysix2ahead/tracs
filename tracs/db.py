@@ -8,7 +8,6 @@ from datetime import timezone
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
-from shutil import copy
 from shutil import copytree
 from sys import exit as sysexit
 from typing import cast
@@ -38,8 +37,8 @@ from rich.table import Table as RichTable
 from .activity import Activity
 from .activity_types import ActivityTypes
 from .config import ApplicationContext
-from .config import APPNAME
 from .config import KEY_SERVICE
+from tracs.migrate import migrate_db, migrate_db_functions
 from .registry import Registry
 from .resources import Resource
 from .resources import ResourceType
@@ -510,3 +509,10 @@ def status_db( ctx: ApplicationContext ) -> None:
 	table.add_row( 'resources', pp( len( ctx.db.resource_map ) ) )
 
 	ctx.console.print( table )
+
+def maintain_db( ctx: ApplicationContext, maintenance: str, **kwargs ) -> None:
+	if not maintenance:
+		[ctx.console.print( f ) for f in migrate_db_functions( ctx )]
+	else:
+		backup_db( ctx )
+		migrate_db( ctx, maintenance, **kwargs )

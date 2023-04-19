@@ -8,9 +8,9 @@ from typing import Any, Callable, ClassVar, Dict, List, Optional
 
 from tzlocal import get_localzone_name
 
-from .activity_types import ActivityTypes
-from .resources import Resource
-from .utils import sum_times
+from tracs.activity_types import ActivityTypes
+from tracs.resources import Resource, UID
+from tracs.utils import sum_times, unique_sorted
 
 log = getLogger( __name__ )
 
@@ -26,6 +26,33 @@ class Fields:
 			return Fields.__resolvers__[name]()
 		else:
 			return super().__getattribute__( name )
+
+@dataclass( eq=True )
+class ActivityPart:
+
+	gap: time = field( default=None )
+	uids: List[str] = field( default_factory=list )
+
+	__uids__: List[UID] = field( default_factory=list )
+
+	def __post_init__(self):
+		self.__uids__ = [UID( uid ) for uid in self.uids]
+
+	@property
+	def classifiers( self ) -> List[str]:
+		return unique_sorted( [ uid.classifier for uid in self.__uids__ ] )
+
+	@property
+	def activity_uids( self ) -> List[str]:
+		return [ uid.uid for uid in self.as_activity_uids ]
+
+	@property
+	def as_uids( self ) -> List[UID]:
+		return unique_sorted( self.__uids__ )
+
+	@property
+	def as_activity_uids( self ) -> List[UID]:
+		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.__uids__ ] )
 
 @dataclass( eq=True ) # todo: mark fields with proper eq attributes
 class Activity:
@@ -84,12 +111,13 @@ class Activity:
 	heartrate_min: Optional[int] = field( default=None ) #
 	calories: Optional[int] = field( default=None ) #
 
-	# resources: List[Resource] = field( init=True, default_factory=list )
 	parts: List = field( init=True, default_factory=list )
 
+	# init variables
 	others: InitVar = field( default=None )
 	other_parts: InitVar = field( default=None )
 
+	## internal fields
 	__id__: int = field( init=False, default=0, repr=False, compare=False )
 	__dirty__: bool = field( init=False, default=False, repr=False )
 	__metadata__: Dict[str, Any] = field( init=False, default_factory=dict )

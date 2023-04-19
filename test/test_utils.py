@@ -7,9 +7,11 @@ from datetime import timezone
 from typing import List
 
 from dateutil.tz import gettz
+from pytest import raises
 
 from tracs.activity_types import ActivityTypes
-from tracs.utils import as_datetime
+from tracs.resources import UID
+from tracs.utils import as_datetime, unique_sorted
 from tracs.utils import fmt
 from tracs.utils import fromisoformat
 from tracs.utils import seconds_to_time
@@ -155,3 +157,13 @@ def test_unarg():
 	assert fn( 1, 2, 3, force=True, numbers=[10, 20, 30] ) == [1, 2, 3]
 
 	assert fn2( 100, 200, 1, 2, 3, force=True, numbers=[10, 20, 30] ) == [1, 2, 3]
+
+def test_unique_sorted():
+
+	assert unique_sorted( [ 3, 1, 2, 2 ] ) == [1, 2, 3]
+	assert unique_sorted( [ 't', 'r', 't', 'a' ] ) == ['a', 'r', 't']
+
+	uids = [ UID( 'strava:100' ), UID( 'polar:100' ), UID( 'polar:100' ) ]
+	with raises( TypeError ):
+		assert unique_sorted( uids ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
+	assert unique_sorted( uids, key=lambda uid: uid.uid ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]

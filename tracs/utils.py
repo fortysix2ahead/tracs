@@ -11,7 +11,7 @@ from difflib import SequenceMatcher
 from enum import Enum
 from re import match
 from time import gmtime
-from typing import Any
+from typing import Any, Iterable, TypeVar
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -36,6 +36,8 @@ from dateutil.tz import gettz
 from dateutil.tz import tzlocal
 
 from .activity_types import ActivityTypes
+
+T = TypeVar('T')
 
 @dataclass
 class UtilityConfiguration:
@@ -245,6 +247,9 @@ def colored_diff_2( left: str, right: str ) -> Tuple[str, str]:
 
 def unarg( key: str, *args, kwargs: Dict ) -> List[Any]:
 	return [*args[0]] or value if type( value := kwargs.get( key, [] ) ) is list else [value]
+
+def unique_sorted( l: Iterable[T], key: Optional = None ) -> List[T]:
+	return sorted( list( set( l ) ), key=key )
 
 # work around for urlparse()-inconsistencies between python 3.8 and later versions
 def urlparse( url ) -> ParseResult:

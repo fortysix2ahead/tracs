@@ -34,7 +34,7 @@ from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
 
-from .activity import Activity
+from .activity import Activity, ActivityPart
 from .activity_types import ActivityTypes
 from .config import ApplicationContext
 from .config import KEY_SERVICE
@@ -153,12 +153,11 @@ class ActivityDb:
 			schemas={
 				# name_mapping={}
 				Activity: DataclassFactorySchema( exclude=['id'], omit_default=True, skip_internal=True, unknown='unknown' ),
+				ActivityPart: DataclassFactorySchema( omit_default=True, skip_internal=True, unknown='unknown' ),
 				ActivityTypes: DataclassFactorySchema( parser=ActivityTypes.from_str, serializer=ActivityTypes.to_str ),
 				Resource: DataclassFactorySchema( omit_default=True, skip_internal=True, unknown='unknown',
 				                                  exclude=['content', 'data', 'id', 'raw', 'resources', 'status', 'summary', 'text'] ),
 				Schema: DataclassFactorySchema( skip_internal=True ),
-				# tiny db compatibility:
-				# Schema: FactorySchema( name_mapping={ 'version': ( '_default', '1', 'version' ) }, skip_internal=False, unknown='unknown' ),
 			}
 		)
 

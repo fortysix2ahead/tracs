@@ -87,6 +87,39 @@ def test_activity_part():
 	assert p.activity_uids == [ 'polar:1234', 'polar:2345' ]
 	assert p.classifiers == [ 'polar' ]
 
+def test_singlepart_activity():
+	a = Activity( uids=[ 'polar:101', 'strava:101', 'polar:102' ] )
+	assert a.uids == [ 'polar:101', 'polar:102', 'strava:101' ]
+	assert a.as_uids == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:101' ) ]
+	assert a.classifiers == [ 'polar', 'strava' ]
+
+	assert not a.multipart
+
+	a.set_uids( [ 'polar:101', 'polar:101' ] )
+	assert a.uids == [ 'polar:101' ]
+	assert a.as_uids == [ UID( 'polar:101' ) ]
+	assert a.classifiers == [ 'polar' ]
+
+def test_multipart_activity():
+	p1 = ActivityPart( uids=['polar:101' ], gap=time( 0, 0, 0 ) )
+	p2 = ActivityPart( uids=['polar:102', 'strava:102' ], gap=time( 1, 0, 0 ) )
+	a = Activity( parts=[ p1, p2 ] )
+
+	assert a.multipart
+	assert a.uids == [ 'polar:101', 'polar:102', 'strava:102' ]
+	assert a.as_uids == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:102' ) ]
+	assert a.classifiers == [ 'polar', 'strava' ]
+
+	p1 = ActivityPart( uids=['polar:101?swim.gpx' ], gap=time( 0, 0, 0 ) )
+	p2 = ActivityPart( uids=['polar:101?bike.gpx' ], gap=time( 1, 0, 0 ) )
+	p3 = ActivityPart( uids=['polar:101?run.gpx' ], gap=time( 1, 0, 0 ) )
+	a = Activity( parts=[ p1, p2, p3 ] )
+
+	assert a.multipart
+	assert a.uids == [ 'polar:101' ]
+	assert a.as_uids == [ UID( 'polar:101' ) ]
+	assert a.classifiers == [ 'polar' ]
+
 def test_resource():
 	some_string = 'some string value'
 	r = Resource( content=some_string.encode( encoding='UTF-8' ) )

@@ -1,26 +1,17 @@
 
-from dataclasses import dataclass
-from dataclasses import field
-from datetime import datetime
-from datetime import time
-from datetime import timedelta
-from typing import List
-from typing import Optional
-from typing import Tuple
-
+from dataclasses import dataclass, field
+from datetime import datetime, time, timedelta
 from logging import getLogger
+from typing import List, Optional, Tuple
 
 from rich.prompt import Confirm
 
-from .activity import Activity
-from .activity_types import ActivityTypes
-from .config import ApplicationContext
-from .config import KEY_GROUPS as GROUPS
 from tracs.service import Service
-from .ui import Choice
-from .ui import diff_table2
-from .ui import diff_table_3
-from .utils import seconds_to_time
+from tracs.activity import Activity, ActivityPart
+from tracs.activity_types import ActivityTypes
+from tracs.config import ApplicationContext
+from tracs.ui import Choice, diff_table_3
+from tracs.utils import seconds_to_time
 
 log = getLogger( __name__ )
 
@@ -142,6 +133,8 @@ def part_activities( activities: List[Activity], force: bool = False, pretend: b
 		log.warning( f'experimental: not going to create multipart activity consisting of more than {PART_THRESHOLD} activities' )
 		return
 
+	# todo: prerequisite check? time + time_end must exist
+
 	activities.sort( key=lambda e: e.time )
 
 	parts, gaps = [], []
@@ -158,11 +151,10 @@ def part_activities( activities: List[Activity], force: bool = False, pretend: b
 			parts.append( a )
 			gaps.append( time( 0 ) )
 
-	part_list = []
-	for i in range( len( parts ) ):
-		part_list.append( { 'gap': gaps[i].isoformat(), 'uids': parts[i].uids } )
-
-	ctx.db.insert( Activity( parts=part_list, type=ActivityTypes.multisport, other_parts=activities ) )
+	part_list = [ ActivityPart( uids=p.uids, gap=g ) for p, g in zip( parts, gaps ) ]
+	new_activity = Activity( parts=part_list, type=ActivityTypes.multisport, other_parts=activities )
+	ctx.db.insert( new_activity )
+	ctx.db.commit()
 
 def unpart_activities( activities: List[Activity], force: bool = False, pretend: bool = False, ctx: ApplicationContext = None ):
 	pass

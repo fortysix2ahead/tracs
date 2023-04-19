@@ -57,6 +57,9 @@ class UID:
 			if self.part:
 				self.uid = f'{self.uid}#{self.part}'
 
+	def __hash__( self ) -> int:
+		return hash( self.uid )
+
 	def __str__( self ) -> str:
 		return self.uid
 

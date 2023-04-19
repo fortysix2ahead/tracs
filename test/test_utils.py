@@ -164,6 +164,5 @@ def test_unique_sorted():
 	assert unique_sorted( [ 't', 'r', 't', 'a' ] ) == ['a', 'r', 't']
 
 	uids = [ UID( 'strava:100' ), UID( 'polar:100' ), UID( 'polar:100' ) ]
-	with raises( TypeError ):
-		assert unique_sorted( uids ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
+	assert unique_sorted( uids ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ] # we can use this without key as UID supports __lt__
 	assert unique_sorted( uids, key=lambda uid: uid.uid ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]

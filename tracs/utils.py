@@ -245,9 +245,6 @@ def colored_diff_2( left: str, right: str ) -> Tuple[str, str]:
 			right_colored += right[right_from:right_to]
 	return  left_colored, right_colored
 
-def unarg( key: str, *args, kwargs: Dict ) -> List[Any]:
-	return [*args[0]] or value if type( value := kwargs.get( key, [] ) ) is list else [value]
-
 def unique_sorted( l: Iterable[T], key: Optional = None ) -> List[T]:
 	return sorted( list( set( l ) ), key=key )
 

@@ -115,9 +115,10 @@ class Activity:
 	parts: List[ActivityPart] = field( default_factory=list )
 
 	# init variables
+	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
 	others: InitVar = field( default=None )
 	other_parts: InitVar = field( default=None )
-	uid: InitVar[str] = field( default=None ) # we keep this as init var
+	uid: InitVar = field( default=None ) # we keep this as init var
 
 	## internal fields
 	__id__: int = field( init=False, default=0, repr=False, compare=False )

@@ -59,7 +59,6 @@ class Activity:
 
 	id: int = field( default=0 )
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
-	uid: str = field( default=None ) # unique id of this activity in the form of <classifier:number> # todo: can this be removed?
 	uids: List[str] = field( default_factory=list )
 	"""List of uids of resources which belong to this activity"""
 
@@ -111,14 +110,16 @@ class Activity:
 	heartrate_min: Optional[int] = field( default=None ) #
 	calories: Optional[int] = field( default=None ) #
 
-	parts: List = field( init=True, default_factory=list )
+	parts: List[ActivityPart] = field( default_factory=list )
 
 	# init variables
 	others: InitVar = field( default=None )
 	other_parts: InitVar = field( default=None )
+	uid: InitVar[str] = field( default=None ) # we keep this as init var
 
 	## internal fields
 	__id__: int = field( init=False, default=0, repr=False, compare=False )
+	__uids__: List[UID] = field( default_factory=list, repr=False, compare=False )
 	__dirty__: bool = field( init=False, default=False, repr=False )
 	__metadata__: Dict[str, Any] = field( init=False, default_factory=dict )
 	__parts__: List[Activity] = field( init=False, default_factory=list, repr=False )
@@ -146,11 +147,20 @@ class Activity:
 
 	@property
 	def classifiers( self ) -> List[str]:
-		return sorted( list( set( [uid.split( ':', maxsplit=1 )[0] for uid in self.uids] ) ) )
+		return unique_sorted( [uid.classifier for uid in self.__uids__] )
 
 	@property
 	def local_ids( self ) -> List[int]:
 		return sorted( list( set( [int( uid.split( ':', maxsplit=1 )[1] ) for uid in self.uids] ) ) )
+
+	@property
+	def as_uids( self ) -> List[UID]:
+		return unique_sorted( self.__uids__ )
+
+	# dedicated setter for uids to update __uids__ as well
+	def set_uids( self, uids: List[str] ) -> None:
+		self.uids = unique_sorted( uids )
+		self.__uids__ = [UID( uid ) for uid in self.uids]
 
 	@property
 	def resources( self ) -> List[Resource]:
@@ -169,13 +179,28 @@ class Activity:
 		return True if len( self.uids ) > 1 else False
 
 	@property
-	def is_multipart( self ) -> bool:
-		return True if len( self.parts ) > 0 else False
+	def multipart( self ) -> bool:
+		return len( self.parts ) > 0
 
-	# init
-
-	def __post_init__( self, others: List[Activity], other_parts: List[Activity] ):
+	# post init, this contains mostly convenience things
+	def __post_init__( self, others: List[Activity], other_parts: List[Activity], uid: str ):
+		# id handling needs to be improved later, id field can be an init var
 		self.__id__ = self.id
+
+		# convenience: if called with an uid, store it in uids list + setup __uids__
+		if uid:
+			self.uids = [uid]
+
+		# uid list handling, depending on parts
+		if self.parts:
+			self.uids = unique_sorted( uid for p in self.parts for uid in p.activity_uids )
+
+		# sort uids upfront
+		if self.uids:
+			self.uids = unique_sorted( self.uids )
+			self.__uids__ = [UID( uid ) for uid in self.uids]
+
+		# convenience: allow init from other activities
 		if others:
 			self.union( others )
 		elif other_parts:

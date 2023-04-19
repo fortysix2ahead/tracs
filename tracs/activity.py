@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, Field, fields, InitVar, MISSING, replace
 from datetime import datetime, time
 from logging import getLogger
-from typing import Any, Callable, ClassVar, Dict, List, Optional
+from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar
 
 from tzlocal import get_localzone_name
 
@@ -13,6 +13,8 @@ from tracs.resources import Resource, UID
 from tracs.utils import sum_times, unique_sorted
 
 log = getLogger( __name__ )
+
+T = TypeVar('T')
 
 PROTECTED_FIELDS = [ 'id' ]
 
@@ -211,6 +213,7 @@ class Activity:
 	# def union( self, others: List[Activity], strategy: Literal['first', 'last'] = 'first' ) -> Activity: # todo: are different strategies useful?
 	def union( self, others: List[Activity], ignore: List[str] = None, copy: bool = False, force: bool = False ) -> Activity:
 		this = replace( self ) if copy else self
+		ignore = ignore if ignore else []
 
 		for f in this.fields():
 			if f.name.startswith( '__' ) or f.name in ignore: # never touch internal or ignored fields
@@ -246,7 +249,7 @@ class Activity:
 
 		return this
 
-	def add( self, others: List[Activity], force: bool = False ) -> Activity:
+	def add( self, others: List[Activity], copy: bool = False, force: bool = False ) -> Activity:
 		"""
 		Updates this activity with other activities as parts for this activity.
 		Existing values are overwritten, if existing values need to be incorporated, this method
@@ -255,34 +258,33 @@ class Activity:
 		:return:
 		"""
 
-		# field processing is currently a manual process, not sure if this can really be generalized ...
-		if others:
-			others.sort( key=lambda a: a.time.timestamp() )
+		this = replace( self ) if copy else self
+		activities = [this, *others]
 
-			self.time = others[0].time
-			self.localtime = others[0].localtime
-			self.time_end = others[-1].time_end
-			self.localtime_end = others[-1].localtime_end
-			self.timezone = others[0].timezone
+		this.time = _min( activities, 'time' )
+		this.localtime = _min( activities, 'localtime' )
+		this.time_end = _max( activities, 'time_end' )
+		this.localtime_end = _max( activities, 'localtime_end' )
+		this.timezone = this.timezone # todo: just keep the timezone?
 
-			self.duration = sum_times( [o.duration for o in others] ) # don't know why pycharm complains about this line
-			self.duration_moving = sum_times( [o.duration_moving for o in others] ) # don't know why pycharm complains about this line
+		this.duration = sum_times( _stream( activities, 'duration' ) )
+		this.duration_moving = sum_times( _stream( activities, 'duration_moving' ) )
 
-			self.distance = s if (s := sum( o.distance for o in others if o.distance )) else None
-			self.ascent = s if (s := sum( o.ascent for o in others if o.ascent )) else None
-			self.descent = s if (s := sum( o.descent for o in others if o.descent )) else None
-			self.elevation_max = max( l ) if ( l := [o.elevation_max for o in others if o.elevation_max is not None] ) else None
-			self.elevation_min = min( l ) if ( l := [o.elevation_min for o in others if o.elevation_min is not None] ) else None
+		this.distance = _sum( activities, 'distance' )
+		this.ascent = _sum( activities, 'ascent' )
+		this.descent = _sum( activities, 'descent' )
+		this.elevation_max = _max( activities, 'elevation_max' )
+		this.elevation_min = _min( activities, 'elevation_min' )
 
-			self.speed_max = max( l ) if ( l := [o.speed_max for o in others if o.speed_max is not None] ) else None
+		this.speed_max = _max( activities, 'speed_max' )
 
-			self.heartrate_max = max( l ) if ( l := [o.heartrate_max for o in others if o.heartrate_max is not None] ) else None
-			self.heartrate_min = min( l ) if ( l := [o.heartrate_min for o in others if o.heartrate_min is not None] ) else None
-			self.calories = s if (s := sum( o.calories for o in others if o.calories )) else None
+		this.heartrate_min = _min( activities, 'heartrate_min' )
+		this.heartrate_max = _max( activities, 'heartrate_max' )
+		this.calories = _sum( activities, 'calories' )
 
-			# todo: fill parts field information already here?
+		# todo: fill parts field information already here?
 
-		return self
+		return this
 
 	def add_resource( self, resource: Resource ) -> None:
 		self.__resources__.append( resource )
@@ -298,3 +300,17 @@ class Activity:
 
 	def untag( self, tag: str ):
 		self.tags.remove( tag )
+
+# helper
+
+def _max( activities: List[Activity], name: str ) -> Any:
+	return max( s ) if ( s := _stream( activities, name ) ) else None
+
+def _min( activities: List[Activity], name: str ) -> Any:
+	return min( s ) if ( s := _stream( activities, name ) ) else None
+
+def _sum( activities: List[Activity], name: str ) -> Any:
+	return sum( s ) if ( s := _stream( activities, name ) ) else None
+
+def _stream( activities: List[Activity], name: str ) -> List:
+	return [ v for a in activities if ( v := getattr( a, name, None ) ) ]

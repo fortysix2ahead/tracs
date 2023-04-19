@@ -4,7 +4,7 @@ from datetime import time
 
 from pytest import mark
 
-from tracs.activity import Activity
+from tracs.activity import Activity, ActivityPart
 from tracs.resources import Resource
 from tracs.resources import UID
 
@@ -71,6 +71,21 @@ def test_uid():
 	assert UID( classifier='polar', local_id=101, path='recording.gpx' ).uid == 'polar:101?recording.gpx'
 	assert UID( classifier='polar', local_id=101, part=1 ).uid == 'polar:101#1'
 	assert UID( classifier='polar', local_id=101, path='recording.gpx', part=1 ).uid == 'polar:101?recording.gpx#1' # works, but does not make sense ...
+
+def test_activity_part():
+	p = ActivityPart( uids=[ 'polar:1234' ] )
+	assert p.as_uids == [ UID( classifier='polar', local_id=1234 ) ]
+	assert p.classifiers == [ 'polar' ]
+
+	p = ActivityPart( uids=['polar:2345', 'polar:1234' ] )
+	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345' ) ]
+	assert p.classifiers == [ 'polar' ]
+
+	p = ActivityPart( uids=['polar:2345?rec.gpx', 'polar:2345?rec.tcx', 'polar:1234'] )
+	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345?rec.gpx' ), UID( 'polar:2345?rec.tcx' ) ]
+	assert p.as_activity_uids == [ UID( 'polar:1234' ), UID( 'polar:2345' ) ]
+	assert p.activity_uids == [ 'polar:1234', 'polar:2345' ]
+	assert p.classifiers == [ 'polar' ]
 
 def test_resource():
 	some_string = 'some string value'

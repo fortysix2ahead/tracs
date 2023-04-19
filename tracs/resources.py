@@ -60,6 +60,9 @@ class UID:
 	def __hash__( self ) -> int:
 		return hash( self.uid )
 
+	def __lt__( self, other: UID ):
+		return self.uid < other.uid
+
 	def __str__( self ) -> str:
 		return self.uid
 

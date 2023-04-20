@@ -466,10 +466,10 @@ class ActivityDb:
 			return [ r for r in self.resources if r.uid == uid ]
 
 	def find_resources_of_type( self, activity_type: str, activity: Activity = None ) -> List[Resource]:
+		resources = [r for r in self.resources if r.type == activity_type ]
 		if activity:
-			return [r for r in self.resources if r.type == activity_type and r.uid in activity.uids ]
-		else:
-			return [r for r in self.resources if r.type == activity_type ]
+			resources = [r for r in resources if r.uid in [*activity.uids, *activity.activity_uids] ]
+		return resources
 
 	def find_all_resources( self, uids: List[str] ) -> List[Resource]:
 		return [r for r in self.resources if r.uid in uids]

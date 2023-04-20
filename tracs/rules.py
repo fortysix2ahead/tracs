@@ -30,6 +30,8 @@ log = getLogger( __name__ )
 
 YEAR_RANGE = range( 2000, datetime.utcnow().year + 1 )
 
+TRUE_FALSE = rxc( r'^(true|false)$' )
+
 INT_PATTERN = '^(?P<value>\d+)$'
 INT_LIST = rxc( '^\d+(,\d+)*$' )
 INT_RANGE_PATTERN = '^(?P<range_from>\d+)?\.\.(?P<range_to>\d+)?$'
@@ -167,6 +169,8 @@ def normalize( rule: str ) -> str:
 				normalized_rule = f'{left} == d"{right}"'
 			elif match( TIME_PATTERN, right ) and RESOLVER_TYPES.get( left ) is time:
 				normalized_rule = f'{left} == t"{right}"'
+			elif TRUE_FALSE.match( right ):
+				normalized_rule = f'{left} == {right}'
 			else:
 				normalized_rule = f'{left} == "{right}"'
 
@@ -182,6 +186,9 @@ def normalize( rule: str ) -> str:
 					normalized_rule = f'{left} >= d"{parse_floor_str( right )}" and {left} <= d"{parse_ceil_str( right )}"'
 				else:
 					normalized_rule = f'{left} == {right}'
+
+			elif TRUE_FALSE.match( right ):
+				normalized_rule = f'{left} == {right}'
 
 			elif match (QUOTED_STRING_PATTERN, right):
 				normalized_rule = f'{left} != null and {right.lower()} in {left}.as_lower'

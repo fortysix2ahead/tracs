@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import datetime, time
 from re import match
 from typing import cast
 
@@ -14,7 +14,7 @@ from rule_engine import Rule
 from rule_engine import RuleSyntaxError
 from rule_engine import SymbolResolutionError
 
-from tracs.activity import Activity
+from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.rules import DATE_PATTERN
 from tracs.rules import FUZZY_DATE_PATTERN
@@ -249,6 +249,17 @@ def test_evaluate():
 		parse_rule( 'invalid=1000' ).evaluate( A1 )
 
 	# RuleSyntaxError should never happen ...
+
+def test_evaluate_multipart():
+	p1 = ActivityPart( uids=['polar:101' ], gap=time( 0, 0, 0 ) )
+	p2 = ActivityPart( uids=['polar:102', 'strava:102' ], gap=time( 1, 0, 0 ) )
+	a = Activity( parts=[ p1, p2 ] )
+
+	assert a.multipart
+	assert parse_eval( 'multipart=true', a )
+	assert not parse_eval( 'multipart=false', a )
+	assert parse_eval( 'multipart:true', a )
+	assert not parse_eval( 'multipart:false', a )
 
 def test_type():
 	assert parse_eval( 'type=run', A1 )

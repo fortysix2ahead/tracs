@@ -156,7 +156,7 @@ class ActivityDb:
 			debug_path=True,
 			schemas={
 				# name_mapping={}
-				Activity: DataclassFactorySchema( exclude=['id'], omit_default=True, skip_internal=True, unknown='unknown' ),
+				Activity: Activity.schema(),
 				ActivityPart: DataclassFactorySchema( omit_default=True, skip_internal=True, unknown='unknown' ),
 				ActivityTypes: DataclassFactorySchema( parser=ActivityTypes.from_str, serializer=ActivityTypes.to_str ),
 				Resource: DataclassFactorySchema( omit_default=True, skip_internal=True, unknown='unknown',

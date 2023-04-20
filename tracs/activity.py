@@ -6,6 +6,7 @@ from datetime import datetime, time
 from logging import getLogger
 from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar
 
+from dataclass_factory import Schema
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
@@ -142,6 +143,15 @@ class Activity:
 	@classmethod
 	def fieldnames( cls ) -> List[str]:
 		return [f.name for f in fields( Activity )]
+
+	@classmethod
+	def schema( cls ) -> Schema:
+		return Schema(
+			exclude=['id'],
+			omit_default=True,
+			skip_internal=True,
+			unknown='unknown'
+		)
 
 	# additional properties
 

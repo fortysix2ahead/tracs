@@ -5,6 +5,8 @@ from enum import Enum
 from re import compile, Pattern
 from typing import Any, List, Optional, Tuple, Type
 
+from tracs.uid import UID
+
 # todo: not sure if we still need the status
 class ResourceStatus( Enum ):
 	UNKNOWN = 100
@@ -75,6 +77,7 @@ class Resource:
 	resources: List[Resource] = field( default_factory=list, repr=False )
 
 	__parent_activity__: List = field( default_factory=list, repr=False )
+	__uid__: UID = field( default=None, repr=False )
 
 	# class methods
 
@@ -88,9 +91,12 @@ class Resource:
 
 	def __post_init__( self, text: str ):
 		self.content = text.encode( encoding='UTF-8' ) if text else self.content
+		self.__uid__ = UID( f'{self.uid}?{self.path}' ) if self.uid and self.path else None
 
 	def __hash__( self ):
 		return hash( (self.uid, self.path) )
+
+	# additional properties
 
 	@property
 	def parent_activity( self ) -> Any: # todo: would be nice to return Activity here ...
@@ -107,6 +113,10 @@ class Resource:
 	@property
 	def local_id_str( self ) -> str:
 		return self._uid()[1]
+
+	@property
+	def uidpath( self ) -> str:
+		return self.__uid__.uid
 
 	@property  # property should be deprecated in favour of local id
 	def raw_id( self ) -> int:

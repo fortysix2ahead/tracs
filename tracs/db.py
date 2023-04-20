@@ -472,18 +472,13 @@ class ActivityDb:
 		resources = self.resources if resources is None else resources
 		return [r for r in resources if r.type == activity_type ]
 
-	def find_resources_of_type2( self, activity_type: str, activity: Activity = None ) -> List[Resource]:
-		if activity:
-			resources_for_activity = [r for r in self.resources if r.uid in [*activity.uids, *activity.activity_uids]]
-			resources = []
-			for uid in activity.as_uids:
-				if uid.denotes_activity():
-					resources.extend( [r for r in resources_for_activity if r.uid == uid.clspath] )
-				elif uid.denotes_resource():
-					resources.extend( [r for r in resources_for_activity if r.uid == uid.clspath and r.path == uid.path] )
-		else:
-			resources = self.resources
-		return [r for r in resources if r.type == activity_type ]
+	def find_resources_for( self, activity: Activity ) -> List[Resource]:
+		"""
+		Finds all resources related to a given activity.
+		"""
+		resources = [r for r in self.resources if r.uid in [uid.clspath for uid in activity.as_uids]]
+		# simplifiy this?
+		return [r for r in resources if r.uidpath in activity.uids or r.uid in activity.uids]
 
 	def find_all_resources( self, uids: List[str] ) -> List[Resource]:
 		"""

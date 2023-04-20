@@ -491,6 +491,13 @@ class ActivityDb:
 		"""
 		return [r for r in self.resources if r.uid in uids]
 
+	def find_recordings( self, resources: Optional[List[Resource]] = None ) -> List[Resource]:
+		"""
+		Finds all recording resources, restricts itself to the provided resource list if given.
+		"""
+		resources = self.resources if resources is None else resources
+		return [r for r in resources if (rt := Registry.resource_types.get( r.type )) and rt.recording ]
+
 	def find_summaries( self, uid: str ) -> List[Resource]:
 		"""
 		Finds all summary resources having the provided uid.

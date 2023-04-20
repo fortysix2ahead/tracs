@@ -13,6 +13,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.db import ActivityDb
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.strava import STRAVA_TYPE
+from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import Registry
 from tracs.resources import Resource, ResourceType
 from .helpers import get_db_path
@@ -111,8 +112,14 @@ def test_find_resources( db ):
 
 	# register strava summary type first, otherwise the test case will fail
 	Registry.register_resource_type( ResourceType( type=STRAVA_TYPE, summary=True ) )
+	Registry.register_resource_type( ResourceType( type=GPX_TYPE, recording=True ) )
+	Registry.register_resource_type( ResourceType( type=TCX_TYPE, recording=True ) )
+
 	assert ids( db.find_summaries( 'strava:1001' ) ) == [ 9 ]
 	assert ids( db.find_all_summaries( ['strava:1001'] ) ) == [ 9 ]
+
+	assert ids( db.find_recordings() ) == [3, 4, 5, 6, 7, 8, 10, 11]
+	assert ids( db.find_recordings( db.find_resources( 'strava:1001' ) ) ) == [7, 8]
 
 @mark.db( template='parts', read_only=True )
 def test_find_multipart( db ):

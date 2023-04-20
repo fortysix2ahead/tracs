@@ -9,7 +9,7 @@ from typing import List
 from dateutil.tz import gettz
 
 from tracs.activity_types import ActivityTypes
-from tracs.resources import UID
+from tracs.uid import UID
 from tracs.utils import as_datetime, unique_sorted
 from tracs.utils import fmt
 from tracs.utils import fromisoformat

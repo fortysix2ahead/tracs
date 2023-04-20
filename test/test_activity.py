@@ -6,7 +6,7 @@ from pytest import mark
 
 from tracs.activity import Activity, ActivityPart
 from tracs.resources import Resource
-from tracs.resources import UID
+from tracs.uid import UID
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
 def test_union( json ):
@@ -52,28 +52,6 @@ def test_add():
 	assert target.duration_moving is None
 	assert target.heartrate_max == 180
 	assert target.heartrate_min == 80
-
-def test_uid():
-	uid = UID( 'polar' )
-	assert uid.classifier == 'polar' and uid.local_id is None and uid.path is None
-	assert uid.uid == 'polar' and uid.denotes_service()
-
-	uid = UID( 'polar:101' )
-	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path is None
-	assert uid.uid == 'polar:101' and uid.denotes_activity()
-
-	uid = UID( 'polar:101?recording.gpx' )
-	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path == 'recording.gpx'
-	assert uid.uid == 'polar:101?recording.gpx' and uid.denotes_resource()
-
-	uid = UID( 'polar:101#2' )
-	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.part == 2
-	assert uid.uid == 'polar:101#2' and uid.denotes_part()
-
-	assert UID( classifier='polar', local_id=101 ).uid == 'polar:101'
-	assert UID( classifier='polar', local_id=101, path='recording.gpx' ).uid == 'polar:101?recording.gpx'
-	assert UID( classifier='polar', local_id=101, part=1 ).uid == 'polar:101#1'
-	assert UID( classifier='polar', local_id=101, path='recording.gpx', part=1 ).uid == 'polar:101?recording.gpx#1' # works, but does not make sense ...
 
 def test_activity_part():
 	p = ActivityPart( uids=[ 'polar:1234' ] )

@@ -23,7 +23,7 @@ from .plugins.local import SERVICE_NAME as LOCAL_SERVICE_NAME
 from .registry import Registry
 from .resources import Resource
 from .resources import ResourceType
-from .resources import UID
+from .uid import UID
 from .service import Service
 from .streams import as_str
 from .ui import diff_table

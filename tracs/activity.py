@@ -9,7 +9,8 @@ from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.resources import Resource, UID
+from tracs.resources import Resource
+from tracs.uid import UID
 from tracs.utils import sum_times, unique_sorted
 
 log = getLogger( __name__ )

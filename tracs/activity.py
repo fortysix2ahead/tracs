@@ -262,6 +262,8 @@ class Activity:
 		this = replace( self ) if copy else self
 		activities = [this, *others]
 
+		this.type = t if (t := _unique( activities, 'type' ) ) else ActivityTypes.multisport
+
 		this.time = _min( activities, 'time' )
 		this.localtime = _min( activities, 'localtime' )
 		this.time_end = _max( activities, 'time_end' )
@@ -303,6 +305,9 @@ class Activity:
 		self.tags.remove( tag )
 
 # helper
+
+def _unique( activities: List[Activity], name: str ) -> Any:
+	return s.pop() if ( len( s := set( _stream( activities, name ) ) ) == 1 ) else None
 
 def _max( activities: List[Activity], name: str ) -> Any:
 	return max( s ) if ( s := _stream( activities, name ) ) else None

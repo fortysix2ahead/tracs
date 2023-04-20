@@ -152,7 +152,7 @@ def part_activities( activities: List[Activity], force: bool = False, pretend: b
 			gaps.append( time( 0 ) )
 
 	part_list = [ ActivityPart( uids=p.uids, gap=g ) for p, g in zip( parts, gaps ) ]
-	new_activity = Activity( parts=part_list, type=ActivityTypes.multisport, other_parts=activities )
+	new_activity = Activity( parts=part_list, other_parts=activities )
 	ctx.db.insert( new_activity )
 	ctx.db.commit()
 

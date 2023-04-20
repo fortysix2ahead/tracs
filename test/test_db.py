@@ -2,6 +2,7 @@
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+from typing import List, Union
 
 from fs.memoryfs import MemoryFS
 from fs.osfs import OSFS
@@ -10,6 +11,10 @@ from pytest import mark
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.db import ActivityDb
+from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugins.strava import STRAVA_TYPE
+from tracs.registry import Registry
+from tracs.resources import Resource, ResourceType
 from .helpers import get_db_path
 
 def test_new_db_without_path():
@@ -94,8 +99,33 @@ def test_get( db ):
 	# get with id=0
 	assert db.get_by_id( 0 ) is None
 
+@mark.db( template='parts', read_only=True )
+def test_find_resources( db ):
+	assert ids( db.find_resources( 'strava:1001' ) ) == [ 7, 8, 9 ]
+	assert ids( db.find_resources( 'strava:1001', '1001.gpx' ) ) == [ 7 ]
+
+	assert ids( db.find_all_resources( ['strava:1001', 'strava:1002' ] ) ) == [ 7, 8, 9, 10, 11, 12 ]
+
+	assert ids( db.find_resources_of_type( GPX_TYPE ) ) == [3, 4, 7, 10]
+	assert ids( db.find_resources_of_type( GPX_TYPE, db.find_resources( 'strava:1001' ) ) ) == [7]
+
+	# register strava summary type first, otherwise the test case will fail
+	Registry.register_resource_type( ResourceType( type=STRAVA_TYPE, summary=True ) )
+	assert ids( db.find_summaries( 'strava:1001' ) ) == [ 9 ]
+	assert ids( db.find_all_summaries( ['strava:1001'] ) ) == [ 9 ]
+
+@mark.db( template='parts', read_only=True )
+def test_find_multipart( db ):
+	assert ids( db.find_by_classifier( 'strava' ) ) == [ 2, 4 ]
+	assert ids( db.find_by_classifier( 'polar' ) ) == [ 1, 3, 5 ]
+
 @mark.db( template='default', read_only=True )
 def test_remove( db ):
 	assert ( a := db.get_by_id( 4 ) ) and a is not None
 	db.remove_activity( a )
 	assert db.get_by_id( 4 ) is None
+
+# helper
+
+def ids( elements: List[Union[Activity,Resource]] ) -> List[int]:
+	return sorted( [e.id for e in elements] )

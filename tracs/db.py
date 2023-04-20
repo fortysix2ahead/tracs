@@ -429,7 +429,9 @@ class ActivityDb:
 
 	# several find methods to make life easier
 
-	def find( self, filters: Union[List[str], List[Filter], str, Filter] = None ) -> [Activity]:
+	# find activities
+
+	def find( self, filters: List[str] = None ) -> List[Activity]:
 		all_activities = self.activities
 		for r in parse_rules( *filters ):
 			# all_activities = filter( r.evaluate, all_activities )
@@ -437,15 +439,10 @@ class ActivityDb:
 		return list( all_activities )
 
 	def find_by_classifier( self, classifier: str ) -> List[Activity]:
+		"""
+		Finds all activities, which have a certain classifier (originate from a certain service, i.e. polar).
+		"""
 		return [a for a in self.activities if any( uid.startswith( classifier ) for uid in a.uids ) ]
-
-	def find_ids( self, filters: Union[List[str], List[Filter], str, Filter] = None ) -> [int]:
-		return [a.doc_id for a in self.find( filters )]
-
-	def find_by_id( self, id: int = 0 ) -> Optional[Activity]:
-		a = self.get( id=id ) if id > 0 else None  # try get by id
-		a = self.get( raw_id=id ) if not a else a  # try get by raw id
-		return a
 
 	def find_last( self, service_name: Optional[str] ) -> Optional[Activity]:
 		if service_name:
@@ -456,16 +453,26 @@ class ActivityDb:
 		_all = self.filter( _all, [Query().time.exists()] )
 		return max( _all, key=lambda x: x.get( 'time' ) ) if len( _all ) > 0 else None
 
-	def find_resource( self, uid: str, path: str = None ) -> Optional[Activity]:
-		return self.resources.get( (Query()['uid'] == uid) & (Query()['path'] == path) )
+	# find resources
 
-	def find_resources( self, uid: str, path: str = None ) -> List[Resource]:
+	def find_resources( self, uid: str, path: Optional[str] = None ) -> List[Resource]:
+		"""
+		Finds resources having the given uid and optionally the given path.
+		"""
+		resources = [ r for r in self.resources if r.uid == uid ]
 		if path:
-			return [ r for r in self.resources if r.uid == uid and r.path == path ]
-		else:
-			return [ r for r in self.resources if r.uid == uid ]
+			resources = [ r for r in resources if r.path == path ]
+		return resources
 
-	def find_resources_of_type( self, activity_type: str, activity: Activity = None ) -> List[Resource]:
+	def find_resources_of_type( self, activity_type: str, resources: Optional[List[Resource]] = None ) -> List[Resource]:
+		"""
+		Finds all resources of the given type. If resources list is provided restricts itself to that list or uses
+		all resources otherwise.
+		"""
+		resources = self.resources if resources is None else resources
+		return [r for r in resources if r.type == activity_type ]
+
+	def find_resources_of_type2( self, activity_type: str, activity: Activity = None ) -> List[Resource]:
 		if activity:
 			resources_for_activity = [r for r in self.resources if r.uid in [*activity.uids, *activity.activity_uids]]
 			resources = []
@@ -479,13 +486,22 @@ class ActivityDb:
 		return [r for r in resources if r.type == activity_type ]
 
 	def find_all_resources( self, uids: List[str] ) -> List[Resource]:
+		"""
+		Finds all resources having an uid contained in the provided list of uids.
+		"""
 		return [r for r in self.resources if r.uid in uids]
 
-	def find_summaries( self, uid ) -> List[Resource]:
-		return [r for r in self.find_resources( uid ) if (rt := cast( ResourceType, Registry.resource_types.get( r.type ) )) and rt.summary]
+	def find_summaries( self, uid: str ) -> List[Resource]:
+		"""
+		Finds all summary resources having the provided uid.
+		"""
+		return [r for r in self.find_resources( uid ) if (rt := Registry.resource_types.get( r.type )) and rt.summary ]
 
 	def find_all_summaries( self, uids: List[str] ) -> List[Resource]:
-		return [r for r in self.find_all_resources( uids ) if (rt := cast( ResourceType, Registry.resource_types.get( r.type ) )) and rt.summary]
+		"""
+		Finds all summary resources having an uid contained in the provided list.
+		"""
+		return [r for r in self.find_all_resources( uids ) if (rt := Registry.resource_types.get( r.type ) ) and rt.summary]
 
 	def find_all_resources_for( self, activities: Union[Activity, List[Activity]] ) -> List[Resource]:
 		activities = [activities] if type( activities ) is Activity else activities

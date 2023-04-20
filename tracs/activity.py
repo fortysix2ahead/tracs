@@ -171,6 +171,10 @@ class Activity:
 	def as_uids( self ) -> List[UID]:
 		return unique_sorted( self.__uids__ )
 
+	@property
+	def activity_uids( self ) -> List[str]:
+		return unique_sorted( [ f'{uid.classifier}:{uid.local_id}' for uid in self.as_uids ] )
+
 	# dedicated setter for uids to update __uids__ as well
 	def set_uids( self, uids: List[str] ) -> None:
 		self.uids = unique_sorted( uids )

@@ -69,7 +69,11 @@ OVERLAY = 'overlay'
 class Schema:
 
 	version: int = field( default_factory=dict )
-	# unknown: Dict = field( default_factory=dict )
+	unknown: Dict = field( default_factory=dict )
+
+	@classmethod
+	def schema( cls ) -> DataclassFactorySchema:
+		return DataclassFactorySchema( skip_internal=True, unknown='unknown' )
 
 class ActivityDb:
 
@@ -157,7 +161,7 @@ class ActivityDb:
 				ActivityTypes: DataclassFactorySchema( parser=ActivityTypes.from_str, serializer=ActivityTypes.to_str ),
 				Resource: DataclassFactorySchema( omit_default=True, skip_internal=True, unknown='unknown',
 				                                  exclude=['content', 'data', 'id', 'raw', 'resources', 'status', 'summary', 'text'] ),
-				Schema: DataclassFactorySchema( skip_internal=True ),
+				Schema: Schema.schema(),
 			}
 		)
 

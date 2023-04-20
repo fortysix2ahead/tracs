@@ -268,7 +268,7 @@ class Activity:
 		this.localtime = _min( activities, 'localtime' )
 		this.time_end = _max( activities, 'time_end' )
 		this.localtime_end = _max( activities, 'localtime_end' )
-		this.timezone = this.timezone # todo: just keep the timezone?
+		this.timezone = t if (t := _unique( activities, 'timezone' ) ) else get_localzone_name()
 
 		this.duration = sum_times( _stream( activities, 'duration' ) )
 		this.duration_moving = sum_times( _stream( activities, 'duration_moving' ) )

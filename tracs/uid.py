@@ -70,6 +70,10 @@ class UID:
 	def __str__( self ) -> str:
 		return self.uid
 
+	@property
+	def clspath( self ) -> str:
+		return f'{self.classifier}:{self.local_id}'
+
 	def denotes_service( self, service_names: List[str] = None ) -> bool:
 		is_service = True if self.classifier and not self.local_id and not self.path else False
 		if service_names:

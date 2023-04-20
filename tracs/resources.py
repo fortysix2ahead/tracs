@@ -1,20 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from dataclasses import field
-from dataclasses import Field
-from dataclasses import fields
-from dataclasses import InitVar
+from dataclasses import dataclass, field, Field, fields, InitVar
 from enum import Enum
-from re import compile
-from re import Pattern
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Type
-
-from .utils import urlparse
+from re import compile, Pattern
+from typing import Any, List, Optional, Tuple, Type
 
 # todo: not sure if we still need the status
 class ResourceStatus( Enum ):
@@ -25,62 +14,6 @@ class ResourceStatus( Enum ):
 
 pattern: Pattern = compile( '\w+\/(vnd\.(?P<vendor>\w+).)?((?P<subtype>\w+)\+)?(?P<suffix>\w+)' )
 classifier_local_id_pattern = compile( '\w+\:\d+' )
-
-@dataclass
-class UID:
-
-	uid: str = field( default=None )
-	classifier: str = field( default=None )
-	local_id: int = field( default=None )
-	path: str = field( default=None )
-	part: int = field( default=None )
-
-	def __post_init__( self ):
-		if self.uid:
-			url = urlparse( self.uid )
-			if url.scheme:
-				self.classifier = url.scheme
-				self.local_id = int( url.path ) if url.path else None
-				self.path = url.query if url.query else None
-				self.part = int( url.fragment ) if url.fragment else None
-			else:
-				if classifier_local_id_pattern.match( url.path ):
-					self.classifier, self.local_id = url.path.split( ':', maxsplit=1 )
-					self.local_id = int( self.local_id )
-				else:
-					self.classifier = url.path
-
-		elif self.classifier and self.local_id:
-			self.uid = f'{self.classifier}:{self.local_id}'
-			if self.path:
-				self.uid = f'{self.uid}?{self.path}'
-			if self.part:
-				self.uid = f'{self.uid}#{self.part}'
-
-	def __hash__( self ) -> int:
-		return hash( self.uid )
-
-	def __lt__( self, other: UID ):
-		return self.uid < other.uid
-
-	def __str__( self ) -> str:
-		return self.uid
-
-	def denotes_service( self, service_names: List[str] = None ) -> bool:
-		is_service = True if self.classifier and not self.local_id and not self.path else False
-		if service_names:
-			return is_service if self.classifier in service_names else False
-		else:
-			return is_service
-
-	def denotes_activity( self ) -> bool:
-		return True if self.classifier and self.local_id and not self.path else False
-
-	def denotes_resource( self ) -> bool:
-		return True if self.classifier and self.local_id and self.path else False
-
-	def denotes_part( self ) -> bool:
-		return True if self.classifier and self.local_id and self.part else False
 
 @dataclass
 class ResourceType:

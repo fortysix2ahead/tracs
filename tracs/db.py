@@ -444,14 +444,19 @@ class ActivityDb:
 		"""
 		return [a for a in self.activities if any( uid.startswith( classifier ) for uid in a.uids ) ]
 
-	def find_last( self, service_name: Optional[str] ) -> Optional[Activity]:
-		if service_name:
-			_all = self.find( [f'{KEY_SERVICE}:{service_name}'] )
-		else:
-			_all = self.find( [] )
+	def find_first( self, classifier: Optional[str] = None ) -> Optional[Activity]:
+		"""
+		Finds the oldest activity. Optionally restricts itself to activities with the given classifier.
+		"""
+		activities = self.find_by_classifier( classifier ) if classifier else self.activities
+		return min( activities, key=lambda a: a.time )
 
-		_all = self.filter( _all, [Query().time.exists()] )
-		return max( _all, key=lambda x: x.get( 'time' ) ) if len( _all ) > 0 else None
+	def find_last( self, classifier: Optional[str] = None ) -> Optional[Activity]:
+		"""
+		Finds the newest activity. Optionally restricts itself to activities with the given classifier.
+		"""
+		activities = self.find_by_classifier( classifier ) if classifier else self.activities
+		return max( activities, key=lambda a: a.time )
 
 	# find resources
 

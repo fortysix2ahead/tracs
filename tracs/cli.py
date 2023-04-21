@@ -180,13 +180,13 @@ def group( ctx: ApplicationContext, filters: List[str] ):
 def ungroup( ctx: ApplicationContext, filters: List[str] ):
 	ungroup_activities( ctx, ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend )
 
-@cli.command( hidden=True, help='groups activities to multipart activities' )
+@cli.command( hidden=True, help='combines activities to multipart activities' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def part( ctx: ApplicationContext, filters: List[str] ):
 	part_activities( list( ctx.db.find( filters ) ), force=ctx.force, pretend=ctx.pretend, ctx=ctx )
 
-@cli.command( hidden=True, help='reverts multipart activities' )
+@cli.command( hidden=True, help='removes multipart activities' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def unpart( ctx: ApplicationContext, filters: List[str] ):

@@ -10,7 +10,7 @@ from tracs.service import Service
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext
-from tracs.ui import Choice, diff_table_3
+from tracs.ui import Choice, dict_table, diff_table_3
 from tracs.utils import seconds_to_time
 
 log = getLogger( __name__ )
@@ -153,8 +153,16 @@ def part_activities( activities: List[Activity], force: bool = False, pretend: b
 
 	part_list = [ ActivityPart( uids=p.uids, gap=g ) for p, g in zip( parts, gaps ) ]
 	new_activity = Activity( parts=part_list, other_parts=activities )
-	ctx.db.insert( new_activity )
-	ctx.db.commit()
+	if force or _confirm_part( ctx, new_activity ):
+		id = ctx.db.insert( new_activity )
+		ctx.console.print( f'created new activity {id}' )
+		ctx.db.commit()
+
+def _confirm_part( ctx: ApplicationContext, activity: Activity ) -> bool:
+	dump = ctx.db.factory.dump( activity, Activity )
+	ctx.console.print( f'Going to create a new activity consisting of {len( activity.parts )} parts:' )
+	ctx.console.print( dict_table( dump, sort_entries=True ) )
+	return Confirm.ask( f'Continue?' )
 
 def unpart_activities( activities: List[Activity], force: bool = False, pretend: bool = False, ctx: ApplicationContext = None ):
 	pass

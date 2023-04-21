@@ -1,0 +1,73 @@
+{
+  "1": {
+    "localtime": "2022-03-20T10:00:00+01:00",
+		"name": "Polar Multisport Activity - 2 Runs",
+    "parts": [
+      {
+        "gap": "00:00:00",
+        "uids": [
+          "polar:1001?run_1.gpx",
+          "polar:1001?run_1.tcx"
+        ]
+      },
+      {
+        "gap": "00:05:29",
+        "uids": [
+          "polar:1001?run_2.gpx",
+          "polar:1001?run_2.tcx"
+        ]
+      }
+    ],
+    "time": "2022-03-20T09:00:00+00:00",
+    "type": "multisport",
+    "uids": [
+      "polar:1001"
+    ]
+  },
+  "2": {
+    "localtime": "2022-03-20T09:00:00+01:00",
+    "name": "Strava Run 1",
+    "time": "2022-03-20T10:00:00+00:00",
+    "type": "run",
+    "uids": [
+      "strava:1001"
+    ]
+  },
+  "3": {
+    "localtime": "2022-03-20T10:00:00+01:00",
+    "name": "Polar Run 1",
+    "time": "2022-03-20T09:00:00+00:00",
+    "uids": [
+      "polar:1001?run_1.gpx",
+      "polar:1001?run_1.tcx"
+    ]
+  },
+  "4": {
+    "localtime": "2022-03-20T11:00:00+01:00",
+    "name": "Strava Run 2",
+    "time": "2022-03-20T10:00:00+00:00",
+    "type": "run",
+    "uids": [
+      "strava:1002"
+    ]
+  },
+  "5": {
+    "localtime": "2022-03-20T11:00:00+01:00",
+    "name": "Polar Run 2",
+    "time": "2022-03-20T10:00:00+00:00",
+    "uids": [
+      "polar:1001?run_2.gpx",
+      "polar:1001?run_2.tcx"
+    ]
+  },
+  "6": {
+    "localtime": "2022-03-20T11:00:00+01:00",
+    "name": "Advanced activity grouped of polar and strava run 2",
+    "time": "2022-03-20T10:00:00+00:00",
+    "uids": [
+      "polar:1001?run_2.gpx",
+      "polar:1001?run_2.tcx",
+			"strava:1002"
+    ]
+  }
+}

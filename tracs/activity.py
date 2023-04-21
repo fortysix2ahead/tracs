@@ -42,6 +42,10 @@ class ActivityPart:
 	def __post_init__(self):
 		self.__uids__ = [UID( uid ) for uid in self.uids]
 
+	@classmethod
+	def schema( cls ) -> Schema:
+		return Schema( omit_default=True, skip_internal=True, unknown='unknown' )
+
 	@property
 	def classifiers( self ) -> List[str]:
 		return unique_sorted( [ uid.classifier for uid in self.__uids__ ] )

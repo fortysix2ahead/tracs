@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from enum import Enum
 
+from dataclass_factory import Schema
+
 class ActivityTypes( Enum ):
 
 	aerobics = 'aerobics'
@@ -69,6 +71,10 @@ class ActivityTypes( Enum ):
 			if item[1] == value:
 				return cls[item[0]]
 		return cls['unknown']
+
+	@classmethod
+	def schema( cls ) -> Schema:
+		return Schema( parser=ActivityTypes.from_str, serializer=ActivityTypes.to_str )
 
 	@classmethod
 	def from_str( cls, s: str ) -> ActivityTypes:

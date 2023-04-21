@@ -185,9 +185,10 @@ class ActivityDb:
 			a.__resources__.append( r )
 			r.__parent_activity__ = a
 
-	def commit( self ):
-		self.commit_resources()
-		self.commit_activities()
+	def commit( self, do_commit: bool = True ):
+		if do_commit:
+			self.commit_resources()
+			self.commit_activities()
 
 	def commit_activities( self ):
 		json = self._keys_to_str( self._factory.dump( self._activities, Dict[int, Activity] ) )
@@ -339,8 +340,9 @@ class ActivityDb:
 	def remove_activity( self, a: Activity ) -> None:
 		del self.activity_map[a.id]
 
-	def remove_activities( self, activities: List[Activity] ) -> None:
+	def remove_activities( self, activities: List[Activity], auto_commit: bool = False ) -> None:
 		[self.remove_activity( a ) for a in activities]
+		self.commit( auto_commit )
 
 	# -----
 

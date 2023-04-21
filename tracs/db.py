@@ -362,12 +362,12 @@ class ActivityDb:
 		else:
 			return list( set( [r.uid for r in self.resources] ) )
 
-	def contains( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> bool:
-		filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
-		for a in self.activities.all():
-			if all( [f( a ) for f in filters] ):
-				return True
-		return False
+	# def contains( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> bool:
+	# 	filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
+	# 	for a in self.activities.all():
+	# 		if all( [f( a ) for f in filters] ):
+	# 			return True
+	# 	return False
 
 	def contains_activity( self, uid: str ) -> bool:
 		return any( uid in a.uids for a in self.activities )
@@ -375,12 +375,12 @@ class ActivityDb:
 	def contains_resource( self, uid: str, path: str ) -> bool:
 		return any( r.uid == uid and r.path == path for r in self.resources )
 
-	def get( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> Optional[Activity]:
-		filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
-		for a in self.activities.all():
-			if all( [f( a ) for f in filters] ):
-				return cast( Activity, a )
-		return None
+	# def get( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> Optional[Activity]:
+	# 	filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
+	# 	for a in self.activities.all():
+	# 		if all( [f( a ) for f in filters] ):
+	# 			return cast( Activity, a )
+	# 	return None
 
 	def get_by_id( self, id: int ) -> Optional[Activity]:
 		"""
@@ -416,16 +416,6 @@ class ActivityDb:
 
 	def get_summary( self, uid ) -> Resource:
 		return next( iter( self.find_summaries( uid ) ), None )
-
-	def _create_filter( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None ) -> List[Filter]:
-		if id and id > 0:
-			return [Filter( 'id', id )]
-		elif raw_id and raw_id > 0:
-			return [uid_filter( f'{classifier}:{raw_id}' )] if classifier else [raw_id_filter( raw_id )]
-		elif uid:
-			return [uid_filter( uid )]
-		else:
-			return [false_filter()]
 
 	# several find methods to make life easier
 

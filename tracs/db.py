@@ -1,48 +1,34 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from dataclasses import field
-from datetime import datetime
-from datetime import timezone
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
 from shutil import copytree
 from sys import exit as sysexit
-from typing import cast
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import cast, Dict, List, Optional, Union
 
 from click import confirm
-from dataclass_factory import Factory
-from dataclass_factory import Schema as DataclassFactorySchema
+from dataclass_factory import Factory, Schema as DataclassFactorySchema
 from fs.base import FS
-from fs.copy import copy_file
-from fs.copy import copy_file_if
+from fs.copy import copy_file, copy_file_if
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from orjson import dumps
-from orjson import loads
-from orjson import OPT_APPEND_NEWLINE
-from orjson import OPT_INDENT_2
-from orjson import OPT_SORT_KEYS
+from orjson import dumps, loads, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
 
-from .activity import Activity, ActivityPart
-from .activity_types import ActivityTypes
-from .config import ApplicationContext
-from .config import KEY_SERVICE
+from tracs.activity import Activity, ActivityPart
+from tracs.activity_types import ActivityTypes
+from tracs.config import ApplicationContext
 from tracs.migrate import migrate_db, migrate_db_functions
-from .registry import Registry
-from .resources import Resource
-from .resources import ResourceType
-from .rules import parse_rules
+from tracs.registry import Registry
+from tracs.resources import Resource, ResourceType
+from tracs.rules import parse_rules
 
 log = getLogger( __name__ )
 
@@ -74,6 +60,23 @@ class Schema:
 	@classmethod
 	def schema( cls ) -> DataclassFactorySchema:
 		return DataclassFactorySchema( skip_internal=True, unknown='unknown' )
+
+class IdSchema( DataclassFactorySchema ):
+
+	def __init__(self):
+		super().__init__( pre_parse=IdSchema.pre_parse, pre_serialize=IdSchema.pre_serialize )
+
+	@classmethod
+	def pre_parse( cls, data: Dict[str, Dict] ) -> Dict[str, Dict]:
+		for k in data.keys():
+			data[k]['id'] = int( k )
+		return data
+
+	@classmethod
+	def pre_serialize( cls, data: Dict[int, Union[Activity,Resource]] ) -> Dict[int, Union[Activity,Resource]]:
+		for item in data.values():
+			item.id = None
+		return data
 
 class ActivityDb:
 
@@ -159,9 +162,10 @@ class ActivityDb:
 				Activity: Activity.schema(),
 				ActivityPart: DataclassFactorySchema( omit_default=True, skip_internal=True, unknown='unknown' ),
 				ActivityTypes: DataclassFactorySchema( parser=ActivityTypes.from_str, serializer=ActivityTypes.to_str ),
-				Resource: DataclassFactorySchema( omit_default=True, skip_internal=True, unknown='unknown',
-				                                  exclude=['content', 'data', 'id', 'raw', 'resources', 'status', 'summary', 'text'] ),
+				Resource: Resource.schema(),
 				Schema: Schema.schema(),
+				Dict[int, Activity]: IdSchema(),
+				Dict[int, Resource]: IdSchema(),
 			}
 		)
 
@@ -171,13 +175,9 @@ class ActivityDb:
 
 		json = loads( self.dbfs.readbytes( RESOURCES_NAME ) )
 		self._resources = self._factory.load( json, Dict[int, Resource] )
-		for id, resource in self._resources.items():
-			resource.id = id
 
 		json = loads( self.dbfs.readbytes( ACTIVITIES_NAME ) )
 		self._activities = self._factory.load( json, Dict[int, Activity] )
-		for id, activity in self._activities.items():
-			activity.id = id
 
 	def _relate( self ):
 		for r in self.resources:

@@ -61,7 +61,7 @@ class ActivityPart:
 @dataclass( eq=True ) # todo: mark fields with proper eq attributes
 class Activity:
 
-	id: int = field( default=0 )
+	id: int = field( default=None )
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
 	uids: List[str] = field( default_factory=list )
 	"""List of uids of resources which belong to this activity"""
@@ -123,7 +123,6 @@ class Activity:
 	uid: InitVar = field( default=None ) # we keep this as init var
 
 	## internal fields
-	__id__: int = field( init=False, default=0, repr=False, compare=False )
 	__uids__: List[UID] = field( default_factory=list, repr=False, compare=False )
 	__dirty__: bool = field( init=False, default=False, repr=False )
 	__metadata__: Dict[str, Any] = field( init=False, default_factory=dict )
@@ -147,7 +146,6 @@ class Activity:
 	@classmethod
 	def schema( cls ) -> Schema:
 		return Schema(
-			exclude=['id'],
 			omit_default=True,
 			skip_internal=True,
 			unknown='unknown'
@@ -202,9 +200,6 @@ class Activity:
 
 	# post init, this contains mostly convenience things
 	def __post_init__( self, others: List[Activity], other_parts: List[Activity], uid: str ):
-		# id handling needs to be improved later, id field can be an init var
-		self.__id__ = self.id
-
 		# convenience: if called with an uid, store it in uids list + setup __uids__
 		if uid:
 			self.uids = [uid]

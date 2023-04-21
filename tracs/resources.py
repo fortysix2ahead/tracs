@@ -5,6 +5,8 @@ from enum import Enum
 from re import compile, Pattern
 from typing import Any, List, Optional, Tuple, Type
 
+from dataclass_factory import Schema
+
 from tracs.uid import UID
 
 # todo: not sure if we still need the status
@@ -56,7 +58,7 @@ class ResourceType:
 @dataclass
 class Resource:
 
-	id: int = field( default=0 )
+	id: int = field( default=None )
 
 	name: Optional[str] = field( default=None )
 	type: str = field( default=None )
@@ -79,6 +81,13 @@ class Resource:
 	__parent_activity__: List = field( default_factory=list, repr=False )
 	__uid__: UID = field( default=None, repr=False )
 
+	def __post_init__( self, text: str ):
+		self.__uid__ = UID( f'{self.uid}?{self.path}' ) if self.uid and self.path else None
+		self.content = text.encode( encoding='UTF-8' ) if text else self.content
+
+	def __hash__( self ):
+		return hash( (self.uid, self.path) )
+
 	# class methods
 
 	@classmethod
@@ -89,12 +98,14 @@ class Resource:
 	def fieldnames( cls ) -> List[str]:
 		return [f.name for f in fields( Resource )]
 
-	def __post_init__( self, text: str ):
-		self.content = text.encode( encoding='UTF-8' ) if text else self.content
-		self.__uid__ = UID( f'{self.uid}?{self.path}' ) if self.uid and self.path else None
-
-	def __hash__( self ):
-		return hash( (self.uid, self.path) )
+	@classmethod
+	def schema( cls ) -> Schema:
+		return Schema(
+			exclude=['content', 'data', 'raw', 'resources', 'status', 'summary', 'text'],
+			omit_default=True,
+			skip_internal=True,
+			unknown='unknown',
+		)
 
 	# additional properties
 

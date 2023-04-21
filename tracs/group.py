@@ -155,17 +155,20 @@ def part_activities( activities: List[Activity], force: bool = False, pretend: b
 	new_activity = Activity( parts=part_list, other_parts=activities )
 	if force or _confirm_part( ctx, new_activity ):
 		id = ctx.db.insert( new_activity )
-		ctx.console.print( f'created new activity {id}' )
+		ctx.console.print( f'Created new activity {id}' )
 		ctx.db.commit()
 
 def _confirm_part( ctx: ApplicationContext, activity: Activity ) -> bool:
 	dump = ctx.db.factory.dump( activity, Activity )
-	ctx.console.print( f'Going to create a new activity consisting of {len( activity.parts )} parts:' )
+	ctx.console.print( f'Going to create a new multipart activity consisting of {len( activity.parts )} parts:' )
 	ctx.console.print( dict_table( dump, sort_entries=True ) )
 	return Confirm.ask( f'Continue?' )
 
 def unpart_activities( activities: List[Activity], force: bool = False, pretend: bool = False, ctx: ApplicationContext = None ):
-	pass
+	activities = [a for a in activities if a.multipart]
+	ids = [a.id for a in activities]
+	if force or Confirm.ask( f'Going to remove multipart activities {ids}' ):
+		ctx.db.remove_activities( activities, auto_commit=True )
 
 def validate_parts( activities: [Activity], force: bool ) -> bool:
 	return True

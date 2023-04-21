@@ -26,6 +26,23 @@ from tracs.utils import colored_diff_2
 from tracs.utils import fmt
 from .config import console as cs
 
+def dict_table( d: Dict, header: Tuple[str, str] = None, sort_entries: bool = False ) -> Table:
+	table = Table( box=None, show_header=True, show_footer=False )
+	left_header = header[0] if header else 'Key'
+	right_header = header[1] if header else 'Value'
+
+	table.add_column( left_header, justify="right", no_wrap=True )
+	table.add_column( right_header, justify="left", no_wrap=True )
+
+	keys = d.keys()
+	if sort_entries:
+		keys = sorted( keys )
+
+	for k in keys:
+		table.add_row( f'{k}:', Pretty( d.get( k, '' ) ) )
+
+	return table
+
 def diff_table( left: Dict, right: Dict, header: Tuple[str, str, str] = None, sort_entries: bool = False ) -> Table:
 	table = Table( box=None, show_header=True, show_footer=False )
 

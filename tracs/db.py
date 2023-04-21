@@ -64,19 +64,21 @@ class Schema:
 class IdSchema( DataclassFactorySchema ):
 
 	def __init__(self):
-		super().__init__( pre_parse=IdSchema.pre_parse, pre_serialize=IdSchema.pre_serialize )
+		super().__init__( pre_parse=IdSchema.pre_parse, post_serialize=IdSchema.post_serialize )
 
 	@classmethod
 	def pre_parse( cls, data: Dict[str, Dict] ) -> Dict[str, Dict]:
-		for k in data.keys():
-			data[k]['id'] = int( k )
-		return data
+		return { int( k ): { **v, 'id': int( k ) } for k, v in data.items() }
 
 	@classmethod
-	def pre_serialize( cls, data: Dict[int, Union[Activity,Resource]] ) -> Dict[int, Union[Activity,Resource]]:
-		for item in data.values():
-			item.id = None
-		return data
+	def post_serialize( cls, data: Dict[int, Dict] ) -> Dict[int, Dict]:
+		return { str( k1 ): { k2: v2 for k2, v2 in v1.items() if k2 != 'id' } for k1, v1 in data.items() }
+
+	# noinspection PyMethodMayBeStatic
+	def _keys_to_str( self, mapping: Dict ) -> Dict:
+		for key in [k for k in mapping.keys()]:
+			mapping[str( key )] = mapping.pop( key )
+		return mapping
 
 class ActivityDb:
 
@@ -156,7 +158,7 @@ class ActivityDb:
 
 	def _init_db_factory( self ):
 		self._factory = Factory(
-			debug_path=True,
+			# debug_path=True,
 			schemas={
 				# name_mapping={}
 				Activity: Activity.schema(),
@@ -191,19 +193,12 @@ class ActivityDb:
 			self.commit_activities()
 
 	def commit_activities( self ):
-		json = self._keys_to_str( self._factory.dump( self._activities, Dict[int, Activity] ) )
+		json = self._factory.dump( self._activities, Dict[int, Activity] )
 		self.overlay_fs.writebytes( f'/{ACTIVITIES_NAME}', dumps( json, option=ORJSON_OPTIONS ) )
 
 	def commit_resources( self ):
-		json = self._keys_to_str( self._factory.dump( self._resources, Dict[int, Resource] ) )
+		json = self._factory.dump( self._resources, Dict[int, Resource] )
 		self.overlay_fs.writebytes( f'/{RESOURCES_NAME}', dumps( json, option=ORJSON_OPTIONS ) )
-
-	# replace int keys with strings ... :-( todo: how to get around this?
-	# noinspection PyMethodMayBeStatic
-	def _keys_to_str( self, mapping: Dict ) -> Dict:
-		for key in [ k for k in mapping.keys() ]:
-			mapping[str( key )] = mapping.pop( key )
-		return mapping
 
 	def save( self ):
 		if self._read_only or self.underlay_fs is None:

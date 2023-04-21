@@ -160,8 +160,8 @@ class ActivityDb:
 			schemas={
 				# name_mapping={}
 				Activity: Activity.schema(),
-				ActivityPart: DataclassFactorySchema( omit_default=True, skip_internal=True, unknown='unknown' ),
-				ActivityTypes: DataclassFactorySchema( parser=ActivityTypes.from_str, serializer=ActivityTypes.to_str ),
+				ActivityPart: ActivityPart.schema(),
+				ActivityTypes: ActivityTypes.schema(),
 				Resource: Resource.schema(),
 				Schema: Schema.schema(),
 				Dict[int, Activity]: IdSchema(),

@@ -102,6 +102,11 @@ def db( ctx: ApplicationContext, backup: bool, maintenance: str, restore: bool, 
 def config( ctx: ApplicationContext ):
 	show_config( ctx )
 
+@cli.command( hidden=True, help='commits changes to the database, intended to be used in shell mode' )
+@pass_obj
+def commit( ctx: ApplicationContext ):
+	ctx.db.commit()
+
 @cli.command( help='prints information about fields that can be used for filtering' )
 def fields():
 	show_fields()

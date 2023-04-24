@@ -87,7 +87,7 @@ def ctx( request ) -> Optional[ApplicationContext]:
 			context: ApplicationContext = prepare_context( config, lib, takeout )
 		else:
 			do_cleanup = True
-			context: ApplicationContext = ApplicationContext( config_dir=str( var_run_path() ) )
+			context: ApplicationContext = ApplicationContext( config_dir=str( var_run_path() ), verbose=True )
 
 		yield context
 

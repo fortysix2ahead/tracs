@@ -1,47 +1,22 @@
 
 from itertools import chain
-from logging import DEBUG
-from logging import Formatter
 from logging import getLogger
-from logging import INFO
-from logging import StreamHandler
-from sys import stderr
-from typing import List, Tuple
-from typing import Optional
+from typing import List, Optional, Tuple
 
-from click import argument
-from click import Choice
-from click import group
-from click import option
-from click import pass_context
-from click import pass_obj
-from click import Path as ClickPath
+from click import argument, Choice, group, option, pass_context, pass_obj, Path as ClickPath
 from click_shell import make_click_shell
 from rule_engine import RuleSyntaxError
 
+from tracs.application import Application
+from tracs.config import ApplicationContext, APPNAME
 from tracs.db import backup_db, maintain_db, restore_db, status_db
-from tracs.edit import equip_activities, modify_activities, tag_activities, unequip_activities, untag_activities
-from tracs.inout import export_activities, import_activities, open_activities
-from tracs.list import inspect_registry, inspect_resources
-from tracs.show import show_aggregate, show_resources
-from .application import Application
-from .config import ApplicationContext
-from .config import APPNAME
-from .edit import edit_activities
-from .edit import rename_activities
-from .group import group_activities
-from .group import part_activities
-from .group import ungroup_activities
-from .group import unpart_activities
-from .inout import DEFAULT_IMPORTER
-from .inout import reimport_activities
-from .list import inspect_activities
-from .list import list_activities
-from .list import show_config
-from .list import show_fields
-from .setup import setup as setup_application
-from .show import show_activities
-from .validate import validate_activities
+from tracs.edit import edit_activities, equip_activities, modify_activities, rename_activities, tag_activities, unequip_activities, untag_activities
+from tracs.group import group_activities, part_activities, ungroup_activities, unpart_activities
+from tracs.inout import DEFAULT_IMPORTER, export_activities, import_activities, open_activities, reimport_activities
+from tracs.list import inspect_activities, inspect_registry, inspect_resources, list_activities, show_config, show_fields
+from tracs.setup import setup as setup_application
+from tracs.show import show_activities, show_aggregate, show_resources
+from tracs.validate import validate_activities
 
 log = getLogger( __name__ )
 
@@ -58,14 +33,6 @@ APPLICATION_INSTANCE: Optional[Application] = None
 @option( '-p', '--pretend', is_flag=True, default=None, required=False, help='pretends to work, only simulates everything and does not persist any changes' )
 @pass_context
 def cli( ctx, configuration, library, force, verbose, pretend, debug ):
-
-	_init_logging( debug )
-
-	if debug:
-		getLogger( __package__ ).setLevel( DEBUG )
-		getLogger( __package__ ).handlers[0].setLevel( DEBUG ) # this should not fail as the handler is defined in __main__
-
-	log.debug( f'triggered CLI with flags configuration={configuration}, library={library}, debug={debug}, verbose={verbose}, force={force}, pretend={pretend}' )
 
 	global APPLICATION_INSTANCE
 	APPLICATION_INSTANCE = Application.instance(
@@ -359,21 +326,5 @@ def version( ctx: ApplicationContext ):
 def main( args=None ):
 	cli()  # trigger cli
 
-def _init_logging( debug: bool = False ):
-	console_handler = StreamHandler( stderr )
-	if debug:
-		console_handler.setLevel( DEBUG )
-	else:
-		console_handler.setLevel( INFO )
-	console_handler.setFormatter( Formatter( '%(message)s' ) )
-
-	root_logger = getLogger( __package__ )
-	if debug:
-		root_logger.setLevel( DEBUG )
-	else:
-		root_logger.setLevel( INFO )
-	root_logger.addHandler( console_handler )
-
 if __name__ == '__main__':
-	log.debug( "running __main__ in cli" )
 	main()

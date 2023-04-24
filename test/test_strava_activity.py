@@ -16,7 +16,7 @@ def test_init_from_raw( path ):
 	resource = importer.load( path )
 	sa = importer.as_activity( resource )
 
-	assert sa.id == 0
+	assert sa.id is None
 	assert sa.classifiers == ['strava']
 	assert sa.uids == ['strava:200002']
 	assert sa.type == ActivityTypes.run

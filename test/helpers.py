@@ -86,7 +86,7 @@ def prepare_context( config_name: Optional[str], lib_name: Optional[str], takeou
 		lib_dir = config_dir
 		db_dir = Path( lib_dir, DB_DIRNAME )
 
-		return ApplicationContext( config_dir=config_dir, lib_dir=lib_dir, db=ActivityDb( path=db_dir ) )
+		return ApplicationContext( config_dir=config_dir, lib_dir=lib_dir, db=ActivityDb( path=db_dir ), verbose=True )
 
 def get_config_path( name: str, writable: bool = False ) -> Path:
 	with path( 'test', '__init__.py' ) as test_path:

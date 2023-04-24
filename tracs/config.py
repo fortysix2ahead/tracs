@@ -309,29 +309,4 @@ class ApplicationContext:
 ApplicationConfig = Configuration( APPNAME, __name__, read=False )
 ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )
 
-APP_CFG = ApplicationConfig
-APP_STATE = ApplicationState
-
 console = cs # to be removed by cs from above
-
-# load defaults from internal package
-#with pkg_path( import_module( NAMESPACE_CONFIG ), CONFIG_FILENAME ) as p:
-#	ApplicationConfig.set_file( p )
-#with pkg_path( import_module( NAMESPACE_CONFIG ), STATE_FILENAME ) as p:
-#	ApplicationState.set_file( p )
-
-def plugin_config_state( plugin: str ) -> Tuple[Subview, Subview]:
-	return ApplicationConfig[KEY_PLUGINS][plugin], ApplicationState[KEY_PLUGINS][plugin]
-
-# todo: to be replaced by application context
-class GlobalConfig:
-
-	app = None
-	db = None
-	cfg: Configuration = APP_CFG
-	state: Configuration = APP_STATE
-
-	cfg_dir: Path = None
-	db_dir: Path = None
-	db_file: Path = None
-	lib_dir: Path = None

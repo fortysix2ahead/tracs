@@ -74,9 +74,12 @@ NAMESPACE_PLUGINS = f'{NAMESPACE_BASE}.plugins'
 NAMESPACE_SERVICES = f'{NAMESPACE_BASE}.services'
 
 # default logger + console
-
 log = getLogger( __name__ )
-cs = Console( tab_size=2 )
+
+# one´console, reuse this in application context -> this needs to be consolidated
+CONSOLE = Console( tab_size=2 )
+console = CONSOLE
+cs = CONSOLE
 
 def default_resources_path() -> Path:
 	with pkg_path( APP_PKG_NAME, f'{RESOURCES_DIRNAME}' ) as path:
@@ -131,7 +134,7 @@ class ApplicationContext:
 
 	plugins_dir: List[Path] = field( default_factory=list )
 
-	console: Console = field( default=cs )
+	console: Console = field( default=CONSOLE )
 	progress: Progress = field( default=None )
 	task_id: Any = field( default=None )
 
@@ -308,5 +311,3 @@ class ApplicationContext:
 
 ApplicationConfig = Configuration( APPNAME, __name__, read=False )
 ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )
-
-console = cs # to be removed by cs from above

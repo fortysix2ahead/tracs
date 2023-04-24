@@ -5,7 +5,9 @@ site_url: https://github.com/fortysix2ahead/tracs
 nav:
     - Home: index.md
     - Getting Started: start.md
-    - Filters: filter.md
+    - Activities: activities.md
+    - Resources: resources.md
+    - Filters: filters.md
     - Command Line Interface: cli.md
     - Plugins: plugins.md
     - Internals: internals.md

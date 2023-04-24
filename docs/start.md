@@ -44,51 +44,31 @@ Run tracs setup and follow instructions:
 tracs setup
 ```
 
-## Workflow
+## Basic Workflow
 
-The usual workflow is the following:
+A basic workflow looks like this:
 
 ```bash
-tracs fetch
+tracs import
 ```
 
 This will fetch activity information from one or more remote services (currently Bikecitizens, Polar Flow, Strava, and
-Waze, but the latter one is special). This command basically checks what activities
-are available online and stores this information in the internal database. Only
-metadata is downloaded.
+Waze, but the latter one is special). This command basically checks what activities are available, fetches activity
+metadata like ids, times, distances etc. and downloads all known resources belonging to those activities (GPX, TCX
+recordings, HRV data and so on).
+
+Next we can check what we did this month: 
 
 ```bash
-tracs download
+tracs list thismonth
 ```
 
-This will download the actual activities from the remote services. After this step .gpx and .tcx files will be created,
-in case of Polar Flow also .csv and .hrv files.
-
-```bash
-tracs link
-```
-
-This step is optional. The download command creates files in a directory structure based on activity identifiers, which
-is not very user-friendly. The link command creates a parallel directory structure based on year/month/day and creates
-links to the original files. It's easier to traverse from a user perspective and can be re-created easily.
-
-The three steps from above can be done in a combined way by running:
-
-```bash
-tracs sync
-```
-
-This will execute fetch, download and link in one go. Afterwards you can examine what ended up on your hard disk:
-
-```bash
-tracs list time:lastmonth
-```
-
-This command lists activities based on certain filters. In this example it will list activities from the last month.
-A typical output would look like this:
+This command lists activities based on certain filters (read more on the page about filters).
+In this example it will list activities from the current month and display them in table. A typical output looks
+like this:
 
 ```generic
-  id   │ name            │ type    │ local time          │ uid
+  id   │ name            │ type    │ local time          │ uids
 ╶──────┼─────────────────┼─────────┼─────────────────────┼────────────────────╴
   1407 │ Afternoon Drive │ Cycling │ 22.06.2021 16:36:35 │ ['polar:123456001']
   1408 │ Evening Run     │ Run     │ 22.06.2021 19:30:52 │ ['polar:123456002']
@@ -96,24 +76,29 @@ A typical output would look like this:
   1410 │ Afternoon Hike  │ Hiking  │ 24.06.2021 16:44:50 │ ['polar:123456004']
 ```
 
-Finally, it's possible to show details for an activity:
+Finally, it's possible to show details for an activity. Each activity has an id, and we display the activity by
+providing an id (1409 in this example).
 
 ```bash
 tracs show 1409
 ```
 
-The show command displays information about a certain activity. A typical output will look like this:
+The show command displays information about an activity. A typical output will look like this:
 
 ```generic
   field              │ value
 ╶────────────────────┼──────────────────────────────╴
-  ID                 │ 1326
-  Name               │ 00:15:27;3.69039990234375 km
+  ID                 │ 1409
+  Name               │ Morning Cycle
   Type               │ Cycling
-  Time (local)       │ 24.06.2021, 08:24:16
-  Time (UTC)         │ 24.06.2021, 06:24:16
-  Timezone¹          │ CEST
-  Duration (elapsed) │ 00:15:28
-  Distance           │ 3690.39990234375
+  Time (local)       │ 24.06.2021, 08:24:17
+  Time (UTC)         │ 24.06.2021, 06:24:17
+  Duration           │ 00:15:28
+  Distance           │ 3690
   Calories           │ 138
 ```
+
+## Next steps
+
+After running through the quickstart it's time to learn about the basic concepts of tracs, which are
+[activities](activities.md), [resources](resources.md) and [filters](filters.md).

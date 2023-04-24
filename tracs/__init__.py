@@ -5,7 +5,8 @@ from rich.logging import RichHandler
 
 LOG_CONSOLE_DEFAULT_HANDLER = RichHandler( level=WARNING, show_time=False, show_level=False, markup=True )
 LOG_CONSOLE_VERBOSE_HANDLER = RichHandler( level=INFO, show_time=False, show_level=True, markup=True )
-LOG_CONSOLE_DEBUG_HANDLER = RichHandler( level=DEBUG, show_time=True, show_level=True, markup=True )
+LOG_CONSOLE_DEBUG_HANDLER = RichHandler( level=DEBUG, show_time=True, show_level=True, markup=True, log_time_format='%H:%M:%S' )
+# LOG_CONSOLE_DEBUG_HANDLER = RichHandler( level=DEBUG, show_time=True, show_level=True, markup=True, log_time_format='%Y-%m-%d %H:%M:%S.%f' )
 
 LOG_FILE_FORMAT = '[%(asctime)s] %(levelname)s: %(message)s'
 LOG_FILE_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'

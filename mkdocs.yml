@@ -10,6 +10,11 @@ nav:
     - Filters: filters.md
     - Command Line Interface: cli.md
     - Plugins: plugins.md
+    - Bikecitizens: bikecitizens.md
+    - Local: local.md
+    - Polar: polar.md
+    - Strava: strava.md
+    - Waze: waze.md
     - Internals: internals.md
 
 # theme: readthedocs

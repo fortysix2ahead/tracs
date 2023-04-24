@@ -13,6 +13,7 @@ from tracs.db import backup_db, maintain_db, restore_db, status_db
 from tracs.edit import edit_activities, equip_activities, modify_activities, rename_activities, tag_activities, unequip_activities, untag_activities
 from tracs.group import group_activities, part_activities, ungroup_activities, unpart_activities
 from tracs.inout import DEFAULT_IMPORTER, export_activities, import_activities, open_activities, reimport_activities
+from tracs.link import link_activities
 from tracs.list import inspect_activities, inspect_registry, inspect_resources, list_activities, show_config, show_fields
 from tracs.setup import setup as setup_application
 from tracs.show import show_activities, show_aggregate, show_resources
@@ -84,15 +85,13 @@ def fields():
 @option( '-o', '--as-overlay', required=False, hidden=True, is_flag=False, type=int, help='import as overlay for an existing resource (experimental, local imports only)' )
 @option( '-r', '--as-resource', required=False, hidden=True, is_flag=False, help='import as resource for an existing activity (experimental, local imports only)' )
 @option( '-sd', '--skip-download', required=False, is_flag=True, help='skips download of activities' )
-@option( '-sl', '--skip-link', required=False, is_flag=True, help='skips linking of downloaded activities' )
 @option( '-t', '--from-takeouts', required=False, is_flag=True, help='imports activities from takeouts folder (service plugin needs to support this)' )
 @argument( 'sources', nargs=-1 ) #, help='list of sources to import from, can be names of services, files in the local file system or URLs (currently unsupported)' )
 @pass_context
-def imprt( ctx, sources, skip_download: bool = False, skip_link: bool = False,
-           importer = DEFAULT_IMPORTER, move: bool = False,
-           as_overlay: str = None, as_resource: str = None, from_takeouts: str = None ):
-	import_activities( ctx.obj, sources=sources, skip_download=skip_download, skip_link=skip_link,
-	                   importer=importer, move=move, as_overlay=as_overlay, as_resource=as_resource, from_takeouts=from_takeouts )
+def imprt( ctx, sources, skip_download: bool = False, importer = DEFAULT_IMPORTER, move: bool = False,
+      as_overlay: str = None, as_resource: str = None, from_takeouts: str = None ):
+	import_activities( ctx.obj, sources=sources, skip_download=skip_download, importer=importer, move=move,
+	   as_overlay=as_overlay, as_resource=as_resource, from_takeouts=from_takeouts )
 
 @cli.command( help='fetches activity summaries', hidden=True )
 @argument( 'sources', nargs=-1 )
@@ -109,12 +108,11 @@ def download( ctx: ApplicationContext, filters ):
 	if activity_uids:
 		import_activities( ctx, None, sources = activity_uids, skip_fetch = True )
 
-@cli.command( help='creates links for downloaded resources of activities', hidden=True )
-@option( '-a', '--all', 'all_', is_flag=True, required=False, help='creates links for all activities (instead of recent ones only), overriding provided filters' )
+@cli.command( help='creates a tree of links resources of activities', hidden=True )
 @argument( 'filters', nargs=-1 )
-@pass_context
-def link( ctx, all_, filters ):
-	pass
+@pass_obj
+def link( ctx: ApplicationContext, filters ):
+	link_activities( ctx, list( ctx.db.find( filters or [] ) ) )
 
 @cli.command( 'list', help='lists activities' )
 @option( '-s', '--sort', is_flag=False, required=False, help='sorts the output according to an attribute' )

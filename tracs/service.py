@@ -7,28 +7,19 @@ from datetime import datetime
 from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import Any, List, Optional, Tuple, Union
 
 from dateutil.tz import UTC
 from fs.base import FS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
 
-from .activity import Activity
-from .config import ApplicationContext
-from .config import DEFAULT_DB_DIR
-from .config import GlobalConfig as gc
-from .config import KEY_LAST_DOWNLOAD
-from .config import KEY_LAST_FETCH
-from .config import OVERLAY_DIRNAME
-from .db import ActivityDb
-from .plugin import Plugin
-from .registry import Registry
-from .resources import Resource
+from tracs.activity import Activity
+from tracs.config import ApplicationContext, DEFAULT_DB_DIR, KEY_LAST_DOWNLOAD, KEY_LAST_FETCH, OVERLAY_DIRNAME
+from tracs.db import ActivityDb
+from tracs.plugin import Plugin
+from tracs.registry import Registry
+from tracs.resources import Resource
 
 log = getLogger( __name__ )
 
@@ -180,15 +171,6 @@ class Service( Plugin ):
 		# return Path( self.base_fs.getsyspath( str( path ) ) ) if absolute else path
 		return Path( Path( self.ctx.db_dir_path ), path ) if absolute else path
 
-	def link_for( self, activity: Optional[Activity], resource: Optional[Resource], ext: Optional[str] = None ) -> Optional[Path]:
-		ts = activity.time.strftime( '%Y%m%d%H%M%S' )
-		path = Path( gc.lib_dir, ts[0:4], ts[4:6], ts[6:8] )
-		if resource:
-			path = Path( path, f'{ts[8:]}.{self.name}.{resource.type}' )
-		elif ext:
-			path = Path( path, f'{ts[8:]}.{self.name}.{ext}' )
-		return path
-
 	def url_for( self, activity: Optional[Activity] = None, resource: Optional[Resource] = None, local_id: Optional[int] = None ) -> Optional[str]:
 		url = None
 
@@ -336,7 +318,6 @@ class Service( Plugin ):
 	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ):
 		skip_fetch = kwargs.get( 'skip_fetch', False )
 		skip_download = kwargs.get( 'skip_download', False )
-		skip_link = kwargs.get( 'skip_link', False )
 		uids: List[str] = kwargs.get( 'uids', [] )
 
 		# start fetch task
@@ -381,31 +362,6 @@ class Service( Plugin ):
 		self._db.commit()
 		self.set_state_value( KEY_LAST_DOWNLOAD, datetime.utcnow().astimezone( UTC ).isoformat() )  # update download timestamp
 		self.ctx.complete( 'done' )
-
-		# link / vfs
-
-		if not skip_link:
-			pass # not yet implemented
-
-	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
-		if resource.type in ['gpx', 'tcx'] and resource.status == 200: # todo: make linkable resources configurable
-			src = self.path_for( resource=resource )
-			dest = self.link_for( activity, resource )
-
-			if not src or not dest:
-				log.error( f"cannot determine source and/or destination for linking activity {activity.id}" )
-				return
-
-			if not src.exists() or src.is_dir():
-				log.error( f"cannot link activity {activity.id}: source file {src} does not exist or is not a file" )
-				return
-
-			if not pretend:
-				dest.parent.mkdir( parents=True, exist_ok=True )
-				dest.unlink( missing_ok=True )
-				dest.symlink_to( src )
-
-			log.debug( f"linked resource for activity {activity.id}: {src} -> {dest}" )
 
 	def setup( self, ctx: ApplicationContext ) -> None:
 		pass

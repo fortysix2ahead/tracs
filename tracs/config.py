@@ -194,6 +194,14 @@ class ApplicationContext:
 		self.lib_fs.makedir( self.tmp_dir, recreate=True )
 
 	@property
+	def config_file_path( self ) -> Path:
+		return Path( self.config_fs.getsyspath( str( self.config_file ) ) )
+
+	@property
+	def state_file_path( self ) -> Path:
+		return Path( self.config_fs.getsyspath( str( self.state_file ) ) )
+
+	@property
 	def db_path( self ) -> Path:
 		return Path( self.lib_fs.getsyspath( str( self.db_dir ) ) )
 

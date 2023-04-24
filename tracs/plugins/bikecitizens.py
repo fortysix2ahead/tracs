@@ -5,7 +5,7 @@ from logging import getLogger
 from re import DOTALL
 from re import match
 from sys import exit as sysexit
-from typing import Any
+from typing import Any, Dict
 from typing import cast
 from typing import List
 from typing import Optional
@@ -28,7 +28,7 @@ from ..config import ApplicationContext
 from ..config import APPNAME
 from ..config import console
 from ..plugin import Plugin
-from ..registry import importer
+from ..registry import importer, setup
 from ..registry import Registry
 from ..registry import service
 from ..resources import Resource
@@ -319,3 +319,16 @@ class Bikecitizens( Service, Plugin ):
 
 	def setup_complete( self ) -> bool:
 		pass
+
+# plugin setup
+
+INTRO = f'For Bikecitizens we will use their Web API to download activity data, that\'s why your credentials are needed.'
+
+@setup
+def setup( ctx: ApplicationContext, config: Dict, state: Dict ) -> Tuple[Dict, Dict]:
+	ctx.console.print( INTRO, width=120 )
+
+	user = Prompt.ask( 'Enter your user name', console=ctx.console, default=config.get( 'username', '' ) )
+	password = Prompt.ask( 'Enter your password', console=ctx.console, default=config.get( 'password' ), password=True )
+
+	return { 'username': user, 'password': password }, {}

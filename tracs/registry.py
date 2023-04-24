@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from enum import Enum
 from importlib import import_module
-from inspect import getmembers
+from inspect import getmembers, isfunction
 from inspect import isclass
 from logging import getLogger
 from pathlib import Path
@@ -55,6 +55,7 @@ class Registry:
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
 	resource_types: Dict[str, ResourceType] = {}
+	setup_functions: Dict[str, Callable] = {}
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
 
@@ -113,6 +114,7 @@ class Registry:
 		return None
 
 	# field resolvers
+
 	@classmethod
 	def register_activity_field_resolver( cls, field: str, fn: Callable ) -> None:
 		Registry.activity_field_resolvers[field] = fn
@@ -294,6 +296,15 @@ def service( cls: Type ):
 		return cls
 	else:
 		raise RuntimeError( 'only classes can be used with the @service decorator' )
+
+def setup( fn: Callable ):
+	if isfunction( fn ):
+		module, name = _spec( fn )
+		Registry.setup_functions[module] = fn
+		log.debug( f'registered setup function {module}#{name}' )
+		return fn
+	else:
+		raise RuntimeError( 'only functions can be used with the @setup decorator' )
 
 def document( *args, **kwargs ):
 	def document_class( cls ):

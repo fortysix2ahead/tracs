@@ -33,7 +33,7 @@ def test_union( json ):
 	src1 = Activity( id=1, name='One' )
 	target = Activity( others=[src1, src2, src3] )
 	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
-	assert target.id == 0
+	assert target.id is None
 
 def test_add():
 	src1 = Activity( time=datetime( 2022, 2, 22, 7 ), distance=10, duration=time( 1, 0, 0 ), heartrate_max=180, heartrate_min=100 )

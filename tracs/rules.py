@@ -1,40 +1,28 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from datetime import time
-from decimal import Decimal
-from decimal import InvalidOperation
+from datetime import datetime, time
+from decimal import Decimal, InvalidOperation
 from logging import getLogger
-from re import compile as rxc
-from re import match
-from re import split
+from re import compile as rx_compile, match
 from sys import maxsize
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Tuple
-from typing import Type
+from typing import Any, Callable, Dict, List, Literal, Tuple, Type
 
-from arrow import Arrow
-from arrow import get as getarrow
-from arrow import utcnow as now
+from arrow import Arrow, get as getarrow, utcnow as now
 from dateutil.tz import UTC
-from rule_engine import Context
-from rule_engine import resolve_attribute
-from rule_engine import Rule
-from rule_engine import RuleSyntaxError
+from rule_engine import Context, resolve_attribute, Rule, RuleSyntaxError
 
 log = getLogger( __name__ )
 
+TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day' ]
+
 YEAR_RANGE = range( 2000, datetime.utcnow().year + 1 )
 
-TRUE_FALSE = rxc( r'^(true|false)$' )
+TRUE_FALSE = rx_compile( r'^(true|false)$' )
 
 INT_PATTERN = '^(?P<value>\d+)$'
-INT_LIST = rxc( '^\d+(,\d+)*$' )
-INT_RANGE_PATTERN = '^(?P<range_from>\d+)?\.\.(?P<range_to>\d+)?$'
+INT_LIST = rx_compile( '^\d+(,\d+)*$' )
+INT_RANGE_PATTERN = rx_compile( '^(?P<range_from>\d+)?\.\.(?P<range_to>\d+)?$' )
 
 NUMBER_PATTERN = '^(?P<value>\d+(\.\d+)?)$'
 
@@ -150,6 +138,15 @@ def normalize( rule: str ) -> str:
 	if match( INT_PATTERN, rule ): # integer number only
 		# treat numbers from 2000 to current year as years, else treat it as id
 		normalized_rule = f'year == {rule}' if int( rule ) in YEAR_RANGE else f'id == {rule}'
+
+	elif m := INT_RANGE_PATTERN.fullmatch( rule ):
+		range_from, range_to = m.groups()
+		if range_from and not range_to:
+			normalized_rule = f'id >= {range_from}'
+		elif not range_from and range_to:
+			normalized_rule = f'id <= {range_to}'
+		else:
+			normalized_rule = f'id >= {range_from} and id <= {range_to}'
 
 	elif INT_LIST.fullmatch( rule ):
 		normalized_rule = f'id in [{rule}]'
@@ -298,9 +295,8 @@ def parse_ceil( s: str ) -> datetime:
 		dt = getarrow( 9999, 12, 31 )
 	return dt.datetime.astimezone( UTC )
 
-def ceil( a: Arrow, frame: str ) -> str:
+def ceil( a: Arrow, frame: TIME_FRAMES ) -> str:
 	return f'd"{a.ceil( frame ).isoformat()}"'
 
-def floor( a: Arrow, frame: str ) -> str:
+def floor( a: Arrow, frame: TIME_FRAMES ) -> str:
 	return f'd"{a.floor( frame ).isoformat()}"'
-

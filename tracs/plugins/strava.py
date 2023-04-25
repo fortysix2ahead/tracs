@@ -1,54 +1,32 @@
-from dataclasses import dataclass
-from dataclasses import field
-from http.server import BaseHTTPRequestHandler
-from http.server import HTTPServer
-from re import compile
-from re import findall
-from re import match
-from typing import Any
-from typing import cast
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from dataclasses import dataclass, field
+from datetime import datetime
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from logging import getLogger
+from pathlib import Path
+from re import compile, findall, match
+from sys import exit as sysexit
+from typing import Any, cast, Dict, List, Optional, Tuple, Union
+from webbrowser import open as open_url
 
 from bs4 import BeautifulSoup
 from click import echo
-from datetime import datetime
-
-from dateutil.tz import gettz
-from dateutil.tz import tzlocal
-from dateutil.tz import UTC
-from logging import getLogger
-from oauthlib.oauth2 import InvalidGrantError # package name is not oauthlib
-from pathlib import Path
+from dateutil.tz import gettz, tzlocal, UTC
+from oauthlib.oauth2 import InvalidGrantError  # package name is not oauthlib
 from requests import Session
 from requests_oauthlib import OAuth2Session
-from sys import exit as sysexit
-from webbrowser import open as open_url
-
 from rich.prompt import Prompt
 
-from ..registry import Registry
-from ..registry import importer
-from ..registry import service
-from .gpx import GPX_TYPE
-from .fit import FIT_TYPE
-from tracs.plugins.json import JSON_TYPE
-from tracs.plugins.json import JSONHandler
+from tracs.activity import Activity
+from tracs.activity_types import ActivityTypes, ActivityTypes as Types
+from tracs.config import ApplicationContext, APPNAME, console
+from tracs.plugins.json import JSON_TYPE, JSONHandler
 from tracs.plugins.tcx import TCX_TYPE
-from ..plugin import Plugin
-from ..activity import Activity
-from ..resources import Resource
-from ..activity_types import ActivityTypes
-from ..activity_types import ActivityTypes as Types
-from ..config import ApplicationContext
-from ..config import console
-from ..config import APPNAME
-from ..service import Service
-from ..utils import seconds_to_time as stt
-from ..utils import to_isotime
+from tracs.registry import importer, Registry, service, setup
+from tracs.resources import Resource
+from tracs.service import Service
+from tracs.utils import seconds_to_time as stt, to_isotime
+from .fit import FIT_TYPE
+from .gpx import GPX_TYPE
 
 log = getLogger( __name__ )
 
@@ -58,7 +36,10 @@ DISPLAY_NAME = 'Strava'
 STRAVA_TYPE = 'application/vnd.strava+json'
 
 BASE_URL = 'https://www.strava.com'
+AUTH_URL = f'{BASE_URL}/oauth/authorize'
+TOKEN_URL = f'{BASE_URL}/oauth/token'
 OAUTH_REDIRECT_URL = 'http://localhost:40004'
+SCOPE = 'activity:read_all'
 
 FETCH_PAGE_SIZE = 200 # maximum possible size?
 
@@ -214,12 +195,11 @@ class StravaImporter( JSONHandler ):
 		)
 
 @service
-class Strava( Service, Plugin ):
+class Strava( Service ):
 
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
 
-		self._scope = 'activity:read_all'
 		self._session = None
 		self._oauth_session = None
 
@@ -447,67 +427,68 @@ class Strava( Service, Plugin ):
 		self.set_state_value( 'expires_at', int( token['expires_at'] ) )
 		self.set_state_value( 'expires_in', token['expires_in'] )
 
-	def setup( self, ctx: ApplicationContext ) -> None:
-		console.print( f'GPX and TCX files from Strava will be downloaded via Strava\'s Web API, that\'s why your credentials are needed.' )
+# setup
 
-		user = Prompt.ask( 'Enter your user name', default=self.cfg_value( 'username' ) or '' )
-		pwd = Prompt.ask( 'Enter your password', default=self.cfg_value( 'password' ) or '', password=True )
+INTRO_TEXT = f'GPX and TCX files from Strava will be downloaded via Strava\'s Web API, that\'s why your credentials are needed.'
+# https://developers.strava.com/docs/authentication/
+CLIENT_ID_TEXT = 'Checking for new activities and downloading photos works by using Strava\'s REST API. To be able ' \
+                 'to use this API you need to enter your Client ID and your Client Secret. In order to retrieve both, ' \
+                 'you need to create your own Strava application. Head to https://www.strava.com/settings/api ' \
+                 'and enter all necessary details. Once you created your application, the ID and the secret ' \
+                 'will be displayed.'
 
-		console.print()
+# return { 'username': user, 'password': password }, {}
 
-		# https://developers.strava.com/docs/authentication/
-		client_id_text = 'Checking for new activities and downloading photos works by using Strava\'s REST API. To be able ' \
-		                 'to use this API you need to enter your Client ID and your Client Secret. In order to retrieve both, ' \
-		                 'you need to create your own Strava application. Head to https://www.strava.com/settings/api ' \
-		                 'and enter all necessary details. Once you created your application, the ID and the secret ' \
-		                 'will be displayed.'
-		console.print( client_id_text, soft_wrap=True )
+@setup
+def setup( ctx: ApplicationContext, config: Dict, state: Dict ) -> Tuple[Dict, Dict]:
+	ctx.console.print( INTRO_TEXT, width=120 )
 
-		client_id = Prompt.ask( 'Enter your Client ID', default=str( self.cfg_value( 'client_id' ) or '' ) )
-		client_secret = Prompt.ask( 'Enter your Client Secret', default=self.cfg_value( 'client_secret' ) or '' )
+	username = Prompt.ask( 'Enter your user name', console=ctx.console, default=config.get( 'username', '' ) )
+	password = Prompt.ask( 'Enter your password', console=ctx.console, default=config.get( 'password' ), password=True )
 
-		console.print()
+	ctx.console.print()
+	ctx.console.print( CLIENT_ID_TEXT, width=120 )
+	ctx.console.print()
 
-		oauth = OAuth2Session( client_id, redirect_uri=self._redirect_url, scope=[self._scope] )
-		auth_url, auth_state = oauth.authorization_url( self._auth_url )
+	client_id = Prompt.ask( 'Enter your Client ID', console=ctx.console, default=config.get( 'client_id', '' ) )
+	client_secret = Prompt.ask( 'Enter your Client Secret', console=ctx.console, default=config.get( 'client_secret', '' ) )
 
-		client_code_text = f'For the next step we need to obtain the Client Code. This code can be obtained by visiting this ' \
-		                   f'URL: {auth_url} After authorizing {APPNAME} you will be redirected to {self._redirect_url} and the ' \
-		                   f'code is part of the URL displayed in your browser. Have a look at the displayed ' \
-		                   f'URL: {self._redirect_url}?code=<CLIENT_CODE_IS_DISPLAYED_HERE>&scope={self._scope}'
-		console.print( client_code_text, soft_wrap=True )
-		client_code = Prompt.ask( 'Enter your Client Code or press enter to open the link in your browser.' )
+	ctx.console.print()
 
-		if not client_code:
-			open_url( auth_url )
-			webServer = HTTPServer( ( 'localhost', 40004), StravaSetupServer )
+	oauth = OAuth2Session( client_id, redirect_uri=OAUTH_REDIRECT_URL, scope=[SCOPE] )
+	auth_url, auth_state = oauth.authorization_url( AUTH_URL )
 
-			try:
-				webServer.serve_forever()
-			except KeyboardInterrupt:
-				pass
+	client_code_text = f'For the next step we need to obtain the Client Code. This code can be obtained by visiting this ' \
+	                   f'URL: {auth_url} After authorizing {APPNAME} you will be redirected to {OAUTH_REDIRECT_URL} and the ' \
+	                   f'code is part of the URL displayed in your browser. Have a look at the displayed ' \
+	                   f'URL: {OAUTH_REDIRECT_URL}?code=<CLIENT_CODE_IS_DISPLAYED_HERE>&scope={SCOPE}'
+	console.print( client_code_text, width=120 )
+	ctx.console.print()
+	client_code = Prompt.ask( 'Enter your Client Code or press enter to open the link in your browser.', console=ctx.console )
 
-			client_code = StravaSetupServer.client_code
-			webServer.server_close()
+	if not client_code:
+		open_url( auth_url )
+		webServer = HTTPServer( ('localhost', 40004), StravaSetupServer )
 
 		try:
-			# save user/password
-			self.set_cfg_value( 'username', user )
-			self.set_cfg_value( 'password', pwd )
-			self.set_cfg_value( 'client_code', client_code )
-			self.set_cfg_value( 'client_id', client_id )
-			self.set_cfg_value( 'client_secret', client_secret )
+			webServer.serve_forever()
+		except KeyboardInterrupt:
+			pass
 
-			# save oauth tokens
-			token = oauth.fetch_token( self._token_url, code=client_code, client_secret=client_secret, include_client_id=True )
-			self._save_oauth_token( token )
-			log.debug( f"fetched access token {token['access_token']} and refresh_token {token['refresh_token']}, expiring at {token['expires_at']}" )
-		except InvalidGrantError:
-			console.print( f'Error: authorization not granted.' )
-			return
+		client_code = StravaSetupServer.client_code
+		webServer.server_close()
 
-	def setup_complete( self ) -> bool:
-		pass
+	try:
+		# save oauth tokens
+		token = oauth.fetch_token( TOKEN_URL, code=client_code, client_secret=client_secret, include_client_id=True )
+		token.pop( 'athlete' ) # token contains athlete, which we are not interested in
+		log.debug( f"fetched access token {token['access_token']} and refresh_token {token['refresh_token']}, expiring at {token['expires_at']}" )
+
+		return { 'username': username, 'password': password, 'client_code': client_code, 'client_id': client_id, 'client_secret': client_secret }, { **state, **token }
+
+	except InvalidGrantError:
+		ctx.console.print( f'Error: authorization not granted.' )
+		return {}, {}
 
 class StravaSetupServer( BaseHTTPRequestHandler ):
 

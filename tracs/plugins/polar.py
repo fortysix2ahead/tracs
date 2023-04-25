@@ -1,53 +1,36 @@
-from dataclasses import dataclass
-from dataclasses import field
+from dataclasses import dataclass, field
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from re import match
 from sys import exit as sysexit
 from time import time as current_time
-from typing import Any
-from typing import cast
-from typing import Dict
-from typing import List
-from typing import Mapping
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import Any, cast, Dict, List, Mapping, Optional, Tuple, Union
 from zipfile import BadZipFile
 
 from bs4 import BeautifulSoup
 from click import echo
 from datetimerange import DateTimeRange
 from dateutil.parser import parse
-from dateutil.tz import tzlocal
-from dateutil.tz import UTC
+from dateutil.tz import tzlocal, UTC
 from fs import open_fs
 from fs.errors import CreateFailed
 from fs.zipfs import ReadZipFS
 from requests_cache import CachedSession
 from rich.prompt import Prompt
 
-from .gpx import GPX_TYPE
-from tracs.plugins.json import JSONHandler
-from tracs.plugins.json import JSON_TYPE
+from tracs.activity import Activity
+from tracs.activity_types import ActivityTypes, ActivityTypes as Types
+from tracs.config import ApplicationContext, APPNAME, console
+from tracs.inout import load_resource
+from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugins.json import JSON_TYPE, JSONHandler
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.plugins.xml import XMLHandler
-from ..activity import Activity
-from ..activity_types import ActivityTypes
-from ..activity_types import ActivityTypes as Types
-from ..config import ApplicationContext
-from ..config import APPNAME
-from ..config import console
-from ..inout import load_resource
-from ..registry import importer
-from ..registry import Registry
-from ..registry import resourcetype
-from ..registry import service
-from ..resources import Resource
-from ..service import Service
-from ..utils import seconds_to_time
-from ..utils import seconds_to_time as stt
+from tracs.registry import importer, Registry, resourcetype, service, setup
+from tracs.resources import Resource
+from tracs.service import Service
+from tracs.utils import seconds_to_time, seconds_to_time as stt
 
 log = getLogger( __name__ )
 
@@ -519,20 +502,16 @@ class Polar( Service ):
 
 		return partlists
 
-	def setup( self, ctx: ApplicationContext ) -> None:
-		console.print( f'For Polar Flow we will use their inofficial Web API to download activity data, that\'s why your credentials are needed.' )
+INTRO = f'For Polar Flow we will use their inofficial Web API to download activity data, that\'s why your credentials are needed.'
 
-		user = Prompt.ask( 'Enter your user name', default=self.cfg_value( 'username' ) or '' )
-		pwd = Prompt.ask( 'Enter your password', default=self.cfg_value( 'password' ) or '', password=True )
+@setup
+def setup( ctx: ApplicationContext, config: Dict, state: Dict ) -> Tuple[Dict, Dict]:
+	ctx.console.print( INTRO, width=120 )
 
-		self.set_cfg_value( 'username', user )
-		self.set_cfg_value( 'password', pwd )
+	user = Prompt.ask( 'Enter your user name', console=ctx.console, default=config.get( 'username', '' ) )
+	password = Prompt.ask( 'Enter your password', console=ctx.console, default=config.get( 'password' ), password=True )
 
-	def setup_complete( self ) -> bool:
-		if self.cfg_value( 'username' ) and self.cfg_value( 'password' ):
-			return True
-		else:
-			return False
+	return { 'username': user, 'password': password }, {}
 
 # --- helper
 

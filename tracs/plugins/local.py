@@ -1,23 +1,16 @@
 
 from logging import getLogger
 from pathlib import Path
-from shutil import copy2 as copy
-from shutil import move
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import Union
+from shutil import copy2 as copy, move
+from typing import Any, List, Optional, Union
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
-from ..activity import Activity
-from ..config import ApplicationContext
-from ..plugin import Plugin
-from ..registry import Registry
-from ..registry import document
-from ..registry import service
-from ..resources import Resource
-from ..service import Service
+from tracs.activity import Activity
+from tracs.plugin import Plugin
+from tracs.registry import document, Registry, service
+from tracs.resources import Resource
+from tracs.service import Service
 
 log = getLogger( __name__ )
 
@@ -82,6 +75,7 @@ class Local( Service, Plugin ):
 
 		return resources
 
+	# noinspection PyMethodMayBeStatic
 	def postprocess( self, activity: Optional[Activity], resources: Optional[List[Resource]], **kwargs ) -> None:
 		# todo: is this always correct?
 		activity.uid = activity.resources[0].uid
@@ -109,10 +103,3 @@ class Local( Service, Plugin ):
 			imported_data = None
 
 		return imported_data
-
-	def setup( self, ctx: ApplicationContext ) -> None:
-		pass
-
-	# noinspection PyMethodMayBeStatic
-	def setup_complete( self ) -> bool:
-		return True

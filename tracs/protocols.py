@@ -3,18 +3,10 @@ from __future__ import annotations
 
 from logging import getLogger
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Protocol
-from typing import Tuple
-from typing import Type
-from typing import Union
+from typing import Any, Dict, List, Optional, Protocol, Tuple, Type, Union
 
-from .activity import Activity
-from .config import ApplicationContext
-from .resources import Resource
+from tracs.activity import Activity
+from tracs.resources import Resource
 
 log = getLogger( __name__ )
 
@@ -132,9 +124,6 @@ class Service( Protocol ):
 		pass
 
 	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
-		pass
-
-	def setup( self, ctx: ApplicationContext ) -> None:
 		pass
 
 class Handler( Protocol ):

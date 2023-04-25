@@ -15,7 +15,7 @@ from fs.multifs import MultiFS
 from fs.osfs import OSFS
 
 from tracs.activity import Activity
-from tracs.config import ApplicationContext, DEFAULT_DB_DIR, KEY_LAST_DOWNLOAD, KEY_LAST_FETCH, OVERLAY_DIRNAME
+from tracs.config import DEFAULT_DB_DIR, KEY_LAST_DOWNLOAD, KEY_LAST_FETCH, OVERLAY_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.registry import Registry
@@ -362,9 +362,6 @@ class Service( Plugin ):
 		self._db.commit()
 		self.set_state_value( KEY_LAST_DOWNLOAD, datetime.utcnow().astimezone( UTC ).isoformat() )  # update download timestamp
 		self.ctx.complete( 'done' )
-
-	def setup( self, ctx: ApplicationContext ) -> None:
-		pass
 
 # helper functions
 

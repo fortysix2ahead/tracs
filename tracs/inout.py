@@ -87,14 +87,11 @@ def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 
 	resource_type = GPX_TYPE # todo: make this configurable
 
-	paths = []
+	resources = [ db.get_resource_of_type_for( a, resource_type ) for a in activities ]
+	paths = [ str( Service.path_for_resource( r ) ) for r in resources ]
 
-	for a in activities:
-		if resources := db.find_resources_of_type( resource_type, a ):
-			paths.append( Service.path_for_resource( resources[0] ) )
-
-	paths = [ str( p ) for p in paths ]
-	system( 'open ' + ' '.join( paths ) )
+	if paths:
+		system( 'open ' + ' '.join( paths ) )
 
 		# os.system( "open " + shlex.quote( filename ) )  # MacOS/X
 		# os.system( "start " + filename )  # windows

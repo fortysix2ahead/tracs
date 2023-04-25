@@ -1,39 +1,26 @@
-from dataclasses import dataclass
-from dataclasses import field
+from dataclasses import dataclass, field
 from datetime import timedelta
 from logging import getLogger
-from re import DOTALL
-from re import match
+from re import DOTALL, match
 from sys import exit as sysexit
-from typing import Any, Dict
-from typing import cast
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import Any, cast, Dict, List, Optional, Tuple, Union
 
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
-from requests import options
-from requests import Session
+from requests import options, Session
 from rich.prompt import Prompt
 
+from tracs.activity import Activity
+from tracs.activity_types import ActivityTypes
+from tracs.config import ApplicationContext, APPNAME
+from tracs.plugin import Plugin
+from tracs.plugins.json import JSON_TYPE, JSONHandler
+from tracs.registry import importer, Registry, service, setup
+from tracs.resources import Resource
+from tracs.service import Service
+from tracs.utils import seconds_to_time
 from .gpx import GPX_TYPE
-from tracs.plugins.json import JSON_TYPE
-from tracs.plugins.json import JSONHandler
-from ..activity import Activity
-from ..activity_types import ActivityTypes
-from ..config import ApplicationContext
-from ..config import APPNAME
-from ..config import console
-from ..plugin import Plugin
-from ..registry import importer, setup
-from ..registry import Registry
-from ..registry import service
-from ..resources import Resource
-from ..service import Service
-from ..utils import seconds_to_time
 
 log = getLogger( __name__ )
 
@@ -307,18 +294,6 @@ class Bikecitizens( Service, Plugin ):
 			url = f'{self.url_for_id( local_id )}/points'
 
 		return url
-
-	def setup( self, ctx: ApplicationContext ) -> None:
-		console.print( f'For Bikecitizens we will use their Web API to download activity data, that\'s why your credentials are needed.' )
-
-		user = Prompt.ask( 'Enter your user name', default=self.cfg_value( 'username' ) or '' )
-		pwd = Prompt.ask( 'Enter your password', default=self.cfg_value( 'password' ) or '', password=True )
-
-		self.set_cfg_value( 'username', user )
-		self.set_cfg_value( 'password', pwd )
-
-	def setup_complete( self ) -> bool:
-		pass
 
 # plugin setup
 

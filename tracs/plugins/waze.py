@@ -1,39 +1,24 @@
-from dataclasses import dataclass
-from dataclasses import field
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
 from re import compile as regex_compile
-from typing import Any
-from typing import cast
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import Any, cast, List, Optional, Tuple, Union
 
-from click import echo
 from dateutil.parser import parse as parse_datetime
-from dateutil.tz import gettz
-from dateutil.tz import UTC
-from gpxpy.gpx import GPX
-from gpxpy.gpx import GPXTrack
-from gpxpy.gpx import GPXTrackPoint
-from gpxpy.gpx import GPXTrackSegment
+from dateutil.tz import gettz, UTC
+from gpxpy.gpx import GPX, GPXTrack, GPXTrackPoint, GPXTrackSegment
 
-from .gpx import GPX_TYPE
-from .gpx import GPXImporter
-from .csv import CSVHandler
-from ..activity import Activity
-from ..activity_types import ActivityTypes
-from ..config import ApplicationContext
-from ..handlers import ResourceHandler
-from ..registry import importer
-from ..registry import Registry
-from ..registry import service
-from ..resources import Resource
-from ..service import Service
-from ..utils import as_datetime
+from tracs.activity import Activity
+from tracs.activity_types import ActivityTypes
+from tracs.handlers import ResourceHandler
+from tracs.plugins.csv import CSVHandler
+from tracs.plugins.gpx import GPX_TYPE, GPXImporter
+from tracs.registry import importer, Registry, service
+from tracs.resources import Resource
+from tracs.service import Service
+from tracs.utils import as_datetime
 
 log = getLogger( __name__ )
 
@@ -564,14 +549,6 @@ class Waze( Service ):
 	# 		new_activity = Activity().init_from( activity ).init_from( other=gpx_activity )
 	# 		new_activity.uids.append( activity.uid )
 	# 		ctx.db.upsert_activity( new_activity, uid=activity.uid )
-
-	# nothing to do for now ...
-	def setup( self, ctx: ApplicationContext ):
-		echo( 'Skipping setup for Waze ... nothing to configure at the moment' )
-
-	# noinspection PyMethodMayBeStatic
-	def setup_complete( self ) -> bool:
-		return True
 
 # helper functions
 

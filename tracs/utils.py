@@ -1,41 +1,25 @@
 
-from dataclasses import dataclass
-from dataclasses import field
-from datetime import date
-from datetime import datetime
-from datetime import time
-from datetime import timedelta
-from datetime import timezone
-from datetime import tzinfo
+from dataclasses import dataclass, field
+from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from difflib import SequenceMatcher
 from enum import Enum
+from functools import wraps
 from re import match
-from time import gmtime
-from typing import Any, Iterable, TypeVar
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
-from urllib.parse import ParseResult
-from urllib.parse import ParseResultBytes
-from urllib.parse import urlparse as urllibparse
+from time import gmtime, perf_counter
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
+from urllib.parse import ParseResult, ParseResultBytes, urlparse as urllibparse
 
-from babel.dates import format_date
-from babel.dates import format_datetime
-from babel.dates import format_time
-from babel.dates import format_timedelta
-from babel.dates import get_timezone
+from babel.dates import format_date, format_datetime, format_time, format_timedelta, get_timezone
 from babel.numbers import format_decimal
 from click import style
 from confuse import Configuration
-from dateutil.parser import parse as parse_datetime
-from dateutil.parser import ParserError
-from dateutil.tz import gettz
-from dateutil.tz import tzlocal
+from dateutil.parser import parse as parse_datetime, ParserError
+from dateutil.tz import gettz, tzlocal
+from rich import box
+from rich.table import Table
 
-from .activity_types import ActivityTypes
+from tracs.activity_types import ActivityTypes
+from tracs.config import CONSOLE
 
 T = TypeVar('T')
 
@@ -263,3 +247,29 @@ def blue( s: str ) -> str:
 
 def red( s: str ) -> str:
 	return style( s, fg='red' )
+
+# helper for measuring performance
+
+TIMERS = {}
+
+def timeit( fn ):
+	@wraps( fn )
+	def timeit_wrapper( *args, **kwargs ):
+		start_time = perf_counter()
+		result = fn( *args, **kwargs )
+		end_time = perf_counter()
+
+		timer_name = fn.__qualname__
+		elapsed_time = end_time - start_time
+		total_time = TIMERS.get( timer_name, 0.0 )
+		TIMERS[timer_name] = total_time + elapsed_time
+
+		return result
+
+	return timeit_wrapper
+
+def print_timers():
+	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
+	for name, total_time in TIMERS.items():
+		print( name, f'{total_time:.4f}s' )
+	CONSOLE.print( table )

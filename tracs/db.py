@@ -411,6 +411,9 @@ class ActivityDb:
 	def get_resource_of_type( self, uids: List[str], type: str ) -> Optional[Resource]:
 		return next( iter( [ r for r in self.find_all_resources( uids ) if r.type == type] ), None )
 
+	def get_resource_of_type_for( self, activity: Activity, resource_type: str ) -> Optional[Resource]:
+		return self.get_resource_of_type( activity.uids, resource_type )
+
 	def get_summary( self, uid ) -> Resource:
 		return next( iter( self.find_summaries( uid ) ), None )
 
@@ -456,13 +459,13 @@ class ActivityDb:
 			resources = [ r for r in resources if r.path == path ]
 		return resources
 
-	def find_resources_of_type( self, activity_type: str, resources: Optional[List[Resource]] = None ) -> List[Resource]:
+	def find_resources_of_type( self, resource_type: str, resources: Optional[List[Resource]] = None ) -> List[Resource]:
 		"""
 		Finds all resources of the given type. If resources list is provided restricts itself to that list or uses
 		all resources otherwise.
 		"""
 		resources = self.resources if resources is None else resources
-		return [r for r in resources if r.type == activity_type ]
+		return [r for r in resources if r.type == resource_type]
 
 	def find_resources_for( self, activity: Activity ) -> List[Resource]:
 		"""

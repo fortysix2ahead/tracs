@@ -10,7 +10,7 @@ from rule_engine import RuleSyntaxError
 from tracs.application import Application
 from tracs.config import ApplicationContext, APPNAME
 from tracs.db import backup_db, maintain_db, restore_db, status_db
-from tracs.edit import edit_activities, equip_activities, modify_activities, rename_activities, tag_activities, unequip_activities, untag_activities
+from tracs.edit import edit_activities, equip_activities, modify_activities, rename_activities, set_activity_type, tag_activities, unequip_activities, untag_activities
 from tracs.group import group_activities, part_activities, ungroup_activities, unpart_activities
 from tracs.inout import DEFAULT_IMPORTER, export_activities, import_activities, open_activities, reimport_activities
 from tracs.link import link_activities
@@ -315,6 +315,13 @@ def shell( ctx ):
 	prompt=f'{APPNAME} > '
 	intro=f'Starting interactive shell mode, enter <exit> to leave this mode, use <{APPNAME} --help> for help ...'
 	make_click_shell( ctx.parent, prompt=prompt, intro=intro ).cmdloop()
+
+@cli.command( 'type', help='sets the activity type' )
+@option( '-t', '--type', 'activity_type', required=False, help='type to be set' )
+@argument( 'filters', nargs=-1 )
+@pass_obj
+def set_type( ctx: ApplicationContext, filters, activity_type ):
+	set_activity_type( ctx, list( ctx.db.find( filters ) ), activity_type=activity_type )
 
 @cli.command( help='displays all available activity types' )
 @pass_obj

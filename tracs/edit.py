@@ -4,7 +4,11 @@ from typing import Any
 from typing import List
 from typing import Tuple
 
+from rich.columns import Columns
+from rich.prompt import IntPrompt
+
 from .activity import Activity
+from .activity_types import ActivityTypes
 from .config import ApplicationContext
 from .inout import load_all_resources
 from .inout import open_activities
@@ -53,6 +57,23 @@ def rename_activities( activities: [Activity], ctx: ApplicationContext, force: b
 				a.name = answer
 				log.debug( f'renamed activity {a.id} to {answer}' )
 				break
+
+def set_activity_type( ctx: ApplicationContext, activities: List[Activity], activity_type: str ) -> None:
+	if activity_type:
+		if not ( activity_type := ActivityTypes.get( activity_type ) ):
+			ctx.console.print( 'error: invalid type, use the [bold]types[/bold] command to find valid types' )
+	else:
+		types = sorted( ActivityTypes.values() )
+		choices = [ str( i ) for i in range( 1, len( types ) + 1 ) ]
+		display_values = [ f'[blue]\[{c}][/blue] {t}' for t, c in zip( types, choices ) ]
+
+		ctx.console.print( Columns( display_values, padding=(0, 4), equal=True, column_first=True ) )
+		index = IntPrompt.ask( 'Enter number of activity', console=ctx.console, choices=choices, show_choices=False ) - 1
+		activity_type = ActivityTypes.get( types[index] )
+
+	for a in activities:
+		a.type = activity_type
+	ctx.db.commit()
 
 def tag_activities( activities: List[Activity], tags: List[str], force: bool = False, pretend: bool = False, ctx: ApplicationContext = None ) -> None:
 	for a in activities:

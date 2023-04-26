@@ -7,10 +7,12 @@ from urllib.parse import urlparse
 
 from confuse.exceptions import NotFoundError
 from rich import box
+from rich.columns import Columns
 from rich.pretty import Pretty as pp
 from rich.table import Table
 
 from .activity import Activity
+from .activity_types import ActivityTypes
 from .resources import Resource
 from .config import ApplicationContext
 from .config import console
@@ -144,3 +146,6 @@ def show_aggregate( activities: [Activity], ctx: ApplicationContext ) -> None:
 	table.add_row( *[ 'duration', fmt( aggregate.duration ) ] )
 
 	console.print( table )
+
+def show_types( ctx: ApplicationContext ) -> None:
+	ctx.console.print( Columns( ActivityTypes.values(), padding=(0, 4), equal=True, column_first=True, title='[blue bold]Activity Types[/blue bold]' ) )

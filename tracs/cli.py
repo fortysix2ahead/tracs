@@ -16,7 +16,7 @@ from tracs.inout import DEFAULT_IMPORTER, export_activities, import_activities, 
 from tracs.link import link_activities
 from tracs.list import inspect_activities, inspect_registry, inspect_resources, list_activities, show_config, show_fields
 from tracs.setup import setup as setup_application
-from tracs.show import show_activities, show_aggregate, show_resources
+from tracs.show import show_activities, show_aggregate, show_resources, show_types
 from tracs.validate import validate_activities
 
 log = getLogger( __name__ )
@@ -315,6 +315,11 @@ def shell( ctx ):
 	prompt=f'{APPNAME} > '
 	intro=f'Starting interactive shell mode, enter <exit> to leave this mode, use <{APPNAME} --help> for help ...'
 	make_click_shell( ctx.parent, prompt=prompt, intro=intro ).cmdloop()
+
+@cli.command( help='displays all available activity types' )
+@pass_obj
+def types( ctx ):
+	show_types( ctx )
 
 @cli.command( help='Displays the version number and exits.' )
 @pass_obj

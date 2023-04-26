@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, time
 from logging import getLogger
 from pathlib import Path
 from re import match
@@ -19,7 +19,7 @@ from fs.zipfs import ReadZipFS
 from requests_cache import CachedSession
 from rich.prompt import Prompt
 
-from tracs.activity import Activity
+from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes, ActivityTypes as Types
 from tracs.config import ApplicationContext, APPNAME, console
 from tracs.inout import load_resource
@@ -389,7 +389,7 @@ class Polar( Service ):
 				self.download_resource( r )
 				resources.extend( decompress_resources( r ) )
 			except (CreateFailed, BadZipFile):
-				log.error( f'error fetching resource from {r.source}', exc_info=True )
+				log.debug( f'error fetching resource from {r.source}', exc_info=True )
 
 			if not r.content:
 				resources.remove( r )
@@ -498,7 +498,7 @@ class Polar( Service ):
 			else:
 				gap = seconds_to_time( (partlists[index].start() - partlists[index - 1].end()).total_seconds() ).isoformat()
 			uids = [f'{activity.uids[0]}?{r.path}' for r in partlists[index].resources]
-			activity.parts.append( { str( index + 1 ): { 'gap': gap, 'uids': uids } } )
+			activity.parts.append( ActivityPart( gap=time.fromisoformat( gap ), uids=uids ) )
 
 		return partlists
 
@@ -554,8 +554,7 @@ def decompress_resources( r: Resource ) -> List[Resource]:
 			for f in zip_fs.listdir( '/' ):
 				resource = Resource( path=f, content=zip_fs.readbytes( f'/{f}' ), status=200, uid=r.uid, source=r.path )
 				resource.type = GPX_TYPE if f.endswith( '.gpx' ) else TCX_TYPE
-				Registry.importer_for( resource.type ).load_data( resource )
-
+				Registry.importer_for( resource.type ).load_as_activity( resource=resource )
 				resources.append( resource )
 
 	return resources

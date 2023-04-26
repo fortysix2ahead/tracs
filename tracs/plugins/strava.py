@@ -75,7 +75,7 @@ TYPES = {
 	'Elliptical': Types.other,
 	'Golf': Types.golf,
 	'Handcycle': Types.bike_hand,
-	'Hike': Types.hike,
+	'Hike': Types.hiking,
 	'IceSkate': Types.ice_skate,
 	'InlineSkate': Types.inline_skate,
 	'Kayaking': Types.kayak,

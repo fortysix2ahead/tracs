@@ -149,5 +149,5 @@ def show_aggregate( activities: [Activity], ctx: ApplicationContext ) -> None:
 
 def show_types( ctx: ApplicationContext ) -> None:
 	title = '[blue bold]Activity Types:[/blue bold] [green]value[/green] (display name)'
-	types = [f'[green]{t}[/green] ({ActivityTypes.get( t ).display_name})' for t in sorted( ActivityTypes.values() ) ]
+	types = [f'[green]{t}[/green] ({ActivityTypes.get( t ).display_name})' for t in sorted( ActivityTypes.names() ) ]
 	ctx.console.print( Columns( types, padding=(0, 4), equal=True, column_first=True, title=title ) )

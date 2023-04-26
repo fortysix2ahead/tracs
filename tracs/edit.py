@@ -63,7 +63,7 @@ def set_activity_type( ctx: ApplicationContext, activities: List[Activity], acti
 		if not ( activity_type := ActivityTypes.get( activity_type ) ):
 			ctx.console.print( 'error: invalid type, use the [bold]types[/bold] command to find valid types' )
 	else:
-		types = sorted( ActivityTypes.values() )
+		types = sorted( ActivityTypes.names() )
 		choices = [ str( i ) for i in range( 1, len( types ) + 1 ) ]
 		display_values = [ f'[blue]\[{c}][/blue] {t}' for t, c in zip( types, choices ) ]
 

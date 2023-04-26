@@ -25,7 +25,7 @@ class ActivityTypes( Enum ):
 	golf = 'Golf'
 	gym = 'Strength Training'
 	gymnastics = 'Gymnastics'
-	hike = 'Hiking'
+	hiking = 'Hiking'
 	ice_skate = 'Ice Skating'
 	inline_skate = 'Inline Skating'
 	kayak = 'Kayak'

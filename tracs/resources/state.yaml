@@ -2,21 +2,13 @@
 plugins:
 
   bikecitizens:
-    last_fetch:
-    last_download:
 
   polar:
-    last_fetch:
-    last_download:
 
   strava:
     access_token:
     refresh_token:
     expires_at:
-    last_fetch:
-    last_download:
 
   waze:
     takeouts:
-    last_fetch:
-    last_download:

@@ -17,16 +17,16 @@ from requests_oauthlib import OAuth2Session
 from rich.prompt import Prompt
 
 from tracs.activity import Activity
-from tracs.activity_types import ActivityTypes, ActivityTypes as Types
+from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME, console
+from tracs.plugins.fit import FIT_TYPE
+from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSON_TYPE, JSONHandler
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import importer, Registry, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
 from tracs.utils import seconds_to_time as stt, to_isotime
-from .fit import FIT_TYPE
-from .gpx import GPX_TYPE
 
 log = getLogger( __name__ )
 
@@ -67,43 +67,43 @@ HEADERS_LOGIN = { **HEADERS_TEMPLATE, **{
 } }
 
 TYPES = {
-	'AlpineSki': Types.ski,
-	'BackcountrySki': Types.xcski_backcountry,
-	'Canoeing': Types.canoe,
-	'Crossfit': Types.crossfit,
-	'EBikeRide': Types.bike_ebike,
-	'Elliptical': Types.other,
-	'Golf': Types.golf,
-	'Handcycle': Types.bike_hand,
-	'Hike': Types.hiking,
-	'IceSkate': Types.ice_skate,
-	'InlineSkate': Types.inline_skate,
-	'Kayaking': Types.kayak,
-	'Kitesurf': Types.kitesurf,
-	'NordicSki': Types.xcski,
-	'Ride': Types.bike,
-	'RockClimbing': Types.climb,
-	'RollerSki': Types.rollski,
-	'Rowing': Types.row,
-	'Run': Types.run,
-	'Sail': Types.sail,
-	'Skateboard': Types.skateboard,
-	'Snowboard': Types.snowboard,
-	'Snowshoe': Types.snowshoe,
-	'Soccer': Types.soccer,
-	'StairStepper': Types.other,
-	'StandUpPaddling': Types.paddle_standup,
-	'Surfing': Types.surf,
-	'Swim': Types.swim,
-	'Velomobile': Types.other,
-	'VirtualRide': Types.bike_ergo,
-	'VirtualRun': Types.run_ergo,
-	'Walk': Types.walk,
-	'WeightTraining': Types.gym,
-	'Wheelchair': Types.other,
-	'Windsurf': Types.surf_wind,
-	'Workout': Types.gym,
-	'Yoga': Types.yoga,
+	'AlpineSki': ActivityTypes.ski,
+	'BackcountrySki': ActivityTypes.xcski_backcountry,
+	'Canoeing': ActivityTypes.canoe,
+	'Crossfit': ActivityTypes.crossfit,
+	'EBikeRide': ActivityTypes.bike_ebike,
+	'Elliptical': ActivityTypes.other,
+	'Golf': ActivityTypes.golf,
+	'Handcycle': ActivityTypes.bike_hand,
+	'Hike': ActivityTypes.hiking,
+	'IceSkate': ActivityTypes.ice_skate,
+	'InlineSkate': ActivityTypes.inline_skate,
+	'Kayaking': ActivityTypes.kayak,
+	'Kitesurf': ActivityTypes.kitesurf,
+	'NordicSki': ActivityTypes.xcski,
+	'Ride': ActivityTypes.bike,
+	'RockClimbing': ActivityTypes.climb,
+	'RollerSki': ActivityTypes.rollski,
+	'Rowing': ActivityTypes.row,
+	'Run': ActivityTypes.run,
+	'Sail': ActivityTypes.sail,
+	'Skateboard': ActivityTypes.skateboard,
+	'Snowboard': ActivityTypes.snowboard,
+	'Snowshoe': ActivityTypes.snowshoe,
+	'Soccer': ActivityTypes.soccer,
+	'StairStepper': ActivityTypes.other,
+	'StandUpPaddling': ActivityTypes.paddle_standup,
+	'Surfing': ActivityTypes.surf,
+	'Swim': ActivityTypes.swim,
+	'Velomobile': ActivityTypes.other,
+	'VirtualRide': ActivityTypes.bike_ergo,
+	'VirtualRun': ActivityTypes.run_ergo,
+	'Walk': ActivityTypes.walk,
+	'WeightTraining': ActivityTypes.gym,
+	'Wheelchair': ActivityTypes.other,
+	'Windsurf': ActivityTypes.surf_wind,
+	'Workout': ActivityTypes.gym,
+	'Yoga': ActivityTypes.yoga,
 }
 
 @dataclass

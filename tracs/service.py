@@ -3,19 +3,17 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
 from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
 
-from dateutil.tz import UTC
 from fs.base import FS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
 
 from tracs.activity import Activity
-from tracs.config import DEFAULT_DB_DIR, KEY_LAST_DOWNLOAD, KEY_LAST_FETCH, OVERLAY_DIRNAME
+from tracs.config import DEFAULT_DB_DIR, OVERLAY_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.registry import Registry
@@ -332,7 +330,6 @@ class Service( Plugin ):
 			summaries = [s for s in summaries if not self.ctx.db.contains_resource( s.uid, s.path )]
 
 		# mark task as done
-		self.set_state_value( KEY_LAST_FETCH, datetime.utcnow().astimezone( UTC ).isoformat() ) # update fetch timestamp
 		self.ctx.complete( 'done' )
 
 		# download resources
@@ -360,7 +357,6 @@ class Service( Plugin ):
 
 		# mark download task as done
 		self._db.commit()
-		self.set_state_value( KEY_LAST_DOWNLOAD, datetime.utcnow().astimezone( UTC ).isoformat() )  # update download timestamp
 		self.ctx.complete( 'done' )
 
 # helper functions

@@ -53,9 +53,9 @@ class ResourceHandler:
 	def load_as_activity( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Activity]:
 		if resource := kwargs.get( 'resource' ):
 			# lazy (re-)loading of an existing resource
-			if resource.content and not resource.raw and not resource.data:
+			if resource.content and resource.raw is not None and resource.data is not None:
 				self.load_data( resource )
-			if resource.raw and not resource.data:
+			if resource.raw and resource.data is not None:
 				self.postprocess_data( resource )
 			if resource.data:
 				return self.as_activity( resource )

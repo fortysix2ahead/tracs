@@ -13,14 +13,14 @@ from tracs.registry import Registry
 @mark.file( 'takeouts/waze/waze/2020-09/account_activity_3.csv' )
 def test_read_account_activity_2020( path ):
 	resource = Registry.importer_for( WAZE_ACCOUNT_ACTIVITY_TYPE ).load( path=path )
-	location_details = cast( AccountActivity, resource.raw ).location_details
+	location_details = cast( AccountActivity, resource.data ).location_details
 	assert len( location_details ) == 1
 	assert len( location_details[0].as_point_list() ) == 25
 
 @mark.file( 'takeouts/waze/waze/2022-01/account_activity_3.csv' )
 def test_read_account_activity_2022( path ):
 	resource = Registry.importer_for( WAZE_ACCOUNT_ACTIVITY_TYPE ).load( path=path )
-	location_details = cast( AccountActivity, resource.raw ).location_details
+	location_details = cast( AccountActivity, resource.data ).location_details
 	assert len( location_details ) == 2
 	assert len( location_details[0].as_point_list() ) == 310
 	assert len( location_details[1].as_point_list() ) == 316
@@ -28,7 +28,7 @@ def test_read_account_activity_2022( path ):
 @mark.file( 'takeouts/waze/waze/2023-04/account_activity_3.csv' )
 def test_read_account_activity_2023( path ):
 	resource = Registry.importer_for( WAZE_ACCOUNT_ACTIVITY_TYPE ).load( path=path )
-	location_details = cast( AccountActivity, resource.raw ).location_details
+	location_details = cast( AccountActivity, resource.data ).location_details
 	assert len( location_details ) == 2
 	assert len( location_details[0].as_point_list() ) == 146
 	assert len( location_details[1].as_point_list() ) == 71

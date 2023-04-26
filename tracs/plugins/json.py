@@ -1,17 +1,10 @@
 
-from typing import Any
-from typing import Optional
-from typing import Type
+from typing import Any, Union
 
-from orjson import loads as load_json
-from orjson import dumps as save_json
-from orjson import OPT_APPEND_NEWLINE
-from orjson import OPT_INDENT_2
-from orjson import OPT_SORT_KEYS
+from orjson import dumps as save_json, loads as load_json, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 
-from tracs.registry import importer
 from tracs.handlers import ResourceHandler
-from tracs.resources import Resource
+from tracs.registry import importer
 
 JSON_TYPE = 'application/json'
 
@@ -20,8 +13,8 @@ class JSONHandler( ResourceHandler ):
 
 	options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
-	def load_data( self, resource: Resource, **kwargs ) -> None:
-		resource.raw = load_json( resource.content )
+	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
+		return load_json( content )
 
 	def save_data( self, data: Any, **kwargs ) -> bytes:
 		return save_json( data, option=JSONHandler.options )

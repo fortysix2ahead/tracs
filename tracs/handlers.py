@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from logging import getLogger
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 from typing import Optional
 from typing import Type
 
@@ -24,86 +24,86 @@ class ResourceHandler:
 		self._factory: Factory = Factory( debug_path=True, schemas={} )
 
 		self.resource: Optional[Resource] = None
-		self.content: Optional[bytes] = None
+		self.content: Optional[Union[bytes,str]] = None
+		self.raw: Any = None
 		self.data: Any = None
 
 	def load( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
 		# load from either path or url
 		if path:
-			self.resource = self.load_from_path( path, **kwargs )
+			self.content = self.load_from_path( path, **kwargs )
 		elif url:
-			self.resource = self.load_from_url( url, **kwargs )
+			self.content = self.load_from_url( url, **kwargs )
 		else:
 			return None
 
-		# try transform content in resource into structured data (i.e. from bytes to a dict)
+		# try to transform content into structured data (i.e. from bytes to a dict)
 		# by default this does nothing and has to be implemented in subclasses
-		# this method expects that the attribute resource.raw is populated
-		self.load_data( self.resource, **kwargs )
+		self.raw = self.load_data( self.content, **kwargs )
 
 		# postprocess data
 		# if resource.raw is dict-like and there's a dataclass class factory and a class
 		# the factory will be used to transfrom the data from raw and populate the data field
 		# if not, data will be set to raw
-		self.postprocess_data( self.resource, **kwargs )
+		self.data = self.postprocess_data( self.raw, **kwargs )
 
 		# return the result
-		return self.resource
+		return self.create_resource( path, url, **kwargs )
 
 	def load_as_activity( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Activity]:
 		if resource := kwargs.get( 'resource' ):
 			# lazy (re-)loading of an existing resource
-			if resource.content and resource.raw is not None and resource.data is not None:
-				self.load_data( resource )
-			if resource.raw and resource.data is not None:
-				self.postprocess_data( resource )
+			if resource.content and resource.raw is None and resource.data is None:
+				resource.raw = self.load_data( resource )
+
+			if resource.raw and resource.data is None:
+				resource.data = self.postprocess_data( resource )
+
 			if resource.data:
 				return self.as_activity( resource )
 			else:
 				return None
+
 		else:
 			return self.as_activity( self.load( path, url, **kwargs ) )
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
-		if self.activity_cls:
-			return self._factory.load( resource.raw, self.activity_cls )
-		else:
-			return None
+		return self._factory.load( resource.raw, self.activity_cls ) if self.activity_cls else None
 
-	def load_from_url( self, url: str, **kwargs ) -> Optional[Resource]:
+	# noinspection PyMethodMayBeStatic
+	def load_from_url( self, url: str, **kwargs ) -> Optional[bytes]:
 		session: Session = kwargs.get( 'session' )
 		headers = kwargs.get( 'headers' )
 		allow_redirects: bool = kwargs.get( 'allow_redirects', True )
 		stream: bool = kwargs.get( 'stream', True )
-
 		response: Response = session.get( url, headers=headers, allow_redirects=allow_redirects, stream=stream )
-		return Resource(
-			type=self._type,
-			source=url,
-			status=response.status_code,
-			content=response.content,
-		)
+		return response.content
 
-	def load_from_path( self, path: Path, **kwargs ) -> Optional[Resource]:
-		return Resource(
-			type=self._type,
-			path=path.name,
-			source=path.as_uri(),
-			status=200,
-			content=path.read_bytes()
-		)
+	# noinspection PyMethodMayBeStatic
+	def load_from_path( self, path: Path, **kwargs ) -> Optional[bytes]:
+		return path.read_bytes()
 
-	def load_data( self, resource: Resource, **kwargs ) -> None:
+	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
 		pass
 
-	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
+	def postprocess_data( self, raw: Any, **kwargs ) -> Any:
 		try:
-			if isinstance( resource.raw, dict ) and self._activity_cls:
-				resource.data = self._factory.load( resource.raw, self._activity_cls )
+			if isinstance( raw, dict ) and self._activity_cls:
+				return self._factory.load( raw, self._activity_cls )
 			else:
-				resource.data = resource.raw
+				return raw
 		except RuntimeError:
 			log.error( f'unable to transform resource content into structured data by using the factory for {self._activity_cls}', exc_info=True )
+
+	def create_resource( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Resource:
+		return Resource(
+			type = self._type,
+			path = path.name if path else None, # todo: use url here as well?
+			source = path.as_uri() if path else url,
+			content = self.content,
+			raw = self.raw,
+			data = self.data
+		)
 
 	# noinspection PyMethodMayBeStatic
 	def as_str( self, content: bytes, encoding: str = 'UTF-8' ) -> str:

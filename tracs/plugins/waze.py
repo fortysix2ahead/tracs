@@ -286,71 +286,71 @@ class WazeAccountActivityImporter( CSVHandler ):
 	def __init__( self ) -> None:
 		super().__init__( resource_type=WAZE_ACCOUNT_ACTIVITY_TYPE, activity_cls=AccountActivity )
 
-	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
+	def postprocess_data( self, raw: Any, **kwargs ) -> Any:
 		account_activity = AccountActivity()
-		while resource.raw:
-			line = resource.raw.pop( 0 )
+		while raw:
+			line = raw.pop( 0 )
 			mode = WazeAccountActivityImporter.Mode.mode_by_value( line )
 
 			if mode == WazeAccountActivityImporter.Mode.DRIVE_SUMMARY:
 				while line:
-					if (line := resource.raw.pop( 0 )) and line != ['Date', 'Destination', 'Source']:
+					if (line := raw.pop( 0 )) and line != ['Date', 'Destination', 'Source']:
 						account_activity.drive_summaries.append( DriveSummary( *line ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.FAVOURITES:
 				while line:
-					if (line := resource.raw.pop( 0 )) and line != ['Place', 'Name', 'Type']:
+					if (line := raw.pop( 0 )) and line != ['Place', 'Name', 'Type']:
 						account_activity.favourites.append( Favourite( *line ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.LOCATION_DETAILS:
 				while line:
-					if (line := resource.raw.pop( 0 )) and line != ['Date', 'Coordinates']:
+					if (line := raw.pop( 0 )) and line != ['Date', 'Coordinates']:
 						account_activity.location_details.append( LocationDetail( *line ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.LOCATION_DETAILS_2:
 				while line:
-					if line := resource.raw.pop( 0 ):
+					if line := raw.pop( 0 ):
 						account_activity.location_details.append( LocationDetail( coordinates=line[0] ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.LOGIN_DETAILS:
 				while line:
-					if (line := resource.raw.pop( 0 )) and line[0] != 'Login Time' and line[1] != 'Logout Time':
+					if (line := raw.pop( 0 )) and line[0] != 'Login Time' and line[1] != 'Logout Time':
 						account_activity.login_details.append( LoginDetail( *line ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.USAGE_DATA_SNAPSHOT:
-				header = resource.raw.pop( 0 )
-				data = resource.raw.pop( 0 )
+				header = raw.pop( 0 )
+				data = raw.pop( 0 )
 				for h, d in zip( header, data ):
 					setattr( account_activity.usage_data, _snake( h ), d )
 
 			elif mode == WazeAccountActivityImporter.Mode.EDIT_HISTORY:
 				while line:
-					if line := resource.raw.pop( 0 ):
+					if line := raw.pop( 0 ):
 						account_activity.edit_history.append( EditHistoryEntry( *line ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.USER_REPORTS:
 				while line:
-					if line := resource.raw.pop( 0 ):
+					if line := raw.pop( 0 ):
 						account_activity.user_reports.append( UserReport( *line ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.USER_FEEDBACK:
 				while line:
-					if line := resource.raw.pop( 0 ):
+					if line := raw.pop( 0 ):
 						account_activity.user_feedback.append( UserFeedback( *line ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.PHOTOS_ADDED:
 				while line:
-					if (line := resource.raw.pop( 0 )) and line != ['Name', 'Image']:
+					if (line := raw.pop( 0 )) and line != ['Name', 'Image']:
 						account_activity.photos_added.append( Photo( *line ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.SEARCH_HISTORY:
 				while line:
-					if line := resource.raw.pop( 0 ):
+					if line := raw.pop( 0 ):
 						account_activity.search_history.append( SearchHistoryEntry( *line ) )
 
 			elif mode == WazeAccountActivityImporter.Mode.CARPOOL_PREFERENCES:
-				header = resource.raw.pop( 0 )
-				data = resource.raw.pop( 0 )
+				header = raw.pop( 0 )
+				data = raw.pop( 0 )
 				for h, d in zip( header, data ):
 					setattr( account_activity.carpool_preferences, _snake( h ), d )
 
@@ -358,7 +358,7 @@ class WazeAccountActivityImporter( CSVHandler ):
 				if line:
 					log.error( f'unsupported CSV section detected: "{line}"' )
 
-		resource.raw = account_activity
+		return account_activity
 
 @importer( type=WAZE_ACCOUNT_INFO_TYPE )
 class WazeAccountInfoImporter( CSVHandler ):
@@ -380,56 +380,47 @@ class WazeAccountInfoImporter( CSVHandler ):
 	def __init__( self ) -> None:
 		super().__init__( resource_type=WAZE_ACCOUNT_INFO_TYPE, activity_cls=AccountInfo )
 
-	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
+	def postprocess_data( self, raw: Any, **kwargs ) -> Any:
 		account_info = AccountInfo()
-		while resource.raw:
-			line = resource.raw.pop( 0 )
+		while raw:
+			line = raw.pop( 0 )
 			mode = WazeAccountInfoImporter.Mode.mode_by_value( line )
 
 			if mode == WazeAccountInfoImporter.Mode.GENERAL_INFO:
 				while line:
-					if line := resource.raw.pop( 0 ):
+					if line := raw.pop( 0 ):
 						setattr( account_info, _snake( line[0] ), line[1] )
 
 			elif mode == WazeAccountInfoImporter.Mode.CONNECTED_ACCOUNTS:
 				while line:
-					if line := resource.raw.pop( 0 ):
+					if line := raw.pop( 0 ):
 						account_info.connected_accounts.append( line[0] )
 
 			elif mode == WazeAccountInfoImporter.Mode.USER_REPORTS:
 				while line:
-					if (line := resource.raw.pop( 0 )) and line != ['Event Date', 'Type', 'Pos X', 'Pos Y', 'Subtype']:
+					if (line := raw.pop( 0 )) and line != ['Event Date', 'Type', 'Pos X', 'Pos Y', 'Subtype']:
 						account_info.user_reports.append( UserReport( *line ) )
 
 			elif mode == WazeAccountInfoImporter.Mode.USER_FEEDBACK:
 				while line:
-					if (line := resource.raw.pop( 0 )) and line != ['Event Date','Type','Alert Type']:
+					if (line := raw.pop( 0 )) and line != ['Event Date','Type','Alert Type']:
 						account_info.user_feedback.append( UserFeedback( *line ) )
 
 			elif mode == WazeAccountInfoImporter.Mode.USER_COUNTERS:
 				while line:
-					if (line := resource.raw.pop( 0 )) and line != ['Count','Name']:
+					if (line := raw.pop( 0 )) and line != ['Count','Name']:
 						setattr( account_info.user_counters, line[1], line[0] )
 
-		resource.raw = account_info
+		return account_info
 
 @importer( type=WAZE_TYPE, activity_cls=WazeActivity, summary=True )
 class WazeImporter( ResourceHandler ):
 
-	def load( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
-		if from_str := kwargs.get( 'from_string', False ):
-			self.resource = Resource( content=from_str.encode( encoding='UTF-8' ) )
-			self.load_data( self.resource )
-		else:
-			super().load( path, url, **kwargs )
+	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
+		return LocationDetail( coordinates=content.decode( 'UTF-8' ) )
 
-		return self.resource
-
-	def load_data( self, resource: Resource, **kwargs ) -> Any:
-		resource.raw = LocationDetail( coordinates=resource.as_text() )
-
-	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
-		resource.data = WazeActivity( resource.raw.as_point_list() )
+	def postprocess_data( self, raw: Any, **kwargs ) -> Any:
+		return WazeActivity( raw.as_point_list() )
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		wa: WazeActivity = resource.data
@@ -498,7 +489,7 @@ class Waze( Service ):
 			log.debug( f'fetching activities from Waze takeout in {file}' )
 
 			takeout_resource = self._takeout_importer.load( path=file )
-			account_activity = cast( AccountActivity, takeout_resource.raw )
+			account_activity = cast( AccountActivity, takeout_resource.data )
 			for ld in account_activity.location_details:
 				# ignore drives without timestamps, see issue #74
 				if not all( p.time for p in ld.as_point_list() ):

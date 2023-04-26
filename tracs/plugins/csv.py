@@ -1,12 +1,9 @@
 
-from csv import field_size_limit
-from csv import reader as csv_reader
-from typing import Optional
-from typing import Type
+from csv import field_size_limit, reader as csv_reader
+from typing import Any, Optional, Type, Union
 
-from tracs.registry import importer
 from tracs.handlers import ResourceHandler
-from tracs.resources import Resource
+from tracs.registry import importer
 
 CSV_TYPE = 'text/csv'
 
@@ -20,8 +17,8 @@ class CSVHandler( ResourceHandler ):
 
 		self._field_size_limit = kwargs.get( 'field_size_limit', DEFAULT_FIELD_SIZE_LIMIT ) # keep this later use
 
-	def load_data( self, resource: Resource, **kwargs ) -> None:
-		resource.raw = [ r for r in csv_reader( self.as_str( resource.content ).splitlines() ) ]
+	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
+		return [ r for r in csv_reader( self.as_str( content ).splitlines() ) ]
 
 	@property
 	def field_size_limit( self ) -> int:

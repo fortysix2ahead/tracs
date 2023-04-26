@@ -1,6 +1,6 @@
 
 from logging import getLogger
-from typing import Optional
+from typing import Any, Optional, Union
 
 from dateutil.tz import tzlocal
 from dateutil.tz import UTC
@@ -20,8 +20,8 @@ GPX_TYPE = 'application/gpx+xml'
 @importer( type=GPX_TYPE, activity_cls=GPX, recording=True )
 class GPXImporter( ResourceHandler ):
 
-	def load_data( self, resource: Resource, **kwargs ) -> None:
-		resource.raw = parse_gpx( resource.content )
+	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
+		return parse_gpx( content )
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		gpx: GPX = resource.raw

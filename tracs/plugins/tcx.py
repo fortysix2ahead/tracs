@@ -87,11 +87,11 @@ class TCXActivity:
 @importer( type=TCX_TYPE, activity_cls=TCXActivity, recording=True )
 class TCXImporter( XMLHandler ):
 
-	def load_data( self, resource: Resource, **kwargs ) -> None:
-		resource.raw = fromstring( resource.content )
+	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
+		return fromstring( content )
 
-	def postprocess_data( self, resource: Resource, **kwargs ) -> None:
-		root: ObjectifiedElement = resource.raw.getroottree().getroot()
+	def postprocess_data( self, raw: Any, **kwargs ) -> Any:
+		root: ObjectifiedElement = raw.getroottree().getroot()
 		for a in root.Activities.iterchildren( '{*}Activity' ):
 			activity = TCXActivity(
 				id = find( a, 'Id' )
@@ -135,7 +135,7 @@ class TCXImporter( XMLHandler ):
 				creator_build_major = find( c, find( a, 'Creator.Version.BuildMajor' ) )
 				creator_build_minor = find( c, find( a, 'Creator.Version.BuildMinor' ) )
 
-			resource.data = activity
+			return activity
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		tcx: TCXActivity = resource.data

@@ -156,12 +156,11 @@ class Registry:
 
 	@classmethod
 	def importer_for( cls, type: str ) -> Optional[Importer]:
-		importer_list = Registry.importers.get( type, [] )
-		return importer_list[0] if len( importer_list ) > 0 else None
+		return next( iter( Registry.importers.get( type, [] ) ), None )
 
 	@classmethod
 	def importers_for( cls, type: str ) -> List[Importer]:
-		return Registry.importers.get( type ) or []
+		return Registry.importers.get( type, [] )
 
 	@classmethod
 	def importers_for_suffix( cls, suffix: str ) -> List[Importer]:

@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from click import echo
 from dateutil.tz import UTC
 from requests import Session
+from requests.utils import cookiejar_from_dict, dict_from_cookiejar
 from rich.prompt import Prompt
 
 from tracs.config import ApplicationContext, APPNAME
@@ -72,6 +73,10 @@ class Strava( Service ):
 	def activities_url( self ) -> str:
 		return f'{self.base_url}/activities'
 
+	@property
+	def training_url( self ) -> str:
+		return f'{self.base_url}/athlete/training'
+
 	def url_events_year( self, year, page: int ) -> str:
 		after = int( datetime( year, 1, 1, tzinfo=UTC ).timestamp() )
 		before = int( datetime( year + 1, 1, 1, tzinfo=UTC ).timestamp() )
@@ -94,40 +99,56 @@ class Strava( Service ):
 			return f'{self._activities_url}/{local_id}/export_original'
 
 	def login( self ):
+		if not self.cfg_value( 'username' ) and not self.cfg_value( 'password' ):
+			log.error( f"setup not complete for plugin {DISPLAY_NAME}, consider running {APPNAME} setup {SERVICE_NAME}" )
+			sysexit( -1 )
+
 		if not self._session:
-			self._session = Session()
-			response = self._session.get( self.login_url )
+			if cookies := self.state_value( 'session' ):
+				session = Session()
+				session.cookies.update( cookiejar_from_dict( cookies ) )
+				response = session.get( self.training_url )
+				if response.status_code == 200:
+					self._session = session
+				else:
+					log.error( f'todo: session expired, status code = {response.status_code}' )
+			else:
+				self._session = self.login_session()
 
-			try:
-				token = BeautifulSoup( response.text, 'html.parser' ).find( 'meta', attrs={'name': 'csrf-token'} )['content']
-			except TypeError:
-				token = None
+	# might raise TypeError
+	def login_session( self ) -> Session:
+		session = Session()
+		response = session.get( self.login_url )
 
-			log.debug( f"CSRF Token: {token}" )
+		token = BeautifulSoup( response.text, 'html.parser' ).find( 'meta', attrs={ 'name': 'csrf-token' } )['content']
+		log.debug( f"successfully detected CSRF token for {SERVICE_NAME} login page: {token}" )
 
-			if token is None:
-				echo( "CSRF Token not found" )
-				return None
+		data = {
+			'utf8': '✓',
+			'authenticity_token': token, # token might be None, if BS failed above
+			'plan': '',
+			'email': self.cfg_value( 'username' ),
+			'password': self.cfg_value( 'password' ),
+			'remember_me': 'on'
+		}
+		response = session.post( self.session_url, headers=HEADERS_LOGIN, data=data )
 
-			if not self.cfg_value( 'username' ) and not self.cfg_value( 'password' ):
-				log.error( f"setup not complete for Strava, consider running {APPNAME} setup --strava" )
-				sysexit( -1 )
-
-			data = {
-				'utf8': '✓',
-				'authenticity_token': token,
-				'plan': '',
-				'email': self.cfg_value( 'username' ),
-				'password': self.cfg_value( 'password' )
-			}
-			response = self._session.post( self.session_url, headers=HEADERS_LOGIN, data=data )
-
-			if not response.status_code == 200:
-				log.error( "web login failed for Strava, are the credentials correct?" )
+		if response.status_code == 200:
+			cookies = dict_from_cookiejar( session.cookies )
+			self.set_state_value( 'session', cookies )
+			return session
+		else:
+			log.error( f'web login failed for {DISPLAY_NAME}, are the credentials correct?' )
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		if not self.login():
-			return []
+		if not self._session:
+			self.login()
+
+		url = 'https://www.strava.com/athlete/training_activities?keywords=&activity_type=&workout_type=&commute=&private_activities=&trainer=&gear=&search_session_id=fc095d51-c862-477b-954b-898f776a16ae&new_activity_only=false'
+		url = 'https://www.strava.com/athlete/training_activities?keywords=&activity_type=&workout_type=&commute=&private_activities=&trainer=&gear=&new_activity_only=false'
+		self._session.get(  )
+
+		return []
 
 		# self.ctx.start( f'fetching activity summaries from {self.display_name}' )
 

@@ -357,16 +357,10 @@ class ApplicationContext:
 		self.dump_state()
 
 	def dump_config( self ) -> None:
-		if not self.pretend:
-			self.config_fs.writetext( CONFIG_FILENAME, self.config.dump( full=True ) )
-		else:
-			log.info( f'pretending to write config file to {self.config_fs.getsyspath( CONFIG_FILENAME )}' )
+		self.config_fs.writetext( CONFIG_FILENAME, self.config.dump( full=True ) )
 
 	def dump_state( self ) -> None:
-		if not self.pretend:
-			self.config_fs.writetext( STATE_FILENAME, self.state.dump( full=True ) )
-		else:
-			log.info( f'pretending to write state file to {self.config_fs.getsyspath( STATE_FILENAME )}' )
+		self.config_fs.writetext( STATE_FILENAME, self.state.dump( full=True ) )
 
 ApplicationConfig = Configuration( APPNAME, __name__, read=False )
 ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )

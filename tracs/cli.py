@@ -130,13 +130,14 @@ def ls( ctx: ApplicationContext, sort, reverse, format_name, filters ):
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )
 @option( '-w', '--raw', is_flag=True, required=False, hidden=True, help='display raw data' )
 @option( '-r', '--resource', is_flag=True, required=False, hidden=True, default=False, help='display information on resources' )
+@option( '-v', '--verbose', is_flag=True, required=False, default=False, help='verbose, shows more information' )
 @argument('filters', nargs=-1)
 @pass_obj
-def show( ctx: ApplicationContext, filters, raw, format_name, resource ):
+def show( ctx: ApplicationContext, filters, raw, format_name, resource, verbose ):
 	if resource:
-		show_resources( list( ctx.db.find( filters ) ), ctx=ctx, display_raw=raw, verbose=ctx.verbose, format_name=format_name )
+		show_resources( list( ctx.db.find( filters ) ), ctx=ctx, display_raw=raw, verbose=verbose, format_name=format_name )
 	else:
-		show_activities( list( ctx.db.find( filters ) ), ctx=ctx, display_raw=raw, verbose=ctx.verbose, format_name=format_name )
+		show_activities( list( ctx.db.find( filters ) ), ctx=ctx, display_raw=raw, verbose=verbose, format_name=format_name )
 
 @cli.command( help='groups activities' )
 @argument( 'filters', nargs=-1 )

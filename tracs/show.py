@@ -43,8 +43,7 @@ def show_resources( activities: List[Activity], ctx: ApplicationContext, display
 
 			console.print( table )
 
-def show_activities( activities: [Activity], ctx: ApplicationContext, display_raw: bool = False, verbose: bool = True, format_name: str = None ) -> None:
-
+def show_activities( activities: [Activity], ctx: ApplicationContext, display_raw: bool = False, format_name: str = None, verbose: bool = False ) -> None:
 	if format_name == 'all':
 		show_fields = [ f.name for f in Activity.fields() ]
 		show_fields.sort()

@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any
+from typing import Any, Dict
 
 from confuse import Configuration
 from confuse import NotFoundError
@@ -50,6 +50,10 @@ class Plugin:
 
 	def set_state_value( self, key: str, value: Any ) -> None:
 		self._state[key] = value
+
+	def set_state_values( self, values: Dict ) -> None:
+		for k, v in values:
+			self._state[k] = v
 
 	@property
 	def ctx( self ) -> ApplicationContext:

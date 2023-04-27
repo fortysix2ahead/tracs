@@ -14,5 +14,8 @@ plugins:
     refresh_token:
     expires_at:
 
+  stravaweb:
+    session:
+
   waze:
     takeouts:

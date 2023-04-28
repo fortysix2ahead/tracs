@@ -3,7 +3,7 @@ from datetime import datetime
 from logging import getLogger
 from re import compile, findall
 from sys import exit as sysexit
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, cast, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 from bs4 import BeautifulSoup
@@ -31,7 +31,7 @@ STRAVA_TYPE = 'application/vnd.strava+json'
 
 BASE_URL = 'https://www.strava.com'
 
-FETCH_PAGE_SIZE = 200 # maximum possible size?
+FETCH_PAGE_SIZE = 20 # seems to be the maximum possible size
 
 TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
 TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
@@ -71,12 +71,12 @@ class WebActivity:
 	commute: Optional[Any] = field( default=None )
 	description: Optional[str] = field( default=None )
 	display_type: str = field( default=None )
-	distance: Optional[float] = field( default=None )
+	distance: Optional[str] = field( default=None )
 	distance_raw: float = field( default=None )
 	elapsed_time: str = field( default=None )
 	elapsed_time_raw: int = field( default=None )
-	elevation_gain: int = field( default=None )
-	elevation_gain_raw: int = field( default=None )
+	elevation_gain: Optional[str] = field( default=None )
+	elevation_gain_raw: float = field( default=None )
 	elevation_unit: str = field( default=None )
 	flagged: bool = field( default=None )
 	has_latlng: bool = field( default=None )
@@ -213,15 +213,31 @@ class Strava( Service ):
 		   'trainer': '',
 			'gear': '',
 			'search_session_id': uuid4(),
-			'new_activity_only': 'false'
+			'new_activity_only': 'false',
+			'page': '1',
+			'per_page': str( FETCH_PAGE_SIZE )
 		}
-		# url = 'https://www.strava.com/athlete/training_activities?keywords=&activity_type=&workout_type=&commute=&private_activities=&trainer=&gear=&search_session_id=fc095d51-c862-477b-954b-898f776a16ae&new_activity_only=false'
-		response = self._session.get( url, params=parameters, headers=HEADERS_API )
-		page = self._importer.load_as_activity( resource=Resource( content=response.content ) )
-
-		return []
 
 		# self.ctx.start( f'fetching activity summaries from {self.display_name}' )
+
+		pages: List[ActivityPage] = []
+		response = self._session.get( url, params=parameters, headers=HEADERS_API )
+		pages.append( cast( ActivityPage, self._importer.load_as_activity( resource=Resource( content=response.content ) ) ) )
+
+		total_pages = int( pages[0].total / FETCH_PAGE_SIZE ) + 1
+		self.ctx.total( total_pages )
+		for page in range( 2, total_pages ):
+			self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to {page * FETCH_PAGE_SIZE} (batch {page})' )
+			response = self._session.get( url, params={ **parameters, 'page': str( page ) }, headers=HEADERS_API )
+			pages.append( cast( ActivityPage, self._importer.load_as_activity( resource=Resource( content=response.content ) ) ) )
+
+		_all = [a for p in pages for a in p.models]
+
+		print( f'fetched {len( _all )}' )
+
+		# self.ctx.complete( 'done' )
+
+		return []
 
 		resources = []
 

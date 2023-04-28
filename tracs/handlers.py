@@ -28,12 +28,14 @@ class ResourceHandler:
 		self.raw: Any = None
 		self.data: Any = None
 
-	def load( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
-		# load from either path or url
+	def load( self, path: Optional[Path] = None, url: Optional[str] = None, content: Optional[bytes] = None,  **kwargs ) -> Optional[Resource]:
+		# load from either path, url or content
 		if path:
 			self.content = self.load_from_path( path, **kwargs )
 		elif url:
 			self.content = self.load_from_url( url, **kwargs )
+		elif content:
+			self.content = content
 		else:
 			return None
 

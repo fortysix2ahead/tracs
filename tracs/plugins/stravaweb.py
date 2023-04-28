@@ -7,18 +7,18 @@ from typing import Any, cast, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 from bs4 import BeautifulSoup
-from click import echo
 from dateutil.tz import UTC
 from requests import Session
 from requests.utils import cookiejar_from_dict, dict_from_cookiejar
 from rich.prompt import Prompt
 
+from tracs.activity import Activity
 from tracs.config import ApplicationContext, APPNAME
 from tracs.plugins.fit import FIT_TYPE
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSONHandler
 from tracs.plugins.tcx import TCX_TYPE
-from tracs.registry import Registry, service, setup
+from tracs.registry import importer, Registry, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
 
@@ -27,7 +27,7 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'stravaweb'
 DISPLAY_NAME = 'Strava Web'
 
-STRAVA_TYPE = 'application/vnd.strava+json'
+STRAVA_WEB_TYPE = 'application/vnd.strava.web+json'
 
 BASE_URL = 'https://www.strava.com'
 
@@ -62,7 +62,7 @@ HEADERS_API = { **HEADERS_TEMPLATE,
 }
 
 @dataclass
-class WebActivity:
+class StravaWebActivity:
 	activity_type_display_name: str = field( default=None )
 	activity_url: str = field( default=None )
 	activity_url_for_twitter: str = field( default=None )
@@ -107,10 +107,19 @@ class WebActivity:
 @dataclass
 class ActivityPage:
 
-	models: List[WebActivity] = field( default_factory=list )
+	models: List[StravaWebActivity] = field( default_factory=list )
 	page: int = field( default=None )
 	per_page: int = field( default=None )
 	total: int = field( default=None )
+
+@importer( type=STRAVA_WEB_TYPE, activity_cls=StravaWebActivity, summary=True )
+class StravaWebImporter( JSONHandler ):
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		activity: StravaWebActivity = resource.data
+		return Activity(
+			name = activity.name,
+		)
 
 @service
 class Strava( Service ):
@@ -118,7 +127,8 @@ class Strava( Service ):
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
 		self._session: Optional[Session] = None
-		self._importer = JSONHandler( 'web', ActivityPage )
+		self._importer = JSONHandler()
+		self._web_importer = StravaWebImporter( STRAVA_WEB_TYPE, StravaWebActivity )
 
 	@property
 	def login_url( self ) -> str:
@@ -218,49 +228,25 @@ class Strava( Service ):
 			'per_page': str( FETCH_PAGE_SIZE )
 		}
 
-		# self.ctx.start( f'fetching activity summaries from {self.display_name}' )
-
-		pages: List[ActivityPage] = []
-		response = self._session.get( url, params=parameters, headers=HEADERS_API )
-		pages.append( cast( ActivityPage, self._importer.load_as_activity( resource=Resource( content=response.content ) ) ) )
-
-		total_pages = int( pages[0].total / FETCH_PAGE_SIZE ) + 1
-		self.ctx.total( total_pages )
-		for page in range( 2, total_pages ):
-			self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to {page * FETCH_PAGE_SIZE} (batch {page})' )
-			response = self._session.get( url, params={ **parameters, 'page': str( page ) }, headers=HEADERS_API )
-			pages.append( cast( ActivityPage, self._importer.load_as_activity( resource=Resource( content=response.content ) ) ) )
-
-		_all = [a for p in pages for a in p.models]
-
-		print( f'fetched {len( _all )}' )
-
-		# self.ctx.complete( 'done' )
-
-		return []
-
-		resources = []
-
 		try:
-			for page in range( 1, 999999 ):
-				self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to { page * FETCH_PAGE_SIZE } (batch {page})' )
+			json = self._session.get( url, params=parameters, headers=HEADERS_API ).json()
+			total_pages = int( json.get( 'total' ) / FETCH_PAGE_SIZE ) + 1
+			models: List[Dict] = [m for m in json.get( 'models' )]
+			self.ctx.total( total_pages - 1 ) # minus one so progress bar turns green ...
 
-				# status is 429 and raw['message'] = 'Rate Limit Exceeded', when rate goes out of bounds ...
-				json_resource = self.json_handler.load( url=self.all_events_url( page ), session=self._oauth_session )
+			for page in range( 2, total_pages ):
+				self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to {page * FETCH_PAGE_SIZE} (batch {page})' )
+				models.extend( [m for m in self._session.get( url, params={ **parameters, 'page': str( page ) }, headers=HEADERS_API ).json().get( 'models' )] )
 
-				for item in json_resource.raw:
-					resources.append( self.importer.save( item, uid=f"{self.name}:{item['id']}", resource_path=f"{item['id']}.json", resource_type=STRAVA_TYPE, status=200, source=self.url_for_id( item['id'] ), summary=True ) )
+			resources = [
+				self._importer.save( m, uid=f"strava:{m['id']}", resource_path=f"{m['id']}.web.json", resource_type=STRAVA_WEB_TYPE, source=self.url_for_id( m['id'] ), summary=True ) for m in models
+			]
 
-				if not json_resource.raw or len( json_resource.raw ) == 0:
-					break
+			return resources
 
 		except RuntimeError:
 			log.error( f'error fetching activity ids', exc_info=True )
-
-		# finally:
-		#	self.ctx.complete( 'done' )
-
-		return resources
+			return []
 
 	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:

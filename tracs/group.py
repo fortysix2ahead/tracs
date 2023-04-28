@@ -110,7 +110,7 @@ def ungroup_activities( ctx: ApplicationContext, activities: List[Activity], for
 	"""
 	all_parents, all_children = [], []
 	for a in activities:
-		if a.is_group:
+		if a.group:
 			if Confirm.ask( f'Ungroup activity {a.id} ({a.name})?' ) if not force else True:
 				parent, children = _ungroup( ctx, a )
 				all_parents.append( parent )

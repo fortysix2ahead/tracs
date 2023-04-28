@@ -1,8 +1,10 @@
+from dataclasses import dataclass, field
 from datetime import datetime
 from logging import getLogger
 from re import compile, findall
 from sys import exit as sysexit
 from typing import Any, Dict, List, Optional, Tuple, Union
+from uuid import uuid4
 
 from bs4 import BeautifulSoup
 from click import echo
@@ -14,6 +16,7 @@ from rich.prompt import Prompt
 from tracs.config import ApplicationContext, APPNAME
 from tracs.plugins.fit import FIT_TYPE
 from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugins.json import JSONHandler
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import Registry, service, setup
 from tracs.resources import Resource
@@ -34,32 +37,88 @@ TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
 TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
 
 HEADERS_TEMPLATE = {
-}
-
-HEADERS_LOGIN = { **HEADERS_TEMPLATE, **{
 	'Accept': '*/*',
 	'Accept-Encoding': 'gzip, deflate, br',
 	'Accept-Language': 'en-US,en;q=0.5',
-	'Cache-Control': 'no-cache',
 	'Connection': 'keep-alive',
+	'Host': 'www.strava.com',
+	'TE': 'Trailers',
+	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0',
+}
+
+HEADERS_LOGIN = { **HEADERS_TEMPLATE, **{
+	'Cache-Control': 'no-cache',
 	'Content-Type': 'application/x-www-form-urlencoded',
 	'DNT': '1',
-	'Host': 'www.strava.com',
 	'Origin': 'https://www.strava.com',
 	'Pragma': 'no-cache',
 	'Referer': 'https://www.strava.com/login',
-	'TE': 'Trailers',
 	'Upgrade-Insecure-Requests': '1',
-	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0',
 } }
+
+HEADERS_API = { **HEADERS_TEMPLATE,
+	'X-CSRF-Token': '', # this needs to be updated later
+   'X-Requested-With': 'XMLHttpRequest',
+}
+
+@dataclass
+class WebActivity:
+	activity_type_display_name: str = field( default=None )
+	activity_url: str = field( default=None )
+	activity_url_for_twitter: str = field( default=None )
+	athlete_gear_id: Optional[int] = field( default=None )
+	bike_id: Optional[int] = field( default=None )
+	commute: Optional[Any] = field( default=None )
+	description: Optional[str] = field( default=None )
+	display_type: str = field( default=None )
+	distance: Optional[float] = field( default=None )
+	distance_raw: float = field( default=None )
+	elapsed_time: str = field( default=None )
+	elapsed_time_raw: int = field( default=None )
+	elevation_gain: int = field( default=None )
+	elevation_gain_raw: int = field( default=None )
+	elevation_unit: str = field( default=None )
+	flagged: bool = field( default=None )
+	has_latlng: bool = field( default=None )
+	hide_heartrate: bool = field( default=None )
+	hide_power: bool = field( default=None )
+	id: int = field( default=None )
+	is_changing_type: bool = field( default=None )
+	is_new: bool = field( default=None )
+	leaderboard_opt_out: bool = field( default=None )
+	long_unit: str = field( default=None )
+	moving_time: str = field( default=None )
+	moving_time_raw: int = field( default=None )
+	name: str = field( default=None )
+	private: bool = field( default=None )
+	short_unit: str = field( default=None )
+	start_date: str = field( default=None )
+	start_date_local_raw: int = field( default=None )
+	start_day: str = field( default=None )
+	start_time: str = field( default=None )
+	static_map: Optional[str] = field( default=None )
+	suffer_score: Optional[int] = field( default=None )
+	trainer: bool = field( default=None )
+	twitter_msg: str = field( default=None )
+	type: str = field( default=None )
+	visibility: str = field( default=None )
+	workout_type: Optional[int] = field( default=None )
+
+@dataclass
+class ActivityPage:
+
+	models: List[WebActivity] = field( default_factory=list )
+	page: int = field( default=None )
+	per_page: int = field( default=None )
+	total: int = field( default=None )
 
 @service
 class Strava( Service ):
 
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
-
-		self._session = None
+		self._session: Optional[Session] = None
+		self._importer = JSONHandler( 'web', ActivityPage )
 
 	@property
 	def login_url( self ) -> str:
@@ -104,7 +163,7 @@ class Strava( Service ):
 			sysexit( -1 )
 
 		if not self._session:
-			if cookies := self.state_value( 'session' ):
+			if cookies := self.state_value( 'session' ) and False: # todo: session reuse does not yet work
 				session = Session()
 				session.cookies.update( cookiejar_from_dict( cookies ) )
 				response = session.get( self.training_url )
@@ -120,12 +179,12 @@ class Strava( Service ):
 		session = Session()
 		response = session.get( self.login_url )
 
-		token = BeautifulSoup( response.text, 'html.parser' ).find( 'meta', attrs={ 'name': 'csrf-token' } )['content']
-		log.debug( f"successfully detected CSRF token for {SERVICE_NAME} login page: {token}" )
+		HEADERS_API['X-CSRF-Token'] = BeautifulSoup( response.text, 'html.parser' ).find( 'meta', attrs={ 'name': 'csrf-token' } )['content']
+		log.debug( f"successfully detected CSRF token for {SERVICE_NAME} login page: {HEADERS_API['X-CSRF-Token']}" )
 
 		data = {
 			'utf8': '✓',
-			'authenticity_token': token, # token might be None, if BS failed above
+			'authenticity_token': HEADERS_API['X-CSRF-Token'], # token might be None, if BS failed above
 			'plan': '',
 			'email': self.cfg_value( 'username' ),
 			'password': self.cfg_value( 'password' ),
@@ -144,9 +203,21 @@ class Strava( Service ):
 		if not self._session:
 			self.login()
 
-		url = 'https://www.strava.com/athlete/training_activities?keywords=&activity_type=&workout_type=&commute=&private_activities=&trainer=&gear=&search_session_id=fc095d51-c862-477b-954b-898f776a16ae&new_activity_only=false'
-		url = 'https://www.strava.com/athlete/training_activities?keywords=&activity_type=&workout_type=&commute=&private_activities=&trainer=&gear=&new_activity_only=false'
-		self._session.get(  )
+		url = 'https://www.strava.com/athlete/training_activities'
+		parameters = {
+			'keywords': '',
+		   'activity_type': '',
+		   'workout_type': '',
+		   'commute': '',
+		   'private_activities': '',
+		   'trainer': '',
+			'gear': '',
+			'search_session_id': uuid4(),
+			'new_activity_only': 'false'
+		}
+		# url = 'https://www.strava.com/athlete/training_activities?keywords=&activity_type=&workout_type=&commute=&private_activities=&trainer=&gear=&search_session_id=fc095d51-c862-477b-954b-898f776a16ae&new_activity_only=false'
+		response = self._session.get( url, params=parameters, headers=HEADERS_API )
+		page = self._importer.load_as_activity( resource=Resource( content=response.content ) )
 
 		return []
 

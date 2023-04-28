@@ -337,9 +337,8 @@ class Service( Plugin ):
 
 		self.ctx.start( f'downloading activity data from {self.display_name}', len( summaries ) )
 
-		while summaries:
+		while summaries and ( summary := summaries.pop() ):
 			# download resources for summary
-			summary = summaries.pop()
 			self.ctx.advance( f'{summary.uid}' )
 
 			downloaded_resources = self.download( summary=summary, force=force, pretend=pretend, **kwargs ) if not skip_download else []

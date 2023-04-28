@@ -7,20 +7,23 @@ from typing import Any, cast, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 from bs4 import BeautifulSoup
-from dateutil.tz import UTC
+from dateutil.tz import tzlocal, UTC
 from requests import Session
 from requests.utils import cookiejar_from_dict, dict_from_cookiejar
 from rich.prompt import Prompt
 
 from tracs.activity import Activity
+from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME
 from tracs.plugins.fit import FIT_TYPE
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSONHandler
+from tracs.plugins.stravaconstants import TYPES
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import importer, Registry, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
+from tracs.utils import seconds_to_time as stt, to_isotime
 
 log = getLogger( __name__ )
 
@@ -118,7 +121,16 @@ class StravaWebImporter( JSONHandler ):
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: StravaWebActivity = resource.data
 		return Activity(
+			time = to_isotime( activity.start_time ),
+			localtime = to_isotime( activity.start_time ).astimezone( tzlocal() ),
+			ascent = activity.elevation_gain_raw if activity.elevation_gain_raw else None,
+			description = activity.description,
+			distance = activity.distance_raw if activity.distance else None,
+			duration = stt( activity.elapsed_time_raw ) if activity.elapsed_time_raw else None,
+			duration_moving = stt( activity.moving_time_raw ) if activity.moving_time_raw else None,
 			name = activity.name,
+			type = TYPES.get( activity.type, ActivityTypes.unknown ),
+			uids=[f'strava:{activity.id}'],
 		)
 
 @service
@@ -234,7 +246,8 @@ class Strava( Service ):
 			models: List[Dict] = [m for m in json.get( 'models' )]
 			self.ctx.total( total_pages - 1 ) # minus one so progress bar turns green ...
 
-			for page in range( 2, total_pages ):
+			for page in range( 2, 4 ):
+#			for page in range( 2, total_pages ):
 				self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to {page * FETCH_PAGE_SIZE} (batch {page})' )
 				models.extend( [m for m in self._session.get( url, params={ **parameters, 'page': str( page ) }, headers=HEADERS_API ).json().get( 'models' )] )
 
@@ -258,10 +271,12 @@ class Strava( Service ):
 			for r in resources:
 				# type handling is more complicated here ...
 				if not force:
-					if r.type == GPX_TYPE and summary.get_child( r.type ):
+					# gpx
+					if r.type == GPX_TYPE and self.ctx.db.contains_resource( r.uid, r.path ):
 						continue
 
-					if r.type is None and ( summary.get_child( TCX_TYPE ) or summary.get_child( FIT_TYPE ) ):
+					# tcx or fit
+					if r.type is None and ( self.ctx.db.contains_resource( r.uid, f'{r.local_id}.tcx' ) or self.ctx.db.contains_resource( r.uid, f'{r.local_id}.fit' ) ):
 						continue
 
 				try:

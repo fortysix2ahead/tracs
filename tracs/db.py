@@ -309,9 +309,8 @@ class ActivityDb:
 
 	def upsert_activity( self, activity: Activity ) -> int:
 		if existing := self.get_activity_by_uids( activity.uids ):
-			self._activities[existing.id] = activity
-			activity.id = existing.id
-			return activity.id
+			existing.union( others=[ activity ], copy = False )
+			return existing.id
 		else:
 			self.insert_activity( activity )
 

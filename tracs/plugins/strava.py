@@ -5,16 +5,13 @@ from logging import getLogger
 from pathlib import Path
 from re import compile, findall, match
 from sys import exit as sysexit
+from time import time
 from typing import Any, cast, Dict, List, Optional, Tuple, Union
 from webbrowser import open as open_url
 
-from bs4 import BeautifulSoup
-from click import echo
 from dateutil.tz import gettz, tzlocal, UTC
-from oauthlib.oauth2 import InvalidGrantError  # package name is not oauthlib
-from requests import Session
-from requests_oauthlib import OAuth2Session
 from rich.prompt import Prompt
+from stravalib.client import Client
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
@@ -41,7 +38,7 @@ TOKEN_URL = f'{BASE_URL}/oauth/token'
 OAUTH_REDIRECT_URL = 'http://localhost:40004'
 SCOPE = 'activity:read_all'
 
-FETCH_PAGE_SIZE = 200 # maximum possible size?
+FETCH_PAGE_SIZE = 30 #
 
 TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
 TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
@@ -200,6 +197,7 @@ class Strava( Service ):
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
 
+		self._client = Client()
 		self._session = None
 		self._oauth_session = None
 
@@ -261,59 +259,27 @@ class Strava( Service ):
 		#			else:
 		return Path( parent, f'{utc.strftime( "%H%M%S" )}.{self.name}.{ext}' )  # fully qualified path
 
-	def weblogin( self ):
-		if not self._session:
-			self._session = Session()
-			response = self._session.get( self.login_url )
-
-			try:
-				token = BeautifulSoup( response.text, 'html.parser' ).find( 'meta', attrs={'name': 'csrf-token'} )['content']
-			except TypeError:
-				token = None
-
-			log.debug( f"CSRF Token: {token}" )
-
-			if token is None:
-				echo( "CSRF Token not found" )
-				return None
-
-			if not self.cfg_value( 'username' ) and not self.cfg_value( 'password' ):
-				log.error( f"setup not complete for Strava, consider running {APPNAME} setup --strava" )
-				sysexit( -1 )
-
-			data = {
-				'utf8': '✓',
-				'authenticity_token': token,
-				'plan': '',
-				'email': self.cfg_value( 'username' ),
-				'password': self.cfg_value( 'password' )
-			}
-			response = self._session.post( self.session_url, headers=HEADERS_LOGIN, data=data )
-
-			if not response.status_code == 200:
-				log.error( "web login failed for Strava, are the credentials correct?" )
-
 	def login( self ):
-		# check if access token is available
-		if not self.state_value( 'access_token' ):
-			log.error( f"application setup not complete for Strava, consider running {APPNAME} setup --strava" )
+		# check if access/refresh tokens are available
+		if not self.state_value( 'access_token' ) and not self.state_value( 'refresh_token' ):
+			log.error( f"application setup not complete for {SERVICE_NAME}, consider running {APPNAME} setup --strava" )
 			sysexit( -1 )
 
-		client_id = self.cfg_value( 'client_id' )
-		token = self._oauth_token()
-		extra = {
-			'client_id': client_id,
-			'client_secret': self.cfg_value( 'client_secret' )
-		}
+		self._client = Client( access_token=self.state_value( 'access_token' ) )
 
-		self._oauth_session = OAuth2Session( client_id, token=token, auto_refresh_url=self.token_url, auto_refresh_kwargs = extra, token_updater = self._save_oauth_token )
+		if time() > self.state_value( 'expires_at' ):
+			log.debug( f"access token has expired, attempting to fetch new one" )
+			client_id = self.cfg_value( 'client_id' )
+			client_secret = self.cfg_value( 'client_secret' )
+			refresh_token = self.state_value( 'refresh_token' )
+			refresh_response = self._client.refresh_access_token( client_id=client_id, client_secret=client_secret, refresh_token=refresh_token )
 
-		# do web login as well
-		self.weblogin()
+			self.set_state_value( 'access_token', refresh_response.get( 'access_token' ) )
+			self.set_state_value( 'refresh_token', refresh_response.get( 'refresh_token' ) )
+			self.set_state_value( 'expires_at', refresh_response.get( 'expires_at' ) )
 
 		# todo: how to detect unsuccessful login?
-		if self._oauth_session and self._session:
-			return True
+		return True
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		if not self.login():
@@ -322,6 +288,11 @@ class Strava( Service ):
 		# self.ctx.start( f'fetching activity summaries from {self.display_name}' )
 
 		resources = []
+
+		activities = self._client.get_activities( after=datetime( 2022, 1, 1 ), before=datetime.utcnow(), limit=FETCH_PAGE_SIZE )
+
+		for a in activities:
+			print( a )
 
 		try:
 			for page in range( 1, 999999 ):
@@ -443,31 +414,32 @@ CLIENT_ID_TEXT = 'Checking for new activities and downloading photos works by us
 def setup( ctx: ApplicationContext, config: Dict, state: Dict ) -> Tuple[Dict, Dict]:
 	ctx.console.print( INTRO_TEXT, width=120 )
 
-	username = Prompt.ask( 'Enter your user name', console=ctx.console, default=config.get( 'username', '' ) )
-	password = Prompt.ask( 'Enter your password', console=ctx.console, default=config.get( 'password' ), password=True )
+	client = Client()
 
 	ctx.console.print()
 	ctx.console.print( CLIENT_ID_TEXT, width=120 )
 	ctx.console.print()
 
 	client_id = Prompt.ask( 'Enter your Client ID', console=ctx.console, default=config.get( 'client_id', '' ) )
+	ctx.console.print()
 	client_secret = Prompt.ask( 'Enter your Client Secret', console=ctx.console, default=config.get( 'client_secret', '' ) )
-
 	ctx.console.print()
 
-	oauth = OAuth2Session( client_id, redirect_uri=OAUTH_REDIRECT_URL, scope=[SCOPE] )
-	auth_url, auth_state = oauth.authorization_url( AUTH_URL )
+	authorize_url = client.authorization_url( client_id=client_id, redirect_uri=OAUTH_REDIRECT_URL, scope=SCOPE )
 
-	client_code_text = f'For the next step we need to obtain the Client Code. This code can be obtained by visiting this ' \
-	                   f'URL: {auth_url} After authorizing {APPNAME} you will be redirected to {OAUTH_REDIRECT_URL} and the ' \
+	client_code_text = f'For the next step we need to obtain the Client Code. The client code can be obtained by visiting this ' \
+	                   f'URL: {authorize_url} After authorizing {APPNAME} you will be redirected to {OAUTH_REDIRECT_URL} and the ' \
 	                   f'code is part of the URL displayed in your browser. Have a look at the displayed ' \
 	                   f'URL: {OAUTH_REDIRECT_URL}?code=<CLIENT_CODE_IS_DISPLAYED_HERE>&scope={SCOPE}'
-	console.print( client_code_text, width=120 )
+
 	ctx.console.print()
-	client_code = Prompt.ask( 'Enter your Client Code or press enter to open the link in your browser.', console=ctx.console )
+	ctx.console.print( client_code_text )
+	ctx.console.print()
+	client_code = Prompt.ask( f'Enter your Client Code or press enter to open the link in your browser and let {APPNAME} autodetect the code.', console=ctx.console )
+	ctx.console.print()
 
 	if not client_code:
-		open_url( auth_url )
+		open_url( authorize_url )
 		webServer = HTTPServer( ('localhost', 40004), StravaSetupServer )
 
 		try:
@@ -479,15 +451,18 @@ def setup( ctx: ApplicationContext, config: Dict, state: Dict ) -> Tuple[Dict, D
 		webServer.server_close()
 
 	try:
-		# save oauth tokens
-		token = oauth.fetch_token( TOKEN_URL, code=client_code, client_secret=client_secret, include_client_id=True )
-		token.pop( 'athlete' ) # token contains athlete, which we are not interested in
-		log.debug( f"fetched access token {token['access_token']} and refresh_token {token['refresh_token']}, expiring at {token['expires_at']}" )
+		token_response = client.exchange_code_for_token( client_id=client_id, client_secret=client_secret, code=client_code )
+		access_token = token_response.get( 'access_token' )
+		refresh_token = token_response.get( 'refresh_token' )
+		expires_at = token_response.get( 'expires_at' )
+		log.debug( f"fetched access and refresh token for athlete {client.get_athlete().id}, expiring at {expires_at}" )
 
-		return { 'username': username, 'password': password, 'client_code': client_code, 'client_id': client_id, 'client_secret': client_secret }, { **state, **token }
+		return { 'client_code': client_code, 'client_id': client_id, 'client_secret': client_secret },\
+			{ **state, 'access_token': access_token, 'refresh_token': refresh_token, 'expires_at': expires_at }
 
-	except InvalidGrantError:
+	except RuntimeError as rte:
 		ctx.console.print( f'Error: authorization not granted.' )
+		ctx.console.print( rte )
 		return {}, {}
 
 class StravaSetupServer( BaseHTTPRequestHandler ):
@@ -502,7 +477,7 @@ class StravaSetupServer( BaseHTTPRequestHandler ):
 		self.end_headers()
 		self.wfile.write(bytes("<html><head><title></title></head>", "utf-8"))
 		if m[1]:
-			self.wfile.write(bytes("<body><p>Client code successfully detected.</p></body>", "utf-8"))
+			self.wfile.write(bytes("<body><p>Client code successfully detected, you can close this window.</p></body>", "utf-8"))
 		else:
 			self.wfile.write( bytes( "<body><p>Error: unable to detect client code in URL.</p></body>", "utf-8" ) )
 		self.wfile.write(bytes("</html>", "utf-8"))

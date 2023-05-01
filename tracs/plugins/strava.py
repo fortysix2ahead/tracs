@@ -12,6 +12,7 @@ from webbrowser import open as open_url
 from dateutil.tz import gettz, tzlocal, UTC
 from rich.prompt import Prompt
 from stravalib.client import Client
+from stravalib.model import Activity as StravalibActivity
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
@@ -104,58 +105,7 @@ TYPES = {
 }
 
 @dataclass
-class StravaActivity:
-
-	achievement_count: int = field( default=None )
-	athlete: Dict[str, int] = field( default_factory=dict )
-	athlete_count: int = field( default=None )
-	average_cadence: float = field( default=None )
-	average_heartrate: float = field( default=None )
-	average_speed: float = field( default=None )
-	comment_count: int = field( default=None )
-	commute: bool = field( default=None )
-	display_hide_heartrate_option: bool = field( default=None )
-	distance: float = field( default=None )
-	elapsed_time: int = field( default=None )
-	elev_high: float = field( default=None )
-	elev_low: float = field( default=None )
-	end_latlng: List[float] = field( default_factory=list )
-	external_id: str = field( default=None )
-	flagged: bool = field( default=None )
-	from_accepted_tag: bool = field( default=None )
-	gear_id: Optional[str] = field( default=None )
-	has_heartrate: bool = field( default=None )
-	has_kudoed: bool = field( default=None )
-	heartrate_opt_out: bool = field( default=None )
-	id: int = field( default=None )
-	kudos_count: int = field( default=None )
-	location_city: Optional[str] = field( default=None )
-	location_country: Optional[str] = field( default=None )
-	location_state: Optional[str] = field( default=None )
-	manual: bool = field( default=None )
-	map: Dict = field( default_factory=dict )
-	max_heartrate: float = field( default=None )
-	max_speed: float = field( default=None )
-	moving_time: int = field( default=None )
-	name: str = field( default=None )
-	photo_count: int = field( default=None )
-	pr_count: int = field( default=None )
-	private: bool = field( default=None )
-	resource_state: int = field( default=None )
-	sport_type: str = field( default=None )
-	start_date: str = field( default=None )
-	start_date_local: str = field( default=None )
-	start_latlng: List[float] = field( default_factory=list )
-	timezone: str = field( default=None )
-	total_elevation_gain: float = field( default=None )
-	total_photo_count: int = field( default=None )
-	trainer: bool = field( default=None )
-	type: str = field( default=None )
-	upload_id: int = field( default=None )
-	upload_id_str: str = field( default=None )
-	utc_offset: float = field( default=None )
-	visibility: str = field( default=None )
-	workout_type: Optional[int] = field( default=None )
+class StravaActivity( StravalibActivity ):
 
 	@property
 	def local_id( self ) -> int:
@@ -163,6 +113,9 @@ class StravaActivity:
 
 @importer( type=STRAVA_TYPE, activity_cls=StravaActivity, summary=True )
 class StravaImporter( JSONHandler ):
+
+	def preprocess_data( self, data: Any, **kwargs ) -> Any:
+		return data.to_dict()
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: StravaActivity = resource.data
@@ -205,28 +158,8 @@ class Strava( Service ):
 		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
 
 	@property
-	def login_url( self ) -> str:
-		return f'{self.base_url}/login'
-
-	@property
-	def session_url( self ) -> str:
-		return f'{self.base_url}/session'
-
-	@property
 	def activities_url( self ) -> str:
 		return f'{self.base_url}/activities'
-
-	@property
-	def auth_url( self ) -> str:
-		return f'{self.base_url}/oauth/authorize'
-
-	@property
-	def token_url( self ) -> str:
-		return f'{self.base_url}/oauth/token'
-
-	@property
-	def redirect_url( self ) -> str:
-		return OAUTH_REDIRECT_URL
 
 	def url_events_year( self, year, page: int ) -> str:
 		after = int( datetime( year, 1, 1, tzinfo=UTC ).timestamp() )
@@ -289,28 +222,19 @@ class Strava( Service ):
 
 		resources = []
 
-		activities = self._client.get_activities( after=datetime( 2022, 1, 1 ), before=datetime.utcnow(), limit=FETCH_PAGE_SIZE )
+		for a in self._client.get_activities( after=datetime( 1970, 1, 1 ), before=datetime.utcnow() ):
+			self.ctx.advance( f'activity {a.id}' )
 
-		for a in activities:
-			print( a )
+			resources.append( self.importer.save(
+					a,
+					uid = f'{self.name}:{a.id}',
+					resource_path = f'{a.id}.json',
+					resource_type=STRAVA_TYPE,
+					source=self.url_for_id( a.id ),
+					summary = True,
+				)
+			)
 
-		try:
-			for page in range( 1, 999999 ):
-				self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to { page * FETCH_PAGE_SIZE } (batch {page})' )
-
-				# status is 429 and raw['message'] = 'Rate Limit Exceeded', when rate goes out of bounds ...
-				json_resource = self.json_handler.load( url=self.all_events_url( page ), session=self._oauth_session )
-
-				for item in json_resource.raw:
-					resources.append( self.importer.save( item, uid=f"{self.name}:{item['id']}", resource_path=f"{item['id']}.json", resource_type=STRAVA_TYPE, status=200, source=self.url_for_id( item['id'] ), summary=True ) )
-
-				if not json_resource.raw or len( json_resource.raw ) == 0:
-					break
-
-		except RuntimeError:
-			log.error( f'error fetching activity ids', exc_info=True )
-
-		# finally:
 		#	self.ctx.complete( 'done' )
 
 		return resources
@@ -381,22 +305,6 @@ class Strava( Service ):
 	@property
 	def logged_in( self ) -> bool:
 		return True if self._session and self._oauth_session else False
-
-	def _oauth_token( self ) -> dict:
-		return {
-			'access_token': self.state_value( 'access_token' ),
-			'refresh_token': self.state_value( 'refresh_token' ),
-			'token_type': self.state_value( 'token_type' ),
-			'expires_at': self.state_value( 'expires_at' ),
-			'expires_in': int( self.state_value( 'expires_at' ) - datetime.utcnow().timestamp() )
-		}
-
-	def _save_oauth_token( self, token: dict ) -> None:
-		self.set_state_value( 'access_token', token['access_token'] )
-		self.set_state_value( 'refresh_token', token['refresh_token'] )
-		self.set_state_value( 'token_type', token['token_type'] )
-		self.set_state_value( 'expires_at', int( token['expires_at'] ) )
-		self.set_state_value( 'expires_in', token['expires_in'] )
 
 # setup
 

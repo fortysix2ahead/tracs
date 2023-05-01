@@ -146,25 +146,27 @@ class ResourceHandler:
 
 	# noinspection PyMethodMayBeStatic
 	def save_to_resource( self, content: bytes, **kwargs ) -> Resource:
-		data = kwargs.get( 'data' )
-		uid = kwargs.get( 'uid' )
-		resource_path = kwargs.get( 'resource_path' )
-		resource_type = kwargs.get( 'resource_type' )
-		source = kwargs.get( 'source' )
-		status = kwargs.get( 'status' )
-		summary = kwargs.get( 'summary' )
-
-		return Resource( raw=data, content=content, uid=uid, path=resource_path, source=source, status=status, summary=summary, type=resource_type )
+		return Resource(
+			raw = kwargs.get( 'raw' ),
+			data = kwargs.get( 'data' ),
+			content = content,
+			uid = kwargs.get( 'uid' ),
+			path = kwargs.get( 'resource_path' ),
+			source = kwargs.get( 'source' ),
+			status = kwargs.get( 'status' ),
+			summary = kwargs.get( 'summary' ),
+			type = kwargs.get( 'resource_type' ),
+		)
 
 	def save( self, data: Any, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
 		# allow sub classes to preprocess data
-		data = self.preprocess_data( data )
+		raw = self.preprocess_data( data )
 
-		content: bytes = self.save_data( data, **kwargs )
+		content: bytes = self.save_data( raw, **kwargs )
 
 		if path:
 			self.save_to_path( content, path, **kwargs )
 		elif url:
 			self.save_to_url( content, url, **kwargs )
 		else:
-			return self.save_to_resource( content, data=data, **kwargs )
+			return self.save_to_resource( content, raw=raw, data=data, **kwargs )

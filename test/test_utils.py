@@ -10,7 +10,7 @@ from dateutil.tz import gettz
 
 from tracs.activity_types import ActivityTypes
 from tracs.uid import UID
-from tracs.utils import as_datetime, unique_sorted
+from tracs.utils import as_datetime, str_to_timedelta, timedelta_to_str, unique_sorted
 from tracs.utils import fmt
 from tracs.utils import fromisoformat
 from tracs.utils import seconds_to_time
@@ -118,6 +118,18 @@ def test_as_time():
 
 	assert as_datetime( None ) is None
 	assert as_datetime( '' ) is None
+
+def test_timedelta_str():
+	assert timedelta_to_str( timedelta( hours = 0, minutes = 0, seconds = 17 ) ) == '00:00:17'
+	assert timedelta_to_str( timedelta( hours = 2, minutes = 28, seconds = 17 ) ) == '02:28:17'
+	assert timedelta_to_str( timedelta( seconds = 121 ) ) == '00:02:01'
+	assert timedelta_to_str( timedelta( days=3, hours = 2, minutes = 28, seconds = 17 ) ) == '03:02:28:17'
+	assert timedelta_to_str( timedelta( days=12, hours = 2, minutes = 28, seconds = 17 ) ) == '12:02:28:17'
+
+	assert str_to_timedelta( '00:00:17' ) == timedelta( hours = 0, minutes = 0, seconds = 17 )
+	assert str_to_timedelta( '02:28:17' ) == timedelta( hours = 2, minutes = 28, seconds = 17 )
+	assert str_to_timedelta( '03:02:28:17' ) == timedelta( days = 3, hours = 2, minutes = 28, seconds = 17 )
+	assert str_to_timedelta( '12:02:28:17' ) == timedelta( days = 12, hours = 2, minutes = 28, seconds = 17 )
 
 def test_uri_parsing():
 	result = urlparse( 'polar:1001' )

@@ -4,7 +4,7 @@ from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from difflib import SequenceMatcher
 from enum import Enum
 from functools import wraps
-from re import match
+from re import compile as rxcompile, match
 from time import gmtime, perf_counter
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
 from urllib.parse import ParseResult, ParseResultBytes, urlparse as urllibparse
@@ -22,6 +22,9 @@ from tracs.activity_types import ActivityTypes
 from tracs.config import CONSOLE
 
 T = TypeVar('T')
+
+INT_COLON = rxcompile( '\d:.+' )
+TIMEDELTA = rxcompile( '((?P<days>\d\d):)?(?P<hours>\d\d):(?P<minutes>\d\d):(?P<seconds>\d\d)' )
 
 @dataclass
 class UtilityConfiguration:
@@ -129,6 +132,24 @@ def as_time( tstr: str = None ) -> time:
 
 def delta( a: time, b: time ) -> timedelta:
 	return datetime.combine( date.min, a ) - datetime.combine( date.min, b )
+
+def timedelta_to_str( td: timedelta ) -> str:
+	s = str( td )
+	if td.days > 0:
+		days = f'{td.days}' if td.days > 9 else f'0{td.days}'
+		s = s.split( ' ' )[2]
+		s = f'{days}:0{s}' if INT_COLON.match( s ) else f'{days}:{s}'
+	else:
+		s = f'0{s}' if INT_COLON.match( s ) else s
+	return s
+
+def str_to_timedelta( s: str ) -> Optional[timedelta]:
+	if m := TIMEDELTA.fullmatch( s ):
+		days = int( m.groupdict().get( 'days' ) ) if m.groupdict().get( 'days' ) is not None else 0
+		hours, minutes, seconds = int( m.groupdict().get( 'hours' ) ), int( m.groupdict().get( 'minutes' ) ), int( m.groupdict().get( 'seconds' ) )
+		return timedelta( days=days, hours=hours, minutes=minutes, seconds=seconds )
+	else:
+		return None
 
 def seconds_to_time( time_float: float ) -> Optional[time]:
 	if not isinstance( time_float, (float, int) ):

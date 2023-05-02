@@ -115,31 +115,45 @@ class StravaActivity( StravalibActivity ):
 class StravaImporter( JSONHandler ):
 
 	def preprocess_data( self, data: Any, **kwargs ) -> Any:
-		return data.to_dict()
+		# filter out everything that is None + 'athlete' dict
+		return { k: v for k, v in data.to_dict().items() if k != 'athlete' and v is not None }
+
+	# noinspection PyMethodMayBeStatic
+	def to_float( self, q ) -> Optional[float]:
+		if type( q ) is float:
+			return q if q > 0.0 else None
+		else:
+			return q.magnitude if q and q > 0.0 else None
+
+	# noinspection PyMethodMayBeStatic
+	def to_int( self, q ) -> Optional[int]:
+		if type( q ) in [int, float]:
+			return int( q ) if q > 0 else None
+		else:
+			return q.magnitude if q and q > 0 else None
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: StravaActivity = resource.data
-		tz_str = TIMEZONE_REGEX.sub( '', activity.timezone )
-		if not (tz := gettz( tz_str ) ):
-			tz = tzlocal()
+		tz_str = str( activity.timezone ) if activity.timezone else str( tzlocal() )
 
+		# noinspection Py
 		return Activity(
 			name = activity.name,
 			type = TYPES.get( activity.type, ActivityTypes.unknown ),
-			time = to_isotime( activity.start_date ),
-			localtime = to_isotime( activity.start_date ).astimezone( tz ),
+			time = activity.start_date,
+			localtime = activity.start_date_local.astimezone( activity.timezone ),
 			timezone = tz_str,
-			distance = activity.distance if activity.distance > 0 else None,
-			speed = activity.average_speed if activity.average_speed > 0 else None,
-			speed_max = activity.max_speed if activity.max_speed > 0 else None,
-			ascent = activity.total_elevation_gain if activity.total_elevation_gain > 0 else None,
-			descent = activity.total_elevation_gain if activity.total_elevation_gain > 0 else None,
-			elevation_max = activity.elev_high,
-			elevation_min = activity.elev_low,
-			duration = stt( activity.elapsed_time ) if activity.elapsed_time else None,
-			duration_moving = stt( activity.moving_time ) if activity.moving_time else None,
-			heartrate = int( activity.average_heartrate ) if activity.average_heartrate else None,
-			heartrate_max = int( activity.max_heartrate ) if activity.max_heartrate else None,
+			distance = self.to_float( activity.distance ),
+			speed = self.to_float( activity.average_speed ),
+			speed_max = self.to_float( activity.max_speed ),
+			ascent = self.to_float( activity.total_elevation_gain ),
+			descent = self.to_float( activity.total_elevation_gain ),
+			elevation_max = self.to_float( activity.elev_high ),
+			elevation_min = self.to_float( activity.elev_low ),
+			duration = activity.elapsed_time,
+			duration_moving = activity.moving_time,
+			heartrate = self.to_int( activity.average_heartrate ),
+			heartrate_max = self.to_int( activity.max_heartrate ),
 			location_country = activity.location_country,
 			uids = [f'{SERVICE_NAME}:{activity.id}'],
 		)

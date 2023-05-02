@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, Field, fields, InitVar, MISSING, replace
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from logging import getLogger
 from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar
 
@@ -102,8 +102,8 @@ class Activity:
 	timezone: str = field( default=get_localzone_name() )
 	"""timezone of the activity, local timezone by default"""
 
-	duration: Optional[time] = field( default=None ) #
-	duration_moving: Optional[time] = field( default=None ) #
+	duration: Optional[timedelta] = field( default=None ) #
+	duration_moving: Optional[timedelta] = field( default=None ) #
 
 	distance: Optional[float] = field( default=None ) #
 	ascent: Optional[float] = field( default=None ) #

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
@@ -29,6 +29,7 @@ from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
 from tracs.resources import Resource, ResourceType
 from tracs.rules import parse_rules
+from tracs.utils import str_to_timedelta, timedelta_to_str
 
 log = getLogger( __name__ )
 
@@ -168,6 +169,7 @@ class ActivityDb:
 				Schema: Schema.schema(),
 				Dict[int, Activity]: IdSchema(),
 				Dict[int, Resource]: IdSchema(),
+				timedelta: DataclassFactorySchema( parser=str_to_timedelta, serializer=timedelta_to_str ),
 			}
 		)
 

@@ -18,6 +18,8 @@ from gpxpy.gpx import GPXTrack
 from gpxpy.gpx import GPXTrackPoint
 from gpxpy.gpx import GPXTrackSegment
 
+from tracs.plugins.tcx import Trackpoint as TCXTrackPoint
+from tracs.plugins.tcx import Lap as TCXLap
 from tracs.resources import Resource
 
 # todo: no need to reinvent the wheel: chosse another point class here
@@ -78,8 +80,9 @@ class Stream:
 		gpx.tracks.append( self.as_gpx_track() )
 		return gpx
 
-	def as_tcx( self ):
-		pass
+	def as_tcx_lap( self ) -> TCXLap:
+		points = [ TCXTrackPoint( time=p.time, lat=p.lat, lon=p.lon, alt=p.alt, dist=p.distance, hr=p.hr ) for p in self.points ]
+		return TCXLap( points = points )
 
 def as_streams( resources: List[Resource] ) -> List[Stream]:
 	return [ Stream( gpx=r.raw ) for r in resources ]

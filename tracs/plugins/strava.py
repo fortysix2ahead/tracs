@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from itertools import zip_longest
 from logging import getLogger
 from pathlib import Path
 from re import compile, findall, match
@@ -24,6 +25,7 @@ from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import importer, Registry, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
+from tracs.streams import Point, Stream
 from tracs.utils import seconds_to_time as stt, to_isotime
 
 log = getLogger( __name__ )
@@ -254,6 +256,18 @@ class Strava( Service ):
 		return resources
 
 	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
+		# available streams:
+		# time, latlng, distance, altitude, velocity_smooth, heartrate, cadence, watts, temp, moving, grade_smooth
+		# gpx contains lat/lon, elevation, time + time in metadata
+		# tcx contains TotalTimeSeconds, DistanceMeters, MaximumSpeed, Calories
+		# track contains Time, LatitudeDegrees, LongitudeDegrees, AltitudeMeters, DistanceMeters, SensorState
+		streams = self._client.get_activity_streams( summary.local_id, types=[ 'time', 'latlng', 'distance', 'altitude', 'velocity_smooth', 'heartrate' ] )
+		stream = to_stream( streams, summary.data.start_date )
+
+		return [
+			Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, text=stream.as_gpx().to_xml( prettyprint=True ) ),
+		]
+
 		try:
 			resources = [
 				Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, source=f'{self.activities_url}/{summary.local_id}/export_gpx' ),
@@ -404,3 +418,26 @@ class StravaSetupServer( BaseHTTPRequestHandler ):
 			self.wfile.write( bytes( "<body><p>Error: unable to detect client code in URL.</p></body>", "utf-8" ) )
 		self.wfile.write(bytes("</html>", "utf-8"))
 		raise KeyboardInterrupt
+
+# helper
+
+class EmptyStream:
+
+	@property
+	def data( self ) -> List:
+		return []
+
+EMPTY = EmptyStream()
+
+def to_stream( streams: Dict, start_date: datetime ) -> Stream:
+	stream_iterator = zip_longest(
+		streams.get( 'time', EMPTY ).data,
+		streams.get( 'latlng', EMPTY ).data,
+		streams.get( 'distance', EMPTY ).data,
+		streams.get( 'altitude', EMPTY ).data,
+		streams.get( 'velocity_smooth', EMPTY ).data,
+		streams.get( 'heartrate', EMPTY ).data,
+		fillvalue=None
+	)
+	points = [ Point( distance=d, alt=a, speed=vs, hr=hr, start=start_date, seconds=t, latlng=ll ) for t, ll, d, a, vs, hr in stream_iterator ]
+	return Stream( points=points )

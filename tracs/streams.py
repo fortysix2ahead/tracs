@@ -3,9 +3,9 @@ from csv import writer as csv_writer
 from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import InitVar
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import StringIO
-from typing import List
+from typing import List, Tuple
 from typing import Optional
 
 from geojson import dump as dump_geojson
@@ -28,6 +28,20 @@ class Point:
 	lat: float = field( default=None )
 	lon: float = field( default=None )
 	speed: float = field( default=None )
+	alt: float = field( default=None )
+	distance: float = field( default=None )
+	hr: int = field( default=None )
+
+	# init vars
+	start: InitVar[datetime] = field( default=None )
+	seconds: InitVar[int] = field( default=None )
+	latlng: InitVar[Tuple[float, float]] = field( default=None )
+
+	def __post_init__(self, start: datetime, seconds: int, latlng: int):
+		if start and seconds:
+			self.time = start + timedelta( seconds=seconds )
+		if latlng:
+			self.lat, self.lon = latlng
 
 @dataclass
 class Stream:
@@ -55,7 +69,7 @@ class Stream:
 
 	def as_gpx_track( self ) -> GPXTrack:
 		track = GPXTrack()
-		segment = GPXTrackSegment( points = [GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon ) for p in self.points] )
+		segment = GPXTrackSegment( points = [GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon, elevation=p.alt, speed=p.speed ) for p in self.points] )
 		track.segments.append( segment )
 		return track
 
@@ -63,6 +77,9 @@ class Stream:
 		gpx = GPX()
 		gpx.tracks.append( self.as_gpx_track() )
 		return gpx
+
+	def as_tcx( self ):
+		pass
 
 def as_streams( resources: List[Resource] ) -> List[Stream]:
 	return [ Stream( gpx=r.raw ) for r in resources ]

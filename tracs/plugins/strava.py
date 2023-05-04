@@ -11,6 +11,7 @@ from typing import Any, cast, Dict, List, Optional, Tuple, Union
 from webbrowser import open as open_url
 
 from dateutil.tz import gettz, tzlocal, UTC
+from lxml.etree import tostring
 from rich.prompt import Prompt
 from stravalib.client import Client
 from stravalib.model import Activity as StravalibActivity
@@ -266,69 +267,8 @@ class Strava( Service ):
 
 		return [
 			Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, text=stream.as_gpx().to_xml( prettyprint=True ) ),
+			Resource( uid=summary.uid, path=f'{summary.local_id}.tcx', type=TCX_TYPE, text=tostring( stream.as_tcx().as_xml(), pretty_print=True ).decode( 'UTF-8' ) ),
 		]
-
-		try:
-			resources = [
-				Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, source=f'{self.activities_url}/{summary.local_id}/export_gpx' ),
-				Resource( uid=summary.uid, source=f'{self.activities_url}/{summary.local_id}/export_original' ) # type is None as this can be tcx or fit
-			]
-
-			for r in resources:
-				# type handling is more complicated here ...
-				if not force:
-					if r.type == GPX_TYPE and summary.get_child( r.type ):
-						continue
-
-					if r.type is None and ( summary.get_child( TCX_TYPE ) or summary.get_child( FIT_TYPE ) ):
-						continue
-
-				try:
-					self.download_resource( r )
-				except RuntimeError:
-					log.error( f'error fetching resource from {r.source}', exc_info=True )
-
-			return [r for r in resources if r.content]
-
-		except RuntimeError:
-			log.error( f'error fetching resources', exc_info=True )
-			return []
-
-	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
-		if url := resource.source:
-			log.debug( f'downloading resource from {url}' )
-			response = self._session.get( url, headers=HEADERS_LOGIN, allow_redirects=True, stream=True )
-
-			content_type = response.headers.get( 'Content-Type' )
-			content_disposition = response.headers.get( 'content-disposition' )
-
-			# content type is 'text/html; charset=utf-8' for .gpx resources that do not exist (i.e. for strenth training)
-			# disposition is None in such cases
-			if content_type.startswith( 'text/html' ) and content_disposition is None:
-				resource.status = 404
-			else:
-				ext = findall( r'^.*filename=\".+\.(\w+)\".*$', content_disposition )[0]
-				resource.content = response.content
-				resource.type = Registry.resource_type_for_suffix( ext )
-				resource.path = f'{resource.local_id}.{ext}'
-				resource.status = response.status_code
-
-			# fit is binary, there's no text version to be stored
-			if resource.type == FIT_TYPE:
-				pass
-
-			# fix for Strava bug where TCX documents contain whitespace before the first XML tag
-			# sample first line:
-			# '          <?xml version="1.0" encoding="UTF-8"?><TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"> ...'
-			if resource.type == TCX_TYPE:
-				while resource.content[0:1] == b' ':
-					resource.content = resource.content[1:]
-
-			return response.content, response.status_code
-
-		else:
-			log.warning( f'unable to determine download url for resource {resource}' )
-			return None, 500
 
 	@property
 	def logged_in( self ) -> bool:

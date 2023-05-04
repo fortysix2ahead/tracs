@@ -17,6 +17,7 @@ from gpxpy.gpx import GPX
 from gpxpy.gpx import GPXTrack
 from gpxpy.gpx import GPXTrackPoint
 from gpxpy.gpx import GPXTrackSegment
+from lxml.etree import Element, SubElement
 
 from tracs.plugins.tcx import Activity, Lap, Trackpoint as TCXTrackPoint, TrainingCenterDatabase
 from tracs.plugins.tcx import Lap as TCXLap
@@ -40,7 +41,7 @@ class Point:
 	latlng: InitVar[Tuple[float, float]] = field( default=None )
 
 	def __post_init__(self, start: datetime, seconds: int, latlng: int):
-		if start and seconds:
+		if start and seconds is not None:
 			self.time = start + timedelta( seconds=seconds )
 		if latlng:
 			self.lat, self.lon = latlng
@@ -71,13 +72,37 @@ class Stream:
 
 	def as_gpx_track( self ) -> GPXTrack:
 		track = GPXTrack()
-		segment = GPXTrackSegment( points = [GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon, elevation=p.alt, speed=p.speed ) for p in self.points] )
+		points = [ GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon, elevation=p.alt, speed=p.speed ) for p in self.points ]
+		for p, gp in zip( self.points, points ):
+			ext = Element( '{gpxtpx}TrackPointExtension' )
+			hr = SubElement( ext, '{gpxtpx}hr' )
+			hr.text = str( p.hr )
+
+			gp.extensions.append( ext )
+		segment = GPXTrackSegment( points )
 		track.segments.append( segment )
 		return track
 
-	def as_gpx( self ) -> GPX:
+	def as_gpx( self, **kwargs ) -> GPX:
 		gpx = GPX()
+
+		# gpx.nsmap['creator'] = 'StravaGPX'
+		gpx.nsmap['version'] = '1.1'
+		gpx.nsmap['xmlns:gpxtpx'] = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
+		gpx.nsmap['xmlns:gpxx'] = 'http://www.garmin.com/xmlschemas/GpxExtensions/v3'
+		gpx.nsmap['xmlns'] = 'http://www.topografix.com/GPX/1/1'
+		gpx.nsmap['xmlns:xsi'] = 'http://www.w3.org/2001/XMLSchema-instance'
+		gpx.nsmap['xsi:schemaLocation'] = 'http://www.topografix.com/GPX/1/1 ' \
+		                                  'http://www.topografix.com/GPX/1/1/gpx.xsd ' \
+		                                  'http://www.garmin.com/xmlschemas/GpxExtensions/v3 ' \
+		                                  'http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd ' \
+		                                  'http://www.garmin.com/xmlschemas/TrackPointExtension/v1 ' \
+		                                  'http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd'
+
 		gpx.tracks.append( self.as_gpx_track() )
+		gpx.time = gpx.tracks[0].get_time_bounds().start_time
+		gpx.tracks[0].name = kwargs.get( 'track_name' )
+		gpx.tracks[0].type = kwargs.get( 'track_type' )
 		return gpx
 
 	def as_tcx_lap( self ) -> TCXLap:

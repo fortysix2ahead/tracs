@@ -270,8 +270,12 @@ class Strava( Service ):
 		]
 
 		if any( p.lat for p in stream.points ):
+			gpx = stream.as_gpx(
+				track_name = summary.raw.get( 'name' ),
+				# track_type = '1' # todo: don't know what GPX type means, strava uses integer numbers
+			)
 			resources.append(
-				Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, text=stream.as_gpx().to_xml( prettyprint=True ) )
+				Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, text=gpx.to_xml( prettyprint=True ) )
 			)
 
 		return resources

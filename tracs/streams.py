@@ -86,18 +86,17 @@ class Stream:
 	def as_gpx( self, **kwargs ) -> GPX:
 		gpx = GPX()
 
-		# gpx.nsmap['creator'] = 'StravaGPX'
-		gpx.nsmap['version'] = '1.1'
-		gpx.nsmap['xmlns:gpxtpx'] = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
-		gpx.nsmap['xmlns:gpxx'] = 'http://www.garmin.com/xmlschemas/GpxExtensions/v3'
-		gpx.nsmap['xmlns'] = 'http://www.topografix.com/GPX/1/1'
-		gpx.nsmap['xmlns:xsi'] = 'http://www.w3.org/2001/XMLSchema-instance'
-		gpx.nsmap['xsi:schemaLocation'] = 'http://www.topografix.com/GPX/1/1 ' \
-		                                  'http://www.topografix.com/GPX/1/1/gpx.xsd ' \
-		                                  'http://www.garmin.com/xmlschemas/GpxExtensions/v3 ' \
-		                                  'http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd ' \
-		                                  'http://www.garmin.com/xmlschemas/TrackPointExtension/v1 ' \
-		                                  'http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd'
+		gpx.creator = 'StravaGPX' # not really true, but for comparing outcome
+		gpx.nsmap['gpxtpx'] = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
+		gpx.nsmap['gpxx'] = 'http://www.garmin.com/xmlschemas/GpxExtensions/v3'
+		gpx.schema_locations = [
+			'http://www.topografix.com/GPX/1/1 ',
+			'http://www.topografix.com/GPX/1/1/gpx.xsd ',
+			'http://www.garmin.com/xmlschemas/GpxExtensions/v3',
+			'http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd',
+			'http://www.garmin.com/xmlschemas/TrackPointExtension/v1',
+			'http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd'
+		]
 
 		gpx.tracks.append( self.as_gpx_track() )
 		gpx.time = gpx.tracks[0].get_time_bounds().start_time

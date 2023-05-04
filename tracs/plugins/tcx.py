@@ -40,6 +40,7 @@ class Trackpoint:
 
 	def __post_init__( self ):
 		self.time = parse_dt( self.time ) if type( self.time ) is str else self.time
+		self.sensor_state = 'Present' # use this as pseudo-default
 
 	def as_xml( self, parent: Element ) -> Element:
 		trackpoint = SubElement( parent, Trackpoint.__xml_name__ )

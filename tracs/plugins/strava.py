@@ -265,8 +265,20 @@ class Strava( Service ):
 		streams = self._client.get_activity_streams( summary.local_id, types=[ 'time', 'latlng', 'distance', 'altitude', 'velocity_smooth', 'heartrate' ] )
 		stream = to_stream( streams, summary.data.start_date )
 
+		tcx = stream.as_tcx(
+			average_heart_rate_bpm = summary.raw.get( 'average_heartrate' ),
+			calories = summary.raw.get( 'calories' ),
+			distance_meters = summary.raw.get( 'distance' ),
+			id = f'{summary.raw.get( "start_date_local" )}Z',
+			intensity = 'Active', # todo: don't know where to get this from
+			maximum_heart_rate_bpm = summary.raw.get( 'max_heartrate' ),
+			maximum_speed = summary.raw.get( 'max_speed' ),
+			start_date = f'{summary.raw.get( "start_date_local" )}Z',
+			# trigger_method = 'Distance', # todo: this is not correct
+			total_time_seconds = summary.raw.get( 'elapsed_time' ),
+		)
 		resources = [
-			Resource( uid=summary.uid, path=f'{summary.local_id}.tcx', type=TCX_TYPE, text=tostring( stream.as_tcx().as_xml(), pretty_print=True ).decode( 'UTF-8' ) )
+			Resource( uid=summary.uid, path=f'{summary.local_id}.tcx', type=TCX_TYPE, text=tostring( tcx.as_xml(), pretty_print=True ).decode( 'UTF-8' ) )
 		]
 
 		if any( p.lat for p in stream.points ):

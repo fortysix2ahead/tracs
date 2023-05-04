@@ -105,15 +105,25 @@ class Stream:
 		gpx.tracks[0].type = kwargs.get( 'track_type' )
 		return gpx
 
-	def as_tcx_lap( self ) -> TCXLap:
-		return TCXLap( trackpoints = [
-			TCXTrackPoint( time=p.time, latitude_degrees=p.lat, longitude_degrees=p.lon, altitude_meters=p.alt, distance_meters=p.distance, heart_rate_bpm=p.hr ) for p in self.points
-		] )
+	def as_tcx_lap( self, **kwargs ) -> TCXLap:
+		return TCXLap(
+			average_heart_rate_bpm = kwargs.get( 'average_heart_rate_bpm' ),
+			calories = kwargs.get( 'calories' ),
+			distance_meters = kwargs.get( 'distance_meters' ),
+			intensity = kwargs.get( 'intensity' ),
+			maximum_heart_rate_bpm = kwargs.get( 'maximum_heart_rate_bpm' ),
+			maximum_speed = kwargs.get( 'maximum_speed' ),
+			start_time = kwargs.get( 'start_time' ),
+			total_time_seconds = kwargs.get( 'total_time_seconds' ),
+			trigger_method = kwargs.get( 'trigger_method' ),
+			trackpoints = [ TCXTrackPoint( time=p.time, latitude_degrees=p.lat, longitude_degrees=p.lon, altitude_meters=p.alt, distance_meters=p.distance, heart_rate_bpm=p.hr ) for p in self.points ]
+		)
 
-	def as_tcx( self ) -> TrainingCenterDatabase:
+	def as_tcx( self, **kwargs ) -> TrainingCenterDatabase:
 		return TrainingCenterDatabase(
-			activities=[ Activity(
-				laps=[ self.as_tcx_lap() ]
+			activities = [ Activity(
+				id=kwargs.get( 'id' ),
+				laps=[ self.as_tcx_lap( **kwargs ) ]
 			) ]
 		)
 

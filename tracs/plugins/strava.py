@@ -265,10 +265,16 @@ class Strava( Service ):
 		streams = self._client.get_activity_streams( summary.local_id, types=[ 'time', 'latlng', 'distance', 'altitude', 'velocity_smooth', 'heartrate' ] )
 		stream = to_stream( streams, summary.data.start_date )
 
-		return [
-			Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, text=stream.as_gpx().to_xml( prettyprint=True ) ),
-			Resource( uid=summary.uid, path=f'{summary.local_id}.tcx', type=TCX_TYPE, text=tostring( stream.as_tcx().as_xml(), pretty_print=True ).decode( 'UTF-8' ) ),
+		resources = [
+			Resource( uid=summary.uid, path=f'{summary.local_id}.tcx', type=TCX_TYPE, text=tostring( stream.as_tcx().as_xml(), pretty_print=True ).decode( 'UTF-8' ) )
 		]
+
+		if any( p.lat for p in stream.points ):
+			resources.append(
+				Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, text=stream.as_gpx().to_xml( prettyprint=True ) )
+			)
+
+		return resources
 
 	@property
 	def logged_in( self ) -> bool:

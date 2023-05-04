@@ -18,7 +18,7 @@ from gpxpy.gpx import GPXTrack
 from gpxpy.gpx import GPXTrackPoint
 from gpxpy.gpx import GPXTrackSegment
 
-from tracs.plugins.tcx import Trackpoint as TCXTrackPoint
+from tracs.plugins.tcx import Activity, Lap, Trackpoint as TCXTrackPoint, TrainingCenterDatabase
 from tracs.plugins.tcx import Lap as TCXLap
 from tracs.resources import Resource
 
@@ -81,8 +81,16 @@ class Stream:
 		return gpx
 
 	def as_tcx_lap( self ) -> TCXLap:
-		points = [ TCXTrackPoint( time=p.time, lat=p.lat, lon=p.lon, alt=p.alt, dist=p.distance, hr=p.hr ) for p in self.points ]
-		return TCXLap( points = points )
+		return TCXLap( trackpoints = [
+			TCXTrackPoint( time=p.time, latitude_degrees=p.lat, longitude_degrees=p.lon, altitude_meters=p.alt, distance_meters=p.distance, heart_rate_bpm=p.hr ) for p in self.points
+		] )
+
+	def as_tcx( self ) -> TrainingCenterDatabase:
+		return TrainingCenterDatabase(
+			activities=[ Activity(
+				laps=[ self.as_tcx_lap() ]
+			) ]
+		)
 
 def as_streams( resources: List[Resource] ) -> List[Stream]:
 	return [ Stream( gpx=r.raw ) for r in resources ]

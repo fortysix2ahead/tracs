@@ -216,8 +216,8 @@ class Activity:
 		activity = SubElement( parent, self.__class__.__xml_name__ )
 		id = sub( activity, 'Id', self.id )
 		laps = [ l.as_xml( activity ) for l in self.laps ]
-		training = self.training.as_xml( activity )
-		creator = self.creator.as_xml( activity )
+		training = self.training.as_xml( activity ) if self.training else None # todo: may this be None?
+		creator = self.creator.as_xml( activity ) if self.creator else None
 		return activity
 
 	@classmethod

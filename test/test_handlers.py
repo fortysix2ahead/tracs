@@ -1,5 +1,6 @@
 
 from gpxpy.gpx import GPX
+from lxml.etree import tostring
 from lxml.objectify import ObjectifiedElement
 from pytest import mark
 
@@ -54,13 +55,12 @@ def test_gpx_importer( path ):
 def test_tcx_importer( path ):
 	resource = Registry.importer_for( TCX_TYPE ).load( path=path )
 	assert type( resource.raw ) is ObjectifiedElement
-	assert type( resource.data ) is TCXActivity
+	assert type( resource.data ) is TrainingCenterDatabase
 
 	activity = Registry.importer_for( TCX_TYPE ).load_as_activity( path=path )
 	assert activity.time.isoformat() == '2010-06-26T10:06:11+00:00'
 
 def test_tcx_export():
-	from lxml.etree import tostring
 	tcx = TrainingCenterDatabase(
 		activities=[
 			TCXActivity(

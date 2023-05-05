@@ -1,5 +1,7 @@
 from tracs.activity_types import ActivityTypes
 
+BASE_URL = 'https://www.strava.com'
+
 TYPES = {
 	'AlpineSki': ActivityTypes.ski,
 	'BackcountrySki': ActivityTypes.xcski_backcountry,

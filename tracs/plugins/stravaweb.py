@@ -3,7 +3,7 @@ from datetime import datetime
 from logging import getLogger
 from re import compile, findall
 from sys import exit as sysexit
-from typing import Any, cast, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 from bs4 import BeautifulSoup
@@ -18,7 +18,7 @@ from tracs.config import ApplicationContext, APPNAME
 from tracs.plugins.fit import FIT_TYPE
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSONHandler
-from tracs.plugins.stravaconstants import TYPES
+from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import importer, Registry, service, setup
 from tracs.resources import Resource
@@ -31,8 +31,6 @@ SERVICE_NAME = 'stravaweb'
 DISPLAY_NAME = 'Strava Web'
 
 STRAVA_WEB_TYPE = 'application/vnd.strava.web+json'
-
-BASE_URL = 'https://www.strava.com'
 
 FETCH_PAGE_SIZE = 20 # seems to be the maximum possible size
 
@@ -137,7 +135,7 @@ class StravaWebImporter( JSONHandler ):
 class Strava( Service ):
 
 	def __init__( self, **kwargs ):
-		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
+		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL }, **kwargs } )
 		self._session: Optional[Session] = None
 		self._importer = JSONHandler()
 		self._web_importer = StravaWebImporter( STRAVA_WEB_TYPE, StravaWebActivity )

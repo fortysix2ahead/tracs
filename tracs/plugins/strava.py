@@ -1,17 +1,17 @@
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from itertools import zip_longest
 from logging import getLogger
 from pathlib import Path
-from re import compile, findall, match
+from re import compile, match
 from sys import exit as sysexit
 from time import time
 from typing import Any, cast, Dict, List, Optional, Tuple, Union
 from webbrowser import open as open_url
 
 from dateutil.parser import parse as dtparse
-from dateutil.tz import gettz, tzlocal, UTC
+from dateutil.tz import tzlocal, UTC
 from lxml.etree import tostring
 from rich.prompt import Prompt
 from stravalib.client import Client
@@ -19,16 +19,15 @@ from stravalib.model import Activity as StravalibActivity
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
-from tracs.config import ApplicationContext, APPNAME, console
-from tracs.plugins.fit import FIT_TYPE
+from tracs.config import ApplicationContext, APPNAME
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSON_TYPE, JSONHandler
+from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import importer, Registry, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
 from tracs.streams import Point, Stream
-from tracs.utils import seconds_to_time as stt, to_isotime
 
 log = getLogger( __name__ )
 
@@ -37,9 +36,6 @@ DISPLAY_NAME = 'Strava'
 
 STRAVA_TYPE = 'application/vnd.strava+json'
 
-BASE_URL = 'https://www.strava.com'
-AUTH_URL = f'{BASE_URL}/oauth/authorize'
-TOKEN_URL = f'{BASE_URL}/oauth/token'
 OAUTH_REDIRECT_URL = 'http://localhost:40004'
 SCOPE = 'activity:read_all'
 
@@ -47,66 +43,6 @@ FETCH_PAGE_SIZE = 30 #
 
 TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
 TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
-
-HEADERS_TEMPLATE = {
-}
-
-HEADERS_LOGIN = { **HEADERS_TEMPLATE, **{
-	'Accept': '*/*',
-	'Accept-Encoding': 'gzip, deflate, br',
-	'Accept-Language': 'en-US,en;q=0.5',
-	'Cache-Control': 'no-cache',
-	'Connection': 'keep-alive',
-	'Content-Type': 'application/x-www-form-urlencoded',
-	'DNT': '1',
-	'Host': 'www.strava.com',
-	'Origin': 'https://www.strava.com',
-	'Pragma': 'no-cache',
-	'Referer': 'https://www.strava.com/login',
-	'TE': 'Trailers',
-	'Upgrade-Insecure-Requests': '1',
-	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0',
-} }
-
-TYPES = {
-	'AlpineSki': ActivityTypes.ski,
-	'BackcountrySki': ActivityTypes.xcski_backcountry,
-	'Canoeing': ActivityTypes.canoe,
-	'Crossfit': ActivityTypes.crossfit,
-	'EBikeRide': ActivityTypes.bike_ebike,
-	'Elliptical': ActivityTypes.other,
-	'Golf': ActivityTypes.golf,
-	'Handcycle': ActivityTypes.bike_hand,
-	'Hike': ActivityTypes.hiking,
-	'IceSkate': ActivityTypes.ice_skate,
-	'InlineSkate': ActivityTypes.inline_skate,
-	'Kayaking': ActivityTypes.kayak,
-	'Kitesurf': ActivityTypes.kitesurf,
-	'NordicSki': ActivityTypes.xcski,
-	'Ride': ActivityTypes.bike,
-	'RockClimbing': ActivityTypes.climb,
-	'RollerSki': ActivityTypes.rollski,
-	'Rowing': ActivityTypes.row,
-	'Run': ActivityTypes.run,
-	'Sail': ActivityTypes.sail,
-	'Skateboard': ActivityTypes.skateboard,
-	'Snowboard': ActivityTypes.snowboard,
-	'Snowshoe': ActivityTypes.snowshoe,
-	'Soccer': ActivityTypes.soccer,
-	'StairStepper': ActivityTypes.other,
-	'StandUpPaddling': ActivityTypes.paddle_standup,
-	'Surfing': ActivityTypes.surf,
-	'Swim': ActivityTypes.swim,
-	'Velomobile': ActivityTypes.other,
-	'VirtualRide': ActivityTypes.bike_ergo,
-	'VirtualRun': ActivityTypes.run_ergo,
-	'Walk': ActivityTypes.walk,
-	'WeightTraining': ActivityTypes.gym,
-	'Wheelchair': ActivityTypes.other,
-	'Windsurf': ActivityTypes.surf_wind,
-	'Workout': ActivityTypes.gym,
-	'Yoga': ActivityTypes.yoga,
-}
 
 @dataclass
 class StravaActivity( StravalibActivity ):

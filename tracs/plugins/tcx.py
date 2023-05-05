@@ -44,10 +44,11 @@ class Trackpoint:
 
 	def as_xml( self, parent: Element ) -> Element:
 		trackpoint = SubElement( parent, Trackpoint.__xml_name__ )
-		sub( trackpoint, 'Time', self.time )
-		position = SubElement( trackpoint, 'Position' )
-		sub( position, 'LatitudeDegrees', self.latitude_degrees )
-		sub( position, 'LongitudeDegrees', self.longitude_degrees )
+		sub( trackpoint, 'Time', ztime( self.time ) )
+		if self.latitude_degrees is not None and self.longitude_degrees is not None:
+			position = SubElement( trackpoint, 'Position' )
+			sub( position, 'LatitudeDegrees', self.latitude_degrees )
+			sub( position, 'LongitudeDegrees', self.longitude_degrees )
 		sub( trackpoint, 'AltitudeMeters', self.altitude_meters )
 		sub( trackpoint, 'DistanceMeters', self.distance_meters )
 		sub2( trackpoint, 'HeartRateBpm', 'Value', self.heart_rate_bpm )
@@ -75,7 +76,7 @@ class Lap:
 
 	__xml_name__ = 'Lap'
 
-	start_time: datetime = field( default=None )
+	start_date: datetime = field( default=None )
 	total_time_seconds: float = field( default=None )
 	distance_meters: float = field( default=None )
 	maximum_speed: float = field( default=None )
@@ -101,7 +102,7 @@ class Lap:
 		return self.trackpoints[-1].time if len( self.trackpoints ) else None
 
 	def as_xml( self, parent: Element ) -> Element:
-		lap = SubElement( parent, Lap.__xml_name__, attrib={'StartTime': str( self.start_time )} )
+		lap = SubElement( parent, Lap.__xml_name__, attrib={'StartTime': ztime( self.start_date )} )
 		sub( lap, 'TotalTimeSeconds', self.total_time_seconds )
 		sub( lap, 'DistanceMeters', self.distance_meters )
 		sub( lap, 'MaximumSpeed', self.maximum_speed )
@@ -119,7 +120,7 @@ class Lap:
 	def from_xml( cls, parent: Element ) -> List[Lap]:
 		return [
 			Lap(
-				start_time=l.get( 'StartTime' ),
+				start_date=l.get( 'StartTime' ),
 				total_time_seconds=find( l, 'TotalTimeSeconds' ),
 				distance_meters=find( l, 'DistanceMeters' ),
 				maximum_speed=find( l, 'MaximumSpeed' ),
@@ -330,6 +331,9 @@ class TCXImporter( XMLHandler ):
 
 # helper
 
+def ztime( dt: datetime ) -> str:
+	return dt.strftime( '%Y-%m-%dT%H:%M:%SZ' ) if dt else None
+
 def find( element: ObjectifiedElement, sub_element: str ) -> Any:
 	try:
 		return ObjectPath( f'.{sub_element}' ).find( element ).pyval
@@ -344,7 +348,7 @@ def elem( element: ObjectifiedElement, sub_element: str ) -> Optional[Element]:
 
 # noinspection PyProtectedMember
 def sub( parent: Element, name: str, value: Any ) -> Optional[SubElement]:
-	if value is not None:
+	if value is not None and value != 0 and value != 0.0:
 		sub_element = SubElement( parent, name )
 		sub_element._setText( str( value ) ) # todo: that is the way it is supposed to work??? WTF?
 		return sub_element

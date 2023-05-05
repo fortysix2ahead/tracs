@@ -10,6 +10,7 @@ from time import time
 from typing import Any, cast, Dict, List, Optional, Tuple, Union
 from webbrowser import open as open_url
 
+from dateutil.parser import parse as dtparse
 from dateutil.tz import gettz, tzlocal, UTC
 from lxml.etree import tostring
 from rich.prompt import Prompt
@@ -273,7 +274,7 @@ class Strava( Service ):
 			intensity = 'Active', # todo: don't know where to get this from
 			maximum_heart_rate_bpm = summary.raw.get( 'max_heartrate' ),
 			maximum_speed = summary.raw.get( 'max_speed' ),
-			start_date = f'{summary.raw.get( "start_date_local" )}Z',
+			start_date = dtparse( summary.raw.get( "start_date" ) ),
 			# trigger_method = 'Distance', # todo: this is not correct
 			total_time_seconds = summary.raw.get( 'elapsed_time' ),
 		)

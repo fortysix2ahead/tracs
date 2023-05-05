@@ -112,7 +112,7 @@ class Stream:
 			intensity = kwargs.get( 'intensity' ),
 			maximum_heart_rate_bpm = kwargs.get( 'maximum_heart_rate_bpm' ),
 			maximum_speed = kwargs.get( 'maximum_speed' ),
-			start_time = kwargs.get( 'start_time' ),
+			start_date = kwargs.get( 'start_date' ),
 			total_time_seconds = kwargs.get( 'total_time_seconds' ),
 			trigger_method = kwargs.get( 'trigger_method' ),
 			trackpoints = [ TCXTrackPoint( time=p.time, latitude_degrees=p.lat, longitude_degrees=p.lon, altitude_meters=p.alt, distance_meters=p.distance, heart_rate_bpm=p.hr ) for p in self.points ]

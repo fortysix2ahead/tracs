@@ -15,7 +15,7 @@ from .config import ApplicationContext
 from .db import ActivityDb
 from .plugins.gpx import GPX_TYPE
 from .plugins.local import SERVICE_NAME as LOCAL_SERVICE_NAME
-from .registry import Registry, service_names
+from .registry import Registry, service_for, service_names
 from .resources import Resource
 from .service import Service
 from .streams import as_str
@@ -49,10 +49,10 @@ def import_activities( ctx: Optional[ApplicationContext], importer: Optional[str
 			log.debug( f'importing from service {src}' )
 			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
 
-		elif uid.denotes_activity() and (service := Registry.service_for( uid.classifier )):
+		elif uid.denotes_activity() and (service := service_for( uid.classifier )):
 			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, uids=[src], **kwargs )
 
-		elif uid.denotes_resource() and (service := Registry.service_for( uid.classifier )):
+		elif uid.denotes_resource() and (service := service_for( uid.classifier )):
 			raise NotImplementedError
 
 		else:

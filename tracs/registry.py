@@ -16,6 +16,7 @@ from dataclass_factory import Factory, Schema
 from tracs.config import ApplicationContext, KEY_CLASSIFER
 from tracs.protocols import Handler, Importer, Service
 from tracs.resources import ResourceType
+from tracs.uid import UID
 
 log = getLogger( __name__ )
 
@@ -66,10 +67,6 @@ class Registry:
 			Registry.services[name] = service_type( ctx=ctx, **{ **kwargs, **service_cfg, **service_state, **{ 'base_path': service_base_path, 'overlay_path': service_overlay_path } } )
 			# log.debug( f'created service instance {name}, with base path {service_base_path}' )
 			Registry.notify( EventTypes.service_created, Registry.services[name] )
-
-	@classmethod
-	def service_for( cls, uid: str = None ) -> Service:
-		return Registry.services.get( uid.split( ':', maxsplit= 1 )[0] )
 
 	# resource types
 
@@ -203,6 +200,10 @@ class Registry:
 
 def service_names() -> List[str]:
 	return list( Registry.services.keys() )
+
+def service_for( uid: Union[str, UID] ) -> Optional[Service]:
+	uid = UID( uid ) if type( uid ) is str else uid
+	return Registry.services.get( uid.classifier )
 
 # decorators
 

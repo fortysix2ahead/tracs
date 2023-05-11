@@ -3,31 +3,18 @@ from __future__ import annotations
 
 from enum import Enum
 from importlib import import_module
-from inspect import getmembers, isfunction
-from inspect import isclass
+from inspect import getmembers, isclass, isfunction
 from logging import getLogger
 from pathlib import Path
 from pkgutil import walk_packages
 from re import match
-from typing import Callable
-from typing import cast
-from typing import Dict
-from typing import List
-from typing import Mapping
-from typing import Optional
-from typing import Tuple
-from typing import Type
-from typing import Union
+from typing import Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from confuse import NotFoundError
-from dataclass_factory import Factory
-from dataclass_factory import Schema
+from dataclass_factory import Factory, Schema
 
-from tracs.config import ApplicationContext
-from tracs.config import KEY_CLASSIFER
-from tracs.protocols import Handler
-from tracs.protocols import Importer
-from tracs.protocols import Service
+from tracs.config import ApplicationContext, KEY_CLASSIFER
+from tracs.protocols import Handler, Importer, Service
 from tracs.resources import ResourceType
 
 log = getLogger( __name__ )
@@ -79,10 +66,6 @@ class Registry:
 			Registry.services[name] = service_type( ctx=ctx, **{ **kwargs, **service_cfg, **service_state, **{ 'base_path': service_base_path, 'overlay_path': service_overlay_path } } )
 			# log.debug( f'created service instance {name}, with base path {service_base_path}' )
 			Registry.notify( EventTypes.service_created, Registry.services[name] )
-
-	@classmethod
-	def service_names( cls ) -> List[str]:
-		return list( Registry.services.keys() )
 
 	@classmethod
 	def service_for( cls, uid: str = None ) -> Service:
@@ -215,6 +198,13 @@ class Registry:
 			elif not key and type( item_key ) is str:
 				rval[item_key] = item_fn
 		return rval
+
+# helpers to access registry information
+
+def service_names() -> List[str]:
+	return list( Registry.services.keys() )
+
+# decorators
 
 def _spec( func: Callable ) -> Tuple[str, str]:
 	"""

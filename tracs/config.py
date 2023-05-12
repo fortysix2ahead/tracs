@@ -1,34 +1,27 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from dataclasses import field
+from dataclasses import dataclass, field
 from datetime import datetime
 from importlib.resources import path as pkg_path
 from logging import getLogger
+from os.path import join as os_path_join
 from pathlib import Path
-
-from rich.progress import BarColumn
-from rich.progress import TaskProgressColumn
-from rich.progress import TimeRemainingColumn
-from typing import Any, Optional
-from typing import List
-from typing import Tuple
+from typing import Any, Dict, List, Optional
 
 from appdirs import AppDirs
-from confuse import Configuration
-from confuse import Subview
+from confuse import ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, YamlSource
 from fs.base import FS
 from fs.osfs import OSFS
 from rich.console import Console
-from rich.progress import Progress
-from rich.progress import TextColumn
-from rich.progress import TimeElapsedColumn
+from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 
 # string constants
 
 APPNAME = 'tracs'
 APP_PKG_NAME = 'tracs'
+PLUGINS_PKG_NAME = 'plugins'
+
 APPDIRS = AppDirs( appname=APPNAME )
 
 BACKUP_DIRNAME = 'backup'
@@ -45,6 +38,7 @@ VAR_DIRNAME = 'var'
 
 CONFIG_FILENAME = 'config.yaml'
 STATE_FILENAME = 'state.yaml'
+DEFAULT_STATE_FILENAME = 'state_default.yaml'
 
 DEFAULT_CFG_DIR = Path( APPDIRS.user_config_dir )
 DEFAULT_DB_DIR = Path( DEFAULT_CFG_DIR, DB_DIRNAME )
@@ -84,6 +78,59 @@ cs = CONSOLE
 def default_resources_path() -> Path:
 	with pkg_path( APP_PKG_NAME, f'{RESOURCES_DIRNAME}' ) as path:
 		return path
+
+class ApplicationConfiguration( Configuration ):
+
+	def __init__( self, config_file_path: Optional[str] = None, args: Dict = None ):
+		self._arguments = args if args is not None else {}
+		self._plugins_package_path = find_package_path( f'{APP_PKG_NAME}.{PLUGINS_PKG_NAME}' )
+		self._config_file_path = config_file_path
+
+		# call super().init
+		super().__init__( appname=APPNAME, modname=APPNAME )
+
+	def read( self, user=True, defaults=True ):
+		self._add_arguments_source()
+		self._add_user_source()
+		self._add_plugins_default_source()
+		self._add_default_source()
+
+	def user_config_path( self ):
+		return self._config_file_path if self._config_file_path else super().user_config_path()
+
+	def _add_arguments_source( self ):
+		self.add( ConfigSource.of( self._arguments ) )
+
+	def _add_plugins_default_source( self ):
+		filename = os_path_join( self._plugins_package_path, DEFAULT_CFG_FILENAME )
+		self.add( YamlSource( filename, loader=self.loader, optional=True, default=True ) )
+
+# similar to ApplicationConfiguration above, but slightly different
+
+class ApplicationStateCls( Configuration ):
+
+	def __init__( self, state_file_path: Optional[str] = None ):
+		self._plugins_package_path = find_package_path( f'{APP_PKG_NAME}.{PLUGINS_PKG_NAME}' )
+		self._state_file_path = state_file_path
+
+		# call super().init
+		super().__init__( appname=APPNAME, modname=APPNAME )
+
+	def read( self, user=True, defaults=True ):
+		self._add_user_source()
+		self._add_plugins_default_source()
+		self._add_default_source()
+
+	def user_config_path( self ):
+		return self._state_file_path if self._state_file_path else os_path_join( self.config_dir(), STATE_FILENAME )
+
+	def _add_plugins_default_source( self ):
+		filename = os_path_join( self._plugins_package_path, DEFAULT_STATE_FILENAME )
+		self.add( YamlSource( filename, loader=self.loader, optional=True, default=True ) )
+
+	def _add_default_source( self ):
+		filename = os_path_join( self._package_path, DEFAULT_STATE_FILENAME )
+		self.add( YamlSource( filename, loader=self.loader, optional=True, default=True ) )
 
 # application context
 
@@ -300,6 +347,18 @@ class ApplicationContext:
 				else:
 					self.console.print( f'{diff}' )
 			self.apptime = datetime.now()
+
+	# plugin configuration helpers
+
+	def plugin_config( self, plugin_name ) -> Configuration:
+		if not self.config['plugins'][plugin_name].get():
+			self.config['plugins'][plugin_name] = {}
+		return self.config['plugins'][plugin_name].get()
+
+	def plugin_state( self, plugin_name ) -> Configuration:
+		if not self.state['plugins'][plugin_name].get():
+			self.state['plugins'][plugin_name] = {}
+		return self.state['plugins'][plugin_name].get()
 
 	def dump_config_state( self ) -> None:
 		self.dump_config()

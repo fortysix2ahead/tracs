@@ -1,0 +1,18 @@
+
+plugins:
+
+  bikecitizens:
+
+  empty:
+
+  local:
+
+  polar:
+
+  strava:
+    access_token:
+    refresh_token:
+    expires_at:
+
+  waze:
+    takeouts:

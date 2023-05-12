@@ -1,0 +1,29 @@
+# configuration for built-in plugins
+plugins:
+
+  bikecitizens:
+    enabled: true
+    username:
+    password:
+
+  empty:
+    enabled: false
+
+  local:
+    enabled: true
+
+  polar:
+    enabled: true
+    username:
+    password:
+
+  strava:
+    enabled: true
+    username:
+    password:
+    client_id:
+    client_secret:
+
+  waze:
+    enabled: true
+    field_size_limit: 131072

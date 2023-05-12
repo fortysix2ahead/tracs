@@ -6,6 +6,7 @@ from pytest import mark
 
 from tracs.application import Application
 from tracs.config import APPNAME
+from tracs.registry import service_names
 
 def test_app_constructor():
 	app =  Application.__new__( Application, config_dir=None, lib_dir=None, verbose=False, debug=False, force=False )
@@ -55,6 +56,8 @@ def test_default_environment():
 	assert app.ctx.verbose == False
 	assert app.ctx.force == False
 
+	assert service_names() == [ 'bikecitizens', 'local', 'polar', 'strava', 'waze' ]
+
 @mark.context( config='debug', library='empty' )
 def test_debug_environment( ctx ):
 	app = Application.__new__( Application, config_dir=ctx.config_dir, verbose=None, debug=None, force=None )
@@ -69,3 +72,8 @@ def test_parameterized_environment( ctx ):
 	assert app.ctx.debug == True
 	assert app.ctx.verbose == True
 	assert app.ctx.force == True
+
+@mark.context( config='local_only', library='empty' )
+def test_disabled_environment( ctx ):
+	Application.__new__( Application, config_dir=ctx.config_dir )
+	assert service_names() == [ 'local' ]

@@ -1,0 +1,13 @@
+
+plugins:
+  bikecitizens:
+    enabled: false
+
+  polar:
+    enabled: false
+
+  strava:
+    enabled: false
+
+  waze:
+    enabled: false

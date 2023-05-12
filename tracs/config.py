@@ -138,8 +138,10 @@ class ApplicationStateCls( Configuration ):
 class ApplicationContext:
 
 	# configuration fields which can be set externally
-	config_dir: Optional[str] = field( default=None )
-	lib_dir: Optional[str] = field( default=None )
+
+	# config + lib dir are absolute paths, lib_dir points to cfg_dir by default
+	config_dir: str = field( default=APPDIRS.user_config_dir )
+	lib_dir: str = field( default=APPDIRS.user_config_dir )
 
 	# global configuration flags, can be set externally
 	force: Optional[bool] = field( default=None )
@@ -147,37 +149,35 @@ class ApplicationContext:
 	debug: Optional[bool] = field( default=None )
 	pretend: Optional[bool] = field( default=None )
 
-	# everything below is calculated
+	# everything below here is calculated and will be set up in post_init
 
 	# filesystems
 	config_fs: Optional[FS] = field( default=None )
 	lib_fs: Optional[FS] = field( default=None )
 
-	# files and directories
-	default_resources_dir: Path = field( default=default_resources_path() )
-	default_config_file: Path = field( default=Path( default_resources_path(), CONFIG_FILENAME ) )
-	default_state_file: Path = field( default=Path( default_resources_path(), STATE_FILENAME ) )
+	# config/state files
+	config_file: str = field( default=CONFIG_FILENAME )
+	state_file: str = field( default=STATE_FILENAME )
 
-	config_file: Path = field( default=CONFIG_FILENAME )
-	state_file: Path = field( default=STATE_FILENAME )
-
-	log_dir: Path = field( default=LOG_DIRNAME )
-	log_file: Path = field( default=f'{LOG_DIRNAME}/{LOG_FILENAME}' )
-	overlay_dir: Path = field( default=OVERLAY_DIRNAME )
-	takeout_dir: Path = field( default=TAKEOUT_DIRNAME )
+	log_dir: str = field( default=LOG_DIRNAME )
+	log_file: str = field( default=os_path_join( LOG_DIRNAME, LOG_FILENAME ) )
+	overlay_dir: str = field( default=OVERLAY_DIRNAME )
+	takeout_dir: str = field( default=TAKEOUT_DIRNAME )
 	var_dir: str = field( default=VAR_DIRNAME )
-	backup_dir: str = field( default=f'{VAR_DIRNAME}/{BACKUP_DIRNAME}' )
-	cache_dir: str = field( default=f'{VAR_DIRNAME}/{CACHE_DIRNAME}' )
-	tmp_dir: str = field( default=f'{VAR_DIRNAME}/{TMP_DIRNAME}' )
+	backup_dir: str = field( default=os_path_join( VAR_DIRNAME, BACKUP_DIRNAME ) )
+	cache_dir: str = field( default=os_path_join( VAR_DIRNAME, CACHE_DIRNAME ) )
+	tmp_dir: str = field( default=os_path_join( VAR_DIRNAME, TMP_DIRNAME ) )
 
 	# database
 	db: Any = field( default=None )
-	db_dir: Path = field( default=DB_DIRNAME )
+	db_dir: str = field( default=DB_DIRNAME )
 
 	instance: Any = field( default=None )
-	config: Configuration = field( default=Configuration( APPNAME, __name__, read=False ) )
-	state: Configuration = field( default=Configuration( f'{APPNAME}.state', __name__, read=False ) )
-	meta: Any = field( default=None )
+
+	# app configuration + state
+	config: Configuration = field( default=None )
+	state: Configuration = field( default=None )
+	meta: Any = field( default=None ) # not used yet
 
 	plugins_dir: List[Path] = field( default_factory=list )
 
@@ -189,50 +189,42 @@ class ApplicationContext:
 
 	def __post_init__( self ):
 		# setup config fs
-		if not self.config_dir:
-			self.config_dir = APPDIRS.user_config_dir
+		self.config_dir = APPDIRS.user_config_dir if self.config_dir is None else self.config_dir # config dir may never be None
 		self.config_fs = OSFS( root_path=self.config_dir, create=True )
 
 		# load default configuration/state
-		self.config.set_file( self.default_config_file )
-		if self.config_fs.exists( str( self.config_file ) ):
-			self.config.set_file( self.config_fs.getsyspath( str( self.config_file ) ) )
+		args = { k: v for k, v in {
+			'debug': self.debug,
+			'verbose': self.verbose,
+			'force': self.force,
+			'pretend': self.pretend,
+			'library': self.lib_dir,
+		}.items() if v is not None }
+		self.config = ApplicationConfiguration( config_file_path=os_path_join( self.config_dir, self.config_file ), args = args )
+		self.state = ApplicationConfiguration( config_file_path=os_path_join( self.config_dir, self.state_file ) )
 
-		self.state.set_file( self.default_state_file )
-		if self.config_fs.exists( str( self.state_file ) ):
-			self.state.set_file( self.config_fs.getsyspath( str( self.state_file ) ) )
+		# update global options fields from config -> todo: this should be removed in the future, access should be like cfg.debug
+		self.debug = self.config['debug'].get( bool )
+		self.verbose = self.config['verbose'].get( bool )
+		self.force = self.config['force'].get( bool )
+		self.pretend = self.config['pretend'].get( bool )
 
-		# evaluate cmdline configuration flags
-		self.debug = self.debug if self.debug is not None else self.config['debug'].get()
-		self.verbose = self.verbose if self.verbose is not None else self.config['verbose'].get()
-		self.force = self.force if self.force is not None else self.config['force'].get()
-		self.pretend = self.pretend if self.pretend is not None else self.config['pretend'].get()
-
-		# update configuration as well
-		self.config['debug'] = self.debug
-		self.config['verbose'] = self.verbose
-		self.config['force'] = self.force
-		self.config['pretend'] = self.pretend
-
-		# setup library fs, if not provided, use config_dirf
-		if not self.lib_dir and not self.config['library'].get():
+		# setup library fs
+		if (library := self.config['library'].get()) is None:
 			self.lib_dir = self.config_dir
-			self.lib_fs = self.config_fs
-			self.config['library'] = self.lib_dir
 		else:
-			if not self.lib_dir:
-				self.lib_dir = self.config['library'].get()
-			else:
-				self.config['library'] = self.lib_dir
-			self.lib_fs = OSFS( root_path=self.lib_dir, create=True )
+			self.lib_dir = library
+
+		self.lib_fs = OSFS( root_path=self.lib_dir, create=True )
+		self.config['library'] = self.lib_dir
 
 		# create directories depending on config_dir
-		self.config_fs.makedir( str( self.log_dir ), recreate=True )
+		self.config_fs.makedir( self.log_dir, recreate=True )
 
 		# create directories depending on lib_dir
-		self.lib_fs.makedir( str( self.db_dir ), recreate=True )
-		self.lib_fs.makedir( str( self.overlay_dir ), recreate=True )
-		self.lib_fs.makedir( str( self.takeout_dir ), recreate=True )
+		self.lib_fs.makedir( self.db_dir, recreate=True )
+		self.lib_fs.makedir( self.overlay_dir, recreate=True )
+		self.lib_fs.makedir( self.takeout_dir, recreate=True )
 
 		# var and its children
 		self.lib_fs.makedir( self.var_dir, recreate=True )
@@ -350,12 +342,12 @@ class ApplicationContext:
 
 	# plugin configuration helpers
 
-	def plugin_config( self, plugin_name ) -> Configuration:
+	def plugin_config( self, plugin_name ) -> Dict:
 		if not self.config['plugins'][plugin_name].get():
 			self.config['plugins'][plugin_name] = {}
 		return self.config['plugins'][plugin_name].get()
 
-	def plugin_state( self, plugin_name ) -> Configuration:
+	def plugin_state( self, plugin_name ) -> Dict:
 		if not self.state['plugins'][plugin_name].get():
 			self.state['plugins'][plugin_name] = {}
 		return self.state['plugins'][plugin_name].get()

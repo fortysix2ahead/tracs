@@ -9,7 +9,6 @@ from tracs.config import APPNAME
 
 def test_app_constructor():
 	app =  Application.__new__( Application, config_dir=None, lib_dir=None, verbose=False, debug=False, force=False )
-	ctx = app.ctx
 	home = Path.home()
 
 	if system() == 'Windows':
@@ -21,8 +20,8 @@ def test_app_constructor():
 	else:
 		return
 
-	assert ctx.config_dir == str( Path( cfg_dir ) )
-	assert ctx.lib_dir == str( Path( cfg_dir ) )
+	assert app.ctx.config_dir == str( cfg_dir )
+	assert app.ctx.lib_dir == str( cfg_dir )
 
 @mark.context( config='empty', library='empty' )
 def test_app_constructor_cfg_dir( ctx ):
@@ -47,7 +46,7 @@ def test_app_constructor_lib_dir( ctx ):
 	else:
 		return
 
-	assert app.ctx.config_dir == str( Path( cfg_dir ) )
+	assert app.ctx.config_dir == str( cfg_dir )
 	assert app.ctx.lib_dir == str( ctx.lib_dir )
 
 def test_default_environment():

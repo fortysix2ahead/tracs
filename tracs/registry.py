@@ -55,18 +55,15 @@ class Registry:
 			service_overlay_path = Path( _ctx.db_overlay_path, name )
 
 			# find config/state values
-			try:
-				service_cfg = ctx.config['plugins'][name].get() or {}
-			except NotFoundError:
-				service_cfg = {}
-			try:
-				service_state = ctx.state['plugins'][name].get() or {}
-			except NotFoundError:
-				service_state = {}
+			service_cfg = ctx.plugin_config( name )
+			service_state = ctx.plugin_state( name )
 
-			Registry.services[name] = service_type( ctx=ctx, **{ **kwargs, **service_cfg, **service_state, **{ 'base_path': service_base_path, 'overlay_path': service_overlay_path } } )
-			# log.debug( f'created service instance {name}, with base path {service_base_path}' )
-			Registry.notify( EventTypes.service_created, Registry.services[name] )
+			if service_cfg.get( 'enabled', True ):
+				Registry.services[name] = service_type( ctx=ctx, **{ **kwargs, **service_cfg, **service_state, **{ 'base_path': service_base_path, 'overlay_path': service_overlay_path } } )
+				# log.debug( f'created service instance {name}, with base path {service_base_path}' )
+				Registry.notify( EventTypes.service_created, Registry.services[name] )
+			else:
+				log.debug( f'skipping instance creation for disabled plugin {name}' )
 
 	# resource types
 

@@ -218,7 +218,7 @@ class Strava( Service ):
 			intensity = 'Active', # todo: don't know where to get this from
 			maximum_heart_rate_bpm = summary.raw.get( 'max_heartrate' ),
 			maximum_speed = summary.raw.get( 'max_speed' ),
-			start_date = dtparse( summary.raw.get( "start_date" ) ),
+			start_date = dtparse( sd ) if type( sd := summary.raw.get( 'start_date' ) ) is str else sd,
 			# trigger_method = 'Distance', # todo: this is not correct
 			total_time_seconds = summary.raw.get( 'elapsed_time' ),
 		)

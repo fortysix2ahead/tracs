@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import getLogger
 from re import compile, findall
 from sys import exit as sysexit
@@ -17,7 +17,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME
 from tracs.plugins.fit import FIT_TYPE
 from tracs.plugins.gpx import GPX_TYPE
-from tracs.plugins.json import JSONHandler
+from tracs.plugins.json import JSON_TYPE, JSONHandler
 from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import importer, Registry, service, setup
@@ -124,8 +124,8 @@ class StravaWebImporter( JSONHandler ):
 			ascent = activity.elevation_gain_raw if activity.elevation_gain_raw else None,
 			description = activity.description,
 			distance = activity.distance_raw if activity.distance else None,
-			duration = stt( activity.elapsed_time_raw ) if activity.elapsed_time_raw else None,
-			duration_moving = stt( activity.moving_time_raw ) if activity.moving_time_raw else None,
+			duration = timedelta( seconds = activity.elapsed_time_raw ) if activity.elapsed_time_raw else None,
+			duration_moving = timedelta( seconds=activity.moving_time_raw ) if activity.moving_time_raw else None,
 			name = activity.name,
 			type = TYPES.get( activity.type, ActivityTypes.unknown ),
 			uids=[f'strava:{activity.id}'],
@@ -137,8 +137,8 @@ class Strava( Service ):
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL }, **kwargs } )
 		self._session: Optional[Session] = None
-		self._importer = JSONHandler()
-		self._web_importer = StravaWebImporter( STRAVA_WEB_TYPE, StravaWebActivity )
+		self._importer: StravaWebImporter = Registry.importer_for( STRAVA_WEB_TYPE )
+		self._json_handler: JSONHandler = Registry.importer_for( JSON_TYPE )
 
 	@property
 	def login_url( self ) -> str:
@@ -223,6 +223,10 @@ class Strava( Service ):
 		if not self._session:
 			self.login()
 
+		after = kwargs.get( 'range_from' )
+		before = kwargs.get( 'range_to' )
+		first_year = kwargs.get( 'first_year' )
+
 		url = 'https://www.strava.com/athlete/training_activities'
 		parameters = {
 			'keywords': '',
@@ -244,16 +248,22 @@ class Strava( Service ):
 			models: List[Dict] = [m for m in json.get( 'models' )]
 			self.ctx.total( total_pages - 1 ) # minus one so progress bar turns green ...
 
-			for page in range( 2, 4 ):
-#			for page in range( 2, total_pages ):
+			for page in range( 2, total_pages ):
 				self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to {page * FETCH_PAGE_SIZE} (batch {page})' )
 				models.extend( [m for m in self._session.get( url, params={ **parameters, 'page': str( page ) }, headers=HEADERS_API ).json().get( 'models' )] )
 
-			resources = [
-				self._importer.save( m, uid=f"strava:{m['id']}", resource_path=f"{m['id']}.web.json", resource_type=STRAVA_WEB_TYPE, source=self.url_for_id( m['id'] ), summary=True ) for m in models
+			return [
+				self._importer.save_to_resource(
+					content=self._json_handler.save_raw( m ),
+					raw = m,
+					data = self._importer.load_data( m ),
+					uid=f'strava:{ m.get( "id" ) }',
+					path=f'{ m.get( "id" ) }.web.json',
+					type=STRAVA_WEB_TYPE,
+					source=self.url_for_id( m.get( "id" ) ),
+					summary=True
+				) for m in models
 			]
-
-			return resources
 
 		except RuntimeError:
 			log.error( f'error fetching activity ids', exc_info=True )

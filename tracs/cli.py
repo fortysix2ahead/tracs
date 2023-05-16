@@ -12,7 +12,7 @@ from tracs.config import ApplicationContext, APPNAME
 from tracs.db import backup_db, maintain_db, restore_db, status_db
 from tracs.edit import edit_activities, equip_activities, modify_activities, rename_activities, set_activity_type, tag_activities, unequip_activities, untag_activities
 from tracs.group import group_activities, part_activities, ungroup_activities, unpart_activities
-from tracs.inout import DEFAULT_IMPORTER, export_activities, import_activities, open_activities, reimport_activities
+from tracs.inout import export_activities, import_activities, open_activities, reimport_activities
 from tracs.link import link_activities
 from tracs.list import inspect_activities, inspect_registry, inspect_resources, list_activities, show_config, show_fields
 from tracs.setup import setup as setup_application
@@ -80,17 +80,18 @@ def fields():
 	show_fields()
 
 @cli.command( 'import', hidden=True, help='imports activities' )
-@option( '-i', '--importer', required=False, hidden=True, default=DEFAULT_IMPORTER, help='importer to use (default is auto)' )
-@option( '-m', '--move', required=False, hidden=True, is_flag=True, help='move resources after import (dangerous, input files will be removed, local imports only)' )
+@option( '-a', '--fetch-all', required=False, hidden=True, default=False, is_flag=True, type=bool, help='always fetch all activities instead of the most recent ones' )
+# @option( '-l', '--from-local', required=False, hidden=True, default=True, is_flag=True, type=bool, help='import from local file system' )
+@option( '-m', '--move', required=False, hidden=True, is_flag=True, help='remove resources after import (dangerous, applies for imports from takeouts only)' )
 @option( '-o', '--as-overlay', required=False, hidden=True, is_flag=False, type=int, help='import as overlay for an existing resource (experimental, local imports only)' )
 @option( '-r', '--as-resource', required=False, hidden=True, is_flag=False, help='import as resource for an existing activity (experimental, local imports only)' )
 @option( '-sd', '--skip-download', required=False, is_flag=True, help='skips download of activities' )
-@option( '-t', '--from-takeouts', required=False, is_flag=True, help='imports activities from takeouts folder (service plugin needs to support this)' )
-@argument( 'sources', nargs=-1 ) #, help='list of sources to import from, can be names of services, files in the local file system or URLs (currently unsupported)' )
+@option( '-t', '--from-takeouts', required=False, is_flag=True, help='imports activities from takeouts folder (plugin needs to support this)' )
+@argument( 'sources', nargs=-1 )
 @pass_context
-def imprt( ctx, sources, skip_download: bool = False, importer = DEFAULT_IMPORTER, move: bool = False,
+def imprt( ctx, sources, fetch_all: bool, skip_download: bool = False, move: bool = False,
       as_overlay: str = None, as_resource: str = None, from_takeouts: str = None ):
-	import_activities( ctx.obj, sources=sources, skip_download=skip_download, importer=importer, move=move,
+	import_activities( ctx.obj, sources=sources, fetch_all=fetch_all, skip_download=skip_download, move=move,
 	   as_overlay=as_overlay, as_resource=as_resource, from_takeouts=from_takeouts )
 
 @cli.command( help='fetches activity summaries', hidden=True )

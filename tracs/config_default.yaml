@@ -2,7 +2,6 @@
 # main keys, values can partially be overwritten via command line arguments
 
 debug: no # enables debug mode
-fetch_from: 2000 # year to start from when attempting to fetch all activities
 force: no # enable force mode, which does not ask any questions
 library: # absolute path to the activity library
 pretend: no # pretend mode, simulates all commands, but does not persist changes
@@ -30,6 +29,10 @@ formats:
 
 filters:
   default:
+
+import:
+  range: 90 # number of days to fetch activities from (today to -90 days), lowering will speed up import command
+  first_year: 2000 # year to start from when fetching all activities, most likely there's nothing before 2000
 
 # gpx parser configuration
 

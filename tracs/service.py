@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
@@ -202,14 +202,11 @@ class Service( Plugin ):
 
 	# methods related to fetch()
 
-	def fetch_summary_resources( self, skip: bool, force: bool, pretend: bool, uids: List[str], **kwargs ) -> List[Union[Resource, int]]:
+	def fetch_summary_resources( self, skip: bool, force: bool, pretend: bool, **kwargs ) -> List[Union[Resource, int]]:
 		if skip:
 			summaries = self.ctx.db.summaries
 		else:
 			summaries = self.fetch( force=force, pretend=pretend, **kwargs )  # fetch all summary resources
-
-		if uids:
-			summaries = list( filter( lambda s: s.uid in uids, summaries ) )
 
 		# sort summaries by uid so that progress bar in download looks better -> todo: improve progress bar later?
 		return sorted( summaries, key=lambda r: r.uid )
@@ -315,15 +312,24 @@ class Service( Plugin ):
 		[ self._db.upsert_activity( a ) for a in activities ]
 
 	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ):
+		fetch_all = kwargs.get( 'fetch_all', False )
+		first_year = kwargs.get( 'first_year', 2000 )
+		days_range = kwargs.get( 'days_range', 90 )
+
+		if fetch_all:
+			range_from = datetime( first_year, 1, 1 )
+		else:
+			range_from = datetime.utcnow() - timedelta( days = days_range )
+		range_to = datetime.utcnow() + timedelta( days=1 )
+
 		skip_fetch = kwargs.get( 'skip_fetch', False )
 		skip_download = kwargs.get( 'skip_download', False )
-		uids: List[str] = kwargs.get( 'uids', [] )
 
 		# start fetch task
-		self.ctx.start( f'fetching activity data from {self.display_name}' )
+		self.ctx.start( f'fetching activity data from {self.display_name}, ()' )
 
 		# fetch summaries
-		summaries = self.fetch_summary_resources( skip_fetch, force, pretend, **{'uids': uids, **kwargs} )
+		summaries = self.fetch_summary_resources( skip_fetch, force, pretend, **{ 'range_from': range_from, 'range_to': range_to, **kwargs } )
 		summaries = self.postprocess_summaries( summaries, **kwargs )  # post process summaries
 
 		# filter out summaries that are already known

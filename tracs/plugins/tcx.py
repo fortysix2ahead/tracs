@@ -308,10 +308,10 @@ class TrainingCenterDatabase:
 @importer( type=TCX_TYPE, activity_cls=Activity, recording=True )
 class TCXImporter( XMLHandler ):
 
-	def load_data( self, content: Union[bytes, str], **kwargs ) -> Any:
+	def load_raw( self, content: Union[bytes, str], **kwargs ) -> Any:
 		return fromstring( content )
 
-	def postprocess_data( self, raw: Any, **kwargs ) -> Any:
+	def load_data( self, raw: Any, **kwargs ) -> Any:
 		return TrainingCenterDatabase.from_xml( raw )
 
 	def preprocess_data( self, data: Any, **kwargs ) -> Any:

@@ -20,7 +20,7 @@ GPX_TYPE = 'application/gpx+xml'
 @importer( type=GPX_TYPE, activity_cls=GPX, recording=True )
 class GPXImporter( ResourceHandler ):
 
-	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
+	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return parse_gpx( content )
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:

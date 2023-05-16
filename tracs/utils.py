@@ -24,7 +24,7 @@ from tracs.config import CONSOLE
 T = TypeVar('T')
 
 INT_COLON = rxcompile( '\d:.+' )
-TIMEDELTA = rxcompile( '((?P<days>\d\d):)?(?P<hours>\d\d):(?P<minutes>\d\d):(?P<seconds>\d\d)' )
+TIMEDELTA = rxcompile( '((?P<days>\d\d):)?(?P<hours>\d\d):(?P<minutes>\d\d):(?P<seconds>\d\d)(\.(?P<fraction>\d{1,6}))?' )
 
 @dataclass
 class UtilityConfiguration:
@@ -141,13 +141,19 @@ def timedelta_to_str( td: timedelta ) -> str:
 		s = f'{days}:0{s}' if INT_COLON.match( s ) else f'{days}:{s}'
 	else:
 		s = f'0{s}' if INT_COLON.match( s ) else s
+
 	return s
 
 def str_to_timedelta( s: str ) -> Optional[timedelta]:
 	if m := TIMEDELTA.fullmatch( s ):
 		days = int( m.groupdict().get( 'days' ) ) if m.groupdict().get( 'days' ) is not None else 0
 		hours, minutes, seconds = int( m.groupdict().get( 'hours' ) ), int( m.groupdict().get( 'minutes' ) ), int( m.groupdict().get( 'seconds' ) )
-		return timedelta( days=days, hours=hours, minutes=minutes, seconds=seconds )
+		if fraction := m.groupdict().get( 'fraction' ):
+			fraction = fraction.ljust( 6, '0' )
+			millis, micros = int( fraction[0:3] ), int( fraction[3:] )
+		else:
+			millis, micros = 0, 0
+		return timedelta( days=days, hours=hours, minutes=minutes, seconds=seconds, milliseconds=millis, microseconds=micros )
 	else:
 		return None
 

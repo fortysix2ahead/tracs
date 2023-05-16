@@ -131,6 +131,18 @@ def test_timedelta_str():
 	assert str_to_timedelta( '03:02:28:17' ) == timedelta( days = 3, hours = 2, minutes = 28, seconds = 17 )
 	assert str_to_timedelta( '12:02:28:17' ) == timedelta( days = 12, hours = 2, minutes = 28, seconds = 17 )
 
+	# allow microseconds
+	assert timedelta_to_str( timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=3 ) ) == '00:00:17.003000'
+	assert timedelta_to_str( timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=303 ) ) == '00:00:17.303000'
+	assert timedelta_to_str( timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=3, microseconds=4 ) ) == '00:00:17.003004'
+	assert timedelta_to_str( timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=3, microseconds=430 ) ) == '00:00:17.003430'
+	assert timedelta_to_str( timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=303, microseconds=430 ) ) == '00:00:17.303430'
+
+	assert str_to_timedelta( '00:00:17.2' ) == timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=200, microseconds=0 )
+	assert str_to_timedelta( '00:00:17.202' ) == timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=202, microseconds=0 )
+	assert str_to_timedelta( '00:00:17.2026' ) == timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=202, microseconds=600 )
+	assert str_to_timedelta( '00:00:17.111222' ) == timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=111, microseconds=222 )
+
 def test_uri_parsing():
 	result = urlparse( 'polar:1001' )
 	assert result.scheme == 'polar' and result.path == '1001'

@@ -13,7 +13,7 @@ class JSONHandler( ResourceHandler ):
 
 	options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
-	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
+	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return load_json( content )
 
 	def save_data( self, data: Any, **kwargs ) -> bytes:

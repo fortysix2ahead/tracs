@@ -286,7 +286,7 @@ class WazeAccountActivityImporter( CSVHandler ):
 	def __init__( self ) -> None:
 		super().__init__( resource_type=WAZE_ACCOUNT_ACTIVITY_TYPE, activity_cls=AccountActivity )
 
-	def postprocess_data( self, raw: Any, **kwargs ) -> Any:
+	def load_data( self, raw: Any, **kwargs ) -> Any:
 		account_activity = AccountActivity()
 		while raw:
 			line = raw.pop( 0 )
@@ -380,7 +380,7 @@ class WazeAccountInfoImporter( CSVHandler ):
 	def __init__( self ) -> None:
 		super().__init__( resource_type=WAZE_ACCOUNT_INFO_TYPE, activity_cls=AccountInfo )
 
-	def postprocess_data( self, raw: Any, **kwargs ) -> Any:
+	def load_data( self, raw: Any, **kwargs ) -> Any:
 		account_info = AccountInfo()
 		while raw:
 			line = raw.pop( 0 )
@@ -416,10 +416,10 @@ class WazeAccountInfoImporter( CSVHandler ):
 @importer( type=WAZE_TYPE, activity_cls=WazeActivity, summary=True )
 class WazeImporter( ResourceHandler ):
 
-	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
+	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return LocationDetail( coordinates=content.decode( 'UTF-8' ) )
 
-	def postprocess_data( self, raw: Any, **kwargs ) -> Any:
+	def load_data( self, raw: Any, **kwargs ) -> Any:
 		return WazeActivity( raw.as_point_list() )
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:

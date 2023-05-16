@@ -214,8 +214,8 @@ class PersonalTrainerImporter( XMLHandler ):
 	def __init__( self ) -> None:
 		super().__init__( resource_type=POLAR_EXERCISE_DATA_TYPE, activity_cls=PolarExerciseDataActivity )
 
-	def postprocess_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
-		xml = super().postprocess_data( data, text, content, path, url )
+	def load_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
+		xml = super().load_data( data, text, content, path, url )
 		root = xml.getroot()
 		data = {
 			'time': root.find( self._ns( 'calendar-items/exercise/time' ) ).text,

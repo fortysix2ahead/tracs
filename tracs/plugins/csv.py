@@ -17,7 +17,7 @@ class CSVHandler( ResourceHandler ):
 
 		self._field_size_limit = kwargs.get( 'field_size_limit', DEFAULT_FIELD_SIZE_LIMIT ) # keep this later use
 
-	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
+	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return [ r for r in csv_reader( self.as_str( content ).splitlines() ) ]
 
 	@property

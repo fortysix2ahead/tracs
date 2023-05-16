@@ -10,5 +10,5 @@ XML_TYPE = 'application/xml'
 @importer( type=XML_TYPE )
 class XMLHandler( ResourceHandler ):
 
-	def load_data( self, content: Union[bytes,str], **kwargs ) -> Any:
+	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return fromstring( content )

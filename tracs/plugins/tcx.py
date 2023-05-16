@@ -314,7 +314,7 @@ class TCXImporter( XMLHandler ):
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		return TrainingCenterDatabase.from_xml( raw )
 
-	def preprocess_data( self, data: Any, **kwargs ) -> Any:
+	def save_data( self, data: Any, **kwargs ) -> Any:
 		return data
 
 	def as_activity( self, resource: Resource ) -> Optional[TracsActivity]:

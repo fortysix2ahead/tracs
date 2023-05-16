@@ -16,5 +16,5 @@ class JSONHandler( ResourceHandler ):
 	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return load_json( content )
 
-	def save_data( self, data: Any, **kwargs ) -> bytes:
+	def save_raw( self, data: Any, **kwargs ) -> bytes:
 		return save_json( data, option=JSONHandler.options )

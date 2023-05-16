@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from logging import getLogger
 from pathlib import Path
 from re import match
 from sys import exit as sysexit
 from time import time as current_time
-from typing import Any, cast, Dict, List, Mapping, Optional, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 from zipfile import BadZipFile
 
 from bs4 import BeautifulSoup
@@ -21,7 +21,7 @@ from rich.prompt import Prompt
 
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes, ActivityTypes as Types
-from tracs.config import ApplicationContext, APPNAME, console
+from tracs.config import ApplicationContext, APPNAME
 from tracs.inout import load_resource
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSON_TYPE, JSONHandler
@@ -30,7 +30,7 @@ from tracs.plugins.xml import XMLHandler
 from tracs.registry import importer, Registry, resourcetype, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
-from tracs.utils import seconds_to_time, seconds_to_time as stt
+from tracs.utils import seconds_to_time
 
 log = getLogger( __name__ )
 
@@ -196,15 +196,13 @@ class PolarFlowImporter( JSONHandler ):
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: PolarFlowExercise = resource.data
 		return Activity(
-			# local_id=activity.local_id,
-			# uid = f'{SERVICE_NAME}:{activity.local_id}', # todo: remove later?
 			uids = [f'{SERVICE_NAME}:{activity.local_id}'],
 			name = activity.title,
 			type = activity.get_type(),
 			time = parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
 			localtime = parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
 			distance = activity.distance,
-			duration = stt( activity.duration / 1000 ) if activity.duration else None,
+			duration = timedelta( seconds = activity.duration / 1000 ) if activity.duration else None,
 			calories = activity.calories,
 		)
 
@@ -246,8 +244,8 @@ class Polar( Service ):
 		self._session = None
 		self._logged_in = False
 
-		self.importer: PolarFlowImporter = cast( PolarFlowImporter, Registry.importer_for( POLAR_FLOW_TYPE ) )
-		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
+		self.importer: PolarFlowImporter = Registry.importer_for( POLAR_FLOW_TYPE )
+		self.json_handler: JSONHandler = Registry.importer_for( JSON_TYPE )
 
 	def _link_path( self, pa: Activity, ext: str ) -> Path or None:
 		if pa.id:
@@ -281,8 +279,13 @@ class Polar( Service ):
 	def export_url( self ) -> str:
 		return f'{self.base_url}/api/export/training'
 
-	def events_url_for( self, year ) -> str:
-		return f'{self.events_url}?start=1.1.{year}&end=31.12.{year}'
+	def events_url_for( self, range_from: datetime, range_to: datetime, year: Optional[int] = None ) -> str:
+		if year:
+			range_from, range_to = datetime( year, 1, 1 ), datetime( year, 12, 31 )
+		if range_from and range_to:
+			return f'{self.events_url}?start={range_from.strftime("%d.%m.%Y")}&end={range_to.strftime("%d.%m.%Y")}'
+		else:
+			return self.all_events_url()
 
 	def all_events_url( self ):
 		return f'{self.events_url}?start=1.1.1970&end=1.1.{datetime.utcnow().year + 1}'
@@ -353,14 +356,21 @@ class Polar( Service ):
 			return []
 
 		try:
-			json_resource = self.json_handler.load( url=self.all_events_url(), headers=HEADERS_API, session=self._session )
-			resources = []
+			url = self.events_url_for( range_from=kwargs.get( 'range_from' ), range_to=kwargs.get( 'range_to' ) )
+			json_list = self.json_handler.load( url=url, headers=HEADERS_API, session=self._session )
 
-			for item in json_resource.raw:
-				local_id = _local_id( item )
-				resources.append( self.importer.save( item, uid=f'{self.name}:{local_id}', resource_path=f'{local_id}.json', resource_type=POLAR_FLOW_TYPE, status=200, source=self.url_for_id( local_id ), summary=True ) )
-
-			return resources
+			return [
+				self.importer.save_to_resource(
+					content=self.json_handler.save_raw( j ),
+					raw=j,
+					data=self.importer.load_data( j ),
+					uid=f'{self.name}:{ _local_id( j ) }',
+					path=f'{ _local_id( j ) }.json',
+					type=POLAR_FLOW_TYPE,
+					source=self.url_for_id( _local_id( j ) ),
+					summary = True,
+				) for j in json_list.raw
+			]
 
 		except RuntimeError:
 			log.error( f'error fetching activity ids' )

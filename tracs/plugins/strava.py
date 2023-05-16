@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from itertools import zip_longest
 from logging import getLogger
@@ -176,18 +176,26 @@ class Strava( Service ):
 
 		resources = []
 
-		for a in self._client.get_activities( after=datetime( 1970, 1, 1 ), before=datetime.utcnow() ):
+		after = kwargs.get( 'range_from' )
+		before = kwargs.get( 'range_to' )
+		first_year = kwargs.get( 'first_year' )
+
+		if after is None or before is None:
+			after, before = datetime( first_year, 1, 1 ), datetime.utcnow() + timedelta( days = 1 )
+
+		for a in self._client.get_activities( after=after, before=before ):
 			self.ctx.advance( f'activity {a.id}' )
 
-			resources.append( self.importer.save(
-					a,
-					uid = f'{self.name}:{a.id}',
-					resource_path = f'{a.id}.json',
-					resource_type=STRAVA_TYPE,
-					source=self.url_for_id( a.id ),
-					summary = True,
-				)
-			)
+			resources.append( self.importer.save_to_resource(
+				content=self.json_handler.save_raw( a.to_dict() ),
+				raw = a.to_dict(),
+				data = a,
+				uid = f'{self.name}:{a.id}',
+				path = f'{a.id}.json',
+				type=STRAVA_TYPE,
+				source=self.url_for_id( a.id ),
+				summary = True,
+			) )
 
 		#	self.ctx.complete( 'done' )
 

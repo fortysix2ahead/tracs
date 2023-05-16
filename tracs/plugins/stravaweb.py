@@ -252,6 +252,10 @@ class Strava( Service ):
 				self.ctx.advance( f'activities {(page - 1) * FETCH_PAGE_SIZE} to {page * FETCH_PAGE_SIZE} (batch {page})' )
 				models.extend( [m for m in self._session.get( url, params={ **parameters, 'page': str( page ) }, headers=HEADERS_API ).json().get( 'models' )] )
 
+				# can't query for the last X days, so we need to check for dates directly
+				if to_isotime( models[-1].get( 'start_time' ) ) < after:
+					break
+
 			return [
 				self._importer.save_to_resource(
 					content=self._json_handler.save_raw( m ),

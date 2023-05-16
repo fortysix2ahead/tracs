@@ -9,6 +9,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
 
+from dateutil.tz import UTC
 from fs.base import FS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
@@ -317,10 +318,10 @@ class Service( Plugin ):
 		days_range = kwargs.get( 'days_range', 90 )
 
 		if fetch_all:
-			range_from = datetime( first_year, 1, 1 )
+			range_from = datetime( first_year, 1, 1, tzinfo=UTC )
 		else:
-			range_from = datetime.utcnow() - timedelta( days = days_range )
-		range_to = datetime.utcnow() + timedelta( days=1 )
+			range_from = datetime.utcnow().astimezone( UTC ) - timedelta( days = days_range )
+		range_to = datetime.utcnow().astimezone( UTC ) + timedelta( days=1 )
 
 		skip_fetch = kwargs.get( 'skip_fetch', False )
 		skip_download = kwargs.get( 'skip_download', False )

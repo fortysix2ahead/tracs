@@ -3,26 +3,27 @@ from __future__ import annotations
 
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Union
-from typing import Optional
-from typing import Type
+from typing import Any, Optional, Type, Union
 
 from dataclass_factory import Factory
-from requests import Response
-from requests import Session
+from requests import Response, Session
 
-from .activity import Activity
-from .resources import Resource
+from tracs.activity import Activity
+from tracs.resources import Resource
 
 log = getLogger( __name__ )
 
 class ResourceHandler:
 
+	resource_type: Optional[str] = None
+
 	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
-		self._activity_cls: Optional[Type] = activity_cls
 		self._type: Optional[str] = resource_type
+		self._activity_cls: Optional[Type] = activity_cls
+		# todo: factoty field could be moved into JSON handler, same may be true for activity_cls field
 		self._factory: Factory = Factory( debug_path=True, schemas={} )
 
+		# todo: are these fields really needed? probably not ...
 		self.resource: Optional[Resource] = None
 		self.content: Optional[Union[bytes,str]] = None
 		self.raw: Any = None
@@ -151,11 +152,27 @@ class ResourceHandler:
 		self._activity_cls = cls
 
 	# noinspection PyMethodMayBeStatic
-	def preprocess_data( self, data: Any, **kwargs ) -> Any:
-		return data
+	def save_data( self, data: Any, **kwargs ) -> Any:
+		"""
+		Transforms structured data into raw data, for instance from a dataclass to a dict.
+		By default, this simply returns the data and may be overridden in subclasses.
+		"""
+		if self._activity_cls:
+			try:
+				return self._factory.dump( data, self._activity_cls )
+			except RuntimeError:
+				log.error( f'unable to transform raw data into structured data by using the factory for {self._activity_cls}', exc_info=True )
+				return data
+		else:
+			return data
 
-	def save_data( self, data: Any, **kwargs ) -> bytes:
-		pass
+	def save_raw( self, data: Any, **kwargs ) -> bytes:
+		"""
+		Transforms raw data into bytes.
+		By default, this calls __repr__() and encodes the result with UTF-8.
+		This method is supposed to be implemented in subclasses.
+		"""
+		return data.__repr__().encode( 'UTF-8' )
 
 	# noinspection PyMethodMayBeStatic
 	def save_to_path( self, content: bytes, path: Path, **kwargs ) -> None:
@@ -163,31 +180,20 @@ class ResourceHandler:
 
 	# noinspection PyMethodMayBeStatic
 	def save_to_url( self, content: bytes, url: str, **kwargs ) -> None:
-		pass
+		raise NotImplementedError
 
 	# noinspection PyMethodMayBeStatic
-	def save_to_resource( self, content: bytes, **kwargs ) -> Resource:
-		return Resource(
-			raw = kwargs.get( 'raw' ),
-			data = kwargs.get( 'data' ),
-			content = content,
-			uid = kwargs.get( 'uid' ),
-			path = kwargs.get( 'resource_path' ),
-			source = kwargs.get( 'source' ),
-			status = kwargs.get( 'status' ),
-			summary = kwargs.get( 'summary' ),
-			type = kwargs.get( 'resource_type' ),
-		)
+	def save_to_resource( self, content, raw, data, **kwargs ) -> Resource:
+		return Resource( raw = raw, data = data, content = content, **kwargs )
 
 	def save( self, data: Any, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Resource]:
-		# allow sub classes to preprocess data
-		raw = self.preprocess_data( data )
+		raw = self.save_data( data )
 
-		content: bytes = self.save_data( raw, **kwargs )
+		content = self.save_raw( raw, **kwargs )
 
 		if path:
 			self.save_to_path( content, path, **kwargs )
 		elif url:
 			self.save_to_url( content, url, **kwargs )
-		else:
-			return self.save_to_resource( content, raw=raw, data=data, **kwargs )
+
+		return self.save_to_resource( content=content, raw=raw, data=data, **kwargs )

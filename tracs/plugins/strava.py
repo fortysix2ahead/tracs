@@ -54,7 +54,7 @@ class StravaActivity( StravalibActivity ):
 @importer( type=STRAVA_TYPE, activity_cls=StravaActivity, summary=True )
 class StravaImporter( JSONHandler ):
 
-	def preprocess_data( self, data: Any, **kwargs ) -> Any:
+	def save_data( self, data: Any, **kwargs ) -> Any:
 		# filter out everything that is None + 'athlete' dict
 		return { k: v for k, v in data.to_dict().items() if k != 'athlete' and v is not None }
 

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, timedelta
 from logging import getLogger
+from pathlib import Path
 from re import DOTALL, match
 from sys import exit as sysexit
 from typing import Any, cast, Dict, List, Optional, Tuple, Union
@@ -84,17 +85,17 @@ class BikecitizensRecording:
 @dataclass
 class BikecitizensActivity:
 
-	id: int = field( default=None )
 	average_speed: float = field( default=None )
+	cccode: str = field( default=None )
 	distance: int = field( default=None )
 	duration: int = field( default=None )
-	start_time: str = field( default=None )
-	postprocessed: bool = field( default=None )
-	postproc_cnt: int = field( default=None )
-	uuid: str = field( default=None )
-	cccode: str = field( default=None )
-	tags: List[str] = field( default_factory=list )
+	id: int = field( default=None )
 	ping_points: List[str] = field( default_factory=list )
+	postproc_cnt: int = field( default=None )
+	postprocessed: bool = field( default=None )
+	start_time: str = field( default=None )
+	tags: List[str] = field( default_factory=list )
+	uuid: str = field( default=None )
 
 	@property
 	def local_id( self ) -> int:
@@ -115,16 +116,16 @@ class BikecitizensImporter( JSONHandler ):
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: BikecitizensActivity = resource.data
 		time = parse( activity.start_time )
-		duration = seconds_to_time( activity.duration )
+		duration = timedelta( seconds=activity.duration )
 		return Activity(
 			type = ActivityTypes.bike,
 			speed = activity.average_speed,
 			distance = activity.distance,
 			duration = duration,
 			time = time,
-			time_end = time + timedelta( hours=duration.hour, minutes=duration.minute, seconds=duration.second ),
+			time_end = time + duration,
 			localtime = time.astimezone( tzlocal() ),
-			localtime_end = time.astimezone( tzlocal() ) + timedelta( hours=duration.hour, minutes=duration.minute, seconds=duration.second ),
+			localtime_end = time.astimezone( tzlocal() ) + duration,
 			tags = activity.tags,
 			uids=[f'{SERVICE_NAME}:{activity.local_id}'],
 		)
@@ -132,7 +133,7 @@ class BikecitizensImporter( JSONHandler ):
 # service
 
 @service
-class Bikecitizens( Service, Plugin ):
+class Bikecitizens( Service ):
 
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
@@ -144,7 +145,7 @@ class Bikecitizens( Service, Plugin ):
 		self._api_key = None
 		self._session = None
 
-		self.importer: BikecitizensImporter = cast( BikecitizensImporter, Registry.importer_for( BIKECITIZENS_TYPE ) )
+		self.importer: BikecitizensImporter = Registry.importer_for( BIKECITIZENS_TYPE )
 		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
 
 	@property
@@ -163,7 +164,12 @@ class Bikecitizens( Service, Plugin ):
 	def user_tracks_url( self ) -> str:
 		return f'{self._api_url}/api/v1/tracks/user/{self._user_id}'
 
-	# sample: https://api.bikecitizens.net/api/v1/users/{user_id}/stats?start=2010-01-01&end=2022-12-31
+	def tracks_url( self, range_from: datetime, range_to: datetime ) -> str:
+		url = self.user_tracks_url
+		if range_from and range_to:
+			url = f'{url}?start={range_from.strftime( "%Y-%m-%d" )}&end={ range_to.strftime( "%Y-%m-%d" ) }'
+		return url
+
 	def stats_url( self, year: int ) -> str:
 		return f'{self.user_url}/stats?start={year}-01-01&end={year}-12-31'
 
@@ -246,17 +252,24 @@ class Bikecitizens( Service, Plugin ):
 			return []
 
 		try:
-			response = options( url=self.user_tracks_url, headers=HEADERS_OPTIONS )
-			json_resource = self.json_handler.load( url=self.user_tracks_url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } }, session=self._session )
+			url = self.tracks_url( range_from=kwargs.get( 'range_from' ) , range_to=kwargs.get( 'range_to' ) )
+			response = options( url=url, headers=HEADERS_OPTIONS )
+			json_list = self.json_handler.load( url=url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } }, session=self._session )
 
-			resources: List[Resource] = []
-			for item in json_resource.raw:
-				resources.append( self.importer.save( item, uid = f'{self.name}:{item["id"]}', resource_path=f'{item["id"]}.json', resource_type=BIKECITIZENS_TYPE, status = 200, summary = True ) )
-
-			return resources
+			return [
+				self.importer.save_to_resource(
+					content=self.json_handler.save_raw( j ),
+					raw=j,
+					data=self.importer.load_data( j ),
+					uid=f'{self.name}:{j.get( "id" )}',
+					path=f'{j.get( "id" )}.json',
+					type=BIKECITIZENS_TYPE,
+					summary = True,
+				) for j in json_list.raw
+			]
 
 		except RuntimeError:
-			log.error( f'error fetching activity ids', exc_info=True )
+			log.error( f'error fetching summaries', exc_info=True )
 			return []
 
 	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:

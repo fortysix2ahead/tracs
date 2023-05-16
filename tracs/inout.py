@@ -4,30 +4,25 @@ from os import system
 from pathlib import Path
 from re import compile
 from typing import List, Optional, Union
-from urllib.parse import urlparse as parse_url
 
 from dateutil.tz import gettz
 from rich.prompt import Confirm
 from tzlocal import get_localzone_name
 
-from .activity import Activity
-from .config import ApplicationContext
-from .db import ActivityDb
-from .plugins.gpx import GPX_TYPE
-from .plugins.local import SERVICE_NAME as LOCAL_SERVICE_NAME
-from .registry import Registry, service_for, service_names
-from .resources import Resource
-from .service import Service
-from .streams import as_str
-from .ui import diff_table
-from .uid import UID
+from tracs.activity import Activity
+from tracs.config import ApplicationContext
+from tracs.db import ActivityDb
+from tracs.plugins.gpx import GPX_TYPE
+from tracs.registry import Registry, service_names
+from tracs.resources import Resource
+from tracs.service import Service
+from tracs.streams import as_str
+from tracs.ui import diff_table
 
 log = getLogger( __name__ )
 
 TAG_OFFSET_CORRECTION = 'offset'
 TAG_TIMEZONE_CORRECTION = 'timezone'
-
-DEFAULT_IMPORTER = 'auto'
 
 MAXIMUM_OPEN = 8
 
@@ -36,43 +31,19 @@ MAXIMUM_OPEN = 8
 
 uid_pattern = compile( f'^({"|".join( service_names() )}):(\d+)$' )
 
-def import_activities( ctx: Optional[ApplicationContext], importer: Optional[str], sources: List[str], **kwargs ):
-	# use all registered services if nothing is provided
-	# services = [ s for i in importers if ( s := Registry.services.get( i ) ) ]
-
-	sources = sources or service_names()
-
-	for src in sources:
-		uid = UID( src )
-
-		if uid.denotes_service() and (service := Registry.services.get( src )):
-			log.debug( f'importing from service {src}' )
-			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
-
-		elif uid.denotes_activity() and (service := service_for( uid.classifier )):
-			service.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, uids=[src], **kwargs )
-
-		elif uid.denotes_resource() and (service := service_for( uid.classifier )):
-			raise NotImplementedError
-
+def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **kwargs ):
+	for src in (sources or service_names()):
+		if service := Registry.services.get( src ):
+			log.debug( f'importing activities from service {src}' )
+			service.import_activities(
+				ctx=ctx,
+				force=ctx.force,
+				pretend=ctx.pretend,
+				first_year=ctx.config['import']['first_year'].get( int ),
+				days_range=ctx.config['import']['range'].get( int ),
+				**kwargs )
 		else:
-			# try to use src as path
-			try:
-				path = Path( Path.cwd(), src ).absolute().resolve()
-				if path.exists():
-					log.debug( f'attempting to import from path {path}' )
-					kwargs['skip_download'] = False
-					kwargs['path'] = path
-
-					s = Registry.services.get( importer, Registry.services.get( LOCAL_SERVICE_NAME ) )
-					s.import_activities( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
-			except RuntimeError:
-				log.error( 'unable to import from path', exc_info=True )
-
-				try:
-					url = parse_url( src )
-				except:
-					raise NotImplementedError
+			log.error( f'skipping import from service {src}, either service is unknown or disabled' )
 
 def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
 	if len( activities ) > MAXIMUM_OPEN:

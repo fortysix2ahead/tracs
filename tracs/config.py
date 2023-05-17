@@ -201,7 +201,7 @@ class ApplicationContext:
 			'library': self.lib_dir,
 		}.items() if v is not None }
 		self.config = ApplicationConfiguration( config_file_path=os_path_join( self.config_dir, self.config_file ), args = args )
-		self.state = ApplicationConfiguration( config_file_path=os_path_join( self.config_dir, self.state_file ) )
+		self.state = ApplicationStateCls( state_file_path=os_path_join( self.config_dir, self.state_file ) )
 
 		# update global options fields from config -> todo: this should be removed in the future, access should be like cfg.debug
 		self.debug = self.config['debug'].get( bool )

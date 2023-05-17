@@ -18,4 +18,3 @@ plugins:
     session:
 
   waze:
-    takeouts:

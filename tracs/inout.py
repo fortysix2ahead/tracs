@@ -71,9 +71,9 @@ def reimport_activities(
 		ignore_fields: List[str] = None,
 		ctx: ApplicationContext = None ):
 
-	force = ctx.force
+	log.debug( f'reimporting {len( activities )} activities, with force={ctx.force}' )
+
 	ignore_fields = ignore_fields if ignore_fields is not None else []
-	log.debug( f'reimporting {len( activities )} activities, with force={force}' )
 
 	try:
 		if offset.startswith( '-' ):
@@ -91,7 +91,7 @@ def reimport_activities(
 		timezone = None
 
 	# when non-interactive (a.k.a. force) show a progress bar
-	if force:
+	if ctx.force:
 		ctx.start( f'reimporting activity data', total=len( activities ) )
 
 	for a in activities:
@@ -116,7 +116,7 @@ def reimport_activities(
 			new_activity.timezone = get_localzone_name()
 			new_activity.localtime = new_activity.time.astimezone( gettz( a.timezone ) )
 
-		if force or _confirm_init( a, new_activity, ignore_fields, ctx ):
+		if ctx.force or _confirm_init( a, new_activity, ignore_fields, ctx ):
 			ctx.db.upsert_activity( new_activity )
 
 	ctx.db.commit()

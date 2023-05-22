@@ -248,9 +248,6 @@ class Bikecitizens( Service ):
 		return self._logged_in
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		if not self.login():
-			return []
-
 		try:
 			url = self.tracks_url( range_from=kwargs.get( 'range_from' ) , range_to=kwargs.get( 'range_to' ) )
 			response = options( url=url, headers=HEADERS_OPTIONS )

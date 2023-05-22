@@ -169,11 +169,7 @@ class Strava( Service ):
 		return True
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		if not self.login():
-			return []
-
 		# self.ctx.start( f'fetching activity summaries from {self.display_name}' )
-
 		resources = []
 
 		after = kwargs.get( 'range_from' )

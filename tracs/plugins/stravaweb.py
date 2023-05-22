@@ -220,9 +220,6 @@ class Strava( Service ):
 			log.error( f'web login failed for {DISPLAY_NAME}, are the credentials correct?' )
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		if not self._session:
-			self.login()
-
 		after = kwargs.get( 'range_from' )
 		before = kwargs.get( 'range_to' )
 		first_year = kwargs.get( 'first_year' )

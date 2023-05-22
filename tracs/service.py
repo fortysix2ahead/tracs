@@ -326,6 +326,9 @@ class Service( Plugin ):
 		skip_fetch = kwargs.get( 'skip_fetch', False )
 		skip_download = kwargs.get( 'skip_download', False )
 
+		if not self.login():
+			return
+
 		# start fetch task
 		self.ctx.start( f'fetching activity data from {self.display_name}, ()' )
 

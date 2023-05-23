@@ -51,8 +51,8 @@ class Application( object ):
 		log.debug( f'triggered CLI with flags debug={ kwargs }' )
 		log.debug( f'using config dir: {self._ctx.config_dir} and library dir: {self._ctx.lib_dir}' )
 
-		# ---- open db from config_dir ----------------------------------------------
-		self._ctx.db = ActivityDb( path=self._ctx.db_dir_path, read_only=self._ctx.pretend )
+		# open db from config_dir
+		self._ctx.db = ActivityDb( path=self._ctx.db_dir_path, read_only=self._ctx.pretend, enable_index=self.ctx.config['db']['index'].get() )
 
 		# load plugins
 		from .registry import load as load_plugins

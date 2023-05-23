@@ -10,6 +10,7 @@ verbose: no # verbose mode, displays more log information
 # database configuration
 
 db:
+  index: no
 
 # configuration for printing activity/resource information
 

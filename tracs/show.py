@@ -146,6 +146,14 @@ def show_aggregate( activities: [Activity], ctx: ApplicationContext ) -> None:
 
 	console.print( table )
 
+def show_equipments( ctx: ApplicationContext ) -> None:
+	all_equipments = sorted( set().union( *[a.equipment for a in ctx.db.activities] ) )
+	ctx.console.print( Columns( all_equipments, padding=(0, 4), equal=True, column_first=True ) )
+
+def show_tags( ctx: ApplicationContext ) -> None:
+	all_tags = sorted( set().union( *[a.tags for a in ctx.db.activities] ) )
+	ctx.console.print( Columns( all_tags, padding=(0, 4), equal=True, column_first=True ) )
+
 def show_types( ctx: ApplicationContext ) -> None:
 	title = '[blue bold]Activity Types:[/blue bold] [green]value[/green] (display name)'
 	types = [f'[green]{t}[/green] ({ActivityTypes.get( t ).display_name})' for t in sorted( ActivityTypes.names() ) ]

@@ -17,7 +17,7 @@ def log_time_formatter( dt: Union[str, datetime] ) -> Text:
 	global LAST_LOG_TIME
 	dt_str = dt.strftime( "%H:%M:%S.%f" )
 	delta = dt - LAST_LOG_TIME
-	delta_str = f'{delta.seconds}.{str( delta.microseconds ).ljust( 6, "0" )}'
+	delta_str = f'{delta.seconds}.{str( delta.microseconds ).rjust( 6, "0" )}'
 	LAST_LOG_TIME = dt
 	return Text( f'{dt_str} +{delta_str}' )
 

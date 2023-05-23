@@ -110,6 +110,8 @@ class ActivityDb:
 		# self._index = DbIndex( self._activities, self._resources )
 
 	def _init_db_filesystem( self ):
+		log.debug( f'initializing db file system from db path = {self._db_path} and ready_only = {self._read_only}' )
+
 		self.dbfs = MultiFS() # multi fs composed of os/memory + memory
 
 		# operating system fs as underlay (resp. memory when no path is provided)
@@ -174,16 +176,20 @@ class ActivityDb:
 		)
 
 	def _load_db( self ):
+		log.debug( f'loading schema from {SCHEMA_NAME}' )
 		json = loads( self.dbfs.readbytes( SCHEMA_NAME ) )
 		self._schema = self._factory.load( json, Schema )
 
+		log.debug( f'loading schema from {RESOURCES_NAME}' )
 		json = loads( self.dbfs.readbytes( RESOURCES_NAME ) )
 		self._resources = self._factory.load( json, Dict[int, Resource] )
 
+		log.debug( f'loading schema from {ACTIVITIES_NAME}' )
 		json = loads( self.dbfs.readbytes( ACTIVITIES_NAME ) )
 		self._activities = self._factory.load( json, Dict[int, Activity] )
 
 	def _relate( self ):
+		log.debug( f'building resource/activity relations' )
 		for r in self.resources:
 			a = self.get_by_uid( r.uid )
 			a.__resources__.append( r )

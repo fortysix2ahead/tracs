@@ -194,17 +194,17 @@ class ActivityDb:
 		)
 
 	def _load_db( self ):
-		log.debug( f'loading schema from {SCHEMA_NAME}' )
 		json = loads( self.dbfs.readbytes( SCHEMA_NAME ) )
 		self._schema = self._factory.load( json, Schema )
+		log.debug( f'loaded database schema from {SCHEMA_NAME}, schema version = {self._schema.version}' )
 
-		log.debug( f'loading schema from {RESOURCES_NAME}' )
 		json = loads( self.dbfs.readbytes( RESOURCES_NAME ) )
 		self._resources = self._factory.load( json, Dict[int, Resource] )
+		log.debug( f'loaded {len( self._resources )} resource entries from {RESOURCES_NAME}' )
 
-		log.debug( f'loading schema from {ACTIVITIES_NAME}' )
 		json = loads( self.dbfs.readbytes( ACTIVITIES_NAME ) )
 		self._activities = self._factory.load( json, Dict[int, Activity] )
+		log.debug( f'loaded {len( self._activities )} activity entries from {ACTIVITIES_NAME}' )
 
 	def commit( self, do_commit: bool = True ):
 		if do_commit:

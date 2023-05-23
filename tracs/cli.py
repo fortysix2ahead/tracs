@@ -333,9 +333,10 @@ def set_type( ctx: ApplicationContext, filters, activity_type ):
 	set_activity_type( ctx, list( ctx.db.find( filters ) ), activity_type=activity_type )
 
 @cli.command( help='displays all available activity types' )
+@option( '-u', '--used-only', required=False, is_flag=True, default=False, help='display used types only' )
 @pass_obj
-def types( ctx ):
-	show_types( ctx )
+def types( ctx, used_only: bool = False ):
+	show_types( ctx, used_only=used_only )
 
 @cli.command( help='Displays the version number and exits.' )
 @pass_obj

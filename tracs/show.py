@@ -159,7 +159,12 @@ def show_tags( ctx: ApplicationContext ) -> None:
 	all_tags = sorted( set().union( *[a.tags for a in ctx.db.activities] ) )
 	ctx.console.print( Columns( all_tags, padding=(0, 4), equal=True, column_first=True ) )
 
-def show_types( ctx: ApplicationContext ) -> None:
+def show_types( ctx: ApplicationContext, used_only: bool = False ) -> None:
+	if used_only:
+		all_type_names = sorted( set( [ a.type.name for a in ctx.db.activities if a.type is not None ] ) )
+	else:
+		all_type_names = sorted( ActivityTypes.names() )
+	
 	title = '[blue bold]Activity Types:[/blue bold] [green]value[/green] (display name)'
-	types = [f'[green]{t}[/green] ({ActivityTypes.get( t ).display_name})' for t in sorted( ActivityTypes.names() ) ]
+	types = [f'[green]{t}[/green] ({ActivityTypes.get( t ).display_name})' for t in all_type_names ]
 	ctx.console.print( Columns( types, padding=(0, 4), equal=True, column_first=True, title=title ) )

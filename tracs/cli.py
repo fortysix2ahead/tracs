@@ -16,7 +16,7 @@ from tracs.inout import export_activities, import_activities, open_activities, r
 from tracs.link import link_activities
 from tracs.list import inspect_activities, inspect_registry, inspect_resources, list_activities, show_config, show_fields
 from tracs.setup import setup as setup_application
-from tracs.show import show_activities, show_aggregate, show_equipments, show_resources, show_tags, show_types
+from tracs.show import show_activities, show_aggregate, show_equipments, show_keywords, show_resources, show_tags, show_types
 from tracs.validate import validate_activities
 
 log = getLogger( __name__ )
@@ -230,6 +230,11 @@ def set_cmd( filters ):
 @argument( 'filters', nargs=-1 )
 def unset( filters ):
 	pass
+
+@cli.command( help='Displays all existing keywords' )
+@pass_obj
+def keywords( ctx: ApplicationContext ):
+	show_keywords( ctx )
 
 @cli.command( help='Tags activities' )
 @option( '-a', '--all', 'all_tags', is_flag=True, required=False, help='lists all existing tags' )

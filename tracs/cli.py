@@ -16,7 +16,7 @@ from tracs.inout import export_activities, import_activities, open_activities, r
 from tracs.link import link_activities
 from tracs.list import inspect_activities, inspect_registry, inspect_resources, list_activities, show_config, show_fields
 from tracs.setup import setup as setup_application
-from tracs.show import show_activities, show_aggregate, show_resources, show_types
+from tracs.show import show_activities, show_aggregate, show_equipments, show_resources, show_tags, show_types
 from tracs.validate import validate_activities
 
 log = getLogger( __name__ )
@@ -238,7 +238,7 @@ def unset( filters ):
 @pass_obj
 def tag( ctx: ApplicationContext, filters, tags, all_tags: bool = False ):
 	if all_tags or not tags:
-		ctx.console.print( sorted( set().union( *[a.tags for a in ctx.db.activities] ) ) )
+		show_tags( ctx )
 	else:
 		tags = list( set( chain( *[ t.split( ',' ) for t in tags ] ) ) )
 		tag_activities( list( ctx.db.find( filters ) ), tags=tags, ctx=ctx )
@@ -260,7 +260,7 @@ def untag( ctx: ApplicationContext, filters, tags ):
 @pass_obj
 def equip( ctx: ApplicationContext, filters, equipments, all_equipments: bool = False ):
 	if all_equipments or not equipments:
-		ctx.console.print( sorted( set().union( *[a.equipment for a in ctx.db.activities] ) ) )
+		show_equipments( ctx )
 	else:
 		equipments = list( set( chain( *[ e.split( ',' ) for e in equipments ] ) ) )
 		equip_activities( list( ctx.db.find( filters ) ), equipments=equipments, ctx=ctx )

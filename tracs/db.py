@@ -3,12 +3,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from itertools import chain
+from itertools import chain, groupby
 from logging import getLogger
 from pathlib import Path
 from shutil import copytree
 from sys import exit as sysexit
-from typing import cast, Dict, List, Optional, Union
+from typing import cast, Dict, List, Optional, Tuple, Union
 
 from click import confirm
 from dataclass_factory import Factory, Schema as DataclassFactorySchema
@@ -81,9 +81,28 @@ class IdSchema( DataclassFactorySchema ):
 			mapping[str( key )] = mapping.pop( key )
 		return mapping
 
+class ActivityDbIndex:
+
+	UID_TO_ACTIVITY: Dict[str, Activity] = {}
+	UID_TO_RESOURCE: Dict[str, List[Resource]] = {}
+	UID_PATH_TO_RESOURCE: Dict[Tuple[str,str], Resource] = {}
+
+	def __init__( self, activity_map: Dict[int, Activity], resource_map: Dict[int, Resource] ):
+		self.__class__.UID_TO_ACTIVITY = { uid: a for a in activity_map.values() for uid in a.uids }
+		self.__class__.UID_TO_RESOURCE = { uid: list( it ) for uid, it in groupby( resource_map.values(), key=lambda r: r.uid ) }
+		self.__class__.UID_PATH_TO_RESOURCE = { (r.uid, r.path) for r in resource_map.values() }
+
+		self._relate_activities()
+
+	def _relate_activities( self ):
+		for uid, activity in self.UID_TO_ACTIVITY.items():
+			activity.__resources__ = self.UID_TO_RESOURCE.get( uid, [] )
+			for r in activity.__resources__:
+				r.__parent_activity__ = activity
+
 class ActivityDb:
 
-	def __init__( self, path: Optional[Path] = None, read_only: bool = False ):
+	def __init__( self, path: Optional[Path] = None, read_only: bool = False, enable_index: bool = False ):
 		"""
 		Creates an activity db, consisting of tiny db instances (meta + activities + resources + schema).
 
@@ -103,11 +122,10 @@ class ActivityDb:
 		# load content from disk
 		self._load_db()
 
-		# experimental: setup relations between resources and activities
-		self._relate()
-
-		# index
-		# self._index = DbIndex( self._activities, self._resources )
+		# experimental: create index and setup relations between resources and activities
+		if enable_index:
+			log.debug( f'creating db index' )
+			self._index = ActivityDbIndex( self.activity_map, self.resource_map )
 
 	def _init_db_filesystem( self ):
 		log.debug( f'initializing db file system from db path = {self._db_path} and ready_only = {self._read_only}' )
@@ -187,13 +205,6 @@ class ActivityDb:
 		log.debug( f'loading schema from {ACTIVITIES_NAME}' )
 		json = loads( self.dbfs.readbytes( ACTIVITIES_NAME ) )
 		self._activities = self._factory.load( json, Dict[int, Activity] )
-
-	def _relate( self ):
-		log.debug( f'building resource/activity relations' )
-		for r in self.resources:
-			a = self.get_by_uid( r.uid )
-			a.__resources__.append( r )
-			r.__parent_activity__ = a
 
 	def commit( self, do_commit: bool = True ):
 		if do_commit:

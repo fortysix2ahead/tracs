@@ -4,7 +4,8 @@ from datetime import time
 
 from pytest import mark
 
-from tracs.activity import Activity, ActivityPart
+from tracs.activity import Activity, ActivityPart, Fields
+from tracs.activity_types import ActivityTypes
 from tracs.resources import Resource
 from tracs.uid import UID
 
@@ -111,3 +112,9 @@ def test_resource():
 	assert type( r.content ) is bytes and len( r.content ) > 0
 	assert r.as_text() == some_string
 	assert r.text is None # todo: change to throw exception?
+
+def test_virtual_fields():
+	Fields.__resolvers__['type_icon'] = lambda act: 'U+1F3C3'
+	a = Activity( type=ActivityTypes.run )
+
+	assert a.vf.type_icon == 'U+1F3C3'

@@ -10,7 +10,6 @@ from pkgutil import walk_packages
 from re import match
 from typing import Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
-from confuse import NotFoundError
 from dataclass_factory import Factory, Schema
 
 from tracs.config import ApplicationContext, KEY_CLASSIFER
@@ -36,10 +35,8 @@ class Registry:
 	ctx: ApplicationContext = None
 	document_classes: Dict[str, Type] = {}
 	document_types: Dict[str, Type] = {}
-	downloaders = {}
 	event_listeners = {}
 	dataclass_factory = Factory( debug_path=True, schemas={} )
-	fetchers = {}
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
 	resource_types: Dict[str, ResourceType] = {}
@@ -339,12 +336,6 @@ def importer( *args, **kwargs ):
 		importer_cls( args[0] )
 	else:
 		raise RuntimeError( f'error in decorator @importer: {args}, {kwargs} (this should not happen!)' ) # should not happen
-
-def fetch( fn ):
-	return Registry.register_function( _spec( fn ), fn, Registry.fetchers )
-
-def download( fn ):
-	return Registry.register_function( _spec( fn ), fn, Registry.downloaders )
 
 def load( plugin_pkgs: List[str] = None, disabled: List[str] = None ):
 	plugin_pkgs = plugin_pkgs if plugin_pkgs else [NS_PLUGINS]

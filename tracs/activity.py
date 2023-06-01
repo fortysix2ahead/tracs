@@ -234,7 +234,10 @@ class Activity:
 			return getattr( self, name )
 		except AttributeError:
 			try:
-				return getattr( self.vf, name )
+				if name in Fields.__resolvers__.keys():
+					return Fields.__resolvers__.get( name )( self )
+				else:
+					return getattr( self.vf, name )
 			except AttributeError:
 				return None
 

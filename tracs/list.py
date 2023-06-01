@@ -43,9 +43,7 @@ def list_activities( activities: List[Activity], sort: str = False, reverse: boo
 		table.add_column( f'[blue]{h}' )
 
 	for a in activities:
-		row = [ fmt( getattr( a, f ) ) if hasattr( a, f ) else None for f in list_fields ]
-		table.add_row( *row )
-		# table.add_row( pp( a.doc_id ), a.name, fmt( a.type ), fmt( a.localtime ), pp( a.uids ) )
+		table.add_row( *[ fmt( a.getattr( f ) ) for f in list_fields ] )
 
 	if len( table.rows ) > 0:
 		console.print( table )

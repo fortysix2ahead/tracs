@@ -130,3 +130,5 @@ def test_virtual_fields():
 	a = Activity( type=ActivityTypes.run )
 	assert a.vf.extra_name == 'Extra Activity Name'
 	assert a.vf.additional_name == 'Another Additional Activity Name'
+
+	assert a.getattr( 'extra_name' ) == 'Extra Activity Name'

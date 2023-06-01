@@ -24,11 +24,15 @@ PROTECTED_FIELDS = [ 'id' ]
 class Fields:
 
 	__resolvers__: ClassVar[Dict[str, Callable]] = field( default={} )
-	__parent__: Activity = field( default=None )
 
-	def __getattribute__( self, name: str ) -> Any:
-		if name in Fields.__resolvers__.keys():
-			return Fields.__resolvers__[name]( self.__parent__ )
+	__parent__: Activity = field( default=None )
+	__values__: Dict[str, Any] = field( default_factory=dict )
+
+	def __getattr__( self, name: str ) -> Any:
+		if name in self.__values__:
+			return self.__values__.get( name )
+		elif name in self.__class__.__resolvers__:
+			return self.__class__.__resolvers__.get( name )( self.__parent__ )
 		else:
 			return super().__getattribute__( name )
 

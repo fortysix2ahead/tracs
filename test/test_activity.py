@@ -2,7 +2,7 @@
 from datetime import datetime
 from datetime import time
 
-from pytest import mark
+from pytest import mark, raises
 
 from tracs.activity import Activity, ActivityPart, Fields
 from tracs.activity_types import ActivityTypes
@@ -124,11 +124,29 @@ def test_virtual_fields():
 	def extra_name_2( a: Activity ):
 		return 'Another Additional Activity Name'
 
+	@virtualfield
+	def lowercase_name( a: Activity ):
+		return a.name.lower()
+
 	assert 'extra_name' in Registry.activity_field_resolvers.keys()
 	assert 'additional_name' in Registry.activity_field_resolvers.keys()
 
-	a = Activity( type=ActivityTypes.run )
+	a = Activity(
+		name='Afternoon Run',
+		type=ActivityTypes.run,
+	)
+	a.vf.__values__['fixed_value'] = 20
+	a.vf.__resolvers__['uppercase_name'] = lambda act: act.name.upper()
+
 	assert a.vf.extra_name == 'Extra Activity Name'
 	assert a.vf.additional_name == 'Another Additional Activity Name'
+	assert a.vf.fixed_value == 20
+	assert a.vf.lowercase_name == 'afternoon run'
+	assert a.vf.uppercase_name == 'AFTERNOON RUN'
+
+	with raises( AttributeError ):
+		assert a.vf.does_not_exist == 10
 
 	assert a.getattr( 'extra_name' ) == 'Extra Activity Name'
+	assert a.getattr( 'fixed_value' ) == 20
+	assert a.getattr( 'lowercase_name' ) == 'afternoon run'

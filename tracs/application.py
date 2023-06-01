@@ -55,8 +55,8 @@ class Application( object ):
 		self._ctx.db = ActivityDb( path=self._ctx.db_dir_path, read_only=self._ctx.pretend, enable_index=self.ctx.config['db']['index'].get() )
 
 		# load plugins
-		from .registry import load as load_plugins
-		load_plugins()
+		from tracs.registry import load as load_plugins
+		load_plugins( ctx=self.ctx )
 
 		# ---- create service instances ----
 		Registry.instantiate_services( ctx=self._ctx )

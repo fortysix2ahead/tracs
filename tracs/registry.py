@@ -10,6 +10,7 @@ from pkgutil import walk_packages
 from re import match
 from typing import Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
+from confuse import NotFoundError
 from dataclass_factory import Factory, Schema
 
 from tracs.activity import Fields as ActivityFields
@@ -294,7 +295,7 @@ def _register_function( *args, **kwargs ) -> Callable:
 			return _inner # args[0] contains the actual parameter
 
 def virtualfield( *args, **kwargs ):
-	return _register_function( *args, _mapping=Registry.activity_field_resolvers, _decorator_name='vfield', **kwargs )
+	return _register_function( *args, _mapping=Registry.activity_field_resolvers, _decorator_name='virtualfield', **kwargs )
 
 def resourcetype( *args, **kwargs ):
 	def reg_resource_type( cls ):
@@ -368,20 +369,24 @@ def importer( *args, **kwargs ):
 	else:
 		raise RuntimeError( f'error in decorator @importer: {args}, {kwargs} (this should not happen!)' ) # should not happen
 
-def load( plugin_pkgs: List[str] = None, disabled: List[str] = None ):
+def load( plugin_pkgs: List[str] = None, disabled: List[str] = None, ctx: ApplicationContext = None ):
 	plugin_pkgs = plugin_pkgs if plugin_pkgs else [NS_PLUGINS]
-	disabled = disabled if disabled else [ 'empty' ]
+	disabled = disabled if disabled else []
 
 	for plugin_pkg in plugin_pkgs:
 		plugins_module = import_module( plugin_pkg )
 		for finder, name, ispkg in walk_packages( plugins_module.__path__ ):
-			if name not in disabled:
-				qname = f'{plugin_pkg}.{name}'
-				try:
-					plugin = import_module( qname )
-					Registry.notify( EventTypes.plugin_loaded, plugin )
-					log.debug( f'imported plugin {plugin}' )
-				except ModuleNotFoundError:
-					log.debug( f'error imporing module {qname}' )
-			else:
-				log.debug( f'skipping import of disabled plugin {name} in package {plugin_pkg}' )
+			try:
+				if not ctx.config['plugins'][name]['enabled'].get() or name in disabled:
+					log.debug( f'skipping import of disabled plugin {name} in package {plugin_pkg}' )
+					continue
+			except NotFoundError:
+				pass
+
+			qname = f'{plugin_pkg}.{name}'
+			try:
+				log.debug( f'importing plugin {qname}' )
+				plugin = import_module( qname )
+				Registry.notify( EventTypes.plugin_loaded, plugin )
+			except ModuleNotFoundError:
+				log.error( f'error imporing module {qname}', exc_info=True )

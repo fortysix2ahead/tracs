@@ -9,6 +9,9 @@ plugins:
   empty:
     enabled: false
 
+  icons:
+    enabled: false
+
   local:
     enabled: true
 

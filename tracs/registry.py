@@ -12,6 +12,7 @@ from typing import Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from dataclass_factory import Factory, Schema
 
+from tracs.activity import Fields as ActivityFields
 from tracs.config import ApplicationContext, KEY_CLASSIFER
 from tracs.protocols import Handler, Importer, Service
 from tracs.resources import ResourceType
@@ -43,6 +44,9 @@ class Registry:
 	setup_functions: Dict[str, Callable] = {}
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
+
+	# register activity_field_resolvers with activity.Fields
+	ActivityFields.__resolvers__ = activity_field_resolvers
 
 	@classmethod
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
@@ -91,8 +95,10 @@ class Registry:
 
 	@classmethod
 	def register_activity_field_resolver( cls, field: str, fn: Callable ) -> None:
-		Registry.activity_field_resolvers[field] = fn
-		Registry.notify( EventTypes.activity_field_resolver_registered, field=field, resolver=fn )
+		if not ActivityFields.__resolvers__:
+			ActivityFields.__resolvers__ = cls.activity_field_resolvers
+		cls.activity_field_resolvers[field] = fn
+		cls.notify( EventTypes.activity_field_resolver_registered, field=field, resolver=fn )
 
 	# event handling
 
@@ -264,6 +270,31 @@ def _register( args, kwargs, dictionary, callable_fn = False ) -> Union[Type, Ca
 		return decorated_fn
 	else:
 		raise RuntimeError( 'unable to register function -> this needs to be reported' )
+
+def _register_function( *args, **kwargs ) -> Callable:
+
+	_decorator_name = kwargs.get( '_decorator_name' )
+	_mapping = kwargs.get( '_mapping' )
+	_parameter = None
+
+	def _inner( *inner_args ):
+		inner_module, inner_name = _spec( inner_args[0] )
+		_mapping[_parameter] = inner_args[0]
+		log.debug( f'registered {_decorator_name} function from {inner_module}#{inner_name} with parameter {_parameter}' )
+		return _parameter
+
+	if len( args ) == 1:
+		_parameter = args[0]
+		if isfunction( _parameter ): # decorated function without arguments
+			module, name = _spec( _parameter )
+			_mapping[name] = _parameter
+			log.debug( f'registered {_decorator_name} function from {module}#{name}' )
+			return _parameter
+		else:
+			return _inner # args[0] contains the actual parameter
+
+def virtualfield( *args, **kwargs ):
+	return _register_function( *args, _mapping=Registry.activity_field_resolvers, _decorator_name='vfield', **kwargs )
 
 def resourcetype( *args, **kwargs ):
 	def reg_resource_type( cls ):

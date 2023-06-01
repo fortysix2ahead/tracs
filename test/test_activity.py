@@ -6,6 +6,7 @@ from pytest import mark
 
 from tracs.activity import Activity, ActivityPart, Fields
 from tracs.activity_types import ActivityTypes
+from tracs.registry import Registry, virtualfield
 from tracs.resources import Resource
 from tracs.uid import UID
 
@@ -114,7 +115,18 @@ def test_resource():
 	assert r.text is None # todo: change to throw exception?
 
 def test_virtual_fields():
-	Fields.__resolvers__['type_icon'] = lambda act: 'U+1F3C3'
-	a = Activity( type=ActivityTypes.run )
 
-	assert a.vf.type_icon == 'U+1F3C3'
+	@virtualfield
+	def extra_name( a: Activity ):
+		return 'Extra Activity Name'
+
+	@virtualfield( 'additional_name' )
+	def extra_name_2( a: Activity ):
+		return 'Another Additional Activity Name'
+
+	assert 'extra_name' in Registry.activity_field_resolvers.keys()
+	assert 'additional_name' in Registry.activity_field_resolvers.keys()
+
+	a = Activity( type=ActivityTypes.run )
+	assert a.vf.extra_name == 'Extra Activity Name'
+	assert a.vf.additional_name == 'Another Additional Activity Name'

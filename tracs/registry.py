@@ -99,6 +99,10 @@ class Registry:
 		cls.rule_keywords[keyword.name] = keyword
 		log.debug( f'registered rule keyword "{keyword.name}"' )
 
+	@classmethod
+	def register_keywords( cls, *keywords: Keyword ):
+		[ cls.register_keyword( k ) for k in keywords ]
+
 	# field resolvers
 
 	@classmethod

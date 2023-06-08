@@ -12,6 +12,9 @@ plugins:
   icons:
     enabled: false
 
+  keywords:
+    enabled: true
+
   local:
     enabled: true
 

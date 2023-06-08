@@ -13,7 +13,8 @@ def floor_ceil( a: Arrow, frame: TIME_FRAMES ) -> Tuple[Arrow, Arrow]:
 def floor_ceil_str( a: Arrow, frame: TIME_FRAMES ) -> Tuple[str, ...]:
 	return tuple( f'd"{t.isoformat()}"' for t in floor_ceil( a, frame ) )
 
-KEYWORDS = [
+# noinspection PyTypeChecker
+Registry.register_keywords(
 	# time related keywords
 	Keyword( 'morning', 'time between 6:00 and 11:00', 'hour >= 6 and hour < 11' ),
 	Keyword( 'noon', 'time between 11:00 and 13:00', 'hour >= 11 and hour < 13' ),
@@ -36,8 +37,4 @@ KEYWORDS = [
 	Keyword( 'thisquarter', 'month of date is within the current quarter', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'quarter' ) ) ),
 	Keyword( 'lastyear', 'year of date is last year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( years=-1 ), 'year' ) ) ),
 	Keyword( 'thisyear', 'year of date is current year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'year' ) ) ),
-]
-
-for k in KEYWORDS:
-	# noinspection PyTypeChecker
-	Registry.register_keyword( k )
+)

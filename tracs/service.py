@@ -20,6 +20,7 @@ from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.registry import Registry
 from tracs.resources import Resource
+from tracs.rules import Keyword
 
 log = getLogger( __name__ )
 
@@ -47,6 +48,10 @@ class Service( Plugin ):
 		for p in getmembers( self.__class__, lambda p: type( p ) is property and p.fset is not None ):
 			if p[0] in kwargs.keys() and not p[0].startswith( '_' ):
 				setattr( self, p[0], kwargs.get( p[0] ) )
+
+		# register service name as rule keyword
+		# noinspection PyTypeChecker
+		Registry.register_keyword( Keyword( self.name, f'classifier "{self.name}" is contained in classifiers list', f'"{self.name}" in __classifiers__' ) )
 
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
 

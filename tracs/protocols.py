@@ -10,6 +10,23 @@ from tracs.resources import Resource
 
 log = getLogger( __name__ )
 
+class KeywordProtocol( Protocol ):
+
+	@property
+	def name( self ) -> str:
+		pass
+
+	@property
+	def description( self ) -> Optional[str]:
+		pass
+
+	@property
+	def expr( self ) -> str:
+		pass
+
+	def __call__( self, *args, **kwargs ) -> str:
+		pass
+
 class SpecificActivity( Protocol ):
 
 	def as_activity( self ) -> Activity:

@@ -15,7 +15,7 @@ from dataclass_factory import Factory, Schema
 
 from tracs.activity import Fields as ActivityFields
 from tracs.config import ApplicationContext, KEY_CLASSIFER
-from tracs.protocols import Handler, Importer, Service
+from tracs.protocols import Handler, Importer, KeywordProtocol as Keyword, Service
 from tracs.resources import ResourceType
 from tracs.uid import UID
 
@@ -42,6 +42,7 @@ class Registry:
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
 	resource_types: Dict[str, ResourceType] = {}
+	rule_keywords: Dict[str, Keyword] = {}
 	setup_functions: Dict[str, Callable] = {}
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
@@ -91,6 +92,12 @@ class Registry:
 				return key
 
 		return None
+
+	# rule keywords
+	@classmethod
+	def register_keyword( cls, keyword: Keyword ):
+		cls.rule_keywords[keyword.name] = keyword
+		log.debug( f'registered rule keyword "{keyword.name}"' )
 
 	# field resolvers
 

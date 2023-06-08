@@ -17,7 +17,6 @@ from .resources import Resource
 from .config import ApplicationContext
 from .config import console
 from .registry import Registry
-from .rules import KEYWORDS
 from .service import Service
 from .utils import fmt
 
@@ -148,8 +147,14 @@ def show_aggregate( activities: [Activity], ctx: ApplicationContext ) -> None:
 	console.print( table )
 
 def show_keywords( ctx: ApplicationContext ) -> None:
-	keywords = sorted( set().union( KEYWORDS ) )
-	ctx.console.print( Columns( keywords, padding=(0, 4), equal=True, column_first=True ) )
+	keywords = sorted( Registry.rule_keywords.keys() )
+	if ctx.verbose:
+		table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
+		[ table.add_column( f'[blue]{c}[/blue]' ) for c in [ 'keyword', 'description' ] ]
+		[ table.add_row( k, Registry.rule_keywords[k].description ) for k in keywords ]
+		ctx.console.print( table )
+	else:
+		ctx.console.print( Columns( keywords, padding=(0, 4), equal=True, column_first=True ) )
 
 def show_equipments( ctx: ApplicationContext ) -> None:
 	all_equipments = sorted( set().union( *[a.equipment for a in ctx.db.activities] ) )

@@ -1,16 +1,19 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 from logging import getLogger
 from re import compile as rx_compile, match
 from sys import maxsize
-from typing import Any, Callable, Dict, List, Literal, Tuple, Type
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type, Union
 
-from arrow import Arrow, get as getarrow, utcnow as now
+from arrow import Arrow, get as getarrow
 from dateutil.tz import UTC
 from rule_engine import Context, resolve_attribute, Rule, RuleSyntaxError
+
+from tracs.registry import Registry
 
 log = getLogger( __name__ )
 
@@ -45,37 +48,16 @@ FUZZY_TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4])(:(?P<minute>[0-5]\d)(:(?P<second
 SHORT_RULE_PATTERN = r'^(\w+)(:|=)([\w\"\.].+)$' # short version: id=10 or id:10 for convenience, value must begin with alphanum or "
 RULE_PATTERN = '^(\w+)(==|!=|=~|!~|>=|<=|>|<|=|:)([\w\"\.].+)*$'
 
-# mapping of keywords to normalized expressions
-# this enables operations like 'list thisyear'
-KEYWORDS: Dict[str, Callable] = {
-	# time related keywords
-	'morning': lambda s: f'hour >= 6 and hour < 11',
-	'noon': lambda s: f'hour >= 11 and hour < 13',
-	'afternoon': lambda s: f'hour >= 13 and hour < 18',
-	'evening': lambda s: f'hour >= 18 and hour < 22',
-	'night': lambda s: f'hour >= 22 or hour < 6',
-	# date related keywords
-	'last7days': lambda s: f'time >= {floor( now().shift( days=-6 ), "day" )} and time <= {ceil( now(), "day" )}',
-	'last14days': lambda s: f'time >= {floor( now().shift( days=-13 ), "day" )} and time <= {ceil( now(), "day" )}',
-	'last30days': lambda s: f'time >= {floor( now().shift( days=-29 ), "day" )} and time <= {ceil( now(), "day" )}',
-	'last60days': lambda s: f'time >= {floor( now().shift( days=-59 ), "day" )} and time <= {ceil( now(), "day" )}',
-	'last90days': lambda s: f'time >= {floor( now().shift( days=-89 ), "day" )} and time <= {ceil( now(), "day" )}',
-	'today': lambda s: f'time >= {floor( now(), "day" )} and time <= {ceil( now(), "day" )}',
-	'lastweek': lambda s: f'time >= {floor( now().shift( weeks=-1 ), "week" )} and time <= {ceil( now().shift( weeks=-1 ), "week" )}',
-	'thisweek': lambda s: f'time >= {floor( now(), "week" )} and time <= {ceil( now(), "week" )}',
-	'lastmonth': lambda s: f'time >= {floor( now().shift( months=-1 ), "month" )} and time <= {ceil( now().shift( months=-1 ), "month" )}',
-	'thismonth': lambda s: f'time >= {floor( now(), "month" )} and time <= {ceil( now(), "month" )}',
-	'lastquarter': lambda s: f'time >= {floor( now().shift( months=-3 ), "quarter" )} and time <= {ceil( now().shift( months=-3 ), "quarter" )}',
-	'thisquarter': lambda s: f'time >= {floor( now(), "quarter" )} and time <= {ceil( now(), "quarter" )}',
-	'lastyear': lambda s: f'time >= {floor( now().shift( years=-1 ), "year" )} and time <= {ceil( now().shift( years=-1 ), "year" )}',
-	'thisyear': lambda s: f'time >= {floor( now(), "year" )} and time <= {ceil( now(), "year" )}',
-	# todo: this needs to be detected automatically
-	'bikecitizens': lambda s: f'"bikecitizens" in __classifiers__',
-	'local': lambda s: f'"local" in __classifiers__',
-	'polar': lambda s: f'"polar" in __classifiers__',
-	'strava': lambda s: f'"strava" in __classifiers__',
-	'waze': lambda s: f'"waze" in __classifiers__',
-}
+@dataclass
+class Keyword:
+
+	name: str = field( default=None )
+	description: Optional[str] = field( default=None )
+	expr: Union[str, Callable] = field( default=None )
+
+	def __call__( self, *args, **kwargs ) -> str:
+		# return self.expr if type( self.expr ) is str else self.expr( *args, **kwargs )
+		return self.expr if type( self.expr ) is str else self.expr()
 
 # normalizers transform a field/value pair into a valid normalized expression
 # this enables operations like 'list classifier:polar' where ':' does not evaluate to '=='
@@ -152,8 +134,8 @@ def normalize( rule: str ) -> str:
 		normalized_rule = f'id in [{rule}]'
 
 	elif match( KEYWORD_PATTERN, rule ):  # keywords
-		if rule in KEYWORDS:
-			normalized_rule = KEYWORDS[rule]( rule )
+		if rule in Registry.rule_keywords.keys():
+			normalized_rule = Registry.rule_keywords[rule]( rule )
 		else:
 			raise RuleSyntaxError( f'syntax error: unsupported keyword "{rule}"' )
 

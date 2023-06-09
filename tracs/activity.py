@@ -10,6 +10,7 @@ from dataclass_factory import Schema
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
+from tracs.core import VirtualFields
 from tracs.resources import Resource
 from tracs.uid import UID
 from tracs.utils import sum_times, unique_sorted
@@ -19,22 +20,6 @@ log = getLogger( __name__ )
 T = TypeVar('T')
 
 PROTECTED_FIELDS = [ 'id' ]
-
-@dataclass
-class Fields:
-
-	__resolvers__: ClassVar[Dict[str, Callable]] = field( default={} )
-
-	__parent__: Activity = field( default=None )
-	__values__: Dict[str, Any] = field( default_factory=dict )
-
-	def __getattr__( self, name: str ) -> Any:
-		if name in self.__values__:
-			return self.__values__.get( name )
-		elif name in self.__class__.__resolvers__:
-			return self.__class__.__resolvers__.get( name )( self.__parent__ )
-		else:
-			return super().__getattribute__( name )
 
 @dataclass( eq=True )
 class ActivityPart:
@@ -140,7 +125,7 @@ class Activity:
 	__parent__: Activity = field( init=False, default=0 )
 	__parent_id__: int = field( init=False, default=0 )
 
-	__vf__: Fields = field( init=False, default=Fields(), hash=False, compare=False )
+	__vf__: VirtualFields = field( init=False, default=VirtualFields(), hash=False, compare=False )
 
 	# class methods
 
@@ -163,7 +148,7 @@ class Activity:
 	# additional properties
 
 	@property
-	def vf( self ) -> Fields:
+	def vf( self ) -> VirtualFields:
 		return self.__vf__
 
 	@property
@@ -238,11 +223,8 @@ class Activity:
 			return getattr( self, name )
 		except AttributeError:
 			try:
-				if name in Fields.__resolvers__.keys():
-					return Fields.__resolvers__.get( name )( self )
-				else:
-					return getattr( self.vf, name )
-			except AttributeError:
+				return self.vf.__fields__.get( name )( self )
+			except TypeError:
 				return None
 
 	# def union( self, others: List[Activity], strategy: Literal['first', 'last'] = 'first' ) -> Activity: # todo: are different strategies useful?

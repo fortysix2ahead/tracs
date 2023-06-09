@@ -8,12 +8,12 @@ from logging import getLogger
 from pathlib import Path
 from pkgutil import walk_packages
 from re import match
-from typing import Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from confuse import NotFoundError
 from dataclass_factory import Factory, Schema
 
-from tracs.activity import Fields as ActivityFields
+from tracs.core import vfield, VirtualField, VirtualFields
 from tracs.config import ApplicationContext, KEY_CLASSIFER
 from tracs.protocols import Handler, Importer, KeywordProtocol as Keyword, Service
 from tracs.resources import ResourceType
@@ -22,23 +22,24 @@ from tracs.uid import UID
 log = getLogger( __name__ )
 
 NS_PLUGINS = 'tracs.plugins'
+_ARGS, _KWARGS = (), {} # helpers ...
 
 class EventTypes( Enum ):
 
-	activity_field_resolver_registered = 'activity_field_resolver_registered'
 	plugin_loaded = 'plugin_loaded'
 	resource_loaded = 'resource_loaded'
 	service_created = 'service_created'
+	virtual_field_registered = 'virtual_field_registered'
 
 class Registry:
 
 	activity_field_resolvers = {}
 	classifier: str = KEY_CLASSIFER
 	ctx: ApplicationContext = None
+	dataclass_factory = Factory( debug_path=True, schemas={} )
 	document_classes: Dict[str, Type] = {}
 	document_types: Dict[str, Type] = {}
 	event_listeners = {}
-	dataclass_factory = Factory( debug_path=True, schemas={} )
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
 	resource_types: Dict[str, ResourceType] = {}
@@ -46,9 +47,10 @@ class Registry:
 	setup_functions: Dict[str, Callable] = {}
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
+	virtual_fields: Dict[str, VirtualField] = {}
 
-	# register activity_field_resolvers with activity.Fields
-	ActivityFields.__resolvers__ = activity_field_resolvers
+	# register virtual_fields dict with activity
+	VirtualFields.__fields__ = virtual_fields
 
 	@classmethod
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
@@ -106,11 +108,11 @@ class Registry:
 	# field resolvers
 
 	@classmethod
-	def register_activity_field_resolver( cls, field: str, fn: Callable ) -> None:
-		if not ActivityFields.__resolvers__:
-			ActivityFields.__resolvers__ = cls.activity_field_resolvers
-		cls.activity_field_resolvers[field] = fn
-		cls.notify( EventTypes.activity_field_resolver_registered, field=field, resolver=fn )
+	def register_virtual_field( cls, vf: VirtualField ) -> None:
+		if not VirtualFields.__fields__:
+			VirtualFields.__fields__ = cls.virtual_fields
+		cls.virtual_fields[vf.name] = vf
+		cls.notify( EventTypes.virtual_field_registered, field=vf )
 
 	# event handling
 
@@ -240,6 +242,21 @@ def _spec( func: Callable ) -> Tuple[str, str]:
 
 	return module, name
 
+def _fnspec( func: Callable ) -> Tuple[str, str, str, Any]:
+	"""
+	Helper for examining a provided function. Returns a tuple containing
+	(function name, module name, qualified name, return value type)
+
+	:param func: function to be examined
+	:return: tuple
+	"""
+	members = getmembers( func )
+	name = next( m[1] for m in members if m[0] == '__name__' )
+	module = next( m[1] for m in members if m[0] == '__module__' )
+	qname = next( m[1] for m in members if m[0] == '__qualname__' )
+	return_type = next( m[1].get( 'return' ) for m in members if m[0] == '__annotations__' )
+	return name, module, qname, return_type
+
 def _register( args, kwargs, dictionary, callable_fn = False ) -> Union[Type, Callable]:
 	"""
 	Helper for registering mappings returned from the provided decorated function to the provided dictionary.
@@ -284,9 +301,12 @@ def _register( args, kwargs, dictionary, callable_fn = False ) -> Union[Type, Ca
 		raise RuntimeError( 'unable to register function -> this needs to be reported' )
 
 def _register_function( *args, **kwargs ) -> Callable:
-
-	_decorator_name = kwargs.get( '_decorator_name' )
-	_mapping = kwargs.get( '_mapping' )
+	"""
+	Used for registering a function in a provided dictionary with a provided name. Valid examples:
+	@decorator, @decorator( 'name' ) or @decorator( name = 'name' )
+	"""
+	_decorator_name = kwargs.get( '_decorator_name', 'None' ) # name of the decorator, only used for logging
+	_mapping = kwargs.get( '_mapping' ) # mapping to use for registering the function
 	_parameter = None
 
 	def _inner( *inner_args ):
@@ -295,18 +315,37 @@ def _register_function( *args, **kwargs ) -> Callable:
 		log.debug( f'registered {_decorator_name} function from {inner_module}#{inner_name} with parameter {_parameter}' )
 		return _parameter
 
-	if len( args ) == 1:
+	if len( args ) == 1 and isfunction( args[0] ): # case: decorated function without arguments
+		module, name = _spec( args[0] )
+		_mapping[name] = args[0]
+		log.debug( f'registered {_decorator_name} function from {module}#{name}' )
+		return args[0]
+	elif len( args ) == 1 and type( args[0] ) is str: # case: decorated function with single parameter, args[0] contains the sole parameter
 		_parameter = args[0]
-		if isfunction( _parameter ): # decorated function without arguments
-			module, name = _spec( _parameter )
-			_mapping[name] = _parameter
-			log.debug( f'registered {_decorator_name} function from {module}#{name}' )
-			return _parameter
-		else:
-			return _inner # args[0] contains the actual parameter
+		return _inner
+	elif 'name' in kwargs:
+		_parameter = kwargs.get( 'name' )
+		return _inner
 
+# hm, works but doesn't feel nice, especially for using global helper variables
 def virtualfield( *args, **kwargs ):
-	return _register_function( *args, _mapping=Registry.activity_field_resolvers, _decorator_name='virtualfield', **kwargs )
+	global _ARGS, _KWARGS
+	_ARGS, _KWARGS = args, kwargs
+
+	def _inner( *inner_args ):
+		global _KWARGS
+		inner_name, inner_mod, inner_qname, inner_rtype = _fnspec( inner_args[0] )
+		_KWARGS = { 'name': inner_name, 'type': inner_rtype, 'default': inner_args[0], **_KWARGS }
+		Registry.virtual_fields[_KWARGS['name']] = vfield( **_KWARGS )
+		return inner_args[0]
+
+	if len( args ) == 1 and isfunction( args[0] ): # case: decorated function without arguments
+		name, mod, qname, rtype = _fnspec( args[0] )
+		Registry.virtual_fields[name] = vfield( name=name, type=rtype, default=args[0] )
+		return args[0]
+	elif len( args ) == 0 and len( kwargs ) > 0:
+		_ARGS, _KWARGS = args, kwargs
+		return _inner
 
 def resourcetype( *args, **kwargs ):
 	def reg_resource_type( cls ):

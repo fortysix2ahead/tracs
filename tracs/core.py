@@ -38,7 +38,7 @@ class VirtualField( Field ):
 		return self.metadata.get( 'display_name' )
 
 # noinspection PyShadowingBuiltins
-def vfield( name: str, type: Any, default: Any, display_name: Optional[str] = None, description: Optional[str] = None ) -> VirtualField:
+def vfield( name: str, type: Any = None, default: Any = None, display_name: Optional[str] = None, description: Optional[str] = None ) -> VirtualField:
 	default, factory = (None, default) if isinstance( default, Callable ) else (default, None)
 	return VirtualField(
 		default=default,

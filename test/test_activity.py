@@ -4,8 +4,9 @@ from datetime import time
 
 from pytest import mark, raises
 
-from tracs.activity import Activity, ActivityPart, Fields
+from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
+from tracs.core import vfield, VirtualFields
 from tracs.registry import Registry, virtualfield
 from tracs.resources import Resource
 from tracs.uid import UID
@@ -114,39 +115,49 @@ def test_resource():
 	assert r.as_text() == some_string
 	assert r.text is None # todo: change to throw exception?
 
-def test_virtual_fields():
+def test_virtual_activity_fields():
 
 	@virtualfield
-	def extra_name( a: Activity ):
-		return 'Extra Activity Name'
-
-	@virtualfield( 'additional_name' )
-	def extra_name_2( a: Activity ):
-		return 'Another Additional Activity Name'
-
-	@virtualfield
-	def lowercase_name( a: Activity ):
+	def lower_name( a: Activity ) -> str:
 		return a.name.lower()
 
-	assert 'extra_name' in Registry.activity_field_resolvers.keys()
-	assert 'additional_name' in Registry.activity_field_resolvers.keys()
+	@virtualfield( name='upper_name' )
+	def uppercase_name( a: Activity ) -> str:
+		return a.name.upper()
+
+	@virtualfield( name='title_name', type=str, description='titled activity name' )
+	def title_name( a: Activity ):
+		return a.name.title()
+
+	@virtualfield( name='cap_name', description='capitalized activity name', type=str, display_name='Cap Name' )
+	def capitalized_name( a: Activity ):
+		return a.name.capitalize()
+
+	assert 'lower_name' in VirtualFields.__fields__.keys()
+	assert 'upper_name' in VirtualFields.__fields__.keys()
+	assert 'title_name' in VirtualFields.__fields__.keys()
+	assert 'cap_name' in VirtualFields.__fields__.keys()
+
+	vf = VirtualFields.__fields__['lower_name']
+	assert vf.name == 'lower_name'
 
 	a = Activity(
-		name='Afternoon Run',
+		name='Afternoon run in Berlin',
 		type=ActivityTypes.run,
 	)
-	a.vf.__values__['fixed_value'] = 20
-	a.vf.__resolvers__['uppercase_name'] = lambda act: act.name.upper()
 
-	assert a.vf.extra_name == 'Extra Activity Name'
-	assert a.vf.additional_name == 'Another Additional Activity Name'
-	assert a.vf.fixed_value == 20
-	assert a.vf.lowercase_name == 'afternoon run'
-	assert a.vf.uppercase_name == 'AFTERNOON RUN'
+	assert a.vf.lower_name == 'afternoon run in berlin'
+	assert a.vf.upper_name == 'AFTERNOON RUN IN BERLIN'
+	assert a.vf.title_name == 'Afternoon Run In Berlin'
+	assert a.vf.cap_name == 'Afternoon run in berlin'
+
+	VirtualFields.__fields__['fixed_value'] = vfield( 'fixed_value', int, 10 )
+
+	assert a.vf.fixed_value == 10
 
 	with raises( AttributeError ):
 		assert a.vf.does_not_exist == 10
 
-	assert a.getattr( 'extra_name' ) == 'Extra Activity Name'
-	assert a.getattr( 'fixed_value' ) == 20
-	assert a.getattr( 'lowercase_name' ) == 'afternoon run'
+	assert a.getattr( 'lower_name' ) == 'afternoon run in berlin'
+	assert a.getattr( 'fixed_value' ) == 10
+	assert a.getattr( 'does_not_exist' ) is None

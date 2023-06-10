@@ -218,14 +218,17 @@ class Activity:
 
 	# additional methods
 
-	def getattr( self, name: str ) -> Any:
+	def getattr( self, name: str, quiet: bool = False ) -> Any:
 		try:
 			return getattr( self, name )
 		except AttributeError:
 			try:
 				return self.vf.__fields__.get( name )( self )
 			except TypeError:
-				return None
+				if quiet:
+					return None
+				else:
+					raise AttributeError
 
 	# def union( self, others: List[Activity], strategy: Literal['first', 'last'] = 'first' ) -> Activity: # todo: are different strategies useful?
 	def union( self, others: List[Activity], ignore: List[str] = None, copy: bool = False, force: bool = False ) -> Activity:

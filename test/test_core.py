@@ -43,3 +43,5 @@ def test_virtual_fields():
 	assert edc.name == 'Name'
 	assert edc.vf.upper_name == 'NAME'
 	assert edc.vf.index == 10
+
+	assert 'index' in edc.vf and 'upper_name' in edc.vf

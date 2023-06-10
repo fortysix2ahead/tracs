@@ -64,3 +64,6 @@ class VirtualFields:
 			return self.__class__.__fields__.get( name )( self.__parent__ )
 		else:
 			return super().__getattribute__( name )
+
+	def __contains__( self, item ) -> bool:
+		return item in self.__fields__.keys()

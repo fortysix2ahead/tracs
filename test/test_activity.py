@@ -160,4 +160,7 @@ def test_virtual_activity_fields():
 
 	assert a.getattr( 'lower_name' ) == 'afternoon run in berlin'
 	assert a.getattr( 'fixed_value' ) == 10
-	assert a.getattr( 'does_not_exist' ) is None
+	assert a.getattr( 'does_not_exist', quiet=True ) is None
+
+	with raises( AttributeError ):
+		assert a.getattr( 'does_not_exist' ) is None

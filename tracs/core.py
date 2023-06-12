@@ -69,6 +69,16 @@ class Keyword:
 		# return self.expr if type( self.expr ) is str else self.expr( *args, **kwargs )
 		return self.expr if type( self.expr ) is str else self.expr()
 
+@dataclass
+class Normalizer:
+
+	name: str = field( default=None )
+	description: Optional[str] = field( default=None )
+	fn: Callable = field( default=None )
+
+	def __call__( self, *args, **kwargs ) -> str:
+		return self.fn( *args, **kwargs )
+
 # noinspection PyShadowingBuiltins
 def vfield( name: str, type: Any = None, default: Any = None, display_name: Optional[str] = None, description: Optional[str] = None ) -> VirtualField:
 	default, factory = (None, default) if isinstance( default, Callable ) else (default, None)

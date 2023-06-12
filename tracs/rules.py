@@ -47,14 +47,6 @@ FUZZY_TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4])(:(?P<minute>[0-5]\d)(:(?P<second
 SHORT_RULE_PATTERN = r'^(\w+)(:|=)([\w\"\.].+)$' # short version: id=10 or id:10 for convenience, value must begin with alphanum or "
 RULE_PATTERN = '^(\w+)(==|!=|=~|!~|>=|<=|>|<|=|:)([\w\"\.].+)*$'
 
-# normalizers transform a field/value pair into a valid normalized expression
-# this enables operations like 'list classifier:polar' where ':' does not evaluate to '=='
-NORMALIZERS: Dict[str, Callable] = {
-	'classifier': lambda s: f'"{s}" in __classifiers__',
-	'service': lambda s: f'"{s}" in __classifiers__',
-	'source': lambda s: f'"{s}" in __classifiers__',
-}
-
 # custom resolvers, needed to access "virtual fields" which do not exist
 # the key represents the name of the virtual field, the value is a function which calculates the actual value
 RESOLVERS: Dict[str, Callable] = {
@@ -140,8 +132,8 @@ def normalize( rule: str ) -> str:
 				normalized_rule = f'{left} == "{right}"'
 
 		elif op == ':':
-			if left in NORMALIZERS:
-				normalized_rule = NORMALIZERS[left]( right )
+			if left in Registry.rule_normalizers:
+				normalized_rule = Registry.rule_normalizers[left]( right )
 
 			elif right is None:
 				normalized_rule = f'{left} == null'

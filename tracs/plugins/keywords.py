@@ -3,7 +3,7 @@ from typing import List, Literal, Tuple
 
 from arrow import Arrow, now
 
-from tracs.core import Keyword, vfield
+from tracs.core import Keyword, Normalizer, vfield
 from tracs.registry import Registry
 
 TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day' ]
@@ -38,6 +38,14 @@ Registry.register_keywords(
 	Keyword( 'thisquarter', 'month of date is within the current quarter', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'quarter' ) ) ),
 	Keyword( 'lastyear', 'year of date is last year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( years=-1 ), 'year' ) ) ),
 	Keyword( 'thisyear', 'year of date is current year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'year' ) ) ),
+)
+
+# normalizers transform a field/value pair into a valid normalized expression
+# this enables operations like 'list classifier:polar' where ':' does not evaluate to '=='
+Registry.register_normalizer(
+	Normalizer( 'classifier', 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda v: f'"{v}" in classifiers' ),
+	Normalizer( 'service', 'alias for classifier', lambda v: f'"{v}" in classifiers' ),
+	Normalizer( 'source', 'alias for classifier', lambda v: f'"{v}" in classifiers' ),
 )
 
 Registry.register_virtual_field(

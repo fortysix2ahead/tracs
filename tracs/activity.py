@@ -125,7 +125,7 @@ class Activity:
 	__parent__: Activity = field( init=False, default=0 )
 	__parent_id__: int = field( init=False, default=0 )
 
-	__vf__: VirtualFields = field( init=False, default=VirtualFields(), hash=False, compare=False )
+	__vf__: VirtualFields = field( init=False, default_factory=VirtualFields, hash=False, compare=False )
 
 	# class methods
 

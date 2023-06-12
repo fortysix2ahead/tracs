@@ -1,13 +1,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 from logging import getLogger
 from re import compile as rx_compile, match
 from sys import maxsize
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Literal, Tuple, Type
 
 from arrow import Arrow, get as getarrow
 from dateutil.tz import UTC
@@ -47,17 +46,6 @@ FUZZY_TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4])(:(?P<minute>[0-5]\d)(:(?P<second
 
 SHORT_RULE_PATTERN = r'^(\w+)(:|=)([\w\"\.].+)$' # short version: id=10 or id:10 for convenience, value must begin with alphanum or "
 RULE_PATTERN = '^(\w+)(==|!=|=~|!~|>=|<=|>|<|=|:)([\w\"\.].+)*$'
-
-@dataclass
-class Keyword:
-
-	name: str = field( default=None )
-	description: Optional[str] = field( default=None )
-	expr: Union[str, Callable] = field( default=None )
-
-	def __call__( self, *args, **kwargs ) -> str:
-		# return self.expr if type( self.expr ) is str else self.expr( *args, **kwargs )
-		return self.expr if type( self.expr ) is str else self.expr()
 
 # normalizers transform a field/value pair into a valid normalized expression
 # this enables operations like 'list classifier:polar' where ':' does not evaluate to '=='

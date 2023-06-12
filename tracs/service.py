@@ -20,7 +20,7 @@ from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.registry import Registry
 from tracs.resources import Resource
-from tracs.rules import Keyword
+from tracs.core import Keyword
 
 log = getLogger( __name__ )
 

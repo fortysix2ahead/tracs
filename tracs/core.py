@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, Field, field
-from typing import Any, Callable, ClassVar, Dict, Optional
+from typing import Any, Callable, ClassVar, Dict, Optional, Union
 
 class VirtualField( Field ):
 
@@ -37,18 +39,6 @@ class VirtualField( Field ):
 	def display_name( self ):
 		return self.metadata.get( 'display_name' )
 
-# noinspection PyShadowingBuiltins
-def vfield( name: str, type: Any = None, default: Any = None, display_name: Optional[str] = None, description: Optional[str] = None ) -> VirtualField:
-	default, factory = (None, default) if isinstance( default, Callable ) else (default, None)
-	return VirtualField(
-		default=default,
-		default_factory=factory,
-		name=name,
-		type=type,
-		display_name=display_name,
-		description=description
-	)
-
 @dataclass
 class VirtualFields:
 
@@ -67,3 +57,26 @@ class VirtualFields:
 
 	def __contains__( self, item ) -> bool:
 		return item in self.__fields__.keys()
+
+@dataclass
+class Keyword:
+
+	name: str = field( default=None )
+	description: Optional[str] = field( default=None )
+	expr: Union[str, Callable] = field( default=None )
+
+	def __call__( self, *args, **kwargs ) -> str:
+		# return self.expr if type( self.expr ) is str else self.expr( *args, **kwargs )
+		return self.expr if type( self.expr ) is str else self.expr()
+
+# noinspection PyShadowingBuiltins
+def vfield( name: str, type: Any = None, default: Any = None, display_name: Optional[str] = None, description: Optional[str] = None ) -> VirtualField:
+	default, factory = (None, default) if isinstance( default, Callable ) else (default, None)
+	return VirtualField(
+		default=default,
+		default_factory=factory,
+		name=name,
+		type=type,
+		display_name=display_name,
+		description=description
+	)

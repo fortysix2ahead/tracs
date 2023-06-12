@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type, Un
 
 from arrow import Arrow, get as getarrow
 from dateutil.tz import UTC
-from rule_engine import Context, resolve_attribute, Rule, RuleSyntaxError
+from rule_engine import Context, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
 
 from tracs.registry import Registry
 
@@ -70,17 +70,9 @@ NORMALIZERS: Dict[str, Callable] = {
 # custom resolvers, needed to access "virtual fields" which do not exist
 # the key represents the name of the virtual field, the value is a function which calculates the actual value
 RESOLVERS: Dict[str, Callable] = {
-	# date/time fields
-	'weekday': lambda t, n: t.localtime.day, # day attribute of datetime objects
-	'hour': lambda t, n: t.localtime.hour, # hour attribute of datetime objects
-	'day': lambda t, n: t.localtime.day, # day attribute of datetime objects
-	'month': lambda t, n: t.localtime.month, # month attribute of datetime objects
-	'year': lambda t, n: t.localtime.year, # year attribute of datetime objects
-	'date': lambda t, n: t.localtime.date(), # date
 	# activity type
 	'type': lambda t, n: t.type.value if t.type else None,
 	# internal helper attributes, which are not intended to be used directly
-	'__classifiers__': lambda t, n: list( map( lambda s: s.split( ':', 1 )[0], t.uids ) ), # virtual attribute of uids
 	'__date__': lambda t, n: t.localtime.date(), # date
 	'__time__': lambda t, n: t.localtime.time(), # time
 }
@@ -91,8 +83,14 @@ RESOLVER_TYPES: Dict[str, Type] = {
 	'time': time,
 }
 
-def resolve_custom_attribute( thing: Any, name: str ):
-	return RESOLVERS[name]( thing, name ) if name in RESOLVERS.keys() else resolve_attribute( thing, name )
+def resolve_custom_attribute( thing: Any, name: str ) -> Any:
+	try:
+		return resolve_attribute( thing, name )
+	except SymbolResolutionError:
+		try:
+			return getattr( thing.vf, name )
+		except AttributeError:
+			raise SymbolResolutionError( thing=thing, symbol_name=name )
 
 # CONTEXT = Context( default_value=None, resolver=resolve_custom_attribute )
 CONTEXT = Context( resolver=resolve_custom_attribute )

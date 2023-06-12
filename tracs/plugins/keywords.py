@@ -1,7 +1,9 @@
-from typing import Literal, Tuple
+from datetime import date
+from typing import List, Literal, Tuple
 
 from arrow import Arrow, now
 
+from tracs.core import vfield
 from tracs.registry import Registry
 from tracs.rules import Keyword
 
@@ -37,4 +39,17 @@ Registry.register_keywords(
 	Keyword( 'thisquarter', 'month of date is within the current quarter', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'quarter' ) ) ),
 	Keyword( 'lastyear', 'year of date is last year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( years=-1 ), 'year' ) ) ),
 	Keyword( 'thisyear', 'year of date is current year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'year' ) ) ),
+)
+
+Registry.register_virtual_field(
+	vfield( 'classifiers', List[str], lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ), 'Classifiers', 'list of classifiers of an activity' ),
+	# date/time fields
+	vfield( 'weekday', int, lambda a: a.localtime.year, 'Weekday', 'day of week at which the activity has taken place (as number)' ),
+	vfield( 'hour', int, lambda a: a.localtime.hour, 'Hour of Day', 'hour in which the activity has been started' ),
+	vfield( 'day', int, lambda a: a.localtime.day, 'Day of Month', 'day on which the activity has taken place' ),
+	vfield( 'month', int, lambda a: a.localtime.month, 'Month', 'month in which the activity has taken place' ),
+	vfield( 'year', int, lambda a: a.localtime.year, 'Year', 'year in which the activity has taken place' ),
+	# time as date
+	vfield( 'date', date, lambda a: a.localtime.date(), 'Date', 'date of activity' ),
+
 )

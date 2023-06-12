@@ -13,9 +13,9 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Type, Un
 from confuse import NotFoundError
 from dataclass_factory import Factory, Schema
 
-from tracs.core import vfield, VirtualField, VirtualFields
+from tracs.core import Keyword, vfield, VirtualField, VirtualFields
 from tracs.config import ApplicationContext, KEY_CLASSIFER
-from tracs.protocols import Handler, Importer, KeywordProtocol as Keyword, Service
+from tracs.protocols import Handler, Importer, Service
 from tracs.resources import ResourceType
 from tracs.uid import UID
 

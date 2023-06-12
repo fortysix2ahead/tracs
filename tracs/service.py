@@ -51,7 +51,7 @@ class Service( Plugin ):
 
 		# register service name as rule keyword
 		# noinspection PyTypeChecker
-		Registry.register_keyword( Keyword( self.name, f'classifier "{self.name}" is contained in classifiers list', f'"{self.name}" in __classifiers__' ) )
+		Registry.register_keyword( Keyword( self.name, f'classifier "{self.name}" is contained in classifiers list', f'"{self.name}" in classifiers' ) )
 
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
 

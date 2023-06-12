@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Type, Un
 from confuse import NotFoundError
 from dataclass_factory import Factory, Schema
 
-from tracs.core import Keyword, vfield, VirtualField, VirtualFields
+from tracs.core import Keyword, Normalizer, vfield, VirtualField, VirtualFields
 from tracs.config import ApplicationContext, KEY_CLASSIFER
 from tracs.protocols import Handler, Importer, Service
 from tracs.resources import ResourceType
@@ -28,6 +28,7 @@ class EventTypes( Enum ):
 
 	plugin_loaded = 'plugin_loaded'
 	resource_loaded = 'resource_loaded'
+	rule_normalizer_registered = 'rule_normalizer_registered'
 	service_created = 'service_created'
 	virtual_field_registered = 'virtual_field_registered'
 
@@ -44,6 +45,7 @@ class Registry:
 	importers: Dict[str, List[Importer]] = {}
 	resource_types: Dict[str, ResourceType] = {}
 	rule_keywords: Dict[str, Keyword] = {}
+	rule_normalizers: Dict[str, Normalizer] = {}
 	setup_functions: Dict[str, Callable] = {}
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
@@ -95,7 +97,8 @@ class Registry:
 
 		return None
 
-	# rule keywords
+	# rules and normalizing
+
 	@classmethod
 	def register_keyword( cls, keyword: Keyword ):
 		cls.rule_keywords[keyword.name] = keyword
@@ -105,7 +108,13 @@ class Registry:
 	def register_keywords( cls, *keywords: Keyword ):
 		[ cls.register_keyword( k ) for k in keywords ]
 
-	# field resolvers
+	@classmethod
+	def register_normalizer( cls, *normalizer: Normalizer ) -> None:
+		for n in normalizer:
+			cls.rule_normalizers[n.name] = n
+			cls.notify( EventTypes.rule_normalizer_registered, field=n )
+
+	# field resolving
 
 	@classmethod
 	def register_virtual_field( cls, *fields: VirtualField ) -> None:

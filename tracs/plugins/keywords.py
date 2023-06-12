@@ -3,9 +3,8 @@ from typing import List, Literal, Tuple
 
 from arrow import Arrow, now
 
-from tracs.core import vfield
+from tracs.core import Keyword, vfield
 from tracs.registry import Registry
-from tracs.rules import Keyword
 
 TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day' ]
 

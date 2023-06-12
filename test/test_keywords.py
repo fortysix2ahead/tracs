@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from tracs.plugins.keywords import KEYWORDS
-from tracs.rules import Keyword
+from tracs.core import Keyword
 
 def test_keywords():
 	assert kw( 'morning' )() == 'hour >= 6 and hour < 11'

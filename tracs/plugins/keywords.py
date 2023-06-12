@@ -46,6 +46,7 @@ Registry.register_normalizer(
 	Normalizer( 'classifier', 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda v: f'"{v}" in classifiers' ),
 	Normalizer( 'service', 'alias for classifier', lambda v: f'"{v}" in classifiers' ),
 	Normalizer( 'source', 'alias for classifier', lambda v: f'"{v}" in classifiers' ),
+	Normalizer( 'type', '', lambda v: f'"{v.lower()}" == type.name' ),
 )
 
 Registry.register_virtual_field(

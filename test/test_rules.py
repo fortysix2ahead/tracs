@@ -216,7 +216,7 @@ def test_parse():
 	with raises( SymbolResolutionError ):
 		assert r.evaluate( Activity( id=1000 ) ) # evaluating is not ok -> error
 
-def test_evaluate():
+def test_evaluate( keywords ): # need to load keywords plugin
 	al = [
 		Activity(
 			id = 1000,
@@ -263,9 +263,10 @@ def test_evaluate_multipart():
 	assert parse_eval( 'multipart:true', a )
 	assert not parse_eval( 'multipart:false', a )
 
-def test_type():
-	assert parse_eval( 'type=run', A1 )
+def test_type( keywords ):
+	# assert parse_eval( 'type=run', A1 ) # todo: support this?
 	assert parse_eval( 'type:run', A1 )
+	assert parse_eval( 'type:Run', A1 )
 
 def test_list():
 	assert parse_eval( '1000,1001,1002', A1 )

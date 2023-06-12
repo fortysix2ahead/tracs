@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from logging import getLogger
 from re import compile as rx_compile, match
 from sys import maxsize
-from typing import Any, Callable, Dict, List, Literal, Tuple, Type
+from typing import Any, Dict, List, Literal, Tuple, Type
 
 from arrow import Arrow, get as getarrow
 from dateutil.tz import UTC
@@ -46,16 +46,6 @@ FUZZY_TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4])(:(?P<minute>[0-5]\d)(:(?P<second
 
 SHORT_RULE_PATTERN = r'^(\w+)(:|=)([\w\"\.].+)$' # short version: id=10 or id:10 for convenience, value must begin with alphanum or "
 RULE_PATTERN = '^(\w+)(==|!=|=~|!~|>=|<=|>|<|=|:)([\w\"\.].+)*$'
-
-# custom resolvers, needed to access "virtual fields" which do not exist
-# the key represents the name of the virtual field, the value is a function which calculates the actual value
-RESOLVERS: Dict[str, Callable] = {
-	# activity type
-	'type': lambda t, n: t.type.value if t.type else None,
-	# internal helper attributes, which are not intended to be used directly
-	'__date__': lambda t, n: t.localtime.date(), # date
-	'__time__': lambda t, n: t.localtime.time(), # time
-}
 
 # type hints to be able to parse certain string correctly (i.e. 2022 as date, not as int)
 RESOLVER_TYPES: Dict[str, Type] = {

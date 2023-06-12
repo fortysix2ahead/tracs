@@ -5,8 +5,7 @@ from typing import cast
 
 from dateutil.tz import tzlocal
 from dateutil.tz import UTC
-from pytest import raises
-from rich.pretty import pprint
+from pytest import mark, raises
 from rule_engine import Context
 from rule_engine import EvaluationError
 from rule_engine import resolve_attribute
@@ -16,6 +15,7 @@ from rule_engine import SymbolResolutionError
 
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
+from tracs.plugins.polar import Polar
 from tracs.rules import DATE_PATTERN
 from tracs.rules import FUZZY_DATE_PATTERN
 from tracs.rules import FUZZY_TIME_PATTERN
@@ -27,7 +27,6 @@ from tracs.rules import normalize
 from tracs.rules import parse_date_range_as_str
 from tracs.rules import parse_rule
 from tracs.rules import RANGE_PATTERN
-from tracs.rules import RESOLVERS
 from tracs.rules import RULE_PATTERN
 from tracs.rules import TIME_PATTERN
 
@@ -184,13 +183,16 @@ def test_rule_pattern():
 # 	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx' )
 # 	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx-polar' )
 
-def test_normalize():
+@mark.context( library='empty', config='empty', cleanup=True )
+@mark.service( cls=Polar )
+def test_normalize( service ):
 	assert normalize( '1000' ) == 'id == 1000'
 	assert normalize( '1999' ) == 'id == 1999'
 	assert normalize( '2000' ) == 'year == 2000'
 	assert normalize( str( datetime.utcnow().year ) ) == f'year == {datetime.utcnow().year}'
 
-	assert normalize( 'polar' ) == f'"polar" in __classifiers__'
+	assert isinstance( service, Polar ) # after creating a polar service instance there should be a polar keyword registered
+	assert normalize( 'polar' ) == f'"polar" in classifiers'
 	with raises( RuleSyntaxError ):
 		normalize( 'unknown_keyword' )
 
@@ -315,7 +317,3 @@ def test_parse_date_range():
 
 def parse_eval( rule: str, thing: Activity ) -> bool:
 	return parse_rule( rule ).evaluate( thing )
-
-def test_resolvers():
-	for key, val in RESOLVERS.items():
-		pprint( f'{key}: {val( A1, key )}' )

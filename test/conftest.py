@@ -1,7 +1,7 @@
 
 from logging import getLogger
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict, List
 from typing import Optional
 from typing import Tuple
 
@@ -202,3 +202,9 @@ def strava_server() -> Bottle:
 	if not strava_server_thread.is_alive():
 		strava_server_thread.start()
 	return strava_server
+
+@fixture
+def keywords() -> List[str]:
+	# load keywords plugin
+	from tracs.plugins.keywords import TIME_FRAMES
+	return list( Registry.virtual_fields.keys() )

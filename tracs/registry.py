@@ -356,6 +356,18 @@ def virtualfield( *args, **kwargs ):
 		_ARGS, _KWARGS = args, kwargs
 		return _inner
 
+# maybe we should go this way for decorators ... lots of copy and paste, but cleaner code ...
+def normalizer( *args, **kwargs ):
+	def _inner( *inner_args ):
+		Registry.register_normalizer( Normalizer( name=_fnspec( inner_args[0] )[0], description=kwargs.get( 'description' ), fn=inner_args[0] ) )
+		return inner_args[0]
+
+	if args and isfunction( args[0] ): # case: decorated function without arguments
+		Registry.register_normalizer( Normalizer( name=_fnspec( args[0] )[0], description=None, fn=args[0] ) )
+		return args[0]
+	elif kwargs and 'description' in kwargs:
+		return _inner
+
 def resourcetype( *args, **kwargs ):
 	def reg_resource_type( cls ):
 		Registry.register_resource_type( ResourceType( activity_cls = cls, **kwargs ) )

@@ -241,11 +241,12 @@ def floor_ceil_from( s: str, as_str = False ) -> Union[Tuple[Arrow, Arrow], Tupl
 	else:
 		a, frame = getarrow( s ), 'year' # this should not happen
 
+	# don't use as_date/as_time as there will be a wrong interpretation when dates/times are missing
 	if as_str:
 		if frame in ['year', 'month', 'day']:
-			return floor_ceil_str( a, frame, as_date=True )
+			return floor_ceil_str( a, frame, as_date=False )
 		elif frame in ['hour', 'minute', 'second']:
-			return floor_ceil_str( a, frame, as_time=True )
+			return floor_ceil_str( a, frame, as_time=False )
 		else:
 			return floor_ceil_str( a, frame )
 	else:

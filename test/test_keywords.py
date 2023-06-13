@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from tracs.plugins.keywords import KEYWORDS
+from tracs.plugins.rule_extensions import KEYWORDS
 from tracs.core import Keyword
 
 def test_keywords():

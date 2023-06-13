@@ -16,6 +16,7 @@ from rule_engine import SymbolResolutionError
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.polar import Polar
+from tracs.plugins.rule_extensions import TIME_FRAMES as TIME_FRAMES_EXT
 from tracs.rules import DATE_PATTERN
 from tracs.rules import FUZZY_DATE_PATTERN
 from tracs.rules import FUZZY_TIME_PATTERN
@@ -32,6 +33,8 @@ from tracs.rules import TIME_PATTERN
 
 NOW = datetime.utcnow()
 ATTRIBUTE_CONTEXT = Context(resolver=resolve_attribute)
+
+TIME_FRAMES_EXT_FROM_PLUGIN = TIME_FRAMES_EXT # this is to make sure the rule_extensions plugin is loaded
 
 A1 = Activity(
 	id=1000,
@@ -223,6 +226,9 @@ def test_normalize( service ):
 	assert normalize( 'name:"afternoon run"' ) == 'name != null and "afternoon run" in name.as_lower' # allow search-like string values
 	assert normalize( 'name:afternoon' ) == 'name != null and "afternoon" in name.as_lower' # same for unquoted strings
 
+	# custom normalizer handling
+	assert normalize( 'type:run' ) == 'type.name == "run"'
+
 def test_parse():
 	assert (r := parse_rule( 'id=1000' ))
 	assert r.evaluate( Activity( id=1000 ) )
@@ -238,7 +244,7 @@ def test_parse():
 	with raises( SymbolResolutionError ):
 		assert r.evaluate( Activity( id=1000 ) ) # evaluating is not ok -> error
 
-def test_evaluate( keywords ): # need to load keywords plugin
+def test_evaluate():
 	al = [
 		Activity(
 			id = 1000,
@@ -285,7 +291,7 @@ def test_evaluate_multipart():
 	assert parse_eval( 'multipart:true', a )
 	assert not parse_eval( 'multipart:false', a )
 
-def test_type( keywords ):
+def test_type():
 	# assert parse_eval( 'type=run', A1 ) # todo: support this?
 	assert parse_eval( 'type:run', A1 )
 	assert parse_eval( 'type:Run', A1 )

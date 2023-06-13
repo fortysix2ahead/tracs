@@ -234,9 +234,9 @@ def test_normalize( service ):
 	assert normalize( 'date:2020-05' ) == 'localtime >= d"2020-05-01T00:00:00+00:00" and localtime <= d"2020-05-31T23:59:59.999999+00:00"'
 	assert normalize( 'date:2020-05-13' ) == 'localtime >= d"2020-05-13T00:00:00+00:00" and localtime <= d"2020-05-13T23:59:59.999999+00:00"'
 
-	assert normalize( 'time:10' ) == 'time_of_day >= t"0001-01-01T10:00:00+00:00" and time_of_day <= t"0001-01-01T10:59:59.999999+00:00"'
-	assert normalize( 'time:10:30' ) == 'time_of_day >= t"0001-01-01T10:30:00+00:00" and time_of_day <= t"0001-01-01T10:30:59.999999+00:00"'
-	assert normalize( 'time:10:30:50' ) == 'time_of_day >= t"0001-01-01T10:30:50+00:00" and time_of_day <= t"0001-01-01T10:30:50.999999+00:00"'
+	assert normalize( 'time:10' ) == '__time__ >= d"0001-01-01T10:00:00+00:00" and __time__ <= d"0001-01-01T10:59:59.999999+00:00"'
+	assert normalize( 'time:10:30' ) == '__time__ >= d"0001-01-01T10:30:00+00:00" and __time__ <= d"0001-01-01T10:30:59.999999+00:00"'
+	assert normalize( 'time:10:30:50' ) == '__time__ >= d"0001-01-01T10:30:50+00:00" and __time__ <= d"0001-01-01T10:30:50.999999+00:00"'
 
 def test_parse():
 	assert (r := parse_rule( 'id=1000' ))

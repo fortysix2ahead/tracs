@@ -72,7 +72,7 @@ def date( left, op, right, rule ) -> str:
 @normalizer( description='allow access to localtime via provided time string' )
 def time( left, op, right, rule ) -> str:
 	if fullmatch( FUZZY_TIME_PATTERN, right ):
-		return 'time_of_day >= t"{}" and time_of_day <= t"{}"'.format( *floor_ceil_from( right, as_str=True ) )
+		return '__time__ >= d"{}" and __time__ <= d"{}"'.format( *floor_ceil_from( right, as_str=True ) )
 	else:
 		return rule
 
@@ -84,8 +84,6 @@ Registry.register_virtual_field(
 	vfield( 'day', int, lambda a: a.localtime.day, 'Day of Month', 'day on which the activity has taken place' ),
 	vfield( 'month', int, lambda a: a.localtime.month, 'Month', 'month in which the activity has taken place' ),
 	vfield( 'year', int, lambda a: a.localtime.year, 'Year', 'year in which the activity has taken place' ),
-	# time as date
-	vfield( 'date', date, lambda a: a.localtime.date(), 'Date', 'date of activity' ),
-	vfield( 'time_of_day', dtime, lambda a: a.localtime.time(), 'Time of Day', 'time of activity (without day information)' ),
-
+	# time helper
+	vfield( '__time__', datetime, lambda a: datetime( 1, 1, 1, a.localtime.hour, a.localtime.minute, a.localtime.second ), 'Helper for time calculations', 'local time without a date and tz' ),
 )

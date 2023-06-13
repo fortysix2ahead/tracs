@@ -187,24 +187,41 @@ def test_rule_pattern():
 @mark.service( cls=Polar )
 def test_normalize( service ):
 	# numbers from 2000 to current year are treated as years, otherwise
+	current_year = datetime.now().year
 	assert normalize( '1000' ) == 'id == 1000'
 	assert normalize( '1999' ) == 'id == 1999'
 	assert normalize( '2000' ) == 'year == 2000'
-	assert normalize( str( datetime.utcnow().year ) ) == f'year == {datetime.utcnow().year}'
-	assert normalize( str( datetime.utcnow().year + 1 ) ) == f'id == {datetime.utcnow().year + 1}'
+	assert normalize( str( current_year ) ) == f'year == {current_year}'
+	assert normalize( str( current_year + 1 ) ) == f'id == {current_year + 1}'
 
-	# there should be keywords for each registered service
+	# integer ranges can contain missing bounds and are treated as ids, bounds are inclusive
+	assert normalize( '1000..1003' ) == 'id >= 1000 and id <= 1003'
+	assert normalize( '1000..' ) == 'id >= 1000'
+	assert normalize( '..1003' ) == 'id <= 1003'
+
+	# integer lists are treated as id lists
+	assert normalize( '100,101,102' ) == 'id in [100,101,102]'
+
+	# there should be keywords for each registered service (and others)
 	assert isinstance( service, Polar ) # after creating a polar service instance there should be a polar keyword registered
 	assert normalize( 'polar' ) == f'"polar" in classifiers'
+	# unknown keywords result in an error
 	with raises( RuleSyntaxError ):
 		normalize( 'unknown_keyword' )
 
-	# missing value is treated as null
-	assert normalize( 'id:' ) == 'id == null'
-
-	# normal case
-	assert normalize( 'id:1000' ) == 'id == 1000'
+	# todo: more tests with the normal rule engine syntax need to go in here
+	# single equal is allowed and will be expanded to double
 	assert normalize( 'id=1000' ) == 'id == 1000'
+
+	# normal expressions are just passed through
+	assert normalize( 'id!=1000' ) == 'id != 1000'
+
+	# colon expressions
+	assert normalize( 'id:' ) == 'id == null' # missing values is treated as null
+	assert normalize( 'id:1000' ) == 'id == 1000' # normal case: expand to equals
+	assert normalize( 'flag:true' ) == 'flag == true' and normalize( 'flag:false' ) == 'flag == false' # boolean flags
+	assert normalize( 'name:"afternoon run"' ) == 'name != null and "afternoon run" in name.as_lower' # allow search-like string values
+	assert normalize( 'name:afternoon' ) == 'name != null and "afternoon" in name.as_lower' # same for unquoted strings
 
 def test_parse():
 	assert (r := parse_rule( 'id=1000' ))

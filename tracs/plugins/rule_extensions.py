@@ -1,10 +1,14 @@
-from datetime import date, datetime
+from datetime import date, datetime, time as dtime
+from re import fullmatch
 from typing import List, Literal, Tuple
 
 from arrow import Arrow, now
 
 from tracs.core import Keyword, Normalizer, vfield
 from tracs.registry import normalizer, Registry
+from tracs.rules import FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN
+from tracs.rules import parse_ceil_str, parse_floor_str
+from tracs.utils import floor_ceil_from
 
 TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day' ]
 YEAR_RANGE = range( 2000, datetime.utcnow().year + 1 )
@@ -58,6 +62,20 @@ def id( left, op, right, rule ) -> str:
 	except (TypeError, ValueError):
 		return rule
 
+@normalizer( description='allow access to localtime via provided date string' )
+def date( left, op, right, rule ) -> str:
+	if fullmatch( FUZZY_DATE_PATTERN, right ):
+		return 'localtime >= d"{}" and localtime <= d"{}"'.format( *floor_ceil_from( right, as_str=True ) )
+	else:
+		return rule
+
+@normalizer( description='allow access to localtime via provided time string' )
+def time( left, op, right, rule ) -> str:
+	if fullmatch( FUZZY_TIME_PATTERN, right ):
+		return 'time_of_day >= t"{}" and time_of_day <= t"{}"'.format( *floor_ceil_from( right, as_str=True ) )
+	else:
+		return rule
+
 Registry.register_virtual_field(
 	vfield( 'classifiers', List[str], lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ), 'Classifiers', 'list of classifiers of an activity' ),
 	# date/time fields
@@ -68,5 +86,6 @@ Registry.register_virtual_field(
 	vfield( 'year', int, lambda a: a.localtime.year, 'Year', 'year in which the activity has taken place' ),
 	# time as date
 	vfield( 'date', date, lambda a: a.localtime.date(), 'Date', 'date of activity' ),
+	vfield( 'time_of_day', dtime, lambda a: a.localtime.time(), 'Time of Day', 'time of activity (without day information)' ),
 
 )

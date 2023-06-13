@@ -164,3 +164,15 @@ def test_virtual_activity_fields():
 
 	with raises( AttributeError ):
 		assert a.getattr( 'does_not_exist' ) is None
+
+# don't allow overriding fields
+def test_virtual_activity_field_override():
+
+	a = Activity( id = 100, name='Run', type=ActivityTypes.run )
+
+	@virtualfield
+	def name( a: Activity ) -> str:
+		return 'override attempt for run'
+
+	assert 'name' in VirtualFields.__fields__
+	assert a.name == 'Run' and a.getattr( 'name' ) == 'Run'

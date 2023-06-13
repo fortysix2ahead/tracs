@@ -87,6 +87,7 @@ def normalize( rule: str ) -> str:
 
 	if match( INT_PATTERN, rule ): # integer number only
 		# treat numbers from 2000 to current year as years, else treat it as id
+		# todo: actually this mechanism needs to go into the rules_extensions plugin as 'year' is defined there
 		normalized_rule = f'year == {rule}' if int( rule ) in YEAR_RANGE else f'id == {rule}'
 
 	elif m := INT_RANGE_PATTERN.fullmatch( rule ):
@@ -182,10 +183,21 @@ def preprocess( rule: str ) -> str:
 	return preprocessed_rule
 
 def process( rule: str ) -> Rule:
+	"""
+	Creates a rule from a normalized and preprocessed rule string.
+
+	:param rule: rule string to use for rule creation
+	:return: newly created rule
+	"""
 	return Rule( rule, CONTEXT )
 
 def postprocess( rule: Rule ) -> Rule:
+	"""
+	Reserved for future use, does nothing at the moment.
 
+	:param rule: rule to postprocess
+	:return: postprocessed rule
+	"""
 	postprocessed_rule = rule
 
 	if rule != postprocessed_rule:

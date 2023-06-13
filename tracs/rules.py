@@ -62,10 +62,15 @@ def resolve_custom_attribute( thing: Any, name: str ) -> Any:
 		except AttributeError:
 			raise SymbolResolutionError( thing=thing, symbol_name=name )
 
+# this should also work ...
+def resolve_custom_attribute_2( thing: Any, name: str ) -> Any:
+	try:
+		return thing.getattr( name, quiet=False )
+	except AttributeError:
+		raise SymbolResolutionError( thing=thing, symbol_name=name )
+
 # CONTEXT = Context( default_value=None, resolver=resolve_custom_attribute )
 CONTEXT = Context( resolver=resolve_custom_attribute )
-
-# predefined rules
 
 # rules parser
 

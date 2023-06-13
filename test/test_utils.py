@@ -6,11 +6,12 @@ from datetime import timedelta
 from datetime import timezone
 from typing import List
 
+from arrow import Arrow, get as getarrow
 from dateutil.tz import gettz
 
 from tracs.activity_types import ActivityTypes
 from tracs.uid import UID
-from tracs.utils import as_datetime, str_to_timedelta, timedelta_to_str, unique_sorted
+from tracs.utils import as_datetime, floor_ceil_from, floor_ceil_str, str_to_timedelta, timedelta_to_str, unique_sorted
 from tracs.utils import fmt
 from tracs.utils import fromisoformat
 from tracs.utils import seconds_to_time
@@ -170,3 +171,36 @@ def test_unique_sorted():
 	uids = [ UID( 'strava:100' ), UID( 'polar:100' ), UID( 'polar:100' ) ]
 	assert unique_sorted( uids ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ] # we can use this without key as UID supports __lt__
 	assert unique_sorted( uids, key=lambda uid: uid.uid ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
+
+def test_floor_ceil():
+
+	a = Arrow( 2020, 5, 13, 10, 30, 50 )
+
+	assert floor_ceil_str( a, 'year' ) == ('2020-01-01T00:00:00+00:00', '2020-12-31T23:59:59.999999+00:00')
+	assert floor_ceil_str( a, 'month' ) == ('2020-05-01T00:00:00+00:00', '2020-05-31T23:59:59.999999+00:00')
+	assert floor_ceil_str( a, 'day' ) == ('2020-05-13T00:00:00+00:00', '2020-05-13T23:59:59.999999+00:00')
+	assert floor_ceil_str( a, 'hour' ) == ('2020-05-13T10:00:00+00:00', '2020-05-13T10:59:59.999999+00:00')
+	assert floor_ceil_str( a, 'minute' ) == ('2020-05-13T10:30:00+00:00', '2020-05-13T10:30:59.999999+00:00')
+	assert floor_ceil_str( a, 'second' ) == ('2020-05-13T10:30:50+00:00', '2020-05-13T10:30:50.999999+00:00')
+
+	assert floor_ceil_str( a, 'year', as_date=True ) == ('2020-01-01', '2020-12-31')
+	assert floor_ceil_str( a, 'month', as_date=True ) == ('2020-05-01', '2020-05-31')
+	assert floor_ceil_str( a, 'day', as_date=True ) == ('2020-05-13', '2020-05-13')
+	assert floor_ceil_str( a, 'hour', as_date=True ) == ('2020-05-13', '2020-05-13')
+	assert floor_ceil_str( a, 'minute', as_date=True ) == ('2020-05-13', '2020-05-13')
+	assert floor_ceil_str( a, 'second', as_date=True ) == ('2020-05-13', '2020-05-13')
+
+	# next 3 cases are undefined ??
+	assert floor_ceil_str( a, 'year', as_time=True ) == ('00:00:00', '23:59:59')
+	assert floor_ceil_str( a, 'month', as_time=True ) == ('00:00:00', '23:59:59')
+	assert floor_ceil_str( a, 'day', as_time=True ) == ('00:00:00', '23:59:59')
+	assert floor_ceil_str( a, 'hour', as_time=True ) == ('10:00:00', '10:59:59')
+	assert floor_ceil_str( a, 'minute', as_time=True ) == ('10:30:00', '10:30:59')
+	assert floor_ceil_str( a, 'second', as_time=True ) == ('10:30:50', '10:30:50')
+
+	assert floor_ceil_from( '2020', as_str=True ) == ('2020-01-01', '2020-12-31')
+	assert floor_ceil_from( '2020-05', as_str=True ) == ('2020-05-01', '2020-05-31')
+	assert floor_ceil_from( '2020-05-13', as_str=True ) == ('2020-05-13', '2020-05-13')
+	assert floor_ceil_from( '10', as_str=True ) == ('10:00:00', '10:59:59')
+	assert floor_ceil_from( '10:30', as_str=True ) == ('10:30:00', '10:30:59')
+	assert floor_ceil_from( '10:30:50', as_str=True ) == ('10:30:50', '10:30:50')

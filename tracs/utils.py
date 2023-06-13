@@ -6,9 +6,10 @@ from enum import Enum
 from functools import wraps
 from re import compile as rxcompile, match
 from time import gmtime, perf_counter
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
+from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, TypeVar, Union
 from urllib.parse import ParseResult, ParseResultBytes, urlparse as urllibparse
 
+from arrow import Arrow, get as getarrow
 from babel.dates import format_date, format_datetime, format_time, format_timedelta, get_timezone
 from babel.numbers import format_decimal
 from click import style
@@ -25,6 +26,15 @@ T = TypeVar('T')
 
 INT_COLON = rxcompile( '\d:.+' )
 TIMEDELTA = rxcompile( '((?P<days>\d\d):)?(?P<hours>\d\d):(?P<minutes>\d\d):(?P<seconds>\d\d)(\.(?P<fraction>\d{1,6}))?' )
+
+TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second' ]
+
+YEAR = rxcompile( '^(?P<year>[12]\d\d\d)$' )
+YEAR_MONTH = rxcompile( '^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)$' )
+YEAR_MONTH_DAY = rxcompile( '^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)-(?P<day>[0-3]\d)$' )
+HOUR = rxcompile( '^(?P<hour>[0-1]\d|2[0-4])$' )
+HOUR_MINUTE = rxcompile( '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d)$' )
+HOUR_MINUTE_SECOND = rxcompile( '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d):(?P<second>[0-5]\d)$' )
 
 @dataclass
 class UtilityConfiguration:
@@ -201,6 +211,45 @@ def toisoformat( value ) -> Optional[str]:
 		else:
 			return (datetime.min + value).strftime( '%H:%M:%S' )
 	return value # todo: or return None?
+
+def floor_ceil( a: Arrow, frame: TIME_FRAMES ) -> Tuple[Arrow, Arrow]:
+	return a.floor( frame ), a.ceil( frame )
+
+def floor_ceil_str( a: Arrow, frame: TIME_FRAMES, as_date: bool = False, as_time: bool = False ) -> Tuple[str, str]:
+	f, c = floor_ceil( a, frame )
+	if as_date:
+		return f.format( fmt='YYYY-MM-DD' ), c.format( fmt='YYYY-MM-DD' )
+	elif as_time:
+		return f.format( fmt='HH:mm:ss' ), c.format( fmt='HH:mm:ss' )
+	else:
+		return f.isoformat(), c.isoformat()
+
+# noinspection PyTypeChecker
+def floor_ceil_from( s: str, as_str = False ) -> Union[Tuple[Arrow, Arrow], Tuple[str, str]]:
+	if YEAR.fullmatch( s ):
+		a, frame = getarrow( s ), 'year'
+	elif YEAR_MONTH.fullmatch( s ):
+		a, frame = getarrow( s ), 'month'
+	elif YEAR_MONTH_DAY.fullmatch( s ):
+		a, frame = getarrow( s ), 'day'
+	elif HOUR.fullmatch( s ):
+		a, frame = getarrow( s, 'HH' ), 'hour'
+	elif HOUR_MINUTE.fullmatch( s ):
+		a, frame = getarrow( s, 'HH:mm' ), 'minute'
+	elif HOUR_MINUTE_SECOND.fullmatch( s ):
+		a, frame = getarrow( s, 'HH:mm:ss' ), 'second'
+	else:
+		a, frame = getarrow( s ), 'year' # this should not happen
+
+	if as_str:
+		if frame in ['year', 'month', 'day']:
+			return floor_ceil_str( a, frame, as_date=True )
+		elif frame in ['hour', 'minute', 'second']:
+			return floor_ceil_str( a, frame, as_time=True )
+		else:
+			return floor_ceil_str( a, frame )
+	else:
+		return floor_ceil( getarrow( s ), frame )
 
 def serialize( value ) -> Optional[str]:
 	if type( value ) in [time, datetime]:

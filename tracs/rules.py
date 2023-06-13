@@ -16,7 +16,7 @@ from tracs.registry import Registry
 
 log = getLogger( __name__ )
 
-TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day' ]
+TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day', 'hour' ]
 
 TRUE_FALSE = rx_compile( r'^(true|false)$' )
 
@@ -129,10 +129,10 @@ def normalize( rule: str ) -> str:
 				normalized_rule = f'{left} == null'
 
 			elif match( NUMBER_PATTERN, right ):
-				if RESOLVER_TYPES.get( left ) is datetime: # years are caught by this regex already ...
-					normalized_rule = f'{left} >= d"{parse_floor_str( right )}" and {left} <= d"{parse_ceil_str( right )}"'
-				else:
-					normalized_rule = f'{left} == {right}'
+				# if RESOLVER_TYPES.get( left ) is datetime: # years are caught by this regex already ...
+				# 	normalized_rule = f'{left} >= d"{parse_floor_str( right )}" and {left} <= d"{parse_ceil_str( right )}"'
+				# else:
+				normalized_rule = f'{left} == {right}'
 
 			elif TRUE_FALSE.match( right ):
 				normalized_rule = f'{left} == {right}'

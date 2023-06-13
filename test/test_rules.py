@@ -229,6 +229,15 @@ def test_normalize( service ):
 	# custom normalizer handling
 	assert normalize( 'type:run' ) == 'type.name == "run"'
 
+	# date + time normalizing
+	assert normalize( 'date:2020' ) == 'localtime >= d"2020-01-01" and localtime <= d"2020-12-31"'
+	assert normalize( 'date:2020-05' ) == 'localtime >= d"2020-05-01" and localtime <= d"2020-05-31"'
+	assert normalize( 'date:2020-05-13' ) == 'localtime >= d"2020-05-13" and localtime <= d"2020-05-13"'
+
+	assert normalize( 'time:10' ) == 'time_of_day >= t"10:00:00" and time_of_day <= t"10:59:59"'
+	assert normalize( 'time:10:30' ) == 'time_of_day >= t"10:30:00" and time_of_day <= t"10:30:59"'
+	assert normalize( 'time:10:30:50' ) == 'time_of_day >= t"10:30:50" and time_of_day <= t"10:30:50"'
+
 def test_parse():
 	assert (r := parse_rule( 'id=1000' ))
 	assert r.evaluate( Activity( id=1000 ) )
@@ -312,7 +321,7 @@ def test_range():
 
 	assert parse_eval( 'heartrate:100.0..200.0', A1 )
 
-def test_date_time():
+def test_date():
 	assert parse_eval( 'date=2023-01-13', A1 )
 	assert parse_eval( 'date:2023', A1 )
 	assert not parse_eval( 'date:2022', A1 )
@@ -326,7 +335,9 @@ def test_date_time():
 	assert parse_eval( 'date:..2023', A1 )
 	assert parse_eval( 'date:2023-01-12..2023-02', A1 )
 
-	# assert parse_eval( 'time=10:00:42', A1 )
+def test_time():
+
+	assert parse_eval( 'time=10:00:42', A1 )
 
 def test_parse_date_range():
 

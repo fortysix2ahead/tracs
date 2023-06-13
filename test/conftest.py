@@ -206,5 +206,5 @@ def strava_server() -> Bottle:
 @fixture
 def keywords() -> List[str]:
 	# load keywords plugin
-	from tracs.plugins.keywords import TIME_FRAMES
+	from tracs.plugins.rule_extensions import TIME_FRAMES
 	return list( Registry.virtual_fields.keys() )

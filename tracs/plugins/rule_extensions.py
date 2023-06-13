@@ -42,11 +42,12 @@ Registry.register_keywords(
 
 # normalizers transform a field/value pair into a valid normalized expression
 # this enables operations like 'list classifier:polar' where ':' does not evaluate to '=='
+# the normalizer is called like function( field_name, normalized_rule )
 Registry.register_normalizer(
-	Normalizer( 'classifier', 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda v: f'"{v}" in classifiers' ),
-	Normalizer( 'service', 'alias for classifier', lambda v: f'"{v}" in classifiers' ),
-	Normalizer( 'source', 'alias for classifier', lambda v: f'"{v}" in classifiers' ),
-	Normalizer( 'type', '', lambda v: f'"{v.lower()}" == type.name' ),
+	Normalizer( 'classifier', 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda v, r: f'"{v}" in classifiers' ),
+	Normalizer( 'service', 'alias for classifier', lambda v, r: f'"{v}" in classifiers' ),
+	Normalizer( 'source', 'alias for classifier', lambda v, r: f'"{v}" in classifiers' ),
+	Normalizer( 'type', 'normalizer to support filtering for type names', lambda v, r: f'type.name == "{v.lower()}"' ),
 )
 
 Registry.register_virtual_field(

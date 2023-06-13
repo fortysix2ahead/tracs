@@ -128,10 +128,7 @@ def normalize( rule: str ) -> str:
 				normalized_rule = f'{left} == "{right}"'
 
 		elif op == ':':
-			if left in Registry.rule_normalizers:
-				normalized_rule = Registry.rule_normalizers[left]( right )
-
-			elif right is None:
+			if right is None:
 				normalized_rule = f'{left} == null'
 
 			elif match( NUMBER_PATTERN, right ):
@@ -162,6 +159,11 @@ def normalize( rule: str ) -> str:
 
 			else:
 				normalized_rule = f'{left} != null and "{right.lower()}" in {left}.as_lower'
+
+			# apply normalizer, if a normalizer for the left side of the expression exists
+
+			if left in Registry.rule_normalizers:
+				normalized_rule = Registry.rule_normalizers[left]( right, normalized_rule ) # pass the already normalized rule, just in case a normalizer is interested
 
 		else:
 			normalized_rule = f'{left} {op} {right}'

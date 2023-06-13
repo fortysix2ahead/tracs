@@ -18,8 +18,6 @@ log = getLogger( __name__ )
 
 TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day' ]
 
-YEAR_RANGE = range( 2000, datetime.utcnow().year + 1 )
-
 TRUE_FALSE = rx_compile( r'^(true|false)$' )
 
 INT_PATTERN = '^(?P<value>\d+)$'
@@ -88,14 +86,13 @@ def parse_rule( rule: str ) -> Rule:
 
 def normalize( rule: str ) -> str:
 
-	normalized_rule = None
+	left, op, right, normalized_rule = None, None, None, None
 
 	if match( INT_PATTERN, rule ): # integer number only
-		# treat numbers from 2000 to current year as years, else treat it as id
-		# todo: actually this mechanism needs to go into the rules_extensions plugin as 'year' is defined there
-		normalized_rule = f'year == {rule}' if int( rule ) in YEAR_RANGE else f'id == {rule}'
+		left, right, normalized_rule = 'id', rule, f'id == {rule}'
 
 	elif m := INT_RANGE_PATTERN.fullmatch( rule ):
+		left, right = 'id', rule
 		range_from, range_to = m.groups()
 		if range_from and not range_to:
 			normalized_rule = f'id >= {range_from}'
@@ -105,11 +102,11 @@ def normalize( rule: str ) -> str:
 			normalized_rule = f'id >= {range_from} and id <= {range_to}'
 
 	elif INT_LIST.fullmatch( rule ):
-		normalized_rule = f'id in [{rule}]'
+		left, right, normalized_rule = 'id', rule, f'id in [{rule}]'
 
 	elif match( KEYWORD_PATTERN, rule ):  # keywords
 		if rule in Registry.rule_keywords.keys():
-			normalized_rule = Registry.rule_keywords[rule]( rule )
+			right, normalized_rule = rule, Registry.rule_keywords[rule]( rule )
 		else:
 			raise RuleSyntaxError( f'syntax error: unsupported keyword "{rule}"' )
 
@@ -160,18 +157,19 @@ def normalize( rule: str ) -> str:
 			else:
 				normalized_rule = f'{left} != null and "{right.lower()}" in {left}.as_lower'
 
-			# apply normalizer, if a normalizer for the left side of the expression exists
-
-			if left in Registry.rule_normalizers:
-				normalized_rule = Registry.rule_normalizers[left]( right, normalized_rule ) # pass the already normalized rule, just in case a normalizer is interested
-
 		else:
 			normalized_rule = f'{left} {op} {right}'
 
+	# apply normalizer, if a normalizer for the left side of the expression exists
+	if left in Registry.rule_normalizers:
+		normalized_rule = Registry.rule_normalizers[left]( left, op, right, normalized_rule )  # pass the already normalized rule, just in case a normalizer is interested
+
+	# log rule
+	log.debug( f'normalized rule {rule} to {normalized_rule}' )
+
+	# error if no rule was created
 	if not normalized_rule:
 		raise RuleSyntaxError( f'syntax error in expression "{rule}"' )
-
-	log.debug( f'normalized rule {rule} to {normalized_rule}' )
 
 	return normalized_rule
 

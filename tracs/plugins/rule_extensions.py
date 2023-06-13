@@ -1,12 +1,13 @@
-from datetime import date
+from datetime import date, datetime
 from typing import List, Literal, Tuple
 
 from arrow import Arrow, now
 
 from tracs.core import Keyword, Normalizer, vfield
-from tracs.registry import Registry
+from tracs.registry import normalizer, Registry
 
 TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day' ]
+YEAR_RANGE = range( 2000, datetime.utcnow().year + 1 )
 
 def floor_ceil( a: Arrow, frame: TIME_FRAMES ) -> Tuple[Arrow, Arrow]:
 	return a.floor( frame ), a.ceil( frame )
@@ -42,13 +43,20 @@ Registry.register_keywords(
 
 # normalizers transform a field/value pair into a valid normalized expression
 # this enables operations like 'list classifier:polar' where ':' does not evaluate to '=='
-# the normalizer is called like function( field_name, normalized_rule )
+# the normalizer is called like function( left, operator, right, normalized_rule )
 Registry.register_normalizer(
-	Normalizer( 'classifier', 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda v, r: f'"{v}" in classifiers' ),
-	Normalizer( 'service', 'alias for classifier', lambda v, r: f'"{v}" in classifiers' ),
-	Normalizer( 'source', 'alias for classifier', lambda v, r: f'"{v}" in classifiers' ),
-	Normalizer( 'type', 'normalizer to support filtering for type names', lambda v, r: f'type.name == "{v.lower()}"' ),
+	Normalizer( 'classifier', 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda l, o, r, nr: f'"{r}" in classifiers' ),
+	Normalizer( 'service', 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' ),
+	Normalizer( 'source', 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' ),
+	Normalizer( 'type', 'normalizer to support filtering for type names', lambda l, o, r, nr: f'type.name == "{r.lower()}"' ),
 )
+
+@normalizer( description='treat ids from 2000 to current year as years rather than ids' )
+def id( left, op, right, rule ) -> str:
+	try:
+		return f'year == {right}' if int( right ) in YEAR_RANGE else rule
+	except (TypeError, ValueError):
+		return rule
 
 Registry.register_virtual_field(
 	vfield( 'classifiers', List[str], lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ), 'Classifiers', 'list of classifiers of an activity' ),

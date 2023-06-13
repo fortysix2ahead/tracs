@@ -186,18 +186,23 @@ def test_rule_pattern():
 @mark.context( library='empty', config='empty', cleanup=True )
 @mark.service( cls=Polar )
 def test_normalize( service ):
+	# numbers from 2000 to current year are treated as years, otherwise
 	assert normalize( '1000' ) == 'id == 1000'
 	assert normalize( '1999' ) == 'id == 1999'
 	assert normalize( '2000' ) == 'year == 2000'
 	assert normalize( str( datetime.utcnow().year ) ) == f'year == {datetime.utcnow().year}'
+	assert normalize( str( datetime.utcnow().year + 1 ) ) == f'id == {datetime.utcnow().year + 1}'
 
+	# there should be keywords for each registered service
 	assert isinstance( service, Polar ) # after creating a polar service instance there should be a polar keyword registered
 	assert normalize( 'polar' ) == f'"polar" in classifiers'
 	with raises( RuleSyntaxError ):
 		normalize( 'unknown_keyword' )
 
+	# missing value is treated as null
 	assert normalize( 'id:' ) == 'id == null'
 
+	# normal case
 	assert normalize( 'id:1000' ) == 'id == 1000'
 	assert normalize( 'id=1000' ) == 'id == 1000'
 

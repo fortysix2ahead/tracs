@@ -22,7 +22,7 @@ log = getLogger( __name__ )
 def list_activities( activities: List[Activity], sort: str = False, reverse: bool = False, format_name: str = False, ctx: ApplicationContext = None ) -> None:
 	sort = sort or 'time'
 
-	if sort in Activity.fieldnames():
+	if sort in Activity.field_names():
 		activities.sort( key=lambda act: getattr( act, sort, None ) )
 	else:
 		log.warning( f'ignoring unknown sort field "{sort}", falling back to "time"' )

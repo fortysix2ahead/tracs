@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, Field, fields, InitVar, MISSING, replace
 from datetime import datetime, time, timedelta
 from logging import getLogger
-from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar
+from typing import Any, Dict, List, Optional, TypeVar
 
 from dataclass_factory import Schema
 from tzlocal import get_localzone_name
@@ -130,12 +130,26 @@ class Activity:
 	# class methods
 
 	@classmethod
-	def fields( cls ) -> List[Field]:
-		return list( fields( Activity ) )
+	# todo: change default of include_internal to False (keep at the moment for compatibility reasons)
+	def fields( cls, include_internal = True, include_virtual = False ) -> List[Field]:
+		_fields = list( fields( Activity ) )
+		if include_virtual:
+			_fields.extend( [f for f in VirtualFields.__fields__.values()] )
+		if not include_internal:
+			_fields = list( filter( lambda f: not f.name.startswith( '_' ), _fields ) )
+		return _fields
 
 	@classmethod
-	def fieldnames( cls ) -> List[str]:
-		return [f.name for f in fields( Activity )]
+	# todo: change default of include_internal to False (keep at the moment for compatibility reasons)
+	def field_names( cls, include_internal = True, include_virtual = False ) -> List[str]:
+		return [f.name for f in cls.fields( include_internal=include_internal, include_virtual=include_virtual )]
+
+	@classmethod
+	def field_type( cls, field_name: str ) -> Any:
+		if f := next( (f for f in cls.fields( include_internal=True, include_virtual=True ) if f.name == field_name), None ):
+			return f.type
+		else:
+			return None
 
 	@classmethod
 	def schema( cls ) -> Schema:

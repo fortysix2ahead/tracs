@@ -115,6 +115,26 @@ def test_resource():
 	assert r.as_text() == some_string
 	assert r.text is None # todo: change to throw exception?
 
+def test_fields():
+	# load rule extension plugin
+	from tracs.plugins.rule_extensions import TIME_FRAMES
+
+	fields = Activity.fields()
+	assert next( f for f in fields if f.name == 'name' )
+	field_names = Activity.field_names()
+	assert 'name' in field_names and '__uids__' in field_names and 'weekday' not in field_names
+
+	field_names = Activity.field_names( include_internal=False )
+	assert 'name' in field_names and '__uids__' not in field_names and 'weekday' not in field_names
+
+	field_names = Activity.field_names( include_virtual=True )
+	assert 'name' in field_names and '__uids__' in field_names and 'weekday' in field_names
+
+	assert Activity.field_type( 'name' ) == 'Optional[str]'
+	assert Activity.field_type( '__uids__' ) == 'List[UID]'
+	assert Activity.field_type( 'weekday' ) == int
+	assert Activity.field_type( 'noexist' ) is None
+
 def test_virtual_activity_fields():
 
 	@virtualfield

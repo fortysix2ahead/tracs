@@ -6,13 +6,14 @@ from decimal import Decimal, InvalidOperation
 from logging import getLogger
 from re import compile as rx_compile, match
 from sys import maxsize
-from typing import Any, Dict, List, Literal, Tuple, Type
+from typing import Any, Dict, List, Literal, Tuple, Type, Union
 
 from arrow import Arrow, get as getarrow
 from dateutil.tz import UTC
 from rule_engine import Context, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
 
 from tracs.registry import Registry
+from tracs.utils import floor_ceil_from
 
 log = getLogger( __name__ )
 
@@ -41,6 +42,9 @@ FUZZY_DATE_PATTERN = '^(?P<year>[12]\d\d\d)(-(?P<month>[01]\d))?(-(?P<day>[0-3]\
 
 DATE_RANGE_PATTERN = rx_compile(
 	'^((?P<year_from>[12]\d\d\d)(-(?P<month_from>[01]\d))?(-(?P<day_from>[0-3]\d))?)?\.\.((?P<year_to>[12]\d\d\d)(-(?P<month_to>[01]\d))?(-(?P<day_to>[0-3]\d))?)?$'
+)
+TIME_RANGE_PATTERN = rx_compile(
+	'^((?P<hour_from>[0-2]\d)(:(?P<min_from>[0-5]\d))?(:(?P<sec_from>[0-5]\d))?)?\.\.((?P<hour_to>[0-2]\d)(:(?P<min_to>[0-5]\d))?(:(?P<sec_to>[0-5]\d))?)?$'
 )
 
 TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d):(?P<second>[0-5]\d)$'
@@ -148,6 +152,9 @@ def normalize( rule: str ) -> str:
 				range_from, range_to = parse_date_range_as_str( right )
 				normalized_rule = f'{left} >= d"{range_from}" and {left} <= d"{range_to}"'
 
+			elif TIME_RANGE_PATTERN.fullmatch( right ) and Registry.rule_normalizer_type( left ) is datetime:
+				normalized_rule = '{0} >= d"{1}" and {0} <= d"{2}"'.format( left, *parse_time_range( right, as_str=True ) )
+
 			elif match( RANGE_PATTERN, right ):
 				range_from, range_to = parse_number_range( right )
 				normalized_rule = f'{left} >= {range_from} and {left} <= {range_to}'
@@ -232,6 +239,14 @@ def parse_date_range_as_str( r: str ) -> Tuple[str, str]:
 def parse_date_range( r: str ) -> Tuple[datetime, datetime]:
 	left, right = r.split( '..', maxsplit=1 )
 	return parse_floor( left ), parse_ceil( right )
+
+def parse_time_range( r: str, as_str: bool = False ) -> Union[Tuple[datetime, datetime], Tuple[str, str]]:
+	left, right = r.split( '..', maxsplit=1 )
+	left = floor_ceil_from( left )[0] if left else getarrow( '00:00:00', 'HH:mm:ss' )
+	right = floor_ceil_from( right )[0] if right else getarrow( '23:59:59.999999', 'HH:mm:ss.SSSSSS' )
+	if as_str:
+		left, right = left.isoformat(), right.isoformat()
+	return left, right
 
 def parse_floor_str( s: str ) -> str:
 	return parse_floor( s ).strftime( '%Y-%m-%d' )

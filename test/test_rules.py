@@ -17,7 +17,7 @@ from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.polar import Polar
 from tracs.plugins.rule_extensions import TIME_FRAMES as TIME_FRAMES_EXT
-from tracs.rules import DATE_PATTERN, DATE_RANGE_PATTERN
+from tracs.rules import DATE_PATTERN, DATE_RANGE_PATTERN, TIME_RANGE_PATTERN
 from tracs.rules import FUZZY_DATE_PATTERN
 from tracs.rules import FUZZY_TIME_PATTERN
 from tracs.rules import INT_LIST
@@ -130,6 +130,17 @@ def test_rule_pattern():
 	assert DATE_RANGE_PATTERN.fullmatch( '..2020' )
 	assert DATE_RANGE_PATTERN.fullmatch( '..2020-06-30' )
 	assert DATE_RANGE_PATTERN.fullmatch( '..2020-06' )
+
+	# time ranges
+	assert TIME_RANGE_PATTERN.fullmatch( '09..11' )
+	assert TIME_RANGE_PATTERN.fullmatch( '09:05..11:05' )
+	assert TIME_RANGE_PATTERN.fullmatch( '09:05:36..11:05:55' )
+	assert TIME_RANGE_PATTERN.fullmatch( '09..' )
+	assert TIME_RANGE_PATTERN.fullmatch( '09:05..' )
+	assert TIME_RANGE_PATTERN.fullmatch( '09:05:36..' )
+	assert TIME_RANGE_PATTERN.fullmatch( '..11' )
+	assert TIME_RANGE_PATTERN.fullmatch( '..11:05' )
+	assert TIME_RANGE_PATTERN.fullmatch( '..11:05:55' )
 
 	# dates always contain year, month and day
 	assert match( DATE_PATTERN, '2022-03-13' )
@@ -354,6 +365,12 @@ def test_date_time():
 	assert parse_eval( 'time:10', A1 )
 	assert parse_eval( 'time:10:00', A1 )
 	assert parse_eval( 'time:10:00:42', A1 )
+
+	assert parse_eval( 'time:09..11', A1 )
+	assert parse_eval( 'time:09..', A1 )
+	assert parse_eval( 'time:..11', A1 )
+	assert parse_eval( 'time:09:00..11:00', A1 )
+	assert parse_eval( 'time:09:00:05..10:00:50', A1 )
 
 def test_parse_date_range():
 

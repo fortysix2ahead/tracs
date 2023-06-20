@@ -6,7 +6,7 @@ from arrow import Arrow, now
 
 from tracs.core import Keyword, Normalizer, vfield
 from tracs.registry import normalizer, Registry
-from tracs.rules import DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, parse_date_range_as_str
+from tracs.rules import DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, parse_date_range_as_str, parse_time_range, TIME_RANGE_PATTERN
 from tracs.rules import parse_ceil_str, parse_floor_str
 from tracs.utils import floor_ceil_from
 
@@ -75,6 +75,8 @@ def date( left, op, right, rule ) -> str:
 def time( left, op, right, rule ) -> str:
 	if fullmatch( FUZZY_TIME_PATTERN, right ):
 		return '__time__ >= d"{}" and __time__ <= d"{}"'.format( *floor_ceil_from( right, as_str=True ) )
+	elif TIME_RANGE_PATTERN.fullmatch( right ):
+		return '__time__ >= d"{}" and __time__ <= d"{}"'.format( *parse_time_range( right, as_str=True ) )
 	else:
 		return rule
 

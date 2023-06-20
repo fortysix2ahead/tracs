@@ -39,6 +39,10 @@ DATE_YEAR_MONTH_PATTERN = '^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)$'
 DATE_YEAR_MONTH_DAY_PATTERN = DATE_PATTERN
 FUZZY_DATE_PATTERN = '^(?P<year>[12]\d\d\d)(-(?P<month>[01]\d))?(-(?P<day>[0-3]\d))?$'
 
+DATE_RANGE_PATTERN = rx_compile(
+	'^((?P<year_from>[12]\d\d\d)(-(?P<month_from>[01]\d))?(-(?P<day_from>[0-3]\d))?)?\.\.((?P<year_to>[12]\d\d\d)(-(?P<month_to>[01]\d))?(-(?P<day_to>[0-3]\d))?)?$'
+)
+
 TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d):(?P<second>[0-5]\d)$'
 FUZZY_TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4])(:(?P<minute>[0-5]\d)(:(?P<second>[0-5]\d))?)?$'
 
@@ -129,9 +133,6 @@ def normalize( rule: str ) -> str:
 				normalized_rule = f'{left} == null'
 
 			elif match( NUMBER_PATTERN, right ):
-				# if RESOLVER_TYPES.get( left ) is datetime: # years are caught by this regex already ...
-				# 	normalized_rule = f'{left} >= d"{parse_floor_str( right )}" and {left} <= d"{parse_ceil_str( right )}"'
-				# else:
 				normalized_rule = f'{left} == {right}'
 
 			elif TRUE_FALSE.match( right ):
@@ -140,19 +141,16 @@ def normalize( rule: str ) -> str:
 			elif match (QUOTED_STRING_PATTERN, right):
 				normalized_rule = f'{left} != null and {right.lower()} in {left}.as_lower'
 
-			elif match( DATE_YEAR_MONTH_PATTERN, right ) and RESOLVER_TYPES.get( left ) is datetime:
+			elif match( FUZZY_DATE_PATTERN, right ) and Registry.rule_normalizer_type( left ) in [datetime, 'datetime', 'Optional[datetime]']:
 				normalized_rule = f'{left} >= d"{parse_floor_str( right )}" and {left} <= d"{parse_ceil_str( right )}"'
 
-			elif match( DATE_YEAR_MONTH_DAY_PATTERN, right ) and RESOLVER_TYPES.get( left ) is datetime:
-				normalized_rule = f'{left} >= d"{parse_floor_str( right )}" and {left} <= d"{parse_ceil_str( right )}"'
+			elif DATE_RANGE_PATTERN.fullmatch( right ) and Registry.rule_normalizer_type( left ) is datetime:
+				range_from, range_to = parse_date_range_as_str( right )
+				normalized_rule = f'{left} >= d"{range_from}" and {left} <= d"{range_to}"'
 
 			elif match( RANGE_PATTERN, right ):
-				if RESOLVER_TYPES.get( left ) is datetime:
-					range_from, range_to = parse_date_range_as_str( right )
-					normalized_rule = f'{left} >= d"{range_from}" and {left} <= d"{range_to}"'
-				else:
-					range_from, range_to = parse_number_range( right )
-					normalized_rule = f'{left} >= {range_from} and {left} <= {range_to}'
+				range_from, range_to = parse_number_range( right )
+				normalized_rule = f'{left} >= {range_from} and {left} <= {range_to}'
 
 			else:
 				normalized_rule = f'{left} != null and "{right.lower()}" in {left}.as_lower'
@@ -228,7 +226,8 @@ def parse_number_range( s: str ) -> Tuple[str, str]:
 
 def parse_date_range_as_str( r: str ) -> Tuple[str, str]:
 	range_from, range_to = parse_date_range( r )
-	return range_from.strftime( '%Y-%m-%d' ), range_to.strftime( '%Y-%m-%d' )
+	# return range_from.strftime( '%Y-%m-%d' ), range_to.strftime( '%Y-%m-%d' )
+	return range_from.isoformat(), range_to.isoformat()
 
 def parse_date_range( r: str ) -> Tuple[datetime, datetime]:
 	left, right = r.split( '..', maxsplit=1 )

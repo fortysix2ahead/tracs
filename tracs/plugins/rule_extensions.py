@@ -6,7 +6,7 @@ from arrow import Arrow, now
 
 from tracs.core import Keyword, Normalizer, vfield
 from tracs.registry import normalizer, Registry
-from tracs.rules import FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN
+from tracs.rules import DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, parse_date_range_as_str
 from tracs.rules import parse_ceil_str, parse_floor_str
 from tracs.utils import floor_ceil_from
 
@@ -49,27 +49,29 @@ Registry.register_keywords(
 # this enables operations like 'list classifier:polar' where ':' does not evaluate to '=='
 # the normalizer is called like function( left, operator, right, normalized_rule )
 Registry.register_normalizer(
-	Normalizer( 'classifier', 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda l, o, r, nr: f'"{r}" in classifiers' ),
-	Normalizer( 'service', 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' ),
-	Normalizer( 'source', 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' ),
-	Normalizer( 'type', 'normalizer to support filtering for type names', lambda l, o, r, nr: f'type.name == "{r.lower()}"' ),
+	Normalizer( 'classifier', str, 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda l, o, r, nr: f'"{r}" in classifiers' ),
+	Normalizer( 'service', str, 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' ),
+	Normalizer( 'source', str, 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' ),
+	Normalizer( 'type', str, 'normalizer to support filtering for type names', lambda l, o, r, nr: f'type.name == "{r.lower()}"' ),
 )
 
-@normalizer( description='treat ids from 2000 to current year as years rather than ids' )
+@normalizer( type=int, description='treat ids from 2000 to current year as years rather than ids' )
 def id( left, op, right, rule ) -> str:
 	try:
 		return f'year == {right}' if int( right ) in YEAR_RANGE else rule
 	except (TypeError, ValueError):
 		return rule
 
-@normalizer( description='allow access to localtime via provided date string' )
+@normalizer( type=datetime, description='allow access to localtime via provided date string' )
 def date( left, op, right, rule ) -> str:
 	if fullmatch( FUZZY_DATE_PATTERN, right ):
 		return 'localtime >= d"{}" and localtime <= d"{}"'.format( *floor_ceil_from( right, as_str=True ) )
+	elif DATE_RANGE_PATTERN.fullmatch( right ):
+		return 'localtime >= d"{}" and localtime <= d"{}"'.format( *parse_date_range_as_str( right ) )
 	else:
 		return rule
 
-@normalizer( description='allow access to localtime via provided time string' )
+@normalizer( type=datetime, description='allow access to localtime via provided time string' )
 def time( left, op, right, rule ) -> str:
 	if fullmatch( FUZZY_TIME_PATTERN, right ):
 		return '__time__ >= d"{}" and __time__ <= d"{}"'.format( *floor_ceil_from( right, as_str=True ) )

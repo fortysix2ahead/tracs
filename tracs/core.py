@@ -73,6 +73,7 @@ class Keyword:
 class Normalizer:
 
 	name: str = field( default=None )
+	type: Any = field( default=None )
 	description: Optional[str] = field( default=None )
 	fn: Callable = field( default=None )
 

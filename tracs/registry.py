@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+from dataclasses import Field, fields
 from enum import Enum
 from importlib import import_module
 from inspect import getmembers, isclass, isfunction
@@ -13,8 +14,9 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Type, Un
 from confuse import NotFoundError
 from dataclass_factory import Factory, Schema
 
-from tracs.core import Keyword, Normalizer, vfield, VirtualField, VirtualFields
+from tracs.activity import Activity
 from tracs.config import ApplicationContext, KEY_CLASSIFER
+from tracs.core import Keyword, Normalizer, vfield, VirtualField, VirtualFields
 from tracs.protocols import Handler, Importer, Service
 from tracs.resources import ResourceType
 from tracs.uid import UID
@@ -114,6 +116,10 @@ class Registry:
 			cls.rule_normalizers[n.name] = n
 			cls.notify( EventTypes.rule_normalizer_registered, field=n )
 
+	@classmethod
+	def rule_normalizer_type( cls, name: str ) -> Any:
+		return n.type if ( n := cls.rule_normalizers.get( name ) ) else Activity.field_type( name )
+
 	# field resolving
 
 	@classmethod
@@ -123,6 +129,13 @@ class Registry:
 		for vf in fields:
 			cls.virtual_fields[vf.name] = vf
 			cls.notify( EventTypes.virtual_field_registered, field=vf )
+
+	@classmethod
+	def activity_field( cls, name: str ) -> Optional[Field]:
+		if f := next( (f for f in fields( Activity ) if f.name == name), None ):
+			return f
+		else:
+			return cls.virtual_fields.get( name )
 
 	# event handling
 
@@ -359,11 +372,11 @@ def virtualfield( *args, **kwargs ):
 # maybe we should go this way for decorators ... lots of copy and paste, but cleaner code ...
 def normalizer( *args, **kwargs ):
 	def _inner( *inner_args ):
-		Registry.register_normalizer( Normalizer( name=_fnspec( inner_args[0] )[0], description=kwargs.get( 'description' ), fn=inner_args[0] ) )
+		Registry.register_normalizer( Normalizer( name=_fnspec( inner_args[0] )[0], type=kwargs.get( 'type' ), description=kwargs.get( 'description' ), fn=inner_args[0] ) )
 		return inner_args[0]
 
 	if args and isfunction( args[0] ): # case: decorated function without arguments
-		Registry.register_normalizer( Normalizer( name=_fnspec( args[0] )[0], description=None, fn=args[0] ) )
+		Registry.register_normalizer( Normalizer( name=_fnspec( args[0] )[0], fn=args[0] ) )
 		return args[0]
 	elif kwargs and 'description' in kwargs:
 		return _inner

@@ -17,7 +17,7 @@ from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.polar import Polar
 from tracs.plugins.rule_extensions import TIME_FRAMES as TIME_FRAMES_EXT
-from tracs.rules import DATE_PATTERN
+from tracs.rules import DATE_PATTERN, DATE_RANGE_PATTERN
 from tracs.rules import FUZZY_DATE_PATTERN
 from tracs.rules import FUZZY_TIME_PATTERN
 from tracs.rules import INT_LIST
@@ -119,6 +119,17 @@ def test_rule_pattern():
 	assert match( RANGE_PATTERN, '100.4..100.9' )
 	assert match( RANGE_PATTERN, '2020-01-01..2020-06-30' )
 	assert match( RANGE_PATTERN, '10:00:00..11:00:00' )
+
+	# date ranges
+	assert DATE_RANGE_PATTERN.fullmatch( '2020..2020' )
+	assert DATE_RANGE_PATTERN.fullmatch( '2020-01..2020-06' )
+	assert DATE_RANGE_PATTERN.fullmatch( '2020-01-01..2020-06-30' )
+	assert DATE_RANGE_PATTERN.fullmatch( '2020..' )
+	assert DATE_RANGE_PATTERN.fullmatch( '2020-01..' )
+	assert DATE_RANGE_PATTERN.fullmatch( '2020-01-01..' )
+	assert DATE_RANGE_PATTERN.fullmatch( '..2020' )
+	assert DATE_RANGE_PATTERN.fullmatch( '..2020-06-30' )
+	assert DATE_RANGE_PATTERN.fullmatch( '..2020-06' )
 
 	# dates always contain year, month and day
 	assert match( DATE_PATTERN, '2022-03-13' )
@@ -322,7 +333,8 @@ def test_range():
 
 	assert parse_eval( 'heartrate:100.0..200.0', A1 )
 
-def test_date():
+# test will only succeed if the date normalizer is registered
+def test_date_time():
 	assert parse_eval( 'date:2023', A1 )
 	assert parse_eval( 'date:2023-01', A1 )
 	assert parse_eval( 'date:2023-01-13', A1 )
@@ -338,7 +350,6 @@ def test_date():
 	assert parse_eval( 'date:..2023', A1 )
 	assert parse_eval( 'date:2023-01-12..2023-02', A1 )
 
-def test_time():
 	# assert parse_eval( 'time=10:00:42', A1 )
 	assert parse_eval( 'time:10', A1 )
 	assert parse_eval( 'time:10:00', A1 )
@@ -346,17 +357,17 @@ def test_time():
 
 def test_parse_date_range():
 
-	assert parse_date_range_as_str( '2022..2023' ) == ('2022-01-01', '2023-12-31')
-	assert parse_date_range_as_str( '2022..' ) == ('2022-01-01', '9999-12-31')
-	assert parse_date_range_as_str( '..2023' ) == ('0001-01-01', '2023-12-31')
+	assert parse_date_range_as_str( '2022..2023' ) == ('2022-01-01T00:00:00+00:00', '2023-12-31T23:59:59.999999+00:00')
+	assert parse_date_range_as_str( '2022..' ) == ('2022-01-01T00:00:00+00:00', '9999-12-31T00:00:00+00:00')
+	assert parse_date_range_as_str( '..2023' ) == ('0001-01-01T00:00:00+00:00', '2023-12-31T23:59:59.999999+00:00')
 
-	assert parse_date_range_as_str( '2022-03..2022-03' ) == ('2022-03-01', '2022-03-31')
-	assert parse_date_range_as_str( '..2022-03' ) == ('0001-01-01', '2022-03-31')
-	assert parse_date_range_as_str( '2022-03..' ) == ('2022-03-01', '9999-12-31')
+	assert parse_date_range_as_str( '2022-03..2022-03' ) == ('2022-03-01T00:00:00+00:00', '2022-03-31T23:59:59.999999+00:00')
+	assert parse_date_range_as_str( '..2022-03' ) == ('0001-01-01T00:00:00+00:00', '2022-03-31T23:59:59.999999+00:00')
+	assert parse_date_range_as_str( '2022-03..' ) == ('2022-03-01T00:00:00+00:00', '9999-12-31T00:00:00+00:00')
 
-	assert parse_date_range_as_str( '2022-03-15..2022-03-16' ) == ('2022-03-15', '2022-03-16')
-	assert parse_date_range_as_str( '..2022-03-16' ) == ('0001-01-01', '2022-03-16')
-	assert parse_date_range_as_str( '2022-03-15..' ) == ('2022-03-15', '9999-12-31')
+	assert parse_date_range_as_str( '2022-03-15..2022-03-16' ) == ('2022-03-15T00:00:00+00:00', '2022-03-16T23:59:59.999999+00:00')
+	assert parse_date_range_as_str( '..2022-03-16' ) == ('0001-01-01T00:00:00+00:00', '2022-03-16T23:59:59.999999+00:00')
+	assert parse_date_range_as_str( '2022-03-15..' ) == ('2022-03-15T00:00:00+00:00', '9999-12-31T00:00:00+00:00')
 
 # helper
 

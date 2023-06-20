@@ -250,7 +250,7 @@ def floor_ceil_from( s: str, as_str = False ) -> Union[Tuple[Arrow, Arrow], Tupl
 		else:
 			return floor_ceil_str( a, frame )
 	else:
-		return floor_ceil( getarrow( s ), frame )
+		return floor_ceil( a, frame )
 
 def serialize( value ) -> Optional[str]:
 	if type( value ) in [time, datetime]:

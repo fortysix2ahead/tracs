@@ -3,6 +3,7 @@ from re import fullmatch
 from typing import List, Literal, Tuple
 
 from arrow import Arrow, now
+from dateutil.tz import UTC
 
 from tracs.core import Keyword, Normalizer, vfield
 from tracs.registry import normalizer, Registry
@@ -89,5 +90,5 @@ Registry.register_virtual_field(
 	vfield( 'month', int, lambda a: a.localtime.month, 'Month', 'month in which the activity has taken place' ),
 	vfield( 'year', int, lambda a: a.localtime.year, 'Year', 'year in which the activity has taken place' ),
 	# time helper
-	vfield( '__time__', datetime, lambda a: datetime( 1, 1, 1, a.localtime.hour, a.localtime.minute, a.localtime.second ), 'Helper for time calculations', 'local time without a date and tz' ),
+	vfield( '__time__', datetime, lambda a: datetime( 1, 1, 1, a.localtime.hour, a.localtime.minute, a.localtime.second, tzinfo=UTC ), 'Helper for time calculations', 'local time without a date and tz' ),
 )

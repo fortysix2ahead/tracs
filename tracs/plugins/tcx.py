@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, time
+from datetime import datetime, timedelta
 from logging import getLogger
 from typing import Any, List, Optional, Union
 
@@ -9,11 +9,10 @@ from dateutil.parser import parse as parse_dt
 from dateutil.tz import tzlocal
 from lxml.objectify import Element, fromstring, ObjectifiedElement, ObjectPath, SubElement
 
-from tracs.plugins.xml import XMLHandler
 from tracs.activity import Activity as TracsActivity
+from tracs.plugins.xml import XMLHandler
 from ..registry import importer
 from ..resources import Resource
-from ..utils import seconds_to_time
 
 log = getLogger( __name__ )
 
@@ -280,8 +279,8 @@ class TrainingCenterDatabase:
 		return sum( l.distance_meters for a in self.activities for l in a.laps )
 
 	@property
-	def duration( self ) -> time:
-		return seconds_to_time( (self.time_end - self.time).total_seconds() )
+	def duration( self ) -> timedelta:
+		return timedelta( seconds = (self.time_end - self.time).total_seconds() )
 
 	@property
 	def time( self ) -> Optional[datetime]:

@@ -100,7 +100,7 @@ def test_rule_pattern():
 	# special cases
 
 	# numbers are allowed and are treated as ids
-	assert match( INT_PATTERN, '1000' )
+	assert INT_PATTERN.match( '1000' )
 
 	# list are comma-separated and need to contain more than one element
 	assert match( LIST_PATTERN, '100,101')

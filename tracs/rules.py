@@ -21,7 +21,7 @@ TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day', 'hour' ]
 
 TRUE_FALSE = rx_compile( r'^(true|false)$' )
 
-INT_PATTERN = '^(?P<value>\d+)$'
+INT_PATTERN = rx_compile( '^(?P<value>\d+)$' )
 INT_LIST = rx_compile( '^\d+(,\d+)*$' )
 INT_RANGE_PATTERN = rx_compile( '^(?P<range_from>\d+)?\.\.(?P<range_to>\d+)?$' )
 
@@ -96,7 +96,7 @@ def normalize( rule: str ) -> str:
 
 	left, op, right, normalized_rule = None, None, None, None
 
-	if match( INT_PATTERN, rule ): # integer number only
+	if INT_PATTERN.fullmatch( rule ): # integer number only
 		left, right, normalized_rule = 'id', rule, f'id == {rule}'
 
 	elif m := INT_RANGE_PATTERN.fullmatch( rule ):

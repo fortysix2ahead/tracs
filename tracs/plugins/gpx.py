@@ -1,4 +1,4 @@
-
+from datetime import timedelta
 from logging import getLogger
 from typing import Any, Optional, Union
 
@@ -32,7 +32,7 @@ class GPXImporter( ResourceHandler ):
 			localtime = gpx.get_time_bounds().start_time.astimezone( tzlocal() ),
 			localtime_end = gpx.get_time_bounds().end_time.astimezone( tzlocal() ),
 			distance = round( gpx.length_2d(), 1 ),
-			duration = seconds_to_time( gpx.get_duration() ) if gpx.get_duration() else None,
+			duration = timedelta( seconds=round( d ) ) if (d := gpx.get_duration() ) else None,
 			location_latitude_start=gpx.get_points_data()[0].point.latitude,
 			location_longitude_start=gpx.get_points_data()[0].point.longitude,
 			location_latitude_end=gpx.get_points_data()[-1].point.latitude,

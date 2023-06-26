@@ -1,24 +1,28 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, Field, field
+from sys import version_info
 from typing import Any, Callable, ClassVar, Dict, Optional, Union
+
+FIELD_KWARGS = {
+	'init': True,
+	'repr': True,
+	'hash': True,
+	'compare': True,
+}
+
+FIELD_KWARGS = FIELD_KWARGS if version_info.minor < 10 else { **FIELD_KWARGS, 'kw_only': False }
 
 class VirtualField( Field ):
 
 	# noinspection PyShadowingBuiltins
 	def __init__( self, default: Any, default_factory: Callable, name: str, type: Any, display_name: str, description: str ):
 		super().__init__(
-			default = default,
-			default_factory = default_factory,
-			init = True,
-			repr = True,
-			hash = True,
-			compare = True,
+			default = default, default_factory = default_factory, **FIELD_KWARGS,
 			metadata = {
 				'description': description,
 				'display_name': display_name,
 			},
-#			kw_only=False
 		)
 		self.name = name
 		self.type = type

@@ -1,6 +1,6 @@
 from datetime import date, datetime, time as dtime
 from re import fullmatch
-from typing import List, Literal, Tuple
+from typing import List, Literal, Optional, Tuple
 
 from arrow import Arrow, now
 from dateutil.tz import UTC
@@ -14,11 +14,12 @@ from tracs.utils import floor_ceil_from
 TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day' ]
 YEAR_RANGE = range( 2000, datetime.utcnow().year + 1 )
 
-def floor_ceil( a: Arrow, frame: TIME_FRAMES ) -> Tuple[Arrow, Arrow]:
-	return a.floor( frame ), a.ceil( frame )
+def floor_ceil( a1: Arrow, a2: Arrow, frame: TIME_FRAMES = 'day' ) -> Tuple[Arrow, Arrow]:
+	return a1.floor( frame ), a2.ceil( frame )
 
-def floor_ceil_str( a: Arrow, frame: TIME_FRAMES ) -> Tuple[str, ...]:
-	return tuple( f'd"{t.isoformat()}"' for t in floor_ceil( a, frame ) )
+def floor_ceil_str( a1: Arrow, a2: Optional[Arrow] = None, frame: TIME_FRAMES = 'day' ) -> Tuple[str, ...]:
+	a2 = a1 if a2 is None else a2
+	return tuple( f'd"{t.isoformat()}"' for t in floor_ceil( a1, a2, frame ) )
 
 # noinspection PyTypeChecker
 Registry.register_keywords(
@@ -29,21 +30,21 @@ Registry.register_keywords(
 	Keyword( 'evening', 'time between 18:00 and 22:00', 'hour >= 18 and hour < 22' ),
 	Keyword( 'night', 'time between 22:00 and 6:00', 'hour >= 22 or hour < 6' ),
 	# date related keywords
-	Keyword( 'last7days', 'date is within the last 7 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-6 ), 'day' ) ) ),
-	Keyword( 'last14days', 'date is within the last 14 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-13 ), 'day' ) ) ),
-	Keyword( 'last30days', 'date is within the last 30 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-29 ), 'day' ) ) ),
-	Keyword( 'last60days', 'date is within the last 60 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-59 ), 'day' ) ) ),
-	Keyword( 'last90days', 'date is within the last 90 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-89 ), 'day' ) ) ),
-	Keyword( 'yesterday', 'date is yesterday', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-1 ), 'day' ) ) ),
-	Keyword( 'today', 'date is today', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'day' ) ) ),
-	Keyword( 'lastweek', 'date is within last week', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( weeks=-1 ), 'week' ) ) ),
-	Keyword( 'thisweek', 'date is within the current week', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'week' ) ) ),
-	Keyword( 'lastmonth', 'date is within last month', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( months=-1 ), 'month' ) ) ),
-	Keyword( 'thismonth', 'date is within the current month', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'month' ) ) ),
-	Keyword( 'lastquarter', 'month of date is within last quarter', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( months=-3 ), 'quarter' ) ) ),
-	Keyword( 'thisquarter', 'month of date is within the current quarter', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'quarter' ) ) ),
-	Keyword( 'lastyear', 'year of date is last year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( years=-1 ), 'year' ) ) ),
-	Keyword( 'thisyear', 'year of date is current year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), 'year' ) ) ),
+	Keyword( 'last7days', 'date is within the last 7 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-6 ), now() ) ) ),
+	Keyword( 'last14days', 'date is within the last 14 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-13 ), now() ) ) ),
+	Keyword( 'last30days', 'date is within the last 30 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-29 ), now() ) ) ),
+	Keyword( 'last60days', 'date is within the last 60 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-59 ), now() ) ) ),
+	Keyword( 'last90days', 'date is within the last 90 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-89 ), now() ) ) ),
+	Keyword( 'yesterday', 'date is yesterday', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-1 ), None, 'day' ) ) ),
+	Keyword( 'today', 'date is today', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), None, 'day' ) ) ),
+	Keyword( 'lastweek', 'date is within last week', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( weeks=-1 ), None, 'week' ) ) ),
+	Keyword( 'thisweek', 'date is within the current week', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), None, 'week' ) ) ),
+	Keyword( 'lastmonth', 'date is within last month', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( months=-1 ), None, 'month' ) ) ),
+	Keyword( 'thismonth', 'date is within the current month', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), None, 'month' ) ) ),
+	Keyword( 'lastquarter', 'month of date is within last quarter', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( months=-3 ), None, 'quarter' ) ) ),
+	Keyword( 'thisquarter', 'month of date is within the current quarter', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), None, 'quarter' ) ) ),
+	Keyword( 'lastyear', 'year of date is last year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( years=-1 ), None, 'year' ) ) ),
+	Keyword( 'thisyear', 'year of date is current year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), None, 'year' ) ) ),
 )
 
 # normalizers transform a field/value pair into a valid normalized expression

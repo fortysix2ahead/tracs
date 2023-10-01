@@ -10,7 +10,7 @@ def test_virtual_field():
 	assert vf.name == 'one' and vf.type == int and vf.display_name == 'One' and vf.description == 'Field One'
 	assert vf() == 10
 
-	vf = vfield( 'two', str, default=lambda: 'two', display_name='Two', description='Field Two' )
+	vf = VirtualField( 'two', str, value=lambda v: 'two', display_name='Two', description='Field Two' )
 	assert vf.name == 'two' and vf.type == str and vf.display_name == 'Two' and vf.description == 'Field Two'
 	assert vf() == 'two'
 
@@ -34,10 +34,8 @@ def test_virtual_fields():
 		def vf( self ) -> VirtualFields:
 			return self.__vf__
 
-	VirtualFields.__fields__ = {
-		'index': vfield( 'index', int, default=10 ),
-		'upper_name': vfield( 'upper_name', str, default=lambda *args: args[0].name.upper() )
-	}
+	EnrichedDataclass.__vf__.set_field( 'index', VirtualField( 'index', int, value=10 ) )
+	EnrichedDataclass.__vf__.set_field( 'upper_name', VirtualField( 'upper_name', str, value=lambda *args: args[0].name.upper() ) )
 
 	edc = EnrichedDataclass()
 	assert edc.name == 'Name'

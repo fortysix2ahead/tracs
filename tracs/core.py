@@ -15,7 +15,54 @@ FIELD_KWARGS = {
 
 FIELD_KWARGS = FIELD_KWARGS if version_info.minor < 10 else { **FIELD_KWARGS, 'kw_only': False }
 
-class VirtualField( Field ):
+@dataclass
+class VirtualField:
+
+	name: str = field( default=None )
+	type: Type = field( default=None )
+	value: Any = field( default=None )
+	description: str = field( default=None )
+	display_name: str = field( default=None )
+
+	def __call__( self, value: Any = None ) -> Any:
+		return self.value_for( value )
+
+	def value_for( self, value: Any = None ) -> Any:
+		if self.value is not None:
+			if isinstance( self.value, Callable ):
+				return self.value( value )
+			else:
+				return self.value
+		else:
+			raise AttributeError( f'virtual field {self.name} has neither a function nor a value' )
+
+@dataclass
+class VirtualFields:
+
+	__fields__: Dict[str, Union[VirtualField, Callable]] = field( default_factory=dict )
+	__parent__: Any = field( default=None )
+
+	def __call__( self, parent: Any ) -> VirtualFields:
+		if parent is None:
+			raise AttributeError( 'VirtualFields instance cannot be used without a parent instance' )
+
+		self.__parent__ = parent
+		return self
+
+	def __getattr__( self, name: str ) -> Any:
+		if name in self.__fields__:
+			return self.__fields__.get( name )( self.__parent__ )
+		else:
+			return self.__parent__.__getattribute__( name )
+
+	def __contains__( self, item ) -> bool:
+		return item in self.__fields__.keys()
+
+	def set_field( self, name: str, field: VirtualField ) -> None:
+		self.__fields__[name] = field
+
+@dataclass
+class FormattedField( Field ):
 
 	# noinspection PyShadowingBuiltins
 	def __init__( self, default: Any, default_factory: Callable, name: str, type: Any, display_name: str, description: str ):
@@ -132,15 +179,3 @@ class Normalizer:
 
 	def __call__( self, *args, **kwargs ) -> str:
 		return self.fn( *args, **kwargs )
-
-# noinspection PyShadowingBuiltins
-def vfield( name: str, type: Any = None, default: Any = None, display_name: Optional[str] = None, description: Optional[str] = None ) -> VirtualField:
-	default, factory = (None, default) if isinstance( default, Callable ) else (default, None)
-	return VirtualField(
-		default=default,
-		default_factory=factory,
-		name=name,
-		type=type,
-		display_name=display_name,
-		description=description
-	)

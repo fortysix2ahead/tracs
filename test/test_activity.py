@@ -204,7 +204,7 @@ def test_formatted_activity_fields():
 
 	assert a1.fmf.__parent__ is a1
 	assert a2.fmf.__parent__ is a2
-	assert a1.fmf is a2.fmf # should refernce the same instance
+	assert a1.fmf is a2.fmf # should reference the same instance
 
 	assert a1.fmf.name == 'Morning Run in Berlin'
 	assert a2.fmf.name == 'Afternoon Walk in Berlin'

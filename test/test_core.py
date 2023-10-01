@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from pytest import raises
 
-from tracs.core import vfield, VirtualFields
+from tracs.core import FormattedField, FormattedFields, vfield, VirtualFields
 
 def test_virtual_field():
 
@@ -45,3 +45,36 @@ def test_virtual_fields():
 	assert edc.vf.index == 10
 
 	assert 'index' in edc.vf and 'upper_name' in edc.vf
+
+def test_formatted_field():
+
+	fmf = FormattedField( name='lower', formatter=lambda s: s.lower() )
+	assert fmf.format( "TEST" ) == 'test'
+	assert fmf( "TEST" ) == 'test'
+
+def test_formatted_fields():
+	ff = FormattedFields()
+	ff.fields['lower'] = lambda s: s.lower()
+	ff.fields['upper'] = FormattedField( name='upper', formatter=lambda s: s.upper() )
+
+	@dataclass
+	class FormattedDataclass:
+
+		__fmf__: FormattedFields = ff
+
+		lower: str = field( default = 'Lower' )
+		upper: str = field( default = 'Upper' )
+
+		@property
+		def fmf( self ) -> FormattedFields:
+			self.__class__.__fmf__.__parent__ = self
+			return self.__class__.__fmf__
+
+	fdc = FormattedDataclass()
+	FormattedDataclass.__fmf__ = ff
+
+	assert fdc.fmf.lower == 'lower'
+	assert fdc.fmf.upper == 'UPPER'
+
+	with raises( AttributeError ):
+		assert fdc.fmf.noexist == 0

@@ -63,26 +63,29 @@ class VirtualFields:
 		return item in self.__fields__.keys()
 
 @dataclass
-class FormattedField( Field ):
+class FormattedField:
 
-	def __init__( self, default: Any, default_factory: Callable, name: str, type: Any, display_name: str, description: str ):
-		super().__init__(
-			default = default, default_factory = default_factory, **FIELD_KWARGS,
-			metadata = {
-				'description': description,
-				'display_name': display_name,
-			},
-		)
-		self.name = name
-		self.type = type
+	name: str = field( default=None )
+	formatter: Callable = field( default=None )
+
+	def __call__( self, value: Any ) -> Any:
+		return self.format( value )
+
+	def format( self, value: Any ) -> Any:
+		return self.formatter( value )
 
 @dataclass
 class FormattedFields:
 
-	__fields__: Dict[str, Callable] = field( default_factory=dict )
+	__fields__: Dict[str, Union[FormattedField, Callable]] = field( default_factory=dict )
+	__parent_cls__: Type = field( default=None )
+
 	__parent__: Any = field( default=None )
 
 	def __call__( self, parent: Any ) -> FormattedFields:
+		if parent is None:
+			raise AttributeError( 'FormattedFields instance cannot be used without a parent instance' )
+
 		self.__parent__ = parent
 		return self
 
@@ -94,6 +97,18 @@ class FormattedFields:
 			return self.__fields__.get( name )( getattr( self.__parent__, name ) )
 		else:
 			return getattr( self.__parent__, name )
+
+	@property
+	def fields( self ) -> Dict[str, Union[FormattedField, Callable]]:
+		return self.__fields__
+
+	@property
+	def parent( self ) -> Any:
+		return self.__parent__
+
+	@property
+	def parent_cls( self ) -> Type:
+		return self.__parent_cls__
 
 @dataclass
 class Keyword:

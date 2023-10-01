@@ -4,13 +4,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field, Field, fields, InitVar, MISSING, replace
 from datetime import datetime, time, timedelta
 from logging import getLogger
-from typing import Any, Dict, List, Optional, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 from dataclass_factory import Schema
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import VirtualFields
+from tracs.core import FormattedFields, VirtualFields
 from tracs.resources import Resource
 from tracs.uid import UID
 from tracs.utils import sum_timedeltas, sum_times, unique_sorted
@@ -55,6 +55,10 @@ class ActivityPart:
 @dataclass( eq=True ) # todo: mark fields with proper eq attributes
 class Activity:
 
+	# class variables
+	__fmf__: FormattedFields = FormattedFields()
+
+	# fields
 	id: int = field( default=None )
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
 	uids: List[str] = field( default_factory=list )
@@ -152,6 +156,10 @@ class Activity:
 			return None
 
 	@classmethod
+	def set_formatter( cls, field_name: str, fn: Callable ) -> None:
+		Activity.__fmf__.__fields__[field_name] = fn
+
+	@classmethod
 	def schema( cls ) -> Schema:
 		return Schema(
 			omit_default=True,
@@ -164,6 +172,10 @@ class Activity:
 	@property
 	def vf( self ) -> VirtualFields:
 		return self.__vf__
+
+	@property
+	def fmf( self ) -> FormattedFields:
+		return Activity.__fmf__( self )
 
 	@property
 	def classifiers( self ) -> List[str]:
@@ -227,8 +239,9 @@ class Activity:
 		elif other_parts:
 			self.add( other_parts )
 
-		# set self to fields
+		# set self/cls to virtual/formatted fields
 		self.__vf__.__parent__ = self
+		# self.__class__.__fmf__.parent = self.__class__
 
 	# additional methods
 

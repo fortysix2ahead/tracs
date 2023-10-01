@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, Field, field
 from sys import version_info
-from typing import Any, Callable, ClassVar, Dict, Optional, Union
+from typing import Any, Callable, ClassVar, Dict, Optional, Type, Union
 
 FIELD_KWARGS = {
 	'init': True,
@@ -61,6 +61,39 @@ class VirtualFields:
 
 	def __contains__( self, item ) -> bool:
 		return item in self.__fields__.keys()
+
+@dataclass
+class FormattedField( Field ):
+
+	def __init__( self, default: Any, default_factory: Callable, name: str, type: Any, display_name: str, description: str ):
+		super().__init__(
+			default = default, default_factory = default_factory, **FIELD_KWARGS,
+			metadata = {
+				'description': description,
+				'display_name': display_name,
+			},
+		)
+		self.name = name
+		self.type = type
+
+@dataclass
+class FormattedFields:
+
+	__fields__: Dict[str, Callable] = field( default_factory=dict )
+	__parent__: Any = field( default=None )
+
+	def __call__( self, parent: Any ) -> FormattedFields:
+		self.__parent__ = parent
+		return self
+
+	def __getattr__( self, name: str ) -> Any:
+		if self.__parent__ is None:
+			raise AttributeError( 'FormattedFields instance cannot be used without a parent instance' )
+
+		if name in self.__fields__:
+			return self.__fields__.get( name )( getattr( self.__parent__, name ) )
+		else:
+			return getattr( self.__parent__, name )
 
 @dataclass
 class Keyword:

@@ -196,3 +196,20 @@ def test_virtual_activity_field_override():
 
 	assert 'name' in VirtualFields.__fields__
 	assert a.name == 'Run' and a.getattr( 'name' ) == 'Run'
+
+def test_formatted_activity_fields():
+
+	a1 = Activity( name='Morning Run in Berlin', type=ActivityTypes.run )
+	a2 = Activity( name='Afternoon Walk in Berlin', type=ActivityTypes.walk )
+
+	assert a1.fmf.__parent__ is a1
+	assert a2.fmf.__parent__ is a2
+	assert a1.fmf is a2.fmf # should refernce the same instance
+
+	assert a1.fmf.name == 'Morning Run in Berlin'
+	assert a2.fmf.name == 'Afternoon Walk in Berlin'
+
+	Activity.set_formatter( 'name', lambda s: s.lower() )
+
+	assert a1.fmf.name == 'morning run in berlin'
+	assert a2.fmf.name == 'afternoon walk in berlin'

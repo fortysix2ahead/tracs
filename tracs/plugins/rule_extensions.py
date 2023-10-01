@@ -5,7 +5,7 @@ from typing import List, Literal, Optional, Tuple
 from arrow import Arrow, now
 from dateutil.tz import UTC
 
-from tracs.core import Keyword, Normalizer, vfield
+from tracs.core import Keyword, Normalizer, VirtualField
 from tracs.registry import normalizer, Registry
 from tracs.rules import DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, parse_date_range_as_str, parse_time_range, TIME_RANGE_PATTERN
 from tracs.rules import parse_ceil_str, parse_floor_str
@@ -103,4 +103,13 @@ Registry.register_virtual_field(
 	   default=lambda a: datetime( 1, 1, 1, a.starttime_local.hour, a.starttime_local.minute, a.starttime_local.second ) ),
 		# rules dows not care about timezones -> that's why we need to return time without tz information
 	   # default=lambda a: datetime( 1, 1, 1, a.starttime_local.hour, a.starttime_local.minute, a.starttime_local.second, tzinfo=UTC ) ),
+	# VirtualField( 'classifiers', List[str], lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ), 'Classifiers', 'list of classifiers of an activity' ),
+	# date/time fields
+	# VirtualField( 'weekday', int, lambda a: a.localtime.year, 'Weekday', 'day of week at which the activity has taken place (as number)' ),
+	# VirtualField( 'hour', int, lambda a: a.localtime.hour, 'Hour of Day', 'hour in which the activity has been started' ),
+	# VirtualField( 'day', int, lambda a: a.localtime.day, 'Day of Month', 'day on which the activity has taken place' ),
+	# VirtualField( 'month', int, lambda a: a.localtime.month, 'Month', 'month in which the activity has taken place' ),
+	# VirtualField( 'year', int, lambda a: a.localtime.year, 'Year', 'year in which the activity has taken place' ),
+	# time helper
+	# VirtualField( '__time__', datetime, lambda a: datetime( 1, 1, 1, a.localtime.hour, a.localtime.minute, a.localtime.second, tzinfo=UTC ), 'Helper for time calculations', 'local time without a date and tz' ),
 )

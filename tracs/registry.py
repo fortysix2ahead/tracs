@@ -16,7 +16,7 @@ from dataclass_factory import Factory, Schema
 
 from tracs.activity import Activity
 from tracs.config import ApplicationContext, KEY_CLASSIFER
-from tracs.core import Keyword, Normalizer, vfield, VirtualField, VirtualFields
+from tracs.core import Keyword, Normalizer, VirtualField, VirtualFields
 from tracs.protocols import Handler, Importer, Service
 from tracs.resources import ResourceType
 from tracs.uid import UID
@@ -51,10 +51,7 @@ class Registry:
 	setup_functions: Dict[str, Callable] = {}
 	services: Dict[str, Service] = {}
 	service_classes: Dict[str, Type] = {}
-	virtual_fields: Dict[str, VirtualField] = {}
-
-	# register virtual_fields dict with activity
-	VirtualFields.__fields__ = virtual_fields
+	virtual_fields: Dict[str, VirtualField] = Activity.__vf__.__fields__
 
 	@classmethod
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
@@ -123,10 +120,8 @@ class Registry:
 	# field resolving
 
 	@classmethod
-	def register_virtual_field( cls, *fields: VirtualField ) -> None:
-		if not VirtualFields.__fields__:
-			VirtualFields.__fields__ = cls.virtual_fields
-		for vf in fields:
+	def register_virtual_field( cls, *virtual_field: VirtualField ) -> None:
+		for vf in virtual_field:
 			cls.virtual_fields[vf.name] = vf
 			cls.notify( EventTypes.virtual_field_registered, field=vf )
 
@@ -358,12 +353,12 @@ def virtualfield( *args, **kwargs ):
 	def _inner( *inner_args ):
 		global _KWARGS
 		inner_name, inner_mod, inner_qname, inner_rtype = _fnspec( inner_args[0] )
-		Registry.register_virtual_field( vfield( **{ 'name': inner_name, 'type': inner_rtype, 'default': inner_args[0], **_KWARGS } ) )
+		Registry.register_virtual_field( VirtualField( **{ 'name': inner_name, 'type': inner_rtype, 'value': inner_args[0], **_KWARGS } ) )
 		return inner_args[0]
 
 	if len( args ) == 1 and isfunction( args[0] ): # case: decorated function without arguments
 		name, mod, qname, rtype = _fnspec( args[0] )
-		Registry.register_virtual_field( vfield( name=name, type=rtype, default=args[0] ) )
+		Registry.register_virtual_field( VirtualField( name=name, type=rtype, value=args[0] ) )
 		return args[0]
 	elif len( args ) == 0 and len( kwargs ) > 0:
 		_ARGS, _KWARGS = args, kwargs

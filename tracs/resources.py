@@ -17,8 +17,8 @@ class ResourceStatus( Enum ):
 	NO_CONTENT = 204
 	NOT_FOUND = 404
 
-pattern: Pattern = compile( '\w+\/(vnd\.(?P<vendor>\w+).)?((?P<subtype>\w+)\+)?(?P<suffix>\w+)' )
-classifier_local_id_pattern = compile( '\w+\:\d+' )
+pattern: Pattern = compile( '\w+/(vnd\.(?P<vendor>\w+).)?((?P<subtype>\w+)\+)?(?P<suffix>\w+)' )
+classifier_local_id_pattern = compile( '\w+:\d+' )
 
 @dataclass
 class ResourceType:

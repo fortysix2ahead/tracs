@@ -178,6 +178,16 @@ class Resources:
 				r.id = _next_id( self.data )
 				self.data[uuid] = r
 
+	# access methods
+
+	def all( self ) -> List[Resource]:
+		return list( self.data.values() )
+
+	def all_for( self, uid: str = None, path: str = None ) -> List[Resource]:
+		_all = filter( lambda r: r.uid == uid, self.all() ) if uid else self.all()
+		_all = filter( lambda r: r.path == path, _all ) if path else _all
+		return list( _all )
+
 @dataclass
 class ResourceGroup:
 	resources: List[Resource] = field( default_factory=list )

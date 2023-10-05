@@ -24,7 +24,7 @@ from rich.table import Table as RichTable
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext
-from tracs.fs import load_resources, load_schema, Schema
+from tracs.fs import load_resources, load_schema, Schema, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
 from tracs.resources import Resource, ResourceType
@@ -200,8 +200,7 @@ class ActivityDb:
 		self.overlay_fs.writebytes( f'/{ACTIVITIES_NAME}', dumps( json, option=ORJSON_OPTIONS ) )
 
 	def commit_resources( self ):
-		json = self._factory.dump( self._resources, Dict[int, Resource] )
-		self.overlay_fs.writebytes( f'/{RESOURCES_NAME}', dumps( json, option=ORJSON_OPTIONS ) )
+		write_resources( self._resources, self.overlay_fs )
 
 	def save( self ):
 		if self._read_only or self.underlay_fs is None:

@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field, Field, fields, InitVar
 from enum import Enum
 from re import compile, Pattern
-from typing import Any, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
+from uuid import NAMESPACE_URL, uuid5
 
 from dataclass_factory import Schema
 
@@ -69,11 +70,15 @@ class Resource:
 	uid: str = field( default=None )
 
 	# additional fields holding data of a resource, used during load
-	content: bytes = field( default=None, repr=False )  # raw content as bytes
-	text: InitVar = field( default=None, repr=False )  # decoded content as string, can be used to initialize a resource from string
-	raw: Any = field( default=None, repr=False ) # structured data making up this resource, will be converted from content
-	# secondary field, companion to raw, might contain another form of structured data, i.e. a dataclass in parallel to a json
+
+	content: bytes = field( default=None, repr=False )
+	"""Raw content as bytes"""
+	text: InitVar = field( default=None, repr=False )
+	"""Decoded content as string, can be used to initialize a resource from string"""
+	raw: Any = field( default=None, repr=False )
+	"""Structured data making up this resource, will be converted from content."""
 	data: Any = field( default=None, repr=False )
+	"""Secondary field as companion to raw, might contain another form of structured data, i.e. a dataclass in parallel to a json"""
 
 	# todo: remove later?
 	resources: List[Resource] = field( default_factory=list, repr=False )
@@ -150,6 +155,27 @@ class Resource:
 		return next( (r for r in self.resources if r.type == resource_type), None )
 
 @dataclass
+class Resources:
+	"""
+	Dict-like container for resources.
+	"""
+
+	data: Dict[str, Resource] = field( default_factory=dict )
+
+	# magic methods
+
+	def __len__( self ) -> int:
+		return len( self.data )
+
+	# add/remove etc.
+
+	def add( self, *resources: Resource ):
+		for r in resources:
+			r.id = _next_id( self.data )
+			uuid = uuid5( NAMESPACE_URL, f'{r.uid}/{r.path}' )
+			self.data[str( uuid )] = r
+
+@dataclass
 class ResourceGroup:
 	resources: List[Resource] = field( default_factory=list )
 
@@ -158,3 +184,8 @@ class ResourceGroup:
 
 	def recordings( self ) -> List[Resource]:
 		return [r for r in self.resources if not r.summary]
+
+def _next_id( d: Dict[str, Resource] ) -> int:
+	existing_ids = [r.id for r in d.values()]
+	id_range = range( 1, max( existing_ids ) + 2 ) if len( existing_ids ) > 0 else [1]
+	return set( id_range ).difference( set( existing_ids ) ).pop()

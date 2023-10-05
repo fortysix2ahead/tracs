@@ -1,5 +1,5 @@
 
-from tracs.resources import ResourceType
+from tracs.resources import Resource, Resources, ResourceType
 
 def test_resource_type():
 	rt = ResourceType( 'application/xml' )
@@ -35,3 +35,14 @@ def test_resource_type():
 	assert ResourceType( 'application/tcx+xml' ).extension() == 'tcx'
 	assert ResourceType( 'application/vnd.polar+csv' ).extension() == 'csv'
 	assert ResourceType( 'application/vnd.polar.hrv+csv' ).extension() == 'hrv.csv'
+
+def test_resources():
+
+	r1 = Resource( name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
+	r2 = Resource( name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )
+
+	resources = Resources()
+	resources.add( r1, r2 )
+
+	assert r1.id == 1
+	assert len( resources ) == 2

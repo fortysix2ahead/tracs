@@ -3,7 +3,7 @@ from typing import Dict
 from uuid import NAMESPACE_URL, uuid5
 
 from attrs import define, field
-from cattrs.gen import make_dict_unstructure_fn
+from cattrs.gen import make_dict_unstructure_fn, override
 from cattrs.preconf.orjson import make_converter
 from fs.base import FS
 from fs.osfs import OSFS
@@ -25,8 +25,21 @@ SCHEMA_CONVERTER = make_converter()
 
 # converter configuration
 
-hook = make_dict_unstructure_fn( Resource, RESOURCE_CONVERTER, _cattrs_omit_if_default=True, )
-RESOURCE_CONVERTER.register_unstructure_hook( Resources, hook )
+hook = make_dict_unstructure_fn(
+	Resource,
+	RESOURCE_CONVERTER,
+	_cattrs_omit_if_default=True,
+	__parent_activity__=override( omit=True ),
+	__uid__=override( omit=True ),
+	content=override( omit=True ),
+	data=override( omit=True ),
+	raw=override( omit=True ),
+	resources=override( omit=True ),
+	status=override( omit=True ),
+	summary=override( omit=True ),
+	text=override( omit=True ),
+)
+RESOURCE_CONVERTER.register_unstructure_hook( Resource, hook )
 
 # resource handling
 
@@ -34,6 +47,10 @@ def load_resources( fs: FS ) -> Resources:
 	resources = RESOURCE_CONVERTER.loads( fs.readbytes( RESOURCES_PATH ), Dict[str, Resource] )
 	log.debug( f'loaded {len( resources )} resource entries from {RESOURCES_NAME}' )
 	return Resources( data = resources )
+
+def write_resources( resources: Resources, fs: FS ) -> None:
+	fs.writebytes( RESOURCES_PATH, RESOURCE_CONVERTER.dumps( resources.data, unstructure_as=Dict[str, Resource], option=ORJSON_OPTIONS ) )
+	log.debug( f'wrote {len( resources )} resource entries to {RESOURCES_NAME}' )
 
 # schema handling
 

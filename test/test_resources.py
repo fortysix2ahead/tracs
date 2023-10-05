@@ -42,12 +42,18 @@ def test_resources():
 
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
 	r2 = Resource( uid='polar:1234', name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )
+	r3 = Resource( uid='strava:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
 
 	resources = Resources()
-	resources.add( r1, r2 )
+	resources.add( r1, r2, r3 )
 
 	with raises( KeyError ):
 		resources.add( r1 )
 
-	assert r1.id == 1
-	assert len( resources ) == 2
+	assert r1.id == 1 and r2.id == 2 and r3.id == 3
+	assert len( resources ) == 3
+
+	assert resources.all() == [r1, r2, r3]
+	assert resources.all_for( uid=r1.uid ) == [r1, r2]
+	assert resources.all_for( path=r1.path ) == [r1, r3]
+	assert resources.all_for( uid=r1.uid, path=r1.path ) == [r1]

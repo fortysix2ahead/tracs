@@ -6,7 +6,6 @@ from rich.pretty import pprint as pp
 
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
-from tracs.db import Schema
 from tracs.resources import Resource
 
 def activity_pre_serialize( a: Activity ) -> Activity:
@@ -29,7 +28,6 @@ F = Factory(
 		ActivityTypes: DataclassFactorySchema( parser=ActivityTypes.from_str, serializer=ActivityTypes.to_str ),
 		Resource: DataclassFactorySchema( omit_default=True, skip_internal=True, unknown='unknown',
 		                                  exclude=['content', 'data', 'id', 'raw', 'resources', 'status', 'summary', 'text'] ),
-		Schema: DataclassFactorySchema( skip_internal=True ),
 	}
 )
 

@@ -1,7 +1,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from itertools import chain, groupby
 from logging import getLogger
@@ -25,6 +24,7 @@ from rich.table import Table as RichTable
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext
+from tracs.fs import load_schema, Schema
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
 from tracs.resources import Resource, ResourceType
@@ -51,16 +51,6 @@ DB_FILES = {
 
 UNDERLAY = 'underlay'
 OVERLAY = 'overlay'
-
-@dataclass
-class Schema:
-
-	version: int = field( default_factory=dict )
-	unknown: Dict = field( default_factory=dict )
-
-	@classmethod
-	def schema( cls ) -> DataclassFactorySchema:
-		return DataclassFactorySchema( skip_internal=True, unknown='unknown' )
 
 class IdSchema( DataclassFactorySchema ):
 
@@ -186,7 +176,6 @@ class ActivityDb:
 				ActivityPart: ActivityPart.schema(),
 				ActivityTypes: ActivityTypes.schema(),
 				Resource: Resource.schema(),
-				Schema: Schema.schema(),
 				Dict[int, Activity]: IdSchema(),
 				Dict[int, Resource]: IdSchema(),
 				timedelta: DataclassFactorySchema( parser=str_to_timedelta, serializer=timedelta_to_str ),
@@ -194,9 +183,7 @@ class ActivityDb:
 		)
 
 	def _load_db( self ):
-		json = loads( self.dbfs.readbytes( SCHEMA_NAME ) )
-		self._schema = self._factory.load( json, Schema )
-		log.debug( f'loaded database schema from {SCHEMA_NAME}, schema version = {self._schema.version}' )
+		self._schema = load_schema( self.dbfs )
 
 		json = loads( self.dbfs.readbytes( RESOURCES_NAME ) )
 		self._resources = self._factory.load( json, Dict[int, Resource] )

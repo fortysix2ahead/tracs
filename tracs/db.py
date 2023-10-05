@@ -24,7 +24,7 @@ from rich.table import Table as RichTable
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext
-from tracs.fs import load_schema, Schema
+from tracs.fs import load_resources, load_schema, Schema
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
 from tracs.resources import Resource, ResourceType
@@ -184,10 +184,7 @@ class ActivityDb:
 
 	def _load_db( self ):
 		self._schema = load_schema( self.dbfs )
-
-		json = loads( self.dbfs.readbytes( RESOURCES_NAME ) )
-		self._resources = self._factory.load( json, Dict[int, Resource] )
-		log.debug( f'loaded {len( self._resources )} resource entries from {RESOURCES_NAME}' )
+		self._resources = load_resources( self.dbfs )
 
 		json = loads( self.dbfs.readbytes( ACTIVITIES_NAME ) )
 		self._activities = self._factory.load( json, Dict[int, Activity] )

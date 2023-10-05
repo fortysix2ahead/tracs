@@ -175,9 +175,7 @@ class ActivityDb:
 				Activity: Activity.schema(),
 				ActivityPart: ActivityPart.schema(),
 				ActivityTypes: ActivityTypes.schema(),
-				Resource: Resource.schema(),
 				Dict[int, Activity]: IdSchema(),
-				Dict[int, Resource]: IdSchema(),
 				timedelta: DataclassFactorySchema( parser=str_to_timedelta, serializer=timedelta_to_str ),
 			}
 		)

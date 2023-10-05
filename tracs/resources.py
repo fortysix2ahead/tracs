@@ -6,8 +6,6 @@ from re import compile, Pattern
 from typing import Any, Dict, List, Optional, Tuple, Type
 from uuid import NAMESPACE_URL, uuid5
 
-from dataclass_factory import Schema
-
 from tracs.uid import UID
 
 # todo: not sure if we still need the status
@@ -102,15 +100,6 @@ class Resource:
 	@classmethod
 	def fieldnames( cls ) -> List[str]:
 		return [f.name for f in fields( Resource )]
-
-	@classmethod
-	def schema( cls ) -> Schema:
-		return Schema(
-			exclude=['content', 'data', 'raw', 'resources', 'status', 'summary', 'text'],
-			omit_default=True,
-			skip_internal=True,
-			unknown='unknown',
-		)
 
 	# additional properties
 

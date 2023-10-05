@@ -1,4 +1,6 @@
 
+from pytest import raises
+
 from tracs.resources import Resource, Resources, ResourceType
 
 def test_resource_type():
@@ -38,11 +40,14 @@ def test_resource_type():
 
 def test_resources():
 
-	r1 = Resource( name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
-	r2 = Resource( name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )
+	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
+	r2 = Resource( uid='polar:1234', name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )
 
 	resources = Resources()
 	resources.add( r1, r2 )
+
+	with raises( KeyError ):
+		resources.add( r1 )
 
 	assert r1.id == 1
 	assert len( resources ) == 2

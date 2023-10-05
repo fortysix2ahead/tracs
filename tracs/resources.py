@@ -171,9 +171,12 @@ class Resources:
 
 	def add( self, *resources: Resource ):
 		for r in resources:
-			r.id = _next_id( self.data )
-			uuid = uuid5( NAMESPACE_URL, f'{r.uid}/{r.path}' )
-			self.data[str( uuid )] = r
+			uuid = str( uuid5( NAMESPACE_URL, f'{r.uid}/{r.path}' ) )
+			if uuid in self.data.keys():
+				raise KeyError( f'resource with UUID {uuid} already contained in resources' )
+			else:
+				r.id = _next_id( self.data )
+				self.data[uuid] = r
 
 @dataclass
 class ResourceGroup:

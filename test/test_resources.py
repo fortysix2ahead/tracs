@@ -51,9 +51,16 @@ def test_resources():
 		resources.add( r1 )
 
 	assert r1.id == 1 and r2.id == 2 and r3.id == 3
-	assert len( resources ) == 3
+	assert len( resources ) == len( resources.data )
 
 	assert resources.all() == [r1, r2, r3]
 	assert resources.all_for( uid=r1.uid ) == [r1, r2]
 	assert resources.all_for( path=r1.path ) == [r1, r3]
 	assert resources.all_for( uid=r1.uid, path=r1.path ) == [r1]
+
+	assert list( resources.keys() ) == list( resources.data.keys() )
+	assert list( resources.values() ) == list( resources.data.values() )
+
+	key = list( resources.keys() )[0]
+	assert resources[key] == resources.data.get( key )
+	assert resources.get( key ) == resources.data.get( key )

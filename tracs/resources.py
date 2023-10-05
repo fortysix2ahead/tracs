@@ -162,10 +162,22 @@ class Resources:
 
 	data: Dict[str, Resource] = field( default_factory=dict )
 
-	# magic methods
+	# magic/dict methods
 
 	def __len__( self ) -> int:
 		return len( self.data )
+
+	def __getitem__( self, item: str ):
+		return self.data[item]
+
+	def get( self, item: str ):
+		return self.data.get( item )
+
+	def keys( self ):
+		return self.data.keys()
+
+	def values( self ):
+		return self.data.values()
 
 	# add/remove etc.
 

@@ -13,7 +13,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.core import VirtualFields
 from tracs.resources import Resource
 from tracs.uid import UID
-from tracs.utils import sum_times, unique_sorted
+from tracs.utils import sum_timedeltas, sum_times, unique_sorted
 
 log = getLogger( __name__ )
 
@@ -297,14 +297,14 @@ class Activity:
 
 		this.type = t if (t := _unique( activities, 'type' ) ) else ActivityTypes.multisport
 
-		this.starttime = _min( activities, 'time' )
-		this.starttime_local = _min( activities, 'localtime' )
-		this.endtime = _max( activities, 'time_end' )
-		this.endtime_local = _max( activities, 'localtime_end' )
+		this.starttime = _min( activities, 'starttime' )
+		this.starttime_local = _min( activities, 'starttime_local' )
+		this.endtime = _max( activities, 'endtime' )
+		this.endtime_local = _max( activities, 'endtime_local' )
 		this.timezone = t if (t := _unique( activities, 'timezone' ) ) else get_localzone_name()
 
-		this.duration = sum_times( _stream( activities, 'duration' ) )
-		this.duration_moving = sum_times( _stream( activities, 'duration_moving' ) )
+		this.duration = sum_timedeltas( _stream( activities, 'duration' ) )
+		this.duration_moving = sum_timedeltas( _stream( activities, 'duration_moving' ) )
 
 		this.distance = _sum( activities, 'distance' )
 		this.ascent = _sum( activities, 'ascent' )

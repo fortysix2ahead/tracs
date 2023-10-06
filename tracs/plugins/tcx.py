@@ -321,10 +321,10 @@ class TCXImporter( XMLHandler ):
 		return TracsActivity(
 			distance=tcx.distance,
 			duration=tcx.duration,
-			time=tcx.time,
-			time_end=tcx.time_end,
-			localtime=tcx.time.astimezone( tzlocal() ),
-			localtime_end=tcx.time_end.astimezone( tzlocal() ),
+			starttime=tcx.time,
+			endtime=tcx.time_end,
+			starttime_local=tcx.time.astimezone( tzlocal() ),
+			endtime_local=tcx.time_end.astimezone( tzlocal() ),
 			uid=f'tcx:{tcx.time.strftime( "%y%m%d%H%M%S" )}',
 		)
 

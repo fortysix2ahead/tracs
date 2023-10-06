@@ -38,7 +38,7 @@ def rename_activities( activities: [Activity], ctx: ApplicationContext, force: b
 	for a in activities:
 		ctx.console.print( f'renaming activity [{a.id}]' )
 		ctx.console.print( f'  name                   : {a.name}' )
-		ctx.console.print( f'  local time             : {fmt( a.localtime )}' )
+		ctx.console.print( f'  local time             : {fmt( a.starttime_local )}' )
 		ctx.console.print( f'  place, city (country)  : {a.location_place}, {a.location_city} ({a.location_country})' )
 
 		# resources = load_all_resources( ctx.db, a )

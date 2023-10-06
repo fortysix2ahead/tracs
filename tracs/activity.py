@@ -81,13 +81,13 @@ class Activity:
 	location_longitude_end: float = field( default=None ) #
 	route: str = field( default=None ) #
 
-	time: datetime = field( default=None )
+	starttime: datetime = field( default=None )
 	"""activity time (UTC)"""
-	time_end: Optional[datetime] = field( default=None )
+	endtime: Optional[datetime] = field( default=None )
 	"""activity end time (UTC)"""
-	localtime: datetime = field( default=None )
+	starttime_local: datetime = field( default=None )
 	"""activity time (local)"""
-	localtime_end: Optional[datetime] = field( default=None )
+	endtime_local: Optional[datetime] = field( default=None )
 	"""activity end time (local)"""
 	timezone: str = field( default=get_localzone_name() )
 	"""timezone of the activity, local timezone by default"""
@@ -297,10 +297,10 @@ class Activity:
 
 		this.type = t if (t := _unique( activities, 'type' ) ) else ActivityTypes.multisport
 
-		this.time = _min( activities, 'time' )
-		this.localtime = _min( activities, 'localtime' )
-		this.time_end = _max( activities, 'time_end' )
-		this.localtime_end = _max( activities, 'localtime_end' )
+		this.starttime = _min( activities, 'time' )
+		this.starttime_local = _min( activities, 'localtime' )
+		this.endtime = _max( activities, 'time_end' )
+		this.endtime_local = _max( activities, 'localtime_end' )
 		this.timezone = t if (t := _unique( activities, 'timezone' ) ) else get_localzone_name()
 
 		this.duration = sum_times( _stream( activities, 'duration' ) )

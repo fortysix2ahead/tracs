@@ -24,8 +24,8 @@ def test_exercise( path ):
 
 	pa = importer.as_activity( resource )
 	assert pa.type == ActivityTypes.run
-	assert pa.time == datetime(2011, 4, 28, 15, 48, 10, tzinfo=timezone.utc)
-	assert pa.localtime == datetime(2011, 4, 28, 17, 48, 10, tzinfo=tzlocal())
+	assert pa.starttime == datetime( 2011, 4, 28, 15, 48, 10, tzinfo=timezone.utc )
+	assert pa.starttime_local == datetime( 2011, 4, 28, 17, 48, 10, tzinfo=tzlocal() )
 	assert pa.duration == time(0, 25, 35)
 
 @mark.file( 'libraries/default/polar/1/0/0/100012/100012.json' )

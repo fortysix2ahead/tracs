@@ -80,8 +80,8 @@ class StravaImporter( JSONHandler ):
 		return Activity(
 			name = activity.name,
 			type = TYPES.get( activity.type, ActivityTypes.unknown ),
-			time = activity.start_date,
-			localtime = activity.start_date_local.astimezone( activity.timezone ),
+			starttime= activity.start_date,
+			starttime_local= activity.start_date_local.astimezone( activity.timezone ),
 			timezone = tz_str,
 			distance = self.to_float( activity.distance ),
 			speed = self.to_float( activity.average_speed ),

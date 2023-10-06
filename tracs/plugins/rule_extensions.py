@@ -85,11 +85,11 @@ def time( left, op, right, rule ) -> str:
 Registry.register_virtual_field(
 	vfield( 'classifiers', List[str], lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ), 'Classifiers', 'list of classifiers of an activity' ),
 	# date/time fields
-	vfield( 'weekday', int, lambda a: a.localtime.year, 'Weekday', 'day of week at which the activity has taken place (as number)' ),
-	vfield( 'hour', int, lambda a: a.localtime.hour, 'Hour of Day', 'hour in which the activity has been started' ),
-	vfield( 'day', int, lambda a: a.localtime.day, 'Day of Month', 'day on which the activity has taken place' ),
-	vfield( 'month', int, lambda a: a.localtime.month, 'Month', 'month in which the activity has taken place' ),
-	vfield( 'year', int, lambda a: a.localtime.year, 'Year', 'year in which the activity has taken place' ),
+	vfield( 'weekday', int, lambda a: a.starttime_local.year, 'Weekday', 'day of week at which the activity has taken place (as number)' ),
+	vfield( 'hour', int, lambda a: a.starttime_local.hour, 'Hour of Day', 'hour in which the activity has been started' ),
+	vfield( 'day', int, lambda a: a.starttime_local.day, 'Day of Month', 'day on which the activity has taken place' ),
+	vfield( 'month', int, lambda a: a.starttime_local.month, 'Month', 'month in which the activity has taken place' ),
+	vfield( 'year', int, lambda a: a.starttime_local.year, 'Year', 'year in which the activity has taken place' ),
 	# time helper
-	vfield( '__time__', datetime, lambda a: datetime( 1, 1, 1, a.localtime.hour, a.localtime.minute, a.localtime.second, tzinfo=UTC ), 'Helper for time calculations', 'local time without a date and tz' ),
+	vfield( '__time__', datetime, lambda a: datetime( 1, 1, 1, a.starttime_local.hour, a.starttime_local.minute, a.starttime_local.second, tzinfo=UTC ), 'Helper for time calculations', 'local time without a date and tz' ),
 )

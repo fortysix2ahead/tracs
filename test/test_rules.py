@@ -41,8 +41,8 @@ A1 = Activity(
 	name="Berlin",
 	description="Morning Run in Berlin",
 	type=ActivityTypes.run,
-	time=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ),
-	localtime=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ).astimezone( tzlocal() ),
+	starttime=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ),
+	starttime_local=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ).astimezone( tzlocal() ),
 	heartrate=160,
 	uids=['polar:123456', 'strava:123456']
 )
@@ -56,7 +56,7 @@ d2 = {
 
 a2 = Activity(
 	heartrate=180,
-	time=datetime.utcnow(),
+	starttime=datetime.utcnow(),
 	tags=['morning', 'salomon', 'tired'],
 	uids=['polar:1234', 'strava:3456']
 )
@@ -77,7 +77,7 @@ def test_rule_engine():
 	# how to use a custom resolver
 	def resolve_year( thing, name ):
 		if name == 'year':
-			return cast( Activity, thing ).time.year
+			return cast( Activity, thing ).starttime.year
 		elif name == 'classifiers' and type( thing ) is tuple:
 			return list( map( lambda s: s.split( ':', 1 )[0], thing ) )
 		else:

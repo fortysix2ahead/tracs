@@ -39,13 +39,13 @@ def test_union( json ):
 	assert target.id is None
 
 def test_add():
-	src1 = Activity( time=datetime( 2022, 2, 22, 7 ), distance=10, duration=time( 1, 0, 0 ), heartrate_max=180, heartrate_min=100 )
-	src2 = Activity( time=datetime( 2022, 2, 22, 8 ), distance=20, duration=time( 1, 20, 0 ) )
-	src3 = Activity( time=datetime( 2022, 2, 22, 9 ), heartrate_max=160, heartrate_min=80 )
+	src1 = Activity( starttime=datetime( 2022, 2, 22, 7 ), distance=10, duration=time( 1, 0, 0 ), heartrate_max=180, heartrate_min=100 )
+	src2 = Activity( starttime=datetime( 2022, 2, 22, 8 ), distance=20, duration=time( 1, 20, 0 ) )
+	src3 = Activity( starttime=datetime( 2022, 2, 22, 9 ), heartrate_max=160, heartrate_min=80 )
 	target = src1.add( others=[src2, src3], copy=True )
 
-	assert target.time == datetime( 2022, 2, 22, 7 )
-	assert target.time_end is None
+	assert target.starttime == datetime( 2022, 2, 22, 7 )
+	assert target.endtime is None
 
 	assert target.distance == 30
 	assert target.ascent is None

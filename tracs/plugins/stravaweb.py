@@ -119,8 +119,8 @@ class StravaWebImporter( JSONHandler ):
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: StravaWebActivity = resource.data
 		return Activity(
-			time = to_isotime( activity.start_time ),
-			localtime = to_isotime( activity.start_time ).astimezone( tzlocal() ),
+			starttime= to_isotime( activity.start_time ),
+			starttime_local= to_isotime( activity.start_time ).astimezone( tzlocal() ),
 			ascent = activity.elevation_gain_raw if activity.elevation_gain_raw else None,
 			description = activity.description,
 			distance = activity.distance_raw if activity.distance else None,

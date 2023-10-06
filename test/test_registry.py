@@ -68,7 +68,7 @@ def test_fields_and_types( keywords ):
 	assert (f := Registry.activity_field( 'id' )) is not None and f.type == 'int'
 	assert (f := Registry.activity_field( 'distance' )) is not None and f.type == 'Optional[float]'
 	assert (f := Registry.activity_field( 'duration' )) is not None and f.type == 'Optional[timedelta]'
-	assert (f := Registry.activity_field( 'time' )) is not None and f.type == 'datetime'
+	assert (f := Registry.activity_field( 'starttime' )) is not None and f.type == 'datetime'
 	assert Registry.activity_field( 'not_existing_field' ) is None
 
 	# check above fields against normalizers

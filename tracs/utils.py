@@ -179,6 +179,12 @@ def sum_times( times: List[time] ) -> Optional[time]:
 		td += timedelta( hours=t.hour, minutes=t.minute, seconds=t.second ) if t else timedelta( seconds=0 )
 	return (datetime.min + td).time() if td.total_seconds() > 0 else None
 
+def sum_timedeltas( timedeltas: List[timedelta] ) -> Optional[timedelta]:
+	sum_td = timedelta( seconds=0 )
+	for td in timedeltas:
+		sum_td += td
+	return sum_td
+
 def to_isotime( timestr: str ) -> Optional[datetime]:
 	try:
 		return parse_datetime( timestr )

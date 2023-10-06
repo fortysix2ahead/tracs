@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from datetime import time
 
 from pytest import mark, raises
@@ -39,8 +39,8 @@ def test_union( json ):
 	assert target.id is None
 
 def test_add():
-	src1 = Activity( starttime=datetime( 2022, 2, 22, 7 ), distance=10, duration=time( 1, 0, 0 ), heartrate_max=180, heartrate_min=100 )
-	src2 = Activity( starttime=datetime( 2022, 2, 22, 8 ), distance=20, duration=time( 1, 20, 0 ) )
+	src1 = Activity( starttime=datetime( 2022, 2, 22, 7 ), distance=10, duration=timedelta( hours=1 ), heartrate_max=180, heartrate_min=100 )
+	src2 = Activity( starttime=datetime( 2022, 2, 22, 8 ), distance=20, duration=timedelta( hours=1, minutes=20 ) )
 	src3 = Activity( starttime=datetime( 2022, 2, 22, 9 ), heartrate_max=160, heartrate_min=80 )
 	target = src1.add( others=[src2, src3], copy=True )
 
@@ -51,8 +51,8 @@ def test_add():
 	assert target.ascent is None
 	assert target.elevation_max is None
 
-	assert target.duration == time( 2, 20, 0 )
-	assert target.duration_moving is None
+	assert target.duration == timedelta( hours=2, minutes=20 )
+	assert target.duration_moving == timedelta( seconds=0 )
 	assert target.heartrate_max == 180
 	assert target.heartrate_min == 80
 

@@ -143,6 +143,15 @@ def as_time( tstr: str = None ) -> time:
 def delta( a: time, b: time ) -> timedelta:
 	return datetime.combine( date.min, a ) - datetime.combine( date.min, b )
 
+def timedelta_to_iso8601( td: timedelta ) -> str:
+	s = timedelta_to_str( td )
+	if s.count( ':' ) == 2:
+		return f'PT{s}S'.replace( ':', 'H', 1 ).replace( ':', 'M', 1 )
+	elif s.count( ':' ) == 3:
+		return f'P{s}S'.replace( ':', 'DT', 1 ).replace( ':', 'H', 1 ).replace( ':', 'M', 1 )
+	else:
+		return s
+
 def timedelta_to_str( td: timedelta ) -> str:
 	s = str( td )
 	if td.days > 0:

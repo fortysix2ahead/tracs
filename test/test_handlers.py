@@ -49,7 +49,7 @@ def test_gpx_importer( path ):
 	assert resource.raw is resource.data
 
 	activity = Registry.importer_for( GPX_TYPE ).load_as_activity( path=path )
-	assert activity.time.isoformat() == '2012-10-24T23:29:40+00:00'
+	assert activity.starttime.isoformat() == '2012-10-24T23:29:40+00:00'
 
 @mark.file( 'templates/tcx/sample.tcx' )
 def test_tcx_importer( path ):
@@ -58,7 +58,7 @@ def test_tcx_importer( path ):
 	assert type( resource.data ) is TrainingCenterDatabase
 
 	activity = Registry.importer_for( TCX_TYPE ).load_as_activity( path=path )
-	assert activity.time.isoformat() == '2010-06-26T10:06:11+00:00'
+	assert activity.starttime.isoformat() == '2010-06-26T10:06:11+00:00'
 
 def test_tcx_export():
 	tcx = TrainingCenterDatabase(
@@ -123,7 +123,7 @@ def test_polar_flow_importer( path ):
 	assert importer.activity_cls == PolarFlowExercise
 
 	activity = importer.load_as_activity( path=path )
-	assert activity.time.isoformat() == '2011-04-28T15:48:10+00:00'
+	assert activity.starttime.isoformat() == '2011-04-28T15:48:10+00:00'
 
 @mark.skip
 @mark.file( 'templates/polar/personal_trainer/20160904.xml' )
@@ -142,7 +142,7 @@ def test_strava_importer( path ):
 	assert importer.activity_cls == StravaActivity
 
 	activity = importer.load_as_activity( path=path )
-	assert activity.time.isoformat() == '2018-12-16T13:15:12+00:00'
+	assert activity.starttime.isoformat() == '2018-12-16T13:15:12+00:00'
 
 @mark.file( 'libraries/default/bikecitizens/1/0/0/1000001/1000001.json' )
 def test_bikecitizens_importer( path ):
@@ -151,7 +151,7 @@ def test_bikecitizens_importer( path ):
 	assert importer.activity_cls == BikecitizensActivity
 
 	activity = importer.load_as_activity( path=path )
-	assert activity.time.isoformat() == '2020-05-09T05:03:11+00:00'
+	assert activity.starttime.isoformat() == '2020-05-09T05:03:11+00:00'
 
 @mark.file( 'libraries/default/waze/20/07/12/200712074743/200712074743.txt' )
 def test_waze_importer( path ):
@@ -160,5 +160,5 @@ def test_waze_importer( path ):
 	assert importer.activity_cls == WazeActivity
 
 	activity = importer.load_as_activity( path=path )
-	assert activity.time.isoformat() == '2020-07-12T05:47:43+00:00'
-	assert activity.localtime.isoformat() == '2020-07-12T07:47:43+02:00'
+	assert activity.starttime.isoformat() == '2020-07-12T05:47:43+00:00'
+	assert activity.starttime_local.isoformat() == '2020-07-12T07:47:43+02:00'

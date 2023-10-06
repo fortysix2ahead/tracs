@@ -59,18 +59,18 @@ def group_activities( ctx: ApplicationContext, activities: List[Activity], force
 def group_activities2( activities: List[Activity] ) -> List[ActivityGroup]:
 	last_activity, next_activity, current_group = None, None, None
 	groups: List[ActivityGroup] = []
-	for a in sorted( activities, key=lambda act: act.time.timestamp() ):
+	for a in sorted( activities, key=lambda act: act.starttime.timestamp() ):
 		last_activity, next_activity = next_activity, a
 		if last_activity is None:
-			current_group = ActivityGroup( members=[a], time=a.time )
+			current_group = ActivityGroup( members=[a], time=a.starttime )
 			continue
 
-		delta = next_activity.time - last_activity.time
+		delta = next_activity.starttime - last_activity.time
 		if delta < MAX_DELTA:
 			current_group.members.append( a )
 		else:
 			groups.append( current_group )
-			current_group = ActivityGroup( members=[a], time=a.time )
+			current_group = ActivityGroup( members=[a], time=a.starttime )
 
 	# append the last group
 	if current_group:
@@ -135,13 +135,13 @@ def part_activities( activities: List[Activity], force: bool = False, pretend: b
 
 	# todo: prerequisite check? time + time_end must exist
 
-	activities.sort( key=lambda e: e.time )
+	activities.sort( key=lambda e: e.starttime )
 
 	parts, gaps = [], []
 	for a in activities:
 		try:
 			last = parts[-1]
-			gap = a.time - last.time_end
+			gap = a.starttime - last.endtime
 			if gap.total_seconds() > 0:
 				parts.append( a )
 				gaps.append( seconds_to_time( gap.total_seconds() ) )

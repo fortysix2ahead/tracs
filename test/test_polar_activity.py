@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from datetime import time
 from datetime import timezone
 
@@ -26,7 +26,7 @@ def test_exercise( path ):
 	assert pa.type == ActivityTypes.run
 	assert pa.starttime == datetime( 2011, 4, 28, 15, 48, 10, tzinfo=timezone.utc )
 	assert pa.starttime_local == datetime( 2011, 4, 28, 17, 48, 10, tzinfo=tzlocal() )
-	assert pa.duration == time(0, 25, 35)
+	assert pa.duration == timedelta(hours=0, minutes=25, seconds=34, microseconds=900000 )
 
 @mark.file( 'libraries/default/polar/1/0/0/100012/100012.json' )
 def test_fitnessdata( json ):

@@ -5,8 +5,8 @@
 		"resources": [
 			1, 2, 3, 4
 		],
-		"localtime": "2012-10-24T22:29:40+01:00",
-		"time": "2012-10-24T23:29:40+00:00",
+		"starttime_local": "2012-10-24T22:29:40+01:00",
+		"starttime": "2012-10-24T23:29:40+00:00",
 		"type": "run",
 		"uid": "activity:121042232940",
 		"uids": [
@@ -19,7 +19,7 @@
 		"resources": [
 			1, 2, 3, 4
 		],
-		"time": "2012-10-24T23:29:40+00:00"
+		"starttime": "2012-10-24T23:29:40+00:00"
 	},
 	"3": {
 		"calories": 100,
@@ -28,7 +28,7 @@
 		"resources": [
 			2
 		],
-		"time": "2012-10-24T23:29:40+00:00",
+		"starttime": "2012-10-24T23:29:40+00:00",
 		"uids": [
 			"polar:100001"
 		]
@@ -45,12 +45,12 @@
 				"uids": ["waze:200712102429"]
 			}
 		],
-		"time": "2020-07-12T07:47:43+00:00",
+		"starttime": "2020-07-12T07:47:43+00:00",
 		"type": "drive"
 	},
 	"101": {
 		"name": "Waze One",
-		"time": "2020-07-12T07:47:43+00:00",
+		"starttime": "2020-07-12T07:47:43+00:00",
 		"type": "drive",
 		"uids": [
 			"waze:200712074743"
@@ -58,7 +58,7 @@
 	},
 	"102": {
 		"name": "Waze Two",
-		"time": "2020-07-12T10:24:29+00:00",
+		"starttime": "2020-07-12T10:24:29+00:00",
 		"type": "drive",
 		"uids": [
 			"waze:200712102429"
@@ -66,7 +66,7 @@
 	},
 	"200": {
 		"name": "Polar Multipart",
-		"time": "2021-01-12T10:00:00+00:00",
+		"starttime": "2021-01-12T10:00:00+00:00",
 		"calories": 600,
 		"distance": 4.0,
 		"parts": [
@@ -84,7 +84,7 @@
 	},
 	"201": {
 		"name": "Polar Multipart - Part 1",
-		"time": "2021-01-12T10:00:00+00:00",
+		"starttime": "2021-01-12T10:00:00+00:00",
 		"type": "run",
 		"calories": 100,
 		"distance": 1.0,
@@ -92,14 +92,14 @@
 	},
 	"202": {
 		"name": "Polar Multipart - Part 2",
-		"time": "2021-01-12T11:00:00+00:00",
+		"starttime": "2021-01-12T11:00:00+00:00",
 		"calories": 200,
 		"type": "gym",
 		"uids": ["polar:200000?200002.tcx"]
 	},
 	"203": {
 		"name": "Polar Multipart - Part 3",
-		"time": "2021-01-12T12:00:00+00:00",
+		"starttime": "2021-01-12T12:00:00+00:00",
 		"calories": 300,
 		"distance": 3.0,
 		"type": "run",
@@ -107,7 +107,7 @@
 	},
 	"300": {
 		"name": "Polar Multipart",
-		"time": "2021-01-12T10:00:00+00:00",
+		"starttime": "2021-01-12T10:00:00+00:00",
 		"calories": 600,
 		"distance": 4.0,
 		"parts": [
@@ -127,7 +127,7 @@
 	},
 	"301": {
 		"name": "Polar Multipart - Part 1",
-		"time": "2021-01-12T10:00:00+00:00",
+		"starttime": "2021-01-12T10:00:00+00:00",
 		"type": "run",
 		"calories": 100,
 		"distance": 1.0,
@@ -135,14 +135,14 @@
 	},
 	"302": {
 		"name": "Polar Multipart - Part 2",
-		"time": "2021-01-12T11:00:00+00:00",
+		"starttime": "2021-01-12T11:00:00+00:00",
 		"calories": 200,
 		"type": "gym",
 		"uids": ["polar:200000#2"]
 	},
 	"303": {
 		"name": "Polar Multipart - Part 3",
-		"time": "2021-01-12T12:00:00+00:00",
+		"starttime": "2021-01-12T12:00:00+00:00",
 		"calories": 300,
 		"distance": 3.0,
 		"type": "run",

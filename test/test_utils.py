@@ -11,7 +11,7 @@ from dateutil.tz import gettz
 
 from tracs.activity_types import ActivityTypes
 from tracs.uid import UID
-from tracs.utils import as_datetime, floor_ceil_from, floor_ceil_str, str_to_timedelta, timedelta_to_str, unique_sorted
+from tracs.utils import as_datetime, floor_ceil_from, floor_ceil_str, str_to_timedelta, timedelta_to_iso8601, timedelta_to_str, unique_sorted
 from tracs.utils import fmt
 from tracs.utils import fromisoformat
 from tracs.utils import seconds_to_time
@@ -119,6 +119,10 @@ def test_as_time():
 
 	assert as_datetime( None ) is None
 	assert as_datetime( '' ) is None
+
+def test_timedelta_iso8601():
+	assert timedelta_to_iso8601( timedelta( hours=2, minutes=38, seconds=17 ) ) == 'PT02H38M17S'
+	assert timedelta_to_iso8601( timedelta( days=3, hours=2, minutes=38, seconds=17 ) ) == 'P03DT02H38M17S'
 
 def test_timedelta_str():
 	assert timedelta_to_str( timedelta( hours = 0, minutes = 0, seconds = 17 ) ) == '00:00:17'

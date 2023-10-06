@@ -344,8 +344,10 @@ def test_range():
 
 	assert parse_eval( 'heartrate:100.0..200.0', A1 )
 
-# test will only succeed if the date normalizer is registered
 def test_date_time():
+	# test will only succeed if the date normalizer from rule_extensions plugin is registered
+	import tracs.plugins.rule_extensions
+
 	assert parse_eval( 'date:2023', A1 )
 	assert parse_eval( 'date:2023-01', A1 )
 	assert parse_eval( 'date:2023-01-13', A1 )

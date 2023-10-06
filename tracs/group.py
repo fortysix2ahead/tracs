@@ -65,7 +65,7 @@ def group_activities2( activities: List[Activity] ) -> List[ActivityGroup]:
 			current_group = ActivityGroup( members=[a], time=a.starttime )
 			continue
 
-		delta = next_activity.starttime - last_activity.time
+		delta = next_activity.starttime - last_activity.starttime
 		if delta < MAX_DELTA:
 			current_group.members.append( a )
 		else:

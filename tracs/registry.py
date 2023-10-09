@@ -236,7 +236,7 @@ class Registry:
 # helpers to access registry information
 
 def service_names() -> List[str]:
-	return list( Registry.services.keys() )
+	return sorted( list( Registry.services.keys() ) )
 
 def service_for( uid: Union[str, UID] ) -> Optional[Service]:
 	uid = UID( uid ) if type( uid ) is str else uid

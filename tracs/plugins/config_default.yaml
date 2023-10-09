@@ -30,6 +30,9 @@ plugins:
     client_id:
     client_secret:
 
+  stravaweb:
+    enabled: false
+    
   waze:
     enabled: true
     field_size_limit: 131072

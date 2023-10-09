@@ -68,7 +68,7 @@ class Local( Service, Plugin ):
 			for p in paths:
 				activity = self.import_from_file( p )
 				resource = activity.resources[0]
-				resource.uid = f'{self.name}:{activity.time.strftime( "%y%m%d%H%M%S" )}'
+				resource.uid = f'{self.name}:{activity.starttime.strftime( "%y%m%d%H%M%S" )}'
 				resource.path = f'{resource.local_id}.{resource.path.rsplit( ".", 1 )[1]}'
 				resource.status = 200
 				resources.append( resource )

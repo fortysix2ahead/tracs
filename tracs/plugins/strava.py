@@ -236,6 +236,10 @@ class Strava( Service ):
 				Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, text=gpx.to_xml( prettyprint=True ) )
 			)
 
+		if summary.raw.get( 'photos' ).get( 'count' ) > 0:
+			for p in self._client.get_activity_photos( summary.raw.get( 'id' ) ):
+				pass # todo: fix download when stravalib fixes download
+
 		return resources
 
 	@property

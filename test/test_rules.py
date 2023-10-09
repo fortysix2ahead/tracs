@@ -41,8 +41,8 @@ A1 = Activity(
 	name="Berlin",
 	description="Morning Run in Berlin",
 	type=ActivityTypes.run,
-	time=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ),
-	localtime=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ).astimezone( tzlocal() ),
+	starttime=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ),
+	starttime_local=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ).astimezone( tzlocal() ),
 	heartrate=160,
 	uids=['polar:123456', 'strava:123456']
 )
@@ -56,7 +56,7 @@ d2 = {
 
 a2 = Activity(
 	heartrate=180,
-	time=datetime.utcnow(),
+	starttime=datetime.utcnow(),
 	tags=['morning', 'salomon', 'tired'],
 	uids=['polar:1234', 'strava:3456']
 )
@@ -77,7 +77,7 @@ def test_rule_engine():
 	# how to use a custom resolver
 	def resolve_year( thing, name ):
 		if name == 'year':
-			return cast( Activity, thing ).time.year
+			return cast( Activity, thing ).starttime.year
 		elif name == 'classifiers' and type( thing ) is tuple:
 			return list( map( lambda s: s.split( ':', 1 )[0], thing ) )
 		else:
@@ -252,9 +252,9 @@ def test_normalize( service ):
 	assert normalize( 'type:run' ) == 'type.name == "run"'
 
 	# date + time normalizing
-	assert normalize( 'date:2020' ) == 'localtime >= d"2020-01-01T00:00:00+00:00" and localtime <= d"2020-12-31T23:59:59.999999+00:00"'
-	assert normalize( 'date:2020-05' ) == 'localtime >= d"2020-05-01T00:00:00+00:00" and localtime <= d"2020-05-31T23:59:59.999999+00:00"'
-	assert normalize( 'date:2020-05-13' ) == 'localtime >= d"2020-05-13T00:00:00+00:00" and localtime <= d"2020-05-13T23:59:59.999999+00:00"'
+	assert normalize( 'date:2020' ) == 'starttime_local >= d"2020-01-01T00:00:00+00:00" and starttime_local <= d"2020-12-31T23:59:59.999999+00:00"'
+	assert normalize( 'date:2020-05' ) == 'starttime_local >= d"2020-05-01T00:00:00+00:00" and starttime_local <= d"2020-05-31T23:59:59.999999+00:00"'
+	assert normalize( 'date:2020-05-13' ) == 'starttime_local >= d"2020-05-13T00:00:00+00:00" and starttime_local <= d"2020-05-13T23:59:59.999999+00:00"'
 
 	assert normalize( 'time:10' ) == '__time__ >= d"0001-01-01T10:00:00+00:00" and __time__ <= d"0001-01-01T10:59:59.999999+00:00"'
 	assert normalize( 'time:10:30' ) == '__time__ >= d"0001-01-01T10:30:00+00:00" and __time__ <= d"0001-01-01T10:30:59.999999+00:00"'
@@ -344,8 +344,10 @@ def test_range():
 
 	assert parse_eval( 'heartrate:100.0..200.0', A1 )
 
-# test will only succeed if the date normalizer is registered
 def test_date_time():
+	# test will only succeed if the date normalizer from rule_extensions plugin is registered
+	import tracs.plugins.rule_extensions
+
 	assert parse_eval( 'date:2023', A1 )
 	assert parse_eval( 'date:2023-01', A1 )
 	assert parse_eval( 'date:2023-01-13', A1 )

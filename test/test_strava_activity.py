@@ -20,8 +20,8 @@ def test_init_from_raw( path ):
 	assert sa.classifiers == ['strava']
 	assert sa.uids == ['strava:200002']
 	assert sa.type == ActivityTypes.run
-	assert sa.time == datetime( 2018, 12, 16, 13, 15, 12, tzinfo=timezone.utc )
-	assert sa.localtime == datetime( 2018, 12, 16, 14, 15, 12, tzinfo=tzlocal() )
+	assert sa.starttime == datetime( 2018, 12, 16, 13, 15, 12, tzinfo=timezone.utc )
+	assert sa.starttime_local == datetime( 2018, 12, 16, 14, 15, 12, tzinfo=tzlocal() )
 	assert sa.distance == 8533.7
 	assert sa.speed == 2.353
 	assert sa.speed_max == 3.1

@@ -58,8 +58,8 @@ def test_open_db( db ):
 		id=1,
 		name='Unknown Location',
 		type=ActivityTypes.xcski,
-		time=datetime( 2012, 1, 7, 10, 40, 56, tzinfo=timezone.utc ),
-		localtime=datetime( 2012, 1, 7, 11, 40, 56, tzinfo=timezone( timedelta( seconds=3600 ) ) ),
+		starttime=datetime( 2012, 1, 7, 10, 40, 56, tzinfo=timezone.utc ),
+		starttime_local=datetime( 2012, 1, 7, 11, 40, 56, tzinfo=timezone( timedelta( seconds=3600 ) ) ),
 		location_place='Forest',
 		uids=['polar:1234567890', 'strava:12345678', 'waze:20210101010101'],
 	)

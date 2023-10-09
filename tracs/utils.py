@@ -143,6 +143,15 @@ def as_time( tstr: str = None ) -> time:
 def delta( a: time, b: time ) -> timedelta:
 	return datetime.combine( date.min, a ) - datetime.combine( date.min, b )
 
+def timedelta_to_iso8601( td: timedelta ) -> str:
+	s = timedelta_to_str( td )
+	if s.count( ':' ) == 2:
+		return f'PT{s}S'.replace( ':', 'H', 1 ).replace( ':', 'M', 1 )
+	elif s.count( ':' ) == 3:
+		return f'P{s}S'.replace( ':', 'DT', 1 ).replace( ':', 'H', 1 ).replace( ':', 'M', 1 )
+	else:
+		return s
+
 def timedelta_to_str( td: timedelta ) -> str:
 	s = str( td )
 	if td.days > 0:
@@ -178,6 +187,12 @@ def sum_times( times: List[time] ) -> Optional[time]:
 	for t in times:
 		td += timedelta( hours=t.hour, minutes=t.minute, seconds=t.second ) if t else timedelta( seconds=0 )
 	return (datetime.min + td).time() if td.total_seconds() > 0 else None
+
+def sum_timedeltas( timedeltas: List[timedelta] ) -> Optional[timedelta]:
+	sum_td = timedelta( seconds=0 )
+	for td in timedeltas:
+		sum_td += td
+	return sum_td
 
 def to_isotime( timestr: str ) -> Optional[datetime]:
 	try:

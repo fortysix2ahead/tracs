@@ -1,4 +1,4 @@
-from datetime import date, datetime, time as dtime
+from datetime import date, datetime, time as dtime, timedelta
 from re import fullmatch
 from typing import List, Literal, Optional, Tuple
 
@@ -30,21 +30,21 @@ Registry.register_keywords(
 	Keyword( 'evening', 'time between 18:00 and 22:00', 'hour >= 18 and hour < 22' ),
 	Keyword( 'night', 'time between 22:00 and 6:00', 'hour >= 22 or hour < 6' ),
 	# date related keywords
-	Keyword( 'last7days', 'date is within the last 7 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-6 ), now() ) ) ),
-	Keyword( 'last14days', 'date is within the last 14 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-13 ), now() ) ) ),
-	Keyword( 'last30days', 'date is within the last 30 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-29 ), now() ) ) ),
-	Keyword( 'last60days', 'date is within the last 60 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-59 ), now() ) ) ),
-	Keyword( 'last90days', 'date is within the last 90 days', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-89 ), now() ) ) ),
-	Keyword( 'yesterday', 'date is yesterday', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( days=-1 ), None, 'day' ) ) ),
-	Keyword( 'today', 'date is today', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), None, 'day' ) ) ),
-	Keyword( 'lastweek', 'date is within last week', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( weeks=-1 ), None, 'week' ) ) ),
-	Keyword( 'thisweek', 'date is within the current week', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), None, 'week' ) ) ),
-	Keyword( 'lastmonth', 'date is within last month', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( months=-1 ), None, 'month' ) ) ),
-	Keyword( 'thismonth', 'date is within the current month', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), None, 'month' ) ) ),
-	Keyword( 'lastquarter', 'month of date is within last quarter', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( months=-3 ), None, 'quarter' ) ) ),
-	Keyword( 'thisquarter', 'month of date is within the current quarter', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), None, 'quarter' ) ) ),
-	Keyword( 'lastyear', 'year of date is last year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now().shift( years=-1 ), None, 'year' ) ) ),
-	Keyword( 'thisyear', 'year of date is current year', lambda: 'time >= {} and time <= {}'.format( *floor_ceil_str( now(), None, 'year' ) ) ),
+	Keyword( 'last7days', 'date is within the last 7 days', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-6 ), now() ) ) ),
+	Keyword( 'last14days', 'date is within the last 14 days', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-13 ), now() ) ) ),
+	Keyword( 'last30days', 'date is within the last 30 days', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-29 ), now() ) ) ),
+	Keyword( 'last60days', 'date is within the last 60 days', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-59 ), now() ) ) ),
+	Keyword( 'last90days', 'date is within the last 90 days', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-89 ), now() ) ) ),
+	Keyword( 'yesterday', 'date is yesterday', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-1 ), None, 'day' ) ) ),
+	Keyword( 'today', 'date is today', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now(), None, 'day' ) ) ),
+	Keyword( 'lastweek', 'date is within last week', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( weeks=-1 ), None, 'week' ) ) ),
+	Keyword( 'thisweek', 'date is within the current week', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now(), None, 'week' ) ) ),
+	Keyword( 'lastmonth', 'date is within last month', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( months=-1 ), None, 'month' ) ) ),
+	Keyword( 'thismonth', 'date is within the current month', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now(), None, 'month' ) ) ),
+	Keyword( 'lastquarter', 'month of date is within last quarter', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( months=-3 ), None, 'quarter' ) ) ),
+	Keyword( 'thisquarter', 'month of date is within the current quarter', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now(), None, 'quarter' ) ) ),
+	Keyword( 'lastyear', 'year of date is last year', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( years=-1 ), None, 'year' ) ) ),
+	Keyword( 'thisyear', 'year of date is current year', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now(), None, 'year' ) ) ),
 )
 
 # normalizers transform a field/value pair into a valid normalized expression
@@ -64,12 +64,12 @@ def id( left, op, right, rule ) -> str:
 	except (TypeError, ValueError):
 		return rule
 
-@normalizer( type=datetime, description='allow access to localtime via provided date string' )
+@normalizer( type=datetime, description='allow access to date via provided date string' )
 def date( left, op, right, rule ) -> str:
 	if fullmatch( FUZZY_DATE_PATTERN, right ):
-		return 'localtime >= d"{}" and localtime <= d"{}"'.format( *floor_ceil_from( right, as_str=True ) )
+		return 'starttime_local >= d"{}" and starttime_local <= d"{}"'.format( *floor_ceil_from( right, as_str=True ) )
 	elif DATE_RANGE_PATTERN.fullmatch( right ):
-		return 'localtime >= d"{}" and localtime <= d"{}"'.format( *parse_date_range_as_str( right ) )
+		return 'starttime_local >= d"{}" and starttime_local <= d"{}"'.format( *parse_date_range_as_str( right ) )
 	else:
 		return rule
 
@@ -83,13 +83,24 @@ def time( left, op, right, rule ) -> str:
 		return rule
 
 Registry.register_virtual_field(
-	vfield( 'classifiers', List[str], lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ), 'Classifiers', 'list of classifiers of an activity' ),
+	vfield( name='classifiers', type=List[str], display_name='Classifiers', description='list of classifiers of an activity',
+	   default=lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ) ),
 	# date/time fields
-	vfield( 'weekday', int, lambda a: a.localtime.year, 'Weekday', 'day of week at which the activity has taken place (as number)' ),
-	vfield( 'hour', int, lambda a: a.localtime.hour, 'Hour of Day', 'hour in which the activity has been started' ),
-	vfield( 'day', int, lambda a: a.localtime.day, 'Day of Month', 'day on which the activity has taken place' ),
-	vfield( 'month', int, lambda a: a.localtime.month, 'Month', 'month in which the activity has taken place' ),
-	vfield( 'year', int, lambda a: a.localtime.year, 'Year', 'year in which the activity has taken place' ),
+	vfield( 'weekday', int, lambda a: a.starttime_local.year, 'Weekday', 'day of week at which the activity has taken place (as number)' ),
+	vfield( 'hour', int, lambda a: a.starttime_local.hour, 'Hour of Day', 'hour in which the activity has been started' ),
+	vfield( 'day', int, lambda a: a.starttime_local.day, 'Day of Month', 'day on which the activity has taken place' ),
+	vfield( 'month', int, lambda a: a.starttime_local.month, 'Month', 'month in which the activity has taken place' ),
+	vfield( 'year', int, lambda a: a.starttime_local.year, 'Year', 'year in which the activity has taken place' ),
+	# date / time
+	vfield( name='date', type=timedelta, display_name='Date', description='Date without time',
+		default = lambda a: timedelta( days=a.starttime_local.timetuple().tm_yday )
+	),
+	vfield( name='time', type=timedelta, display_name='Time', description='Local time without date',
+		default = lambda a: timedelta( hours=a.starttime_local.hour, minutes=a.starttime_local.minute, seconds=a.starttime_local.second )
+	),
 	# time helper
-	vfield( '__time__', datetime, lambda a: datetime( 1, 1, 1, a.localtime.hour, a.localtime.minute, a.localtime.second, tzinfo=UTC ), 'Helper for time calculations', 'local time without a date and tz' ),
+	vfield( name='__time__', type=datetime,  display_name='Helper for time calculations', description='local time without a date and tz',
+	   default=lambda a: datetime( 1, 1, 1, a.starttime_local.hour, a.starttime_local.minute, a.starttime_local.second ) ),
+		# rules dows not care about timezones -> that's why we need to return time without tz information
+	   # default=lambda a: datetime( 1, 1, 1, a.starttime_local.hour, a.starttime_local.minute, a.starttime_local.second, tzinfo=UTC ) ),
 )

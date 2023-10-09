@@ -35,8 +35,8 @@ F = Factory(
 
 def test_serialize():
 	a = Activity(
-		time=datetime.utcnow(),
-		localtime=datetime.now( tzlocal() ),
+		starttime=datetime.utcnow(),
+		starttime_local=datetime.now( tzlocal() ),
 		uids=['polar:101', 'strava:101']
 	)
 	pp( F.dump( a ) )

@@ -457,14 +457,14 @@ class ActivityDb:
 		Finds the oldest activity. Optionally restricts itself to activities with the given classifier.
 		"""
 		activities = self.find_by_classifier( classifier ) if classifier else self.activities
-		return min( activities, key=lambda a: a.time )
+		return min( activities, key=lambda a: a.starttime )
 
 	def find_last( self, classifier: Optional[str] = None ) -> Optional[Activity]:
 		"""
 		Finds the newest activity. Optionally restricts itself to activities with the given classifier.
 		"""
 		activities = self.find_by_classifier( classifier ) if classifier else self.activities
-		return max( activities, key=lambda a: a.time )
+		return max( activities, key=lambda a: a.starttime )
 
 	# find resources
 

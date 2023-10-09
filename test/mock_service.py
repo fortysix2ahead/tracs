@@ -37,8 +37,8 @@ class MockActivity:
 	def as_activity( self ) -> Activity:
 		return Activity(
 			uids = [self.uid],
-			time = datetime.utcnow(),
-			localtime = datetime.utcnow().astimezone( tzlocal() ),
+			starttime= datetime.utcnow(),
+			starttime_local= datetime.utcnow().astimezone( tzlocal() ),
 		)
 
 @importer( type=MOCK_TYPE )

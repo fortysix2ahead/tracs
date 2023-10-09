@@ -23,7 +23,7 @@ def migrate_db_functions( ctx: ApplicationContext ) -> List[str]:
 	return sorted( [f.lstrip( FN_PREFIX ) for f in functions if FN_REGEX.fullmatch( f )] )
 
 def _mdb_consolidate_activity_ids( ctx: ApplicationContext, **kwargs ) -> None:
-	activities = sorted( ctx.db.activities, key=lambda activity: activity.time )
+	activities = sorted( ctx.db.activities, key=lambda activity: activity.starttime )
 	ctx.db.activity_map.clear()
 	for a, index in zip( activities, range( 1, maxsize ) ):
 		ctx.db.activity_map[index] = a

@@ -37,7 +37,7 @@ def link_activities( ctx: ApplicationContext, activities: List[Activity] ) -> No
 	ctx.complete( 'done' )
 
 def link_for( ctx: ApplicationContext, activity: Activity, resource: Resource ) -> Path:
-	ts = activity.time.strftime( '%Y%m%d%H%M%S' )
+	ts = activity.starttime.strftime( '%Y%m%d%H%M%S' )
 	if activity.name:
 		name = f'{activity.name} [{ts[8:14]}].gpx'
 	else:

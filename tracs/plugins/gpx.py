@@ -27,10 +27,10 @@ class GPXImporter( ResourceHandler ):
 		gpx: GPX = resource.raw
 		return Activity(
 			name = gpx.name,
-			time = gpx.get_time_bounds().start_time.astimezone( UTC ),
-			time_end = gpx.get_time_bounds().end_time.astimezone( UTC ),
-			localtime = gpx.get_time_bounds().start_time.astimezone( tzlocal() ),
-			localtime_end = gpx.get_time_bounds().end_time.astimezone( tzlocal() ),
+			starttime= gpx.get_time_bounds().start_time.astimezone( UTC ),
+			endtime= gpx.get_time_bounds().end_time.astimezone( UTC ),
+			starttime_local= gpx.get_time_bounds().start_time.astimezone( tzlocal() ),
+			endtime_local= gpx.get_time_bounds().end_time.astimezone( tzlocal() ),
 			distance = round( gpx.length_2d(), 1 ),
 			duration = timedelta( seconds=round( d ) ) if (d := gpx.get_duration() ) else None,
 			location_latitude_start=gpx.get_points_data()[0].point.latitude,

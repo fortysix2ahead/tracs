@@ -199,8 +199,8 @@ class PolarFlowImporter( JSONHandler ):
 			uids = [f'{SERVICE_NAME}:{activity.local_id}'],
 			name = activity.title,
 			type = activity.get_type(),
-			time = parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
-			localtime = parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
+			starttime= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
+			starttime_local= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
 			distance = activity.distance,
 			duration = timedelta( seconds = activity.duration / 1000 ) if activity.duration else None,
 			calories = activity.calories,
@@ -453,10 +453,10 @@ class Polar( Service ):
 
 			if new_activity:
 				# update new activity
-				new_activity.time=rp.range.start_datetime
-				new_activity.localtime = rp.range.start_datetime.astimezone( tzlocal() )
-				new_activity.time_end=rp.range.end_datetime
-				new_activity.localtime_end = rp.range.end_datetime.astimezone( tzlocal() )
+				new_activity.starttime=rp.range.start_datetime
+				new_activity.starttime_local = rp.range.start_datetime.astimezone( tzlocal() )
+				new_activity.endtime=rp.range.end_datetime
+				new_activity.endtime_local = rp.range.end_datetime.astimezone( tzlocal() )
 				new_activity.uid=f'{summary.uid}#{rp.index}'
 				# self.ctx.db.insert_activity( new_activity )
 				activities.append( new_activity )
@@ -481,7 +481,7 @@ class Polar( Service ):
 		ranges: Dict[int, ResourcePartlist] = { }
 		for r in resources:
 			recording = Service.as_activity_from( r )
-			dtr = DateTimeRange( recording.time, recording.time_end )
+			dtr = DateTimeRange( recording.starttime, recording.endtime )
 
 			found_key = None
 			for k, v in ranges.items():

@@ -105,16 +105,16 @@ def reimport_activities(
 		new_activity = a.union( others=src_activities, copy=True, ignore=ignore_fields )
 
 		if offset_delta:
-			new_activity.time = new_activity.time + offset_delta
+			new_activity.starttime = new_activity.starttime + offset_delta
 			new_activity.tag( TAG_OFFSET_CORRECTION )
 
 		if timezone:
 			new_activity.timezone = timezone.tzname( datetime.utcnow() )
-			new_activity.localtime = new_activity.time.astimezone( timezone )
+			new_activity.starttime_local = new_activity.starttime.astimezone( timezone )
 			new_activity.tag( TAG_TIMEZONE_CORRECTION )
 		else:
 			new_activity.timezone = get_localzone_name()
-			new_activity.localtime = new_activity.time.astimezone( gettz( a.timezone ) )
+			new_activity.starttime_local = new_activity.starttime.astimezone( gettz( a.timezone ) )
 
 		if ctx.force or _confirm_init( a, new_activity, ignore_fields, ctx ):
 			ctx.db.upsert_activity( new_activity )

@@ -185,6 +185,8 @@ class Strava( Service ):
 		for a in self._client.get_activities( after=after, before=before ):
 			self.ctx.advance( f'activity {a.id}' )
 
+			a = self._client.get_activity( a.id, include_all_efforts=True ) # get detailed data for activity
+
 			resources.append( self.importer.save_to_resource(
 				content=self.json_handler.save_raw( a.to_dict() ),
 				raw = a.to_dict(),

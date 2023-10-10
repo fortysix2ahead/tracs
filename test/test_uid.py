@@ -1,5 +1,3 @@
-from urllib.parse import urlparse
-
 from tracs.uid import UID
 
 def test_uid():
@@ -28,4 +26,4 @@ def test_uid():
 	assert UID( classifier='polar', local_id=101 ).uid == 'polar:101'
 	assert UID( classifier='polar', local_id=101, path='recording.gpx' ).uid == 'polar:101?recording.gpx'
 	assert UID( classifier='polar', local_id=101, part=1 ).uid == 'polar:101#1'
-	assert UID( classifier='polar', local_id=101, path='recording.gpx', part=1 ).uid == 'polar:101?recording.gpx#1' # works, but does not make sense ...
+	assert UID( classifier='polar', local_id=101, path='recording.gpx', part=1 ).uid == 'polar:101?recording.gpx#1'  # works, but does not make sense ...

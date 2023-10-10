@@ -1,13 +1,10 @@
-
 from csv import writer as csv_writer
-from dataclasses import dataclass
-from dataclasses import field
-from dataclasses import InitVar
 from datetime import datetime, timedelta
 from io import StringIO
 from typing import List, Tuple
 from typing import Optional
 
+from attrs import define, field
 from geojson import dump as dump_geojson
 from geojson import Feature
 from geojson import FeatureCollection
@@ -24,9 +21,8 @@ from tracs.plugins.tcx import Lap as TCXLap
 from tracs.resources import Resource
 
 # todo: no need to reinvent the wheel: chosse another point class here
-@dataclass
+@define
 class Point:
-
 	time: datetime = field( default=None )
 	lat: float = field( default=None )
 	lon: float = field( default=None )
@@ -36,43 +32,41 @@ class Point:
 	hr: int = field( default=None )
 
 	# init vars
-	start: InitVar[datetime] = field( default=None )
-	seconds: InitVar[int] = field( default=None )
-	latlng: InitVar[Tuple[float, float]] = field( default=None )
+	start: datetime = field( default=None, kw_only=True )
+	seconds: int = field( default=None, kw_only=True )
+	latlng: Tuple[float, float] = field( default=None, kw_only=True )
 
-	def __post_init__(self, start: datetime, seconds: int, latlng: int):
-		if start and seconds is not None:
-			self.time = start + timedelta( seconds=seconds )
-		if latlng:
-			self.lat, self.lon = latlng
+	def __attrs_post_init__( self ):
+		if self.start and self.seconds is not None:
+			self.time = self.start + timedelta( seconds=self.seconds )
+		if self.latlng:
+			self.lat, self.lon = self.latlng
 
-@dataclass
+@define
 class Stream:
+	points: List[Point] = field( factory=list )
+	gpx: GPX = field( default=None, kw_only=True )
 
-	points: List[Point] = field( default_factory=list )
-
-	gpx: InitVar[GPX] = field( default=None )
-
-	def __post_init__( self, gpx: GPX ):
-		if gpx:
-			gpx_points = [p for t in gpx.tracks for s in t.segments for p in s.points]
-			self.points = [Point( p.time, p.latitude, p.longitude, p.speed ) for p in gpx_points ]
+	def __attrs_post_init__( self ):
+		if self.gpx:
+			gpx_points = [p for t in self.gpx.tracks for s in t.segments for p in s.points]
+			self.points = [Point( p.time, p.latitude, p.longitude, p.speed ) for p in gpx_points]
 
 	@property
 	def length( self ) -> int:
 		return len( self.points )
 
 	def as_csv_list( self ) -> List[List[str]]:
-		return [ [ str( p.lon ), str( p.lat ) ] for p in self.points ]
+		return [[str( p.lon ), str( p.lat )] for p in self.points]
 
 	def as_feature( self ) -> Feature:
 		# return [ GeojsonPoint( (p.lon, p.lat) ) for p in self.points ] # todo: check that lat/lon order is correct
-		segment = [ (p.lon, p.lat) for p in self.points ] # todo: check that lat/lon order is correct
-		return Feature( 'id_1', LineString( segment ), properties={} )
+		segment = [(p.lon, p.lat) for p in self.points]  # todo: check that lat/lon order is correct
+		return Feature( 'id_1', LineString( segment ), properties={ } )
 
 	def as_gpx_track( self ) -> GPXTrack:
 		track = GPXTrack()
-		points = [ GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon, elevation=p.alt, speed=p.speed ) for p in self.points ]
+		points = [GPXTrackPoint( time=p.time, latitude=p.lat, longitude=p.lon, elevation=p.alt, speed=p.speed ) for p in self.points]
 		for p, gp in zip( self.points, points ):
 			ext = Element( '{gpxtpx}TrackPointExtension' )
 			hr = SubElement( ext, '{gpxtpx}hr' )
@@ -86,7 +80,7 @@ class Stream:
 	def as_gpx( self, **kwargs ) -> GPX:
 		gpx = GPX()
 
-		gpx.creator = 'StravaGPX' # not really true, but for comparing outcome
+		gpx.creator = 'StravaGPX'  # not really true, but for comparing outcome
 		gpx.nsmap['gpxtpx'] = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
 		gpx.nsmap['gpxx'] = 'http://www.garmin.com/xmlschemas/GpxExtensions/v3'
 		gpx.schema_locations = [
@@ -106,31 +100,31 @@ class Stream:
 
 	def as_tcx_lap( self, **kwargs ) -> TCXLap:
 		return TCXLap(
-			average_heart_rate_bpm = kwargs.get( 'average_heart_rate_bpm' ),
-			calories = kwargs.get( 'calories' ),
-			distance_meters = kwargs.get( 'distance_meters' ),
-			intensity = kwargs.get( 'intensity' ),
-			maximum_heart_rate_bpm = kwargs.get( 'maximum_heart_rate_bpm' ),
-			maximum_speed = kwargs.get( 'maximum_speed' ),
-			start_date = kwargs.get( 'start_date' ),
-			total_time_seconds = kwargs.get( 'total_time_seconds' ),
-			trigger_method = kwargs.get( 'trigger_method' ),
-			trackpoints = [ TCXTrackPoint( time=p.time, latitude_degrees=p.lat, longitude_degrees=p.lon, altitude_meters=p.alt, distance_meters=p.distance, heart_rate_bpm=p.hr ) for p in self.points ]
+			average_heart_rate_bpm=kwargs.get( 'average_heart_rate_bpm' ),
+			calories=kwargs.get( 'calories' ),
+			distance_meters=kwargs.get( 'distance_meters' ),
+			intensity=kwargs.get( 'intensity' ),
+			maximum_heart_rate_bpm=kwargs.get( 'maximum_heart_rate_bpm' ),
+			maximum_speed=kwargs.get( 'maximum_speed' ),
+			start_date=kwargs.get( 'start_date' ),
+			total_time_seconds=kwargs.get( 'total_time_seconds' ),
+			trigger_method=kwargs.get( 'trigger_method' ),
+			trackpoints=[TCXTrackPoint( time=p.time, latitude_degrees=p.lat, longitude_degrees=p.lon, altitude_meters=p.alt, distance_meters=p.distance, heart_rate_bpm=p.hr ) for p in self.points]
 		)
 
 	def as_tcx( self, **kwargs ) -> TrainingCenterDatabase:
 		return TrainingCenterDatabase(
-			activities = [ Activity(
+			activities=[Activity(
 				id=kwargs.get( 'id' ),
-				laps=[ self.as_tcx_lap( **kwargs ) ]
-			) ]
+				laps=[self.as_tcx_lap( **kwargs )]
+			)]
 		)
 
 def as_streams( resources: List[Resource] ) -> List[Stream]:
-	return [ Stream( gpx=r.raw ) for r in resources ]
+	return [Stream( gpx=r.raw ) for r in resources]
 
 def as_csv( streams: List[Stream] ) -> str:
-	csv = [ ['longitude', 'latitude'], *[line for s in streams for line in s.as_csv_list()]]
+	csv = [['longitude', 'latitude'], *[line for s in streams for line in s.as_csv_list()]]
 	io = StringIO()
 	writer = csv_writer( io, delimiter=';', lineterminator='\n' )
 	writer.writerows( csv )
@@ -142,7 +136,7 @@ def as_gpx( streams: List[Stream] ) -> GPX:
 	return gpx
 
 def as_feature_collection( streams: List[Stream] ) -> FeatureCollection:
-	return FeatureCollection( [ s.as_feature() for s in streams ] )
+	return FeatureCollection( [s.as_feature() for s in streams] )
 
 def as_str( resources: List[Resource], fmt: str ) -> Optional[str]:
 	if fmt == 'csv':

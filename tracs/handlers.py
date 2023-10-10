@@ -3,9 +3,8 @@ from __future__ import annotations
 
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Optional, Type, Union
+from typing import Any, Callable, Optional, Type, Union
 
-from dataclass_factory import Factory
 from requests import Response, Session
 
 from tracs.activity import Activity
@@ -20,8 +19,7 @@ class ResourceHandler:
 	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
 		self._type: Optional[str] = resource_type
 		self._activity_cls: Optional[Type] = activity_cls
-		# todo: factoty field could be moved into JSON handler, same may be true for activity_cls field
-		self._factory: Factory = Factory( debug_path=True, schemas={} )
+		self._factory: Callable = self.transform_data
 
 		# todo: are these fields really needed? probably not ...
 		self.resource: Optional[Resource] = None
@@ -43,9 +41,9 @@ class ResourceHandler:
 		self.raw = self.load_raw( self.content, **kwargs )
 
 		# postprocess data
-		# if resource.raw is dict-like and there's a dataclass class factory and a class
+		# if resource.raw is dict-like  structure and there's a factory function,
 		# the factory will be used to transfrom the data from raw and populate the data field
-		# if not, data will be set to raw
+		# if not, the data field will be set to raw
 		self.data = self.load_data( self.raw, **kwargs )
 
 		# return the result
@@ -105,17 +103,22 @@ class ResourceHandler:
 
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		"""
-		Transforms raw data into structured data. If raw data is a dict and an activity class is set, it will use
-		the dataclass factory to try a transformation. Will return raw data in case that fails.
-		Example: transform a dict into a dataclass.
+		Transforms raw data into structured data.
+		This assumes that self._factory is a function which can be called with raw data as an argument.
+		The function should follow the convention: fn( raw_data, **kwargs ). kwargs will contain activity_cls as optional arg.
+		This method will return raw if the call to the factory function fails.
 		"""
-		try:
-			if isinstance( raw, dict ) and self._activity_cls:
-				return self._factory.load( raw, self._activity_cls )
-			else:
-				return raw
-		except RuntimeError:
-			log.error( f'unable to transform raw data into structured data by using the factory for {self._activity_cls}', exc_info=True )
+		if self._factory is not None:
+			try:
+				return self._factory( raw, activity_cls=self._activity_cls )
+			except RuntimeError:
+				log.error( f'unable to transform raw data into structured data using the factory function', exc_info=True )
+
+		return raw
+
+	# noinspection PyMethodMayBeStatic
+	def transform_data( self, raw: Any, **kwargs ):
+		return raw
 
 	def load_resource( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Resource:
 		return Resource(

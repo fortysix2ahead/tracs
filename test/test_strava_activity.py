@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from datetime import time
 from datetime import timezone
 
@@ -8,11 +8,11 @@ from pytest import mark
 
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.strava import StravaActivity
-from tracs.plugins.strava import StravaImporter
+from tracs.plugins.strava import StravaHandler
 
 @mark.file( 'libraries/default/strava/2/0/0/200002/200002.json' )
 def test_init_from_raw( path ):
-	importer = StravaImporter( activity_cls=StravaActivity )
+	importer = StravaHandler( activity_cls=StravaActivity )
 	resource = importer.load( path )
 	sa = importer.as_activity( resource )
 
@@ -29,8 +29,8 @@ def test_init_from_raw( path ):
 	assert sa.descent == 81.0
 	assert sa.elevation_max == 260.5
 	assert sa.elevation_min == 202.4
-	assert sa.duration == time( 0, 36, 25 )
-	assert sa.duration_moving == time( 0, 33, 29 )
+	assert sa.duration == timedelta( hours=0, minutes=36, seconds=25 )
+	assert sa.duration_moving == timedelta( hours=0, minutes=33, seconds=29 )
 	assert sa.heartrate == 149
 	assert sa.heartrate_min is None
 	assert sa.heartrate_max == 171

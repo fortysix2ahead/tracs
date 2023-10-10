@@ -8,11 +8,11 @@ from pytest import mark
 
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.strava import StravaActivity
-from tracs.plugins.strava import StravaImporter
+from tracs.plugins.strava import StravaHandler
 
 @mark.file( 'libraries/default/strava/2/0/0/200002/200002.json' )
 def test_init_from_raw( path ):
-	importer = StravaImporter( activity_cls=StravaActivity )
+	importer = StravaHandler( activity_cls=StravaActivity )
 	resource = importer.load( path )
 	sa = importer.as_activity( resource )
 

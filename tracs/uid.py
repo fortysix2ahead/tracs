@@ -85,6 +85,14 @@ class UID:
 	def clspath( self ) -> str:
 		return f'{self.classifier}:{self.local_id}'
 
+	@property
+	def as_tuple( self ) -> Tuple[str, int]:
+		return self.classifier, self.local_id
+
+	@property
+	def as_triple( self ) -> Tuple[str, int, str]:
+		return self.classifier, self.local_id, self.path
+
 	def denotes_service( self, service_names: List[str] = None ) -> bool:
 		is_service = True if self.classifier and not self.local_id and not self.path else False
 		if service_names:

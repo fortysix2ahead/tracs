@@ -24,7 +24,7 @@ from tracs.activity_types import ActivityTypes, ActivityTypes as Types
 from tracs.config import ApplicationContext, APPNAME
 from tracs.inout import load_resource
 from tracs.plugins.gpx import GPX_TYPE
-from tracs.plugins.json import JSON_TYPE, JSONHandler
+from tracs.plugins.json import DataclassFactoryHandler, JSON_TYPE, JSONHandler
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.plugins.xml import XMLHandler
 from tracs.registry import importer, Registry, resourcetype, service, setup
@@ -191,7 +191,7 @@ class PolarExerciseDataActivity( Activity ):
 		self.uid = f'{self.classifier}:{self.raw_id}'
 
 @importer( type=POLAR_FLOW_TYPE, activity_cls=PolarFlowExercise, summary=True )
-class PolarFlowImporter( JSONHandler ):
+class PolarFlowImporter( DataclassFactoryHandler ):
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: PolarFlowExercise = resource.data

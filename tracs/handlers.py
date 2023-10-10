@@ -5,7 +5,6 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, Optional, Type, Union
 
-from dataclass_factory import Factory
 from requests import Response, Session
 
 from tracs.activity import Activity
@@ -201,21 +200,3 @@ class ResourceHandler:
 			self.save_to_url( content, url, **kwargs )
 
 		return self.save_to_resource( content=content, raw=raw, data=data, **kwargs )
-
-class DataclassFactoryHandler( ResourceHandler ):
-
-	def __init__( self ):
-		super().__init__()
-		self._factory: Factory = Factory( debug_path=True, schemas={} ) # use dataclass factory instead of callable
-
-	def load_data( self, raw: Any, **kwargs ) -> Any:
-		"""
-		Transforms raw data into structured data. If raw data is a dict and an activity class is set, it will use
-		the dataclass factory to try a transformation. Will return raw data in case that fails.
-		Example: transform a dict into a dataclass.
-		"""
-		try:
-			return self._factory.load( raw, self._activity_cls )
-		except RuntimeError:
-			log.error( f'unable to transform raw data into structured data by using the factory for {self._activity_cls}', exc_info=True )
-			return raw

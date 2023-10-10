@@ -15,7 +15,7 @@ from dateutil.tz import tzlocal, UTC
 from lxml.etree import tostring
 from rich.prompt import Prompt
 from stravalib.client import Client
-from stravalib.model import Activity as StravalibActivity
+from stravalib.model import Activity as StravaActivity
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
@@ -44,19 +44,14 @@ FETCH_PAGE_SIZE = 30 #
 TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
 TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
 
-@dataclass
-class StravaActivity( StravalibActivity ):
-
-	@property
-	def local_id( self ) -> int:
-		return self.id
-
 @importer( type=STRAVA_TYPE, activity_cls=StravaActivity, summary=True )
-class StravaImporter( JSONHandler ):
+class StravaHandler( JSONHandler ):
+
+	def load_data( self, raw: Any, **kwargs ):
+		return StravaActivity.parse_obj( raw )
 
 	def save_data( self, data: Any, **kwargs ) -> Any:
-		# filter out everything that is None + 'athlete' dict
-		return { k: v for k, v in data.to_dict().items() if k != 'athlete' and v is not None }
+		return StravaActivity.dict( data )
 
 	# noinspection PyMethodMayBeStatic
 	def to_float( self, q ) -> Optional[float]:
@@ -108,7 +103,7 @@ class Strava( Service ):
 		self._session = None
 		self._oauth_session = None
 
-		self.importer: StravaImporter = cast( StravaImporter, Registry.importer_for( STRAVA_TYPE ) )
+		self.importer: StravaHandler = cast( StravaHandler, Registry.importer_for( STRAVA_TYPE ) )
 		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
 
 	@property

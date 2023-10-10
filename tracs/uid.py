@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from attrs import define, field
 from typing import List, Optional, Tuple
 from urllib.parse import ParseResult
 from urllib.parse import urlparse, urlunparse
 
-@dataclass
+@define
 class UID:
 
 	uid: str = field( default=None )
@@ -19,7 +19,7 @@ class UID:
 	part: int = field( default=None )
 	"""Part number of an activity. Example: uid = polar:101#2, part = 2."""
 
-	def __post_init__( self ):
+	def __attrs_post_init__( self ):
 		if self.uid:
 			self.classifier, self.local_id, self.path, self.part = self._uidparse( self.uid )
 		else:

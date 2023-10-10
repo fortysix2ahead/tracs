@@ -16,7 +16,7 @@ from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME
 from tracs.plugin import Plugin
-from tracs.plugins.json import JSON_TYPE, JSONHandler
+from tracs.plugins.json import DataclassFactoryHandler, JSON_TYPE, JSONHandler
 from tracs.registry import importer, Registry, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
@@ -111,7 +111,7 @@ class BikecitizensRecordingImporter( JSONHandler ):
 	pass
 
 @importer( type=BIKECITIZENS_TYPE, activity_cls=BikecitizensActivity, summary=True )
-class BikecitizensImporter( JSONHandler ):
+class BikecitizensImporter( DataclassFactoryHandler ):
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: BikecitizensActivity = resource.data

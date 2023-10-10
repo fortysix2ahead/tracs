@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from attrs import define, field
 from typing import List, Optional, Tuple
-from urllib.parse import ParseResult
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import ParseResult, SplitResult, urlsplit, urlunsplit
+from urllib.parse import urlparse
 
-@define
+@define( order=False )
 class UID:
 
 	uid: str = field( default=None )
@@ -23,7 +23,7 @@ class UID:
 		if self.uid:
 			self.classifier, self.local_id, self.path, self.part = self._uidparse( self.uid )
 		else:
-			self.uid = self._unparse( self.classifier, self.local_id, self.path, self.part )
+			self.uid = self._unsplit( self.classifier, self.local_id, self.path, self.part )
 
 	# custom url parsing to overcome inconsistencies between python 3.8 and 3.9+:
 	# url       python 3.8    python 3.9+ (in format scheme,path)
@@ -42,24 +42,35 @@ class UID:
 		else:
 			return url
 
-	def _uidparse( self, url: str  ) -> Tuple[Optional[str], Optional[int], Optional[str], Optional[int]]:
-		url: ParseResult = self._urlparse( url )
-		return self._uidfields( url.scheme, url.path, url.query, url.fragment )
-
 	# noinspection PyMethodMayBeStatic
-	def _uidfields( self, scheme, path, query, fragment ) -> Tuple[Optional[str], Optional[int], Optional[str], Optional[int]]:
-		classifier = scheme if scheme else None
-		local_id = int( path ) if path else None
-		path = query if query else None
-		part = int( fragment ) if fragment else None
+	def _urlsplit( self, url: str ) -> SplitResult:
+		url: SplitResult = urlsplit( url )
+		if not url.scheme and url.path:
+			if ':' in url.path:
+				path, local_id = url.path.split( ':' )
+				return SplitResult( scheme=path, netloc=url.netloc, path=local_id, query=url.query, fragment=url.fragment )
+			else:
+				return SplitResult( scheme=url.path, netloc=url.netloc, path='', query=url.query, fragment=url.fragment )
+		else:
+			return url
+
+	def _uidparse( self, url: str  ) -> Tuple[Optional[str], Optional[int], Optional[str], Optional[int]]:
+		url: SplitResult = self._urlsplit( url )
+		classifier = url.scheme if url.scheme else None
+		path_split = url.path.split( '/', maxsplit=1 )
+		local_id = int( path_split[0] ) if path_split[0] else None
+		path = path_split[1] if len( path_split ) > 1 else None
+		part = int( url.fragment ) if url.fragment else None
 		return classifier, local_id, path, part
 
 	# noinspection PyMethodMayBeStatic
-	def _unparse( self, classifier, local_id, path, part ) -> str:
+	def _unsplit( self, classifier, local_id, path, part ) -> str:
 		if classifier and not local_id:
-			return urlunparse( ['', '', classifier if classifier else '', '', path if path else '', part if part else ''] )
+			return urlunsplit( ['', '', classifier if classifier else '', path if path else '', part if part else ''] )
 		else:
-			return urlunparse( [classifier if classifier else '', '', str( local_id ) if local_id else '', '', path if path else '', str( part ) if part else ''] )
+			p = f'{local_id if local_id else ""}'
+			p = f'{p}/{path}' if path else p
+			return urlunsplit( [classifier if classifier else '', '', p, '', str( part ) if part else ''] )
 
 	def __hash__( self ) -> int:
 		return hash( self.uid )

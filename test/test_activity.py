@@ -65,8 +65,8 @@ def test_activity_part():
 	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345' ) ]
 	assert p.classifiers == [ 'polar' ]
 
-	p = ActivityPart( uids=['polar:2345?rec.gpx', 'polar:2345?rec.tcx', 'polar:1234'] )
-	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345?rec.gpx' ), UID( 'polar:2345?rec.tcx' ) ]
+	p = ActivityPart( uids=['polar:2345/rec.gpx', 'polar:2345/rec.tcx', 'polar:1234'] )
+	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345/rec.gpx' ), UID( 'polar:2345/rec.tcx' ) ]
 	assert p.as_activity_uids == [ UID( 'polar:1234' ), UID( 'polar:2345' ) ]
 	assert p.activity_uids == [ 'polar:1234', 'polar:2345' ]
 	assert p.classifiers == [ 'polar' ]
@@ -94,9 +94,9 @@ def test_multipart_activity():
 	assert a.as_uids == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:102' ) ]
 	assert a.classifiers == [ 'polar', 'strava' ]
 
-	p1 = ActivityPart( uids=['polar:101?swim.gpx' ], gap=time( 0, 0, 0 ) )
-	p2 = ActivityPart( uids=['polar:101?bike.gpx' ], gap=time( 1, 0, 0 ) )
-	p3 = ActivityPart( uids=['polar:101?run.gpx' ], gap=time( 1, 0, 0 ) )
+	p1 = ActivityPart( uids=['polar:101/swim.gpx' ], gap=time( 0, 0, 0 ) )
+	p2 = ActivityPart( uids=['polar:101/bike.gpx' ], gap=time( 1, 0, 0 ) )
+	p3 = ActivityPart( uids=['polar:101/run.gpx' ], gap=time( 1, 0, 0 ) )
 	a = Activity( parts=[ p1, p2, p3 ] )
 
 	assert a.multipart

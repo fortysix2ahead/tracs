@@ -59,13 +59,12 @@ def test_resource():
 	r = Resource( __uid__=UID( classifier='polar', local_id=1001, path='recording.gpx' ) )
 	assert r.uid == 'polar:1001' and r.path == 'recording.gpx'
 
-	# the cases below are not allowed
-	with raises( AttributeError ):
-		Resource()
+	# resource without uid is allowed
+	r = Resource()
+	r = Resource( path='recording.gpx' )
+
 	with raises( AttributeError ):
 		Resource( uid='polar:1001' )
-	with raises( AttributeError ):
-		Resource( path='recording.gpx' )
 	with raises( AttributeError ):
 		Resource( uid='polar', path='recording.gpx' )
 

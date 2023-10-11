@@ -80,28 +80,22 @@ class Resource:
 	__uid__: UID = field( default=None, kw_only=True, alias='__uid__' )
 
 	def __attrs_post_init__( self ):
-		# uid of type UID is allowed, treat it like self.__uid__
-		if type( self.uid ) is UID:
-			self.__uid__ = cast( UID, self.uid )
-			self.uid = None
-
 		if self.__uid__:
 			self.uid, self.path = self.__uid__.clspath, self.__uid__.path
 
-		elif self.uid is not None:
+		elif self.uid and type( self.uid ) is UID: # uid of type UID is allowed, treat it like self.__uid__
+			self.__uid__ = cast( UID, self.uid )
+			self.uid, self.path = self.__uid__.clspath, self.__uid__.path
+
+		elif self.uid and type( self.uid ) is str:
 			self.__uid__ = UID( uid=self.uid )
-			if self.__uid__.denotes_activity():
-				if self.path:
-					self.__uid__ = UID( uid=f'{self.uid}/{self.path}' )
-				else:
-					raise AttributeError( f'uid {self.uid} denotes an activity, but path is not provided' )
+			if self.__uid__.denotes_activity() and self.path:
+				self.__uid__ = UID( uid=f'{self.uid}/{self.path}' )
 			elif self.__uid__.denotes_resource():
 				self.uid, self.path = self.__uid__.clspath, self.__uid__.path
 			else:
-				raise AttributeError( f'uid {self.uid} denotes a service, which is not supported as valid argument' )
+				raise AttributeError( f'uid = {self.uid} and path = {self.path} are not supported as valid arguments' )
 
-		else:
-			raise AttributeError( f'attributes uid={self.uid} and path={self.path} are necessary' )
 		# todo: really needed?
 		self.content = self.text.encode( encoding='UTF-8' ) if self.text else self.content
 

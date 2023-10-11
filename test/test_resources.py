@@ -89,3 +89,9 @@ def test_resources():
 	assert resources.summary() == r4
 	assert resources.summaries() == [r4, r5]
 	assert resources.recordings() == [r1, r2, r3]
+
+	# test iteration
+	counter = 0
+	for r in resources:
+		counter += 1
+	assert counter == len( resources )

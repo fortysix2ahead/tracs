@@ -106,14 +106,14 @@ def test_multipart_activity():
 
 def test_resource():
 	some_string = 'some string value'
-	r = Resource( content=some_string.encode( encoding='UTF-8' ) )
+	r = Resource( uid='polar:1', path='content.dat', content=some_string.encode( encoding='UTF-8' ) )
 	assert type( r.content ) is bytes and len( r.content ) > 0
 	assert r.as_text() == some_string
 
-	r = Resource( text=some_string )
+	r = Resource( uid='polar:1', path='content.dat', text=some_string )
 	assert type( r.content ) is bytes and len( r.content ) > 0
 	assert r.as_text() == some_string
-	assert r.text is None # todo: change to throw exception?
+	assert r.text == some_string
 
 def test_fields():
 	# load rule extension plugin

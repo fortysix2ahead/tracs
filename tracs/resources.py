@@ -111,28 +111,20 @@ class Resource:
 
 	@property
 	def classifier( self ) -> str:
-		return self._uid()[0]
+		return self.__uid__.classifier
 
 	@property
 	def local_id( self ) -> int:
-		return int( self._uid()[1] )
+		return self.__uid__.local_id
 
 	@property
 	def local_id_str( self ) -> str:
-		return self._uid()[1]
+		return str( self.local_id )
 
 	# todo: rename, that's not a good name
 	@property
 	def uidpath( self ) -> str:
 		return self.__uid__.uid
-
-	@property  # property should be deprecated in favour of local id
-	def raw_id( self ) -> int:
-		return self.local_id
-
-	def _uid( self ) -> Tuple[str, str]:
-		classifier, raw_id = self.uid.split( ':', maxsplit=1 )
-		return classifier, raw_id
 
 	def as_text( self, encoding: str = 'UTF-8' ) -> Optional[str]:
 		return self.content.decode( encoding )

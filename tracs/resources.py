@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum
 from re import compile, Pattern
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Type
+from typing import Any, cast, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from attrs import Attribute, define, field, fields
 
@@ -63,7 +63,7 @@ class Resource:
 	path: str = field( default=None )
 	source: Optional[str] = field( default=None )
 	summary: bool = field( default=False )
-	uid: str = field( default=None )
+	uid: Union[str, UID] = field( default=None )
 
 	# additional fields holding data of a resource, used during load
 
@@ -80,13 +80,28 @@ class Resource:
 	__uid__: UID = field( default=None, kw_only=True, alias='__uid__' )
 
 	def __attrs_post_init__( self ):
+		# uid of type UID is allowed, treat it like self.__uid__
+		if type( self.uid ) is UID:
+			self.__uid__ = cast( UID, self.uid )
+			self.uid = None
+
 		if self.__uid__:
 			self.uid, self.path = self.__uid__.clspath, self.__uid__.path
-		elif self.uid and self.path:
-			self.__uid__ = UID( uid=f'{self.uid}/{self.path}' )
-		else:
-			raise AttributeError( 'attributes uid and path are necessary' )
 
+		elif self.uid is not None:
+			self.__uid__ = UID( uid=self.uid )
+			if self.__uid__.denotes_activity():
+				if self.path:
+					self.__uid__ = UID( uid=f'{self.uid}/{self.path}' )
+				else:
+					raise AttributeError( f'uid {self.uid} denotes an activity, but path is not provided' )
+			elif self.__uid__.denotes_resource():
+				self.uid, self.path = self.__uid__.clspath, self.__uid__.path
+			else:
+				raise AttributeError( f'uid {self.uid} denotes a service, which is not supported as valid argument' )
+
+		else:
+			raise AttributeError( f'attributes uid={self.uid} and path={self.path} are necessary' )
 		# todo: really needed?
 		self.content = self.text.encode( encoding='UTF-8' ) if self.text else self.content
 

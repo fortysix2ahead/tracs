@@ -39,22 +39,35 @@ def test_resource_type():
 	assert ResourceType( 'application/vnd.polar.hrv+csv' ).extension() == 'hrv.csv'
 
 def test_resource():
-	# creating a resource without uid or path should result in an exception
-	with raises( AttributeError ):
-		Resource()
-	with raises( AttributeError ):
-		Resource( uid='polar:1001' )
-	with raises( AttributeError ):
-		Resource( path='recording.gpx' )
-
+	# creation with separate uid and path arguments
 	r = Resource( id=1, name='recording', type='application/gpx+xml', path='recording.gpx', uid='polar:1001' )
 	assert r.uid == 'polar:1001'
 	assert r.classifier == 'polar'
 	assert r.local_id == 1001 and r.local_id_str == '1001'
 	assert r.uidpath == 'polar:1001/recording.gpx'
 
-	r = Resource( __uid__=UID( classifier='polar', local_id=1001, path='recording.gpx' ) )
+	# path can also be integrated into uid
+	r = Resource( id=1, uid='polar:1001/recording.gpx' )
 	assert r.uid == 'polar:1001'
+	assert r.classifier == 'polar'
+	assert r.local_id == 1001 and r.local_id_str == '1001'
+	assert r.uidpath == 'polar:1001/recording.gpx'
+
+	# this works, but is not supposed to be used
+	r = Resource( uid=UID( classifier='polar', local_id=1001, path='recording.gpx' ) )
+	assert r.uid == 'polar:1001' and r.path == 'recording.gpx'
+	r = Resource( __uid__=UID( classifier='polar', local_id=1001, path='recording.gpx' ) )
+	assert r.uid == 'polar:1001' and r.path == 'recording.gpx'
+
+	# the cases below are not allowed
+	with raises( AttributeError ):
+		Resource()
+	with raises( AttributeError ):
+		Resource( uid='polar:1001' )
+	with raises( AttributeError ):
+		Resource( path='recording.gpx' )
+	with raises( AttributeError ):
+		Resource( uid='polar', path='recording.gpx' )
 
 def test_resources():
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )

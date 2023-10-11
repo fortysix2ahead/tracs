@@ -81,9 +81,10 @@ class UID:
 	def __str__( self ) -> str:
 		return self.uid
 
+	# todo: rename, clspath is not a good name
 	@property
 	def clspath( self ) -> str:
-		return f'{self.classifier}:{self.local_id}'
+		return f'{self.classifier}:{self.local_id}' if self.local_id else self.classifier
 
 	@property
 	def as_tuple( self ) -> Tuple[str, int]:

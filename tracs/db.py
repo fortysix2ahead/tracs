@@ -277,7 +277,11 @@ class ActivityDb:
 		return self._resources
 
 	@property
-	def resource_keys( self ) -> List[int]:
+	def resource_ids( self ) -> List[int]:
+		return sorted( list( self._resources.ids() ) )
+
+	@property
+	def resource_keys( self ) -> List[str]:
 		return sorted( list( self._resources.keys() ) )
 
 	# ---- DB Operations --------------------------------------------------------

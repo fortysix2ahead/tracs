@@ -198,16 +198,15 @@ class Resources:
 		_all = filter( lambda r: r.path == path, _all ) if path else _all
 		return list( _all )
 
-@define
-class ResourceGroup:
-
-	resources: List[Resource] = field( factory=list )
-
 	def summary( self ) -> Optional[Resource]:
-		return next( (r for r in self.resources if r.summary), None )
+		return next( (r for r in self.data if r.summary), None )
+
+	def summaries( self ) -> List[Resource]:
+		return [r for r in self.data if r.summary]
 
 	def recordings( self ) -> List[Resource]:
-		return [r for r in self.resources if not r.summary]
+		return [r for r in self.data if not r.summary]
+
 
 def _next_id( resources: List[Resource] ) -> int:
 	existing_ids = [r.id for r in resources]

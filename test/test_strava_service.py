@@ -54,7 +54,7 @@ def test_service( strava_server, service: Strava ):
 	a = fetched[0]
 	assert type( a ) is StravaActivity
 	assert a.raw is not None
-	assert a.raw_id == 300003
+	assert a.local_id == 300003
 
 	assert len( a.resources ) == 4
 

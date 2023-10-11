@@ -2,6 +2,7 @@
 from pytest import raises
 
 from tracs.resources import Resource, Resources, ResourceType
+from tracs.uid import UID
 
 def test_resource_type():
 	rt = ResourceType( 'application/xml' )
@@ -38,6 +39,22 @@ def test_resource_type():
 	assert ResourceType( 'application/vnd.polar+csv' ).extension() == 'csv'
 	assert ResourceType( 'application/vnd.polar.hrv+csv' ).extension() == 'hrv.csv'
 
+def test_resource():
+
+	# creating a resource without uid or path should result in an exception
+	with raises( AttributeError ):
+		Resource()
+	with raises( AttributeError ):
+		Resource( uid='polar:1001' )
+	with raises( AttributeError ):
+		Resource( path='recording.gpx' )
+
+	r = Resource( id=1, name='recording', type='application/gpx+xml', path='recording.gpx', uid='polar:1001' )
+	assert r.uid == 'polar:1001'
+
+	r = Resource( __uid__=UID( classifier='polar', local_id=1001, path='recording.gpx' ) )
+	assert r.uid == 'polar:1001'
+
 def test_resources():
 
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
@@ -58,9 +75,9 @@ def test_resources():
 	assert resources.all_for( path=r1.path ) == [r1, r3]
 	assert resources.all_for( uid=r1.uid, path=r1.path ) == [r1]
 
-	assert list( resources.keys() ) == list( resources.data.keys() )
-	assert list( resources.values() ) == list( resources.data.values() )
+	assert resources.keys() == [r1.uidpath, r2.uidpath, r3.uidpath]
+	assert resources.values() == [r1, r2, r3]
 
 	key = list( resources.keys() )[0]
-	assert resources[key] == resources.data.get( key )
-	assert resources.get( key ) == resources.data.get( key )
+	assert resources[key] == resources.__uid_map__.get( key )
+	assert resources.get( key ) == resources.__uid_map__.get( key )

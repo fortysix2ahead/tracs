@@ -158,6 +158,12 @@ class Resources:
 
 	# magic/dict methods
 
+	def __contains__( self, item: Resource ) -> bool:
+		try:
+			return any( [ item.uid == r.uid and item.path == r.path for r in self.data ] )
+		except AttributeError:
+			return False
+
 	def __iter__( self ):
 		self.__it__ = self.data.__iter__()
 		return self.__it__

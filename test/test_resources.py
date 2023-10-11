@@ -89,6 +89,12 @@ def test_resources():
 	assert resources.all_for( path=r1.path ) == [r1, r3]
 	assert resources.all_for( uid=r1.uid, path=r1.path ) == [r1]
 
+	r1a = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
+	assert r1a in resources
+	r1a.path = 'other.gpx'
+	assert r1a not in resources
+	assert 10 not in resources
+
 	assert resources.keys() == [r1.uidpath, r2.uidpath, r3.uidpath]
 	assert resources.values() == [r1, r2, r3]
 

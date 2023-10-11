@@ -24,7 +24,7 @@ from rich.table import Table as RichTable
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext
-from tracs.fs import load_resources, load_schema, Schema, write_resources
+from tracs.io import load_resources, load_schema, Schema, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
 from tracs.resources import Resource, ResourceType

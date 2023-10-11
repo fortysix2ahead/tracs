@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum
 from re import compile, Pattern
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type
 
 from attrs import Attribute, define, field, fields
 
@@ -141,12 +141,20 @@ class Resources:
 	data: List[Resource] = field( factory=list )
 
 	__uid_map__: Dict[str, Resource] = field( factory=dict, init=False, alias='__uid_map__' )
+	__it__: Iterator = field( default=None, init=False, alias='__it__' )
 
 	def __attrs_post_init__( self ):
 		for r in self.data:
 			self.__uid_map__[r.uid] = r
 
 	# magic/dict methods
+
+	def __iter__( self ):
+		self.__it__ = self.data.__iter__()
+		return self.__it__
+
+	def __next__( self ):
+		return self.__it__.__next__()
 
 	def __len__( self ) -> int:
 		return len( self.data )

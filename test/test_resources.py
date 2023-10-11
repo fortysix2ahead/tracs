@@ -1,4 +1,3 @@
-
 from pytest import raises
 
 from tracs.resources import Resource, Resources, ResourceType
@@ -40,7 +39,6 @@ def test_resource_type():
 	assert ResourceType( 'application/vnd.polar.hrv+csv' ).extension() == 'hrv.csv'
 
 def test_resource():
-
 	# creating a resource without uid or path should result in an exception
 	with raises( AttributeError ):
 		Resource()
@@ -56,10 +54,11 @@ def test_resource():
 	assert r.uid == 'polar:1001'
 
 def test_resources():
-
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
 	r2 = Resource( uid='polar:1234', name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )
 	r3 = Resource( uid='strava:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
+	r4 = Resource( uid='polar:1234', name='test1.json', type='application/vnd.polar+json', path='test1.json', summary=True )
+	r5 = Resource( uid='polar:1234', name='test2.json', type='application/vnd.polar+json', path='test2.json', summary=True )
 
 	resources = Resources()
 	resources.add( r1, r2, r3 )
@@ -81,3 +80,9 @@ def test_resources():
 	key = list( resources.keys() )[0]
 	assert resources[key] == resources.__uid_map__.get( key )
 	assert resources.get( key ) == resources.__uid_map__.get( key )
+
+	assert resources.summary() is None
+	resources.add( r4, r5 )
+	assert resources.summary() == r4
+	assert resources.summaries() == [r4, r5]
+	assert resources.recordings() == [r1, r2, r3]

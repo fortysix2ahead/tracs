@@ -190,8 +190,9 @@ class Resources:
 
 	# access methods
 
-	def all( self ) -> List[Resource]:
-		return list( self.data )
+	# todo: change the sort order later?
+	def all( self, sort = False ) -> List[Resource]:
+		return list( self.data ) if not sort else sorted( self.data, key=lambda r: str( r.id ) )
 
 	def all_for( self, uid: str = None, path: str = None ) -> List[Resource]:
 		_all = filter( lambda r: r.uid == uid, self.all() ) if uid else self.all()

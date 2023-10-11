@@ -27,8 +27,6 @@ hook = make_dict_unstructure_fn(
 	Resource,
 	RESOURCE_CONVERTER,
 	_cattrs_omit_if_default=True,
-	__parent_activity__=override( omit=True ),
-	__uid__=override( omit=True ),
 	content=override( omit=True ),
 	data=override( omit=True ),
 	raw=override( omit=True ),
@@ -36,6 +34,8 @@ hook = make_dict_unstructure_fn(
 	status=override( omit=True ),
 	summary=override( omit=True ),
 	text=override( omit=True ),
+	__parents__=override( omit=True ),
+	__uid__=override( omit=True ),
 )
 RESOURCE_CONVERTER.register_unstructure_hook( Resource, hook )
 
@@ -47,7 +47,7 @@ def load_resources( fs: FS ) -> Resources:
 	return Resources( data = resources )
 
 def write_resources( resources: Resources, fs: FS ) -> None:
-	fs.writebytes( RESOURCES_PATH, RESOURCE_CONVERTER.dumps( resources.data, unstructure_as=List[Resource], option=ORJSON_OPTIONS ) )
+	fs.writebytes( RESOURCES_PATH, RESOURCE_CONVERTER.dumps( resources.all( sort=True ), unstructure_as=List[Resource], option=ORJSON_OPTIONS ) )
 	log.debug( f'wrote {len( resources )} resource entries to {RESOURCES_NAME}' )
 
 # schema handling

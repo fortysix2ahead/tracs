@@ -181,6 +181,9 @@ class Resources:
 	def get( self, item: str ):
 		return self.__uid_map__.get( item )
 
+	def ids( self ) -> List[int]:
+		return [ r.id for r in self.data ]
+
 	def keys( self ):
 		return list( self.__uid_map__.keys() )
 

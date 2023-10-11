@@ -97,6 +97,7 @@ def test_resources():
 
 	assert resources.keys() == [r1.uidpath, r2.uidpath, r3.uidpath]
 	assert resources.values() == [r1, r2, r3]
+	assert resources.ids() == [1, 2, 3]
 
 	key = list( resources.keys() )[0]
 	assert resources[key] == resources.__uid_map__.get( key )

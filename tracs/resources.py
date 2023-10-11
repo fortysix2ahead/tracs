@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from enum import Enum
 from re import compile, Pattern
-from typing import Any, cast, Dict, Iterator, List, Optional, Tuple, Type, Union
+from types import MappingProxyType
+from typing import Any, cast, Dict, Iterator, List, Mapping, Optional, Tuple, Type, Union
 
 from attrs import Attribute, define, field, fields
 
@@ -150,6 +151,7 @@ class Resources:
 
 	data: List[Resource] = field( factory=list )
 
+	__id_map__: Dict[int, Resource] = field( factory=dict, init=False, alias='__id_map__' )
 	__uid_map__: Dict[str, Resource] = field( factory=dict, init=False, alias='__uid_map__' )
 	__it__: Iterator = field( default=None, init=False, alias='__it__' )
 
@@ -184,11 +186,23 @@ class Resources:
 	def ids( self ) -> List[int]:
 		return [ r.id for r in self.data ]
 
-	def keys( self ):
+	def keys( self ) -> List[str]:
 		return list( self.__uid_map__.keys() )
 
-	def values( self ):
+	def values( self ) -> List[Resource]:
 		return list( self.data )
+
+	def id_map( self ) -> Mapping[int, Resource]:
+		return MappingProxyType( self.__id_map__ )
+
+	def id_keys( self ) -> List[int]:
+		return list( self.__id_map__.keys() )
+
+	def uid_map( self ) -> Mapping[str, Resource]:
+		return MappingProxyType( self.__uid_map__ )
+
+	def uid_keys( self ) -> List[str]:
+		return list( self.__uid_map__.keys() )
 
 	# add/remove etc.
 

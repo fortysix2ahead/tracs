@@ -7,7 +7,7 @@ from logging import getLogger
 from pathlib import Path
 from shutil import copytree
 from sys import exit as sysexit
-from typing import cast, Dict, List, Optional, Tuple, Union
+from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
 
 from click import confirm
 from dataclass_factory import Factory, Schema as DataclassFactorySchema
@@ -269,8 +269,8 @@ class ActivityDb:
 		return sorted( list( self._activities.keys() ) )
 
 	@property
-	def resource_map( self ) -> Dict[int, Resource]:
-		return self._resources
+	def resource_map( self ) -> Mapping[int, Resource]:
+		return self._resources.id_map()
 
 	@property
 	def resources( self ) -> Resources:
@@ -278,11 +278,11 @@ class ActivityDb:
 
 	@property
 	def resource_ids( self ) -> List[int]:
-		return sorted( list( self._resources.ids() ) )
+		return sorted( self._resources.id_keys() )
 
 	@property
 	def resource_keys( self ) -> List[str]:
-		return sorted( list( self._resources.keys() ) )
+		return sorted( self._resources.keys() )
 
 	# ---- DB Operations --------------------------------------------------------
 

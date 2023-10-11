@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field, Field, fields, InitVar
 from enum import Enum
 from re import compile, Pattern
 from typing import Any, Dict, List, Optional, Tuple, Type
-from uuid import NAMESPACE_URL, uuid5
+
+from attrs import Attribute, define, field, fields
 
 from tracs.uid import UID
 
@@ -18,7 +18,7 @@ class ResourceStatus( Enum ):
 pattern: Pattern = compile( '\w+/(vnd\.(?P<vendor>\w+).)?((?P<subtype>\w+)\+)?(?P<suffix>\w+)' )
 classifier_local_id_pattern = compile( '\w+:\d+' )
 
-@dataclass
+@define
 class ResourceType:
 
 	# type/subtype
@@ -36,7 +36,7 @@ class ResourceType:
 	recording: bool = field( default=False )
 	image: bool = field( default=False )
 
-	def __post_init__( self ):
+	def __attrs_post_init__( self ):
 		if self.subtype or self.suffix or self.vendor:
 			return
 		if self.type and (m := pattern.match( self.type )):
@@ -54,39 +54,41 @@ class ResourceType:
 	def other( self ) -> bool:
 		return True if not self.summary and not self.recording and not self.image else False
 
-@dataclass
+@define
 class Resource:
 
 	id: int = field( default=None )
-
 	name: Optional[str] = field( default=None )
 	type: str = field( default=None )
 	path: str = field( default=None )
 	source: Optional[str] = field( default=None )
-	status: int = field( default=None )
 	summary: bool = field( default=False )
 	uid: str = field( default=None )
 
 	# additional fields holding data of a resource, used during load
 
-	content: bytes = field( default=None, repr=False )
+	content: bytes = field( default=None, repr=False, kw_only=True )
 	"""Raw content as bytes"""
-	text: InitVar = field( default=None, repr=False )
+	text: str = field( default=None, repr=False, kw_only=True )
 	"""Decoded content as string, can be used to initialize a resource from string"""
-	raw: Any = field( default=None, repr=False )
+	raw: Any = field( default=None, repr=False, kw_only=True )
 	"""Structured data making up this resource, will be converted from content."""
-	data: Any = field( default=None, repr=False )
+	data: Any = field( default=None, repr=False, kw_only=True )
 	"""Secondary field as companion to raw, might contain another form of structured data, i.e. a dataclass in parallel to a json"""
 
-	# todo: remove later?
-	resources: List[Resource] = field( default_factory=list, repr=False )
+	__parents__: List = field( factory=list, repr=False, init=False, alias='__parents__' )
+	__uid__: UID = field( default=None, kw_only=True, alias='__uid__' )
 
-	__parent_activity__: List = field( default_factory=list, repr=False )
-	__uid__: UID = field( default=None, repr=False )
+	def __attrs_post_init__( self ):
+		if self.__uid__:
+			self.uid, self.path = self.__uid__.clspath, self.__uid__.path
+		elif self.uid and self.path:
+			self.__uid__ = UID( uid=f'{self.uid}/{self.path}' )
+		else:
+			raise AttributeError( 'attributes uid and path are necessary' )
 
-	def __post_init__( self, text: str ):
-		self.__uid__ = UID( f'{self.uid}?{self.path}' ) if self.uid and self.path else None
-		self.content = text.encode( encoding='UTF-8' ) if text else self.content
+		# todo: really needed?
+		self.content = self.text.encode( encoding='UTF-8' ) if self.text else self.content
 
 	def __hash__( self ):
 		return hash( (self.uid, self.path) )
@@ -94,7 +96,7 @@ class Resource:
 	# class methods
 
 	@classmethod
-	def fields( cls ) -> List[Field]:
+	def fields( cls ) -> List[Attribute]:
 		return list( fields( Resource ) )
 
 	@classmethod
@@ -104,8 +106,8 @@ class Resource:
 	# additional properties
 
 	@property
-	def parent_activity( self ) -> Any: # todo: would be nice to return Activity here ...
-		return self.__parent_activity__
+	def parents( self ) -> Any: # todo: would be nice to return Activity here ...
+		return self.__parents__
 
 	@property
 	def classifier( self ) -> str:
@@ -119,6 +121,7 @@ class Resource:
 	def local_id_str( self ) -> str:
 		return self._uid()[1]
 
+	# todo: rename, that's not a good name
 	@property
 	def uidpath( self ) -> str:
 		return self.__uid__.uid
@@ -143,13 +146,19 @@ class Resource:
 	def get_child( self, resource_type: str ) -> Optional[Resource]:
 		return next( (r for r in self.resources if r.type == resource_type), None )
 
-@dataclass
+@define
 class Resources:
 	"""
 	Dict-like container for resources.
 	"""
 
-	data: Dict[str, Resource] = field( default_factory=dict )
+	data: List[Resource] = field( factory=list )
+
+	__uid_map__: Dict[str, Resource] = field( factory=dict, init=False, alias='__uid_map__' )
+
+	def __attrs_post_init__( self ):
+		for r in self.data:
+			self.__uid_map__[r.uid] = r
 
 	# magic/dict methods
 
@@ -157,41 +166,42 @@ class Resources:
 		return len( self.data )
 
 	def __getitem__( self, item: str ):
-		return self.data[item]
+		return self.__uid_map__[item]
 
 	def get( self, item: str ):
-		return self.data.get( item )
+		return self.__uid_map__.get( item )
 
 	def keys( self ):
-		return self.data.keys()
+		return list( self.__uid_map__.keys() )
 
 	def values( self ):
-		return self.data.values()
+		return list( self.data )
 
 	# add/remove etc.
 
 	def add( self, *resources: Resource ):
 		for r in resources:
-			uuid = str( uuid5( NAMESPACE_URL, f'{r.uid}/{r.path}' ) )
-			if uuid in self.data.keys():
-				raise KeyError( f'resource with UUID {uuid} already contained in resources' )
-			else:
-				r.id = _next_id( self.data )
-				self.data[uuid] = r
+			if r.uidpath in self.__uid_map__:
+				raise KeyError( f'resource with UID {r.uidpath} already contained in resources' )
+
+			r.id = _next_id( self.data )
+			self.data.append( r )
+			self.__uid_map__[r.uidpath] = r
 
 	# access methods
 
 	def all( self ) -> List[Resource]:
-		return list( self.data.values() )
+		return list( self.data )
 
 	def all_for( self, uid: str = None, path: str = None ) -> List[Resource]:
 		_all = filter( lambda r: r.uid == uid, self.all() ) if uid else self.all()
 		_all = filter( lambda r: r.path == path, _all ) if path else _all
 		return list( _all )
 
-@dataclass
+@define
 class ResourceGroup:
-	resources: List[Resource] = field( default_factory=list )
+
+	resources: List[Resource] = field( factory=list )
 
 	def summary( self ) -> Optional[Resource]:
 		return next( (r for r in self.resources if r.summary), None )
@@ -199,7 +209,7 @@ class ResourceGroup:
 	def recordings( self ) -> List[Resource]:
 		return [r for r in self.resources if not r.summary]
 
-def _next_id( d: Dict[str, Resource] ) -> int:
-	existing_ids = [r.id for r in d.values()]
+def _next_id( resources: List[Resource] ) -> int:
+	existing_ids = [r.id for r in resources]
 	id_range = range( 1, max( existing_ids ) + 2 ) if len( existing_ids ) > 0 else [1]
 	return set( id_range ).difference( set( existing_ids ) ).pop()

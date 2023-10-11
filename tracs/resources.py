@@ -129,12 +129,6 @@ class Resource:
 	def as_text( self, encoding: str = 'UTF-8' ) -> Optional[str]:
 		return self.content.decode( encoding )
 
-	def summaries( self ) -> Optional[Resource]:
-		return next( (r for r in self.resources if r.summary), None )
-
-	def recordings( self ) -> List[Resource]:
-		return [r for r in self.resources if not r.summary]
-
 	def get_child( self, resource_type: str ) -> Optional[Resource]:
 		return next( (r for r in self.resources if r.type == resource_type), None )
 

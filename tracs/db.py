@@ -27,7 +27,7 @@ from tracs.config import ApplicationContext
 from tracs.io import load_resources, load_schema, Schema, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
-from tracs.resources import Resource, ResourceType
+from tracs.resources import Resource, Resources, ResourceType
 from tracs.rules import parse_rules
 from tracs.utils import str_to_timedelta, timedelta_to_str
 
@@ -182,7 +182,7 @@ class ActivityDb:
 
 	def _load_db( self ):
 		self._schema = load_schema( self.dbfs )
-		self._resources = load_resources( self.dbfs )
+		self._resources: Resources = load_resources( self.dbfs )
 
 		json = loads( self.dbfs.readbytes( ACTIVITIES_NAME ) )
 		self._activities = self._factory.load( json, Dict[int, Activity] )
@@ -273,8 +273,8 @@ class ActivityDb:
 		return self._resources
 
 	@property
-	def resources( self ) -> List[Resource]:
-		return list( self._resources.values() )
+	def resources( self ) -> Resources:
+		return self._resources
 
 	@property
 	def resource_keys( self ) -> List[int]:

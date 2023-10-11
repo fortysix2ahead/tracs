@@ -62,6 +62,7 @@ class Resource:
 	type: str = field( default=None )
 	path: str = field( default=None )
 	source: Optional[str] = field( default=None )
+	status: Optional[int] = field( default=None )
 	summary: bool = field( default=False )
 	uid: Union[str, UID] = field( default=None )
 

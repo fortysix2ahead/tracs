@@ -276,7 +276,7 @@ class Bikecitizens( Service ):
 		]
 
 		for r in resources:
-			if not summary.get_child( r.type ) or force:
+			if r not in self._db.resources or force:
 				try:
 					self.download_resource( r )
 				except RuntimeError:

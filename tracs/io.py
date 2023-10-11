@@ -1,13 +1,11 @@
 from logging import getLogger
-from typing import Dict
-from uuid import NAMESPACE_URL, uuid5
+from typing import List
 
 from attrs import define, field
 from cattrs.gen import make_dict_unstructure_fn, override
 from cattrs.preconf.orjson import make_converter
 from fs.base import FS
-from fs.osfs import OSFS
-from orjson import dumps, loads, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 
 from tracs.resources import Resource, Resources
 
@@ -44,12 +42,12 @@ RESOURCE_CONVERTER.register_unstructure_hook( Resource, hook )
 # resource handling
 
 def load_resources( fs: FS ) -> Resources:
-	resources = RESOURCE_CONVERTER.loads( fs.readbytes( RESOURCES_PATH ), Dict[str, Resource] )
+	resources = RESOURCE_CONVERTER.loads( fs.readbytes( RESOURCES_PATH ), List[Resource] )
 	log.debug( f'loaded {len( resources )} resource entries from {RESOURCES_NAME}' )
 	return Resources( data = resources )
 
 def write_resources( resources: Resources, fs: FS ) -> None:
-	fs.writebytes( RESOURCES_PATH, RESOURCE_CONVERTER.dumps( resources.data, unstructure_as=Dict[str, Resource], option=ORJSON_OPTIONS ) )
+	fs.writebytes( RESOURCES_PATH, RESOURCE_CONVERTER.dumps( resources.data, unstructure_as=List[Resource], option=ORJSON_OPTIONS ) )
 	log.debug( f'wrote {len( resources )} resource entries to {RESOURCES_NAME}' )
 
 # schema handling

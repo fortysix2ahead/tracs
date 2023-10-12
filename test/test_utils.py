@@ -11,7 +11,7 @@ from dateutil.tz import gettz
 
 from tracs.activity_types import ActivityTypes
 from tracs.uid import UID
-from tracs.utils import as_datetime, floor_ceil_from, floor_ceil_str, str_to_timedelta, timedelta_to_iso8601, timedelta_to_str, unique_sorted
+from tracs.utils import as_datetime, floor_ceil_from, floor_ceil_str, str_to_timedelta, timedelta_to_iso8601, timedelta_to_str, unchain, unique_sorted
 from tracs.utils import fmt
 from tracs.utils import fromisoformat
 from tracs.utils import seconds_to_time
@@ -166,6 +166,15 @@ def test_uri_parsing():
 	# a resource might also be addressed even shorter:
 	result = urlparse( '1001?gpx' )
 	assert result.path == '1001' and result.query == 'gpx'
+
+def test_unchain():
+	assert list( unchain( 1 ) ) == [1]
+	assert list( unchain( [1] ) ) == [1]
+	assert list( unchain( 1, 2 ) ) == [1, 2]
+	assert list( unchain( 1, [2], 3, [4, 5] ) ) == [1, 2, 3, 4, 5]
+	
+	assert list( unchain( None ) ) == []
+	assert list( unchain( None, [None, None], None ) ) == []
 
 def test_unique_sorted():
 

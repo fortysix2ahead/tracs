@@ -77,6 +77,8 @@ def test_resources():
 
 	resources = Resources()
 	assert resources.add( r1, r2, r3 ) == [1, 2, 3]
+	assert resources.__id_map__[1] == r1
+	assert resources.__uid_map__[f'{r1.uid}/{r1.path}'] == r1
 
 	with raises( KeyError ):
 		resources.add( r1 )
@@ -108,6 +110,13 @@ def test_resources():
 	assert resources.summary() == r4
 	assert resources.summaries() == [r4, r5]
 	assert resources.recordings() == [r1, r2, r3]
+
+	# test update
+	r1a = Resource( uid='polar:1234', name='updated.gpx', type='application/gpx+xml', path='test1.gpx' )
+	r2a = Resource( uid='polar:1234', name='new.gpx', type='application/gpx+xml', path='new.gpx' )
+	assert resources.update( r1a, r2a ) == ([6], [1])
+	assert resources.__id_map__[r1.id].name == 'updated.gpx'
+	assert r1a.id == r1.id
 
 	# test iteration
 	counter = 0

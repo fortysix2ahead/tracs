@@ -3,9 +3,9 @@ from __future__ import annotations
 from enum import Enum
 from re import compile, Pattern
 from types import MappingProxyType
-from typing import Any, cast, Dict, Iterator, List, Mapping, Optional, Type, Union
+from typing import Any, cast, Dict, Iterator, List, Mapping, Optional, Tuple, Type, Union
 
-from attrs import Attribute, define, field, fields
+from attrs import asdict, Attribute, define, evolve, field, fields
 
 from tracs.uid import UID
 from tracs.utils import unchain
@@ -213,8 +213,27 @@ class Resources:
 			r.id = _next_id( self.data )
 			self.data.append( r )
 			self.__uid_map__[r.uidpath] = r
+			self.__id_map__[r.id] = r
 
 		return [r.id for r in resources]
+
+	def update( self, *resources: Union[Resource, List[Resource]] ) -> Tuple[List[int], List[int]]:
+		added, updated = [], []
+		for r in unchain( *resources ):
+			if r.uidpath in self.__uid_map__.keys():
+				# use evolve?
+				# r = evolve( self.__uid_map__[r.uidpath], **asdict( r ) )
+				old = next( o for o in self.data if o.uidpath == r.uidpath )
+				r.id = old.id
+				self.__uid_map__[r.uidpath] = r
+				self.__id_map__[old.id] = r
+				self.data.remove( old )
+				self.data.append( r )
+				updated.append( r.id )
+			else:
+				added.extend( self.add( r ) )
+
+		return added, updated
 
 	# access methods
 

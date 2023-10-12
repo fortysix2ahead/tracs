@@ -3,11 +3,12 @@ from __future__ import annotations
 from enum import Enum
 from re import compile, Pattern
 from types import MappingProxyType
-from typing import Any, cast, Dict, Iterator, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, cast, Dict, Iterator, List, Mapping, Optional, Type, Union
 
 from attrs import Attribute, define, field, fields
 
 from tracs.uid import UID
+from tracs.utils import unchain
 
 # todo: not sure if we still need the status
 class ResourceStatus( Enum ):
@@ -21,7 +22,6 @@ classifier_local_id_pattern = compile( '\w+:\d+' )
 
 @define
 class ResourceType:
-
 	# type/subtype
 	# type "/" [tree "."] subtype ["+" suffix]* [";" parameter]
 
@@ -57,7 +57,6 @@ class ResourceType:
 
 @define
 class Resource:
-
 	id: int = field( default=None )
 	name: Optional[str] = field( default=None )
 	type: str = field( default=None )
@@ -85,7 +84,7 @@ class Resource:
 		if self.__uid__:
 			self.uid, self.path = self.__uid__.clspath, self.__uid__.path
 
-		elif self.uid and type( self.uid ) is UID: # uid of type UID is allowed, treat it like self.__uid__
+		elif self.uid and type( self.uid ) is UID:  # uid of type UID is allowed, treat it like self.__uid__
 			self.__uid__ = cast( UID, self.uid )
 			self.uid, self.path = self.__uid__.clspath, self.__uid__.path
 
@@ -117,7 +116,7 @@ class Resource:
 	# additional properties
 
 	@property
-	def parents( self ) -> Any: # todo: would be nice to return Activity here ...
+	def parents( self ) -> Any:  # todo: would be nice to return Activity here ...
 		return self.__parents__
 
 	@property
@@ -163,7 +162,7 @@ class Resources:
 
 	def __contains__( self, item: Resource ) -> bool:
 		try:
-			return any( [ item.uid == r.uid and item.path == r.path for r in self.data ] )
+			return any( [item.uid == r.uid and item.path == r.path for r in self.data] )
 		except AttributeError:
 			return False
 
@@ -184,7 +183,7 @@ class Resources:
 		return self.__uid_map__.get( item )
 
 	def ids( self ) -> List[int]:
-		return [ r.id for r in self.data ]
+		return [r.id for r in self.data]
 
 	def keys( self ) -> List[str]:
 		return list( self.__uid_map__.keys() )
@@ -206,8 +205,8 @@ class Resources:
 
 	# add/remove etc.
 
-	def add( self, *resources: Resource ):
-		for r in resources:
+	def add( self, *resources: Union[Resource, List[Resource]] ) -> List[int]:
+		for r in unchain( *resources ):
 			if r.uidpath in self.__uid_map__:
 				raise KeyError( f'resource with UID {r.uidpath} already contained in resources' )
 
@@ -215,10 +214,12 @@ class Resources:
 			self.data.append( r )
 			self.__uid_map__[r.uidpath] = r
 
+		return [r.id for r in resources]
+
 	# access methods
 
 	# todo: change the sort order later?
-	def all( self, sort = False ) -> List[Resource]:
+	def all( self, sort=False ) -> List[Resource]:
 		return list( self.data ) if not sort else sorted( self.data, key=lambda r: str( r.id ) )
 
 	def all_for( self, uid: str = None, path: str = None ) -> List[Resource]:
@@ -234,7 +235,6 @@ class Resources:
 
 	def recordings( self ) -> List[Resource]:
 		return [r for r in self.data if not r.summary]
-
 
 def _next_id( resources: List[Resource] ) -> int:
 	existing_ids = [r.id for r in resources]

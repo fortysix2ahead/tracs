@@ -76,7 +76,7 @@ def test_resources():
 	r5 = Resource( uid='polar:1234', name='test2.json', type='application/vnd.polar+json', path='test2.json', summary=True )
 
 	resources = Resources()
-	resources.add( r1, r2, r3 )
+	assert resources.add( r1, r2, r3 ) == [1, 2, 3]
 
 	with raises( KeyError ):
 		resources.add( r1 )

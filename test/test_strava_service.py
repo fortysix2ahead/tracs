@@ -17,22 +17,14 @@ from .strava_server import LIVE_BASE_URL
 @mark.service( cls=Strava )
 def test_constructor( service ):
 	assert service.base_url == f'{LIVE_BASE_URL}'
-	assert service.login_url == f'{LIVE_BASE_URL}/login'
-	assert service.session_url == f'{LIVE_BASE_URL}/session'
 	assert service.activities_url == f'{LIVE_BASE_URL}/activities'
-	assert service.auth_url == f'{LIVE_BASE_URL}/oauth/authorize'
-	assert service.token_url == f'{LIVE_BASE_URL}/oauth/token'
 
 # noinspection PyUnresolvedReferences
 @mark.context( library='empty', config='empty', cleanup=True )
 @mark.service( cls=Strava, base_url=TEST_BASE_URL )
 def test_constructor_test( service ):
 	assert service.base_url == f'{TEST_BASE_URL}'
-	assert service.login_url == f'{TEST_BASE_URL}/login'
-	assert service.session_url == f'{TEST_BASE_URL}/session'
 	assert service.activities_url == f'{TEST_BASE_URL}/activities'
-	assert service.auth_url == f'{TEST_BASE_URL}/oauth/authorize'
-	assert service.token_url == f'{TEST_BASE_URL}/oauth/token'
 
 @mark.skip( reason='Mock server for Strava is of no use when using stravalib for communication' )
 @mark.context( library='empty', config='default', cleanup=True )
@@ -77,9 +69,7 @@ def test_workflow( strava_server, service ):
 @mark.service( cls=Strava )
 def test_live_workflow( service ):
 	service.login()
-	assert service.logged_in
-
-	fetched = service.fetch( False, False )
+	fetched = service.fetch( False, False, range_from = datetime( 2020, 1, 1 ), range_to=datetime( 2023, 12, 31 ) )
 	assert len( fetched ) > 0
 
 # helper

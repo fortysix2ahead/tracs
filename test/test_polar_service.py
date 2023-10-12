@@ -29,6 +29,7 @@ def test_constructor_test( service ):
 	assert service.events_url == f'{TEST_BASE_URL}/training/getCalendarEvents'
 	assert service.export_url == f'{TEST_BASE_URL}/api/export/training'
 
+@mark.skip( reason='mock server for Polar is currently on hold' )
 @mark.context( library='empty', config='default', cleanup=True )
 @mark.service( cls=Polar, base_url=TEST_BASE_URL )
 def test_service( polar_server, service ):
@@ -46,6 +47,7 @@ def test_service( polar_server, service ):
 	assert r.status == 200
 	assert r.uid == 'polar:300003'
 
+@mark.skip( reason='mock server for Polar is currently on hold' )
 @mark.context( library='empty', config='default', cleanup=True )
 @mark.service( cls=Polar, base_url=TEST_BASE_URL )
 def test_workflow( polar_server, service ):

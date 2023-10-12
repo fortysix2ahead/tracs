@@ -1,14 +1,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from itertools import chain, groupby
 from logging import getLogger
 from pathlib import Path
 from shutil import copytree
 from sys import exit as sysexit
-from typing import cast, Dict, List, Optional, Tuple, Union
+from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
 
 from click import confirm
 from dataclass_factory import Factory, Schema as DataclassFactorySchema
@@ -25,9 +24,10 @@ from rich.table import Table as RichTable
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext
+from tracs.io import load_resources, load_schema, Schema, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
-from tracs.resources import Resource, ResourceType
+from tracs.resources import Resource, Resources, ResourceType
 from tracs.rules import parse_rules
 from tracs.utils import str_to_timedelta, timedelta_to_str
 
@@ -51,16 +51,6 @@ DB_FILES = {
 
 UNDERLAY = 'underlay'
 OVERLAY = 'overlay'
-
-@dataclass
-class Schema:
-
-	version: int = field( default_factory=dict )
-	unknown: Dict = field( default_factory=dict )
-
-	@classmethod
-	def schema( cls ) -> DataclassFactorySchema:
-		return DataclassFactorySchema( skip_internal=True, unknown='unknown' )
 
 class IdSchema( DataclassFactorySchema ):
 
@@ -185,22 +175,14 @@ class ActivityDb:
 				Activity: Activity.schema(),
 				ActivityPart: ActivityPart.schema(),
 				ActivityTypes: ActivityTypes.schema(),
-				Resource: Resource.schema(),
-				Schema: Schema.schema(),
 				Dict[int, Activity]: IdSchema(),
-				Dict[int, Resource]: IdSchema(),
 				timedelta: DataclassFactorySchema( parser=str_to_timedelta, serializer=timedelta_to_str ),
 			}
 		)
 
 	def _load_db( self ):
-		json = loads( self.dbfs.readbytes( SCHEMA_NAME ) )
-		self._schema = self._factory.load( json, Schema )
-		log.debug( f'loaded database schema from {SCHEMA_NAME}, schema version = {self._schema.version}' )
-
-		json = loads( self.dbfs.readbytes( RESOURCES_NAME ) )
-		self._resources = self._factory.load( json, Dict[int, Resource] )
-		log.debug( f'loaded {len( self._resources )} resource entries from {RESOURCES_NAME}' )
+		self._schema = load_schema( self.dbfs )
+		self._resources: Resources = load_resources( self.dbfs )
 
 		json = loads( self.dbfs.readbytes( ACTIVITIES_NAME ) )
 		self._activities = self._factory.load( json, Dict[int, Activity] )
@@ -216,8 +198,7 @@ class ActivityDb:
 		self.overlay_fs.writebytes( f'/{ACTIVITIES_NAME}', dumps( json, option=ORJSON_OPTIONS ) )
 
 	def commit_resources( self ):
-		json = self._factory.dump( self._resources, Dict[int, Resource] )
-		self.overlay_fs.writebytes( f'/{RESOURCES_NAME}', dumps( json, option=ORJSON_OPTIONS ) )
+		write_resources( self._resources, self.overlay_fs )
 
 	def save( self ):
 		if self._read_only or self.underlay_fs is None:
@@ -288,16 +269,20 @@ class ActivityDb:
 		return sorted( list( self._activities.keys() ) )
 
 	@property
-	def resource_map( self ) -> Dict[int, Resource]:
+	def resource_map( self ) -> Mapping[int, Resource]:
+		return self._resources.id_map()
+
+	@property
+	def resources( self ) -> Resources:
 		return self._resources
 
 	@property
-	def resources( self ) -> List[Resource]:
-		return list( self._resources.values() )
+	def resource_ids( self ) -> List[int]:
+		return sorted( self._resources.id_keys() )
 
 	@property
-	def resource_keys( self ) -> List[int]:
-		return sorted( list( self._resources.keys() ) )
+	def resource_keys( self ) -> List[str]:
+		return sorted( self._resources.keys() )
 
 	# ---- DB Operations --------------------------------------------------------
 
@@ -338,8 +323,8 @@ class ActivityDb:
 		self._resources[resource.id] = resource
 		return resource.id
 
-	def insert_resources( self, resources: List[Resource] ) -> List[int]:
-		return [ self.insert_resource( r ) for r in resources ]
+	def insert_resources( self, *resources: Union[Resource, List[Resource]] ) -> List[int]:
+		return self.resources.add( *resources )
 
 	def upsert_resource( self, resource: Resource ) -> int:
 		if existing := self.get_resource_by_uid_path( resource.uid, resource.path ):
@@ -347,6 +332,9 @@ class ActivityDb:
 			return existing.id
 		else:
 			return self.insert_resource( resource )
+
+	def upsert_resources( self, *resources: Union[Resource, List[Resource]] ) -> Tuple[List[int], List[int]]:
+		return self.resources.update( *resources )
 
 	# remove items
 

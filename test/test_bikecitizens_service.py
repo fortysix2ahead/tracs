@@ -41,3 +41,20 @@ def test_live_workflow( service: Service ):
 
 	fetched = list( service.fetch( False, False ) )
 	assert len( fetched ) == 2
+
+	downloaded = []
+	for r in fetched:
+		downloaded.extend( service.download( r ) )
+	assert len( downloaded ) == 4
+
+	service.persist_resources( downloaded, force=False, pretend=False )
+
+	fs = service.ctx.lib_fs
+	paths = list( fs.walk.files( 'db/bikecitizens' ) )
+	assert any( True if p.endswith( '8201735.gpx' ) else False for p in paths )
+
+	# re-download should result in no results
+	downloaded = []
+	for r in fetched:
+		downloaded.extend( service.download( r ) )
+	assert len( downloaded ) == 0

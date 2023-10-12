@@ -1,62 +1,74 @@
-{
-  "1": {
-    "path": "1001.gpx.zip",
-    "type": "application/vnd.polar.gpx+zip",
-    "uid": "polar:1001"
-  },
-  "2": {
-    "path": "101.tcx.zip",
-    "type": "application/vnd.polar.tcx+zip",
-    "uid": "polar:1001"
-  },
-  "3": {
-    "path": "run_1.gpx",
-    "type": "application/gpx+xml",
-    "uid": "polar:1001"
-  },
-  "4": {
-    "path": "run_2.gpx",
-    "type": "application/gpx+xml",
-    "uid": "polar:1001"
-  },
-  "5": {
-    "path": "run_1.tcx",
-    "type": "application/tcx+xml",
-    "uid": "polar:1001"
-  },
-  "6": {
-    "path": "run_2.tcx",
-    "type": "application/tcx+xml",
-    "uid": "polar:1001"
-  },
-  "7": {
-    "path": "1001.gpx",
-    "type": "application/gpx+xml",
-    "uid": "strava:1001"
-  },
-  "8": {
-    "path": "1001.tcx",
-    "type": "application/tcx+xml",
-    "uid": "strava:1001"
-  },
-  "9": {
-    "path": "1001.json",
-    "type": "application/vnd.strava+json",
-    "uid": "strava:1001"
-  },
-  "10": {
-    "path": "1002.gpx",
-    "type": "application/gpx+xml",
-    "uid": "strava:1002"
-  },
-  "11": {
-    "path": "1002.tcx",
-    "type": "application/tcx+xml",
-    "uid": "strava:1002"
-  },
-  "12": {
-    "path": "1002.json",
-    "type": "application/vnd.strava+json",
-    "uid": "strava:1002"
-  }
-}
+[
+	{
+		"id": 1,
+		"path": "1001.gpx.zip",
+		"type": "application/vnd.polar.gpx+zip",
+		"uid": "polar:1001"
+	},
+	{
+		"id": 2,
+		"path": "101.tcx.zip",
+		"type": "application/vnd.polar.tcx+zip",
+		"uid": "polar:1001"
+	},
+	{
+		"id": 3,
+		"path": "run_1.gpx",
+		"type": "application/gpx+xml",
+		"uid": "polar:1001"
+	},
+	{
+		"id": 4,
+		"path": "run_2.gpx",
+		"type": "application/gpx+xml",
+		"uid": "polar:1001"
+	},
+	{
+		"id": 5,
+		"path": "run_1.tcx",
+		"type": "application/tcx+xml",
+		"uid": "polar:1001"
+	},
+	{
+		"id": 6,
+		"path": "run_2.tcx",
+		"type": "application/tcx+xml",
+		"uid": "polar:1001"
+	},
+	{
+		"id": 7,
+		"path": "1001.gpx",
+		"type": "application/gpx+xml",
+		"uid": "strava:1001"
+	},
+	{
+		"id": 8,
+		"path": "1001.tcx",
+		"type": "application/tcx+xml",
+		"uid": "strava:1001"
+	},
+	{
+		"id": 9,
+		"path": "1001.json",
+		"type": "application/vnd.strava+json",
+		"uid": "strava:1001"
+	},
+	{
+		"id": 10,
+		"path": "1002.gpx",
+		"type": "application/gpx+xml",
+		"uid": "strava:1002"
+	},
+	{
+		"id": 11,
+		"path": "1002.tcx",
+		"type": "application/tcx+xml",
+		"uid": "strava:1002"
+	},
+	{
+		"id": 12,
+		"path": "1002.json",
+		"type": "application/vnd.strava+json",
+		"uid": "strava:1002"
+	}
+]

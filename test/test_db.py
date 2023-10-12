@@ -1,7 +1,5 @@
 
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Union
 
 from fs.memoryfs import MemoryFS
@@ -73,6 +71,15 @@ def test_insert( db ):
 	assert len( db.activities ) == 3 and ids == [2, 3]
 	assert db.activity_keys == [1, 2, 3]
 
+@mark.db( template='empty', read_only=True )
+def test_insert_resources( db ):
+	assert len( db.resources ) == 0
+
+	r1 = Resource( uid='polar:101/recording.gpx' )
+	r2 = Resource( uid='polar:102/recording.gpx' )
+
+	assert db.insert_resources( r1, r2 ) == [1, 2]
+
 @mark.db( template='default', read_only=True )
 def test_contains( db ):
 	# check activity table
@@ -138,7 +145,7 @@ def test_find_multipart( db ):
 
 	# test for the polar run 1
 	a = db.activity_map.get( 3 )
-	assert all( uid.startswith( 'polar:1001?' ) for uid in a.uids ) and not a.multipart
+	assert all( uid.startswith( 'polar:1001/' ) for uid in a.uids ) and not a.multipart
 	assert ids( db.find_resources_for( a ) ) == [ 3, 5 ]
 
 	# test for run 2

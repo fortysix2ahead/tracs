@@ -323,8 +323,8 @@ class ActivityDb:
 		self._resources[resource.id] = resource
 		return resource.id
 
-	def insert_resources( self, resources: List[Resource] ) -> List[int]:
-		return [ self.insert_resource( r ) for r in resources ]
+	def insert_resources( self, *resources: Union[Resource, List[Resource]] ) -> List[int]:
+		return self.resources.add( *resources )
 
 	def upsert_resource( self, resource: Resource ) -> int:
 		if existing := self.get_resource_by_uid_path( resource.uid, resource.path ):
@@ -332,6 +332,9 @@ class ActivityDb:
 			return existing.id
 		else:
 			return self.insert_resource( resource )
+
+	def upsert_resources( self, *resources: Union[Resource, List[Resource]] ) -> Tuple[List[int], List[int]]:
+		return self.resources.update( *resources )
 
 	# remove items
 

@@ -269,21 +269,27 @@ class Service( Plugin ):
 
 	def persist_resource( self, resource: Resource, force: bool, pretend: bool, **kwargs ) -> None:
 		path = self.path_for_resource( resource )
-		if not force and path and path.exists():
+		if pretend:
+			log.info( f'pretending to write resource {resource.uidpath}' )
 			return
 
+		if not path:
+			log.debug( f'unable to calculate path for resource {resource.uidpath}' )
+			return
+
+		if path.exists() and not force:
+			log.debug( f'not persisting resource {resource.uidpath}, path already exists: {path}' )
+			return
+
+		if not resource.content or not len( resource.content ) > 0:
+			log.debug( f'not persisting resource {resource.uidpath} as content missing (0 bytes)' )
+
 		try:
-			if pretend:
-				log.info( f'pretending to write resource {resource.uid}?{resource.path}' )
-				return
-
-			if resource.content and len( resource.content ) > 0:
-				path.parent.mkdir( parents=True, exist_ok=True )
-				path.write_bytes( resource.content )
-				self.ctx.db.upsert_resource( resource )
-
+			path.parent.mkdir( parents=True, exist_ok=True )
+			path.write_bytes( resource.content )
+			self.ctx.db.upsert_resources( resource )
 		except TypeError:
-			log.error( f'error writing resource data for resource {resource.uid}?{resource.path}', exc_info=True )
+			log.error( f'error writing resource data for resource {resource.uidpath}', exc_info=True )
 
 	# noinspection PyMethodMayBeStatic
 	def postprocess_summaries( self, resources: List[Resource], **kwargs ) -> List[Resource]:

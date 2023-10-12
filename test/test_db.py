@@ -138,7 +138,7 @@ def test_find_multipart( db ):
 
 	# test for the polar run 1
 	a = db.activity_map.get( 3 )
-	assert all( uid.startswith( 'polar:1001?' ) for uid in a.uids ) and not a.multipart
+	assert all( uid.startswith( 'polar:1001/' ) for uid in a.uids ) and not a.multipart
 	assert ids( db.find_resources_for( a ) ) == [ 3, 5 ]
 
 	# test for run 2

@@ -34,7 +34,7 @@ def test_constructor_test( service ):
 	assert service.auth_url == f'{TEST_BASE_URL}/oauth/authorize'
 	assert service.token_url == f'{TEST_BASE_URL}/oauth/token'
 
-@mark.skip( reason='HTTP test not supported by OAuth lib' )
+@mark.skip( reason='Mock server for Strava is of no use when using stravalib for communication' )
 @mark.context( library='empty', config='default', cleanup=True )
 @mark.service( cls=Strava, url=TEST_BASE_URL )
 def test_service( strava_server, service: Strava ):
@@ -54,7 +54,7 @@ def test_service( strava_server, service: Strava ):
 	a = fetched[0]
 	assert type( a ) is StravaActivity
 	assert a.raw is not None
-	assert a.raw_id == 300003
+	assert a.local_id == 300003
 
 	assert len( a.resources ) == 4
 
@@ -63,7 +63,7 @@ def test_service( strava_server, service: Strava ):
 		content, status = service._download_resource( a, r )
 		assert content is not None and status == 200
 
-@mark.skip( reason='HTTP test not supported by OAuth lib' )
+@mark.skip( reason='Mock server for Strava is of no use when using stravalib for communication' )
 @mark.context( library='empty', config='default', cleanup=True )
 @mark.service( cls=Strava, url=TEST_BASE_URL )
 def test_workflow( strava_server, service ):

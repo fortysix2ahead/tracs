@@ -4,6 +4,7 @@ from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from difflib import SequenceMatcher
 from enum import Enum
 from functools import wraps
+from itertools import chain
 from re import compile as rxcompile, match
 from time import gmtime, perf_counter
 from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, TypeVar, Union
@@ -323,6 +324,9 @@ def colored_diff_2( left: str, right: str ) -> Tuple[str, str]:
 
 def unique_sorted( l: Iterable[T], key: Optional = None ) -> List[T]:
 	return sorted( list( set( l ) ), key=key )
+
+def unchain( *values: Union[T, List[T]] ) -> Iterable[T]:
+	return filter( lambda v: True if v is not None else False, chain( *[v if type( v ) is list else [v] for v in values] ) )
 
 # work around for urlparse()-inconsistencies between python 3.8 and later versions
 def urlparse( url ) -> ParseResult:

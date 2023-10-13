@@ -29,6 +29,7 @@ _ARGS, _KWARGS = (), {} # helpers ...
 
 class EventTypes( Enum ):
 
+	keyword_registered = 'keyword_registered'
 	plugin_loaded = 'plugin_loaded'
 	resource_loaded = 'resource_loaded'
 	rule_normalizer_registered = 'rule_normalizer_registered'
@@ -103,13 +104,15 @@ class Registry:
 	def register_keywords( cls, *keywords: Union[Keyword, List[Keyword]] ):
 		for kw in unchain( *keywords ):
 			cls.rule_keywords[kw.name] = kw
+			cls.notify( EventTypes.keyword_registered, field=kw )
 			log.debug( f'registered keyword "{kw.name}"' )
 
 	@classmethod
-	def register_normalizer( cls, *normalizer: Normalizer ) -> None:
-		for n in normalizer:
+	def register_normalizers( cls, *normalizers: Union[Normalizer, List[Normalizer]] ) -> None:
+		for n in unchain( *normalizers ):
 			cls.rule_normalizers[n.name] = n
 			cls.notify( EventTypes.rule_normalizer_registered, field=n )
+			log.debug( f'registered rule normalizer "{n.name}"' )
 
 	@classmethod
 	def rule_normalizer_type( cls, name: str ) -> Any:
@@ -366,11 +369,11 @@ def virtualfield( *args, **kwargs ):
 # maybe we should go this way for decorators ... lots of copy and paste, but cleaner code ...
 def normalizer( *args, **kwargs ):
 	def _inner( *inner_args ):
-		Registry.register_normalizer( Normalizer( name=_fnspec( inner_args[0] )[0], type=kwargs.get( 'type' ), description=kwargs.get( 'description' ), fn=inner_args[0] ) )
+		Registry.register_normalizers( Normalizer( name=_fnspec( inner_args[0] )[0], type=kwargs.get( 'type' ), description=kwargs.get( 'description' ), fn=inner_args[0] ) )
 		return inner_args[0]
 
 	if args and isfunction( args[0] ): # case: decorated function without arguments
-		Registry.register_normalizer( Normalizer( name=_fnspec( args[0] )[0], fn=args[0] ) )
+		Registry.register_normalizers( Normalizer( name=_fnspec( args[0] )[0], fn=args[0] ) )
 		return args[0]
 	elif kwargs and 'description' in kwargs:
 		return _inner

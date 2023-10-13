@@ -4,6 +4,8 @@ from dataclasses import dataclass, Field, field
 from sys import version_info
 from typing import Any, Callable, ClassVar, Dict, Optional, Type, Union
 
+from attrs import define, field as attrsfield
+
 FIELD_KWARGS = {
 	'init': True,
 	'repr': True,
@@ -62,11 +64,11 @@ class VirtualFields:
 	def __contains__( self, item ) -> bool:
 		return item in self.__fields__.keys()
 
-@dataclass
+@define
 class FormattedField:
 
-	name: str = field( default=None )
-	formatter: Callable = field( default=None )
+	name: str = attrsfield( default=None )
+	formatter: Callable = attrsfield( default=None )
 
 	def __call__( self, value: Any ) -> Any:
 		return self.format( value )
@@ -74,13 +76,12 @@ class FormattedField:
 	def format( self, value: Any ) -> Any:
 		return self.formatter( value )
 
-@dataclass
+@define
 class FormattedFields:
 
-	__fields__: Dict[str, Union[FormattedField, Callable]] = field( default_factory=dict )
-	__parent_cls__: Type = field( default=None )
-
-	__parent__: Any = field( default=None )
+	__fields__: Dict[str, Union[FormattedField, Callable]] = attrsfield( factory=dict, alias='__fields__' )
+	__parent_cls__: Type = attrsfield( default=None, alias='__parent_cls__' )
+	__parent__: Any = attrsfield( default=None, alias='__parent__' )
 
 	def __call__( self, parent: Any ) -> FormattedFields:
 		if parent is None:

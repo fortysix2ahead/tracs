@@ -103,7 +103,7 @@ class Registry:
 	def register_keywords( cls, *keywords: Union[Keyword, List[Keyword]] ):
 		for kw in unchain( *keywords ):
 			cls.rule_keywords[kw.name] = kw
-			log.debug( f'registered keyword "{kw.name}" for use in rules' )
+			log.debug( f'registered keyword "{kw.name}"' )
 
 	@classmethod
 	def register_normalizer( cls, *normalizer: Normalizer ) -> None:
@@ -118,10 +118,11 @@ class Registry:
 	# field resolving
 
 	@classmethod
-	def register_virtual_field( cls, *virtual_field: VirtualField ) -> None:
-		for vf in virtual_field:
+	def register_virtual_fields( cls, *virtual_fields: Union[VirtualField, List[VirtualField]] ) -> None:
+		for vf in unchain( *virtual_fields ):
 			cls.virtual_fields[vf.name] = vf
 			cls.notify( EventTypes.virtual_field_registered, field=vf )
+			log.debug( f'registered virtual field "{vf.name}"' )
 
 	@classmethod
 	def activity_field( cls, name: str ) -> Optional[Field]:
@@ -351,12 +352,12 @@ def virtualfield( *args, **kwargs ):
 	def _inner( *inner_args ):
 		global _KWARGS
 		inner_name, inner_mod, inner_qname, inner_rtype = _fnspec( inner_args[0] )
-		Registry.register_virtual_field( VirtualField( **{ 'name': inner_name, 'type': inner_rtype, 'value': inner_args[0], **_KWARGS } ) )
+		Registry.register_virtual_fields( VirtualField( **{ 'name': inner_name, 'type': inner_rtype, 'value': inner_args[0], **_KWARGS } ) )
 		return inner_args[0]
 
 	if len( args ) == 1 and isfunction( args[0] ): # case: decorated function without arguments
 		name, mod, qname, rtype = _fnspec( args[0] )
-		Registry.register_virtual_field( VirtualField( name=name, type=rtype, value=args[0] ) )
+		Registry.register_virtual_fields( VirtualField( name=name, type=rtype, value=args[0] ) )
 		return args[0]
 	elif len( args ) == 0 and len( kwargs ) > 0:
 		_ARGS, _KWARGS = args, kwargs

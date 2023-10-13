@@ -105,14 +105,14 @@ class Registry:
 		for kw in unchain( *keywords ):
 			cls.rule_keywords[kw.name] = kw
 			cls.notify( EventTypes.keyword_registered, field=kw )
-			log.debug( f'registered keyword "{kw.name}"' )
+		log.debug( f'registered keywords {[kw.name for kw in unchain( *keywords )]}' )
 
 	@classmethod
 	def register_normalizers( cls, *normalizers: Union[Normalizer, List[Normalizer]] ) -> None:
 		for n in unchain( *normalizers ):
 			cls.rule_normalizers[n.name] = n
 			cls.notify( EventTypes.rule_normalizer_registered, field=n )
-			log.debug( f'registered rule normalizer "{n.name}"' )
+		log.debug( f'registered rule normalizers {[n.name for n in unchain( *normalizers )]}' )
 
 	@classmethod
 	def rule_normalizer_type( cls, name: str ) -> Any:
@@ -125,7 +125,7 @@ class Registry:
 		for vf in unchain( *virtual_fields ):
 			cls.virtual_fields[vf.name] = vf
 			cls.notify( EventTypes.virtual_field_registered, field=vf )
-			log.debug( f'registered virtual field "{vf.name}"' )
+		log.debug( f'registered virtual fields {[vf.name for vf in unchain( *virtual_fields )]}' )
 
 	@classmethod
 	def activity_field( cls, name: str ) -> Optional[Field]:

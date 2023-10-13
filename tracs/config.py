@@ -1,7 +1,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import datetime
 from importlib.resources import path as pkg_path
 from logging import getLogger
@@ -10,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from appdirs import AppDirs
+from attrs import define, field
 from confuse import ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, YamlSource
 from fs.base import FS
 from fs.osfs import OSFS
@@ -134,7 +134,7 @@ class ApplicationStateCls( Configuration ):
 
 # application context
 
-@dataclass
+@define
 class ApplicationContext:
 
 	# configuration fields which can be set externally
@@ -179,7 +179,7 @@ class ApplicationContext:
 	state: Configuration = field( default=None )
 	meta: Any = field( default=None ) # not used yet
 
-	plugins_dir: List[Path] = field( default_factory=list )
+	plugins_dir: List[Path] = field( factory=list )
 
 	console: Console = field( default=CONSOLE )
 	progress: Progress = field( default=None )
@@ -187,7 +187,7 @@ class ApplicationContext:
 
 	apptime: datetime = field( default=None )
 
-	def __post_init__( self ):
+	def __attrs_post_init__( self ):
 		# setup config fs
 		self.config_dir = APPDIRS.user_config_dir if self.config_dir is None else self.config_dir # config dir may never be None
 		self.config_fs = OSFS( root_path=self.config_dir, create=True )

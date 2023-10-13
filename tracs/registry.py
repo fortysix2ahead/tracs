@@ -20,6 +20,7 @@ from tracs.core import Keyword, Normalizer, VirtualField, VirtualFields
 from tracs.protocols import Handler, Importer, Service
 from tracs.resources import ResourceType
 from tracs.uid import UID
+from tracs.utils import unchain
 
 log = getLogger( __name__ )
 
@@ -99,13 +100,10 @@ class Registry:
 	# rules and normalizing
 
 	@classmethod
-	def register_keyword( cls, keyword: Keyword ):
-		cls.rule_keywords[keyword.name] = keyword
-		log.debug( f'registered rule keyword "{keyword.name}"' )
-
-	@classmethod
-	def register_keywords( cls, *keywords: Keyword ):
-		[ cls.register_keyword( k ) for k in keywords ]
+	def register_keywords( cls, *keywords: Union[Keyword, List[Keyword]] ):
+		for kw in unchain( *keywords ):
+			cls.rule_keywords[kw.name] = kw
+			log.debug( f'registered keyword "{kw.name}" for use in rules' )
 
 	@classmethod
 	def register_normalizer( cls, *normalizer: Normalizer ) -> None:

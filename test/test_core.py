@@ -2,11 +2,11 @@ from dataclasses import dataclass, field
 
 from pytest import raises
 
-from tracs.core import FormattedField, FormattedFields, vfield, VirtualFields
+from tracs.core import FormattedField, FormattedFields, VirtualField, VirtualFields
 
 def test_virtual_field():
 
-	vf = vfield( 'one', int, default=10, display_name='One', description='Field One' )
+	vf = VirtualField( 'one', int, value=10, display_name='One', description='Field One' )
 	assert vf.name == 'one' and vf.type == int and vf.display_name == 'One' and vf.description == 'Field One'
 	assert vf() == 10
 
@@ -14,7 +14,7 @@ def test_virtual_field():
 	assert vf.name == 'two' and vf.type == str and vf.display_name == 'Two' and vf.description == 'Field Two'
 	assert vf() == 'two'
 
-	vf = vfield( 'two', str, default=None )
+	vf = VirtualField( 'two', str, value=None )
 	with raises( AttributeError ):
 		assert vf() == 'two'
 

@@ -5,7 +5,7 @@ from typing import List, Literal, Optional, Tuple
 from arrow import Arrow, now
 from dateutil.tz import UTC
 
-from tracs.core import Keyword, Normalizer, vfield
+from tracs.core import Keyword, Normalizer, VirtualField
 from tracs.registry import normalizer, Registry
 from tracs.rules import DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, parse_date_range_as_str, parse_time_range, TIME_RANGE_PATTERN
 from tracs.rules import parse_ceil_str, parse_floor_str
@@ -83,24 +83,22 @@ def time( left, op, right, rule ) -> str:
 		return rule
 
 Registry.register_virtual_field(
-	vfield( name='classifiers', type=List[str], display_name='Classifiers', description='list of classifiers of an activity',
-	   default=lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ) ),
+	VirtualField( 'classifiers', List[str], lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ), 'Classifiers', 'list of classifiers of an activity' ),
 	# date/time fields
-	vfield( 'weekday', int, lambda a: a.starttime_local.year, 'Weekday', 'day of week at which the activity has taken place (as number)' ),
-	vfield( 'hour', int, lambda a: a.starttime_local.hour, 'Hour of Day', 'hour in which the activity has been started' ),
-	vfield( 'day', int, lambda a: a.starttime_local.day, 'Day of Month', 'day on which the activity has taken place' ),
-	vfield( 'month', int, lambda a: a.starttime_local.month, 'Month', 'month in which the activity has taken place' ),
-	vfield( 'year', int, lambda a: a.starttime_local.year, 'Year', 'year in which the activity has taken place' ),
-	# date / time
-	vfield( name='date', type=timedelta, display_name='Date', description='Date without time',
-		default = lambda a: timedelta( days=a.starttime_local.timetuple().tm_yday )
-	),
-	vfield( name='time', type=timedelta, display_name='Time', description='Local time without date',
-		default = lambda a: timedelta( hours=a.starttime_local.hour, minutes=a.starttime_local.minute, seconds=a.starttime_local.second )
-	),
+	VirtualField( 'weekday', int, lambda a: a.localtime.year, 'Weekday', 'day of week at which the activity has taken place (as number)' ),
+	VirtualField( 'hour', int, lambda a: a.localtime.hour, 'Hour of Day', 'hour in which the activity has been started' ),
+	VirtualField( 'day', int, lambda a: a.localtime.day, 'Day of Month', 'day on which the activity has taken place' ),
+	VirtualField( 'month', int, lambda a: a.localtime.month, 'Month', 'month in which the activity has taken place' ),
+	VirtualField( 'year', int, lambda a: a.localtime.year, 'Year', 'year in which the activity has taken place' ),
+	# date/time helpers
+	VirtualField( 'date', timedelta, lambda a: timedelta( days=a.starttime_local.timetuple().tm_yday ),
+	              display_name='Date', description='Date without date' ),
+	VirtualField( 'time', timedelta, lambda a: timedelta( hours=a.starttime_local.hour, minutes=a.starttime_local.minute, seconds=a.starttime_local.second ),
+	              display_name='Time', description='Local time without date' ),
 	# time helper
-	vfield( name='__time__', type=datetime,  display_name='Helper for time calculations', description='local time without a date and tz',
-	   default=lambda a: datetime( 1, 1, 1, a.starttime_local.hour, a.starttime_local.minute, a.starttime_local.second ) ),
-		# rules dows not care about timezones -> that's why we need to return time without tz information
-	   # default=lambda a: datetime( 1, 1, 1, a.starttime_local.hour, a.starttime_local.minute, a.starttime_local.second, tzinfo=UTC ) ),
+	VirtualField( '__time__', datetime,
+						# rules does not care about timezones -> that's why we need to return time without tz information
+	              # lambda a: datetime( 1, 1, 1, a.localtime.hour, a.localtime.minute, a.localtime.second, tzinfo=UTC ),
+	              lambda a: datetime( 1, 1, 1, a.localtime.hour, a.localtime.minute, a.localtime.second ),
+	              'Helper for time calculations', 'local time without a date and tz' ),
 )

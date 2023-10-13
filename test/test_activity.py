@@ -6,8 +6,8 @@ from pytest import mark, raises
 
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
-from tracs.core import vfield, VirtualFields
-from tracs.registry import Registry, virtualfield
+from tracs.core import VirtualField, VirtualFields
+from tracs.registry import virtualfield
 from tracs.resources import Resource
 from tracs.uid import UID
 
@@ -153,12 +153,12 @@ def test_virtual_activity_fields():
 	def capitalized_name( a: Activity ):
 		return a.name.capitalize()
 
-	assert 'lower_name' in VirtualFields.__fields__.keys()
-	assert 'upper_name' in VirtualFields.__fields__.keys()
-	assert 'title_name' in VirtualFields.__fields__.keys()
-	assert 'cap_name' in VirtualFields.__fields__.keys()
+	assert 'lower_name' in Activity.__vf__.__fields__.keys()
+	assert 'upper_name' in Activity.__vf__.__fields__.keys()
+	assert 'title_name' in Activity.__vf__.__fields__.keys()
+	assert 'cap_name' in Activity.__vf__.__fields__.keys()
 
-	vf = VirtualFields.__fields__['lower_name']
+	vf = Activity.__vf__.__fields__['lower_name']
 	assert vf.name == 'lower_name'
 
 	a = Activity(
@@ -171,7 +171,7 @@ def test_virtual_activity_fields():
 	assert a.vf.title_name == 'Afternoon Run In Berlin'
 	assert a.vf.cap_name == 'Afternoon run in berlin'
 
-	VirtualFields.__fields__['fixed_value'] = vfield( 'fixed_value', int, 10 )
+	Activity.__vf__.__fields__['fixed_value'] = VirtualField( 'fixed_value', int, 10 )
 
 	assert a.vf.fixed_value == 10
 
@@ -194,7 +194,7 @@ def test_virtual_activity_field_override():
 	def name( a: Activity ) -> str:
 		return 'override attempt for run'
 
-	assert 'name' in VirtualFields.__fields__
+	assert 'name' in Activity.__vf__.__fields__
 	assert a.name == 'Run' and a.getattr( 'name' ) == 'Run'
 
 def test_formatted_activity_fields():

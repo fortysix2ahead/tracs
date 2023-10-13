@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, Field, field
+from dataclasses import dataclass
 from sys import version_info
-from typing import Any, Callable, ClassVar, Dict, Optional, Type, Union
+from typing import Any, Callable, Dict, Optional, Type, Union
 
-from attrs import define, field as attrsfield
+from attrs import define, field
 
 FIELD_KWARGS = {
 	'init': True,
@@ -15,60 +15,57 @@ FIELD_KWARGS = {
 
 FIELD_KWARGS = FIELD_KWARGS if version_info.minor < 10 else { **FIELD_KWARGS, 'kw_only': False }
 
-class VirtualField( Field ):
+@define
+class VirtualField:
 
-	# noinspection PyShadowingBuiltins
-	def __init__( self, default: Any, default_factory: Callable, name: str, type: Any, display_name: str, description: str ):
-		super().__init__(
-			default = default, default_factory = default_factory, **FIELD_KWARGS,
-			metadata = {
-				'description': description,
-				'display_name': display_name,
-			},
-		)
-		self.name = name
-		self.type = type
+	name: str = field( default=None )
+	type: Type = field( default=None )
+	value: Any = field( default=None )
+	description: str = field( default=None )
+	display_name: str = field( default=None )
 
-	def __call__( self, *args, **kwargs ):
-		if self.default is not None:
-			return self.default
-		elif self.default_factory is not None:
-			return self.default_factory( *args, **kwargs )
+	def __call__( self, value: Any = None ) -> Any:
+		return self.value_for( value )
+
+	def value_for( self, value: Any = None ) -> Any:
+		if self.value is not None:
+			if isinstance( self.value, Callable ):
+				return self.value( value )
+			else:
+				return self.value
 		else:
-			raise AttributeError( f'error accessing virtual field {self.name}, field has neither default or default_factory' )
+			raise AttributeError( f'virtual field {self.name} has neither a function nor a value' )
 
-	@property
-	def description( self ):
-		return self.metadata.get( 'description' )
-
-	@property
-	def display_name( self ):
-		return self.metadata.get( 'display_name' )
-
-@dataclass
+@define
 class VirtualFields:
 
-	__fields__: ClassVar[Dict[str, VirtualField]] = field( default={} )
-	__parent__: Any = field( default=None )
-	# __values__: Dict[str, VirtualField] = field( default_factory=dict ) # not used yet, we might include custom values later
+	__fields__: Dict[str, Union[VirtualField, Callable]] = field( factory=dict, alias='__fields__' )
+	__parent__: Any = field( default=None, alias='__parent__' )
+
+	def __call__( self, parent: Any ) -> VirtualFields:
+		if parent is None:
+			raise AttributeError( 'VirtualFields instance cannot be used without a parent instance' )
+
+		self.__parent__ = parent
+		return self
 
 	def __getattr__( self, name: str ) -> Any:
-		# not used yet, see above
-		# if name in self.__values__:
-		#	return self.__values__.get( name )
-		if name in self.__class__.__fields__:
-			return self.__class__.__fields__.get( name )( self.__parent__ )
+		if name in self.__fields__:
+			return self.__fields__.get( name )( self.__parent__ )
 		else:
-			return super().__getattribute__( name )
+			return self.__parent__.__getattribute__( name )
 
 	def __contains__( self, item ) -> bool:
 		return item in self.__fields__.keys()
 
+	def set_field( self, name: str, vf: VirtualField ) -> None:
+		self.__fields__[name] = vf
+
 @define
 class FormattedField:
 
-	name: str = attrsfield( default=None )
-	formatter: Callable = attrsfield( default=None )
+	name: str = field( default=None )
+	formatter: Callable = field( default=None )
 
 	def __call__( self, value: Any ) -> Any:
 		return self.format( value )
@@ -79,9 +76,9 @@ class FormattedField:
 @define
 class FormattedFields:
 
-	__fields__: Dict[str, Union[FormattedField, Callable]] = attrsfield( factory=dict, alias='__fields__' )
-	__parent_cls__: Type = attrsfield( default=None, alias='__parent_cls__' )
-	__parent__: Any = attrsfield( default=None, alias='__parent__' )
+	__fields__: Dict[str, Union[FormattedField, Callable]] = field( factory=dict, alias='__fields__' )
+	__parent_cls__: Type = field( default=None, alias='__parent_cls__' )
+	__parent__: Any = field( default=None, alias='__parent__' )
 
 	def __call__( self, parent: Any ) -> FormattedFields:
 		if parent is None:
@@ -132,15 +129,3 @@ class Normalizer:
 
 	def __call__( self, *args, **kwargs ) -> str:
 		return self.fn( *args, **kwargs )
-
-# noinspection PyShadowingBuiltins
-def vfield( name: str, type: Any = None, default: Any = None, display_name: Optional[str] = None, description: Optional[str] = None ) -> VirtualField:
-	default, factory = (None, default) if isinstance( default, Callable ) else (default, None)
-	return VirtualField(
-		default=default,
-		default_factory=factory,
-		name=name,
-		type=type,
-		display_name=display_name,
-		description=description
-	)

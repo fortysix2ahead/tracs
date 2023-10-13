@@ -10,7 +10,7 @@ from dataclass_factory import Schema
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import FormattedFields, VirtualFields
+from tracs.core import FormattedFields, VirtualField, VirtualFields
 from tracs.resources import Resource
 from tracs.uid import UID
 from tracs.utils import sum_timedeltas, sum_times, unique_sorted
@@ -57,6 +57,7 @@ class Activity:
 
 	# class variables
 	__fmf__: FormattedFields = FormattedFields()
+	__vf__: VirtualFields = VirtualFields()
 
 	# fields
 	id: int = field( default=None )
@@ -129,16 +130,18 @@ class Activity:
 	__parent__: Activity = field( init=False, default=0 )
 	__parent_id__: int = field( init=False, default=0 )
 
-	__vf__: VirtualFields = field( init=False, default_factory=VirtualFields, hash=False, compare=False )
-
 	# class methods
+
+	@classmethod
+	def set_virtual_field( cls, name: str, vf: VirtualField ) -> None:
+		Activity.__fmf__.__fields__[name] = vf
 
 	@classmethod
 	# todo: change default of include_internal to False (keep at the moment for compatibility reasons)
 	def fields( cls, include_internal = True, include_virtual = False ) -> List[Field]:
 		_fields = list( fields( Activity ) )
 		if include_virtual:
-			_fields.extend( [f for f in VirtualFields.__fields__.values()] )
+			_fields.extend( [f for f in cls.__vf__.__fields__.values()] )
 		if not include_internal:
 			_fields = list( filter( lambda f: not f.name.startswith( '_' ), _fields ) )
 		return _fields

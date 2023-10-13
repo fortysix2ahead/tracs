@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, Field, field
 from sys import version_info
-from typing import Any, Callable, ClassVar, Dict, Optional, Union
+from typing import Any, Callable, ClassVar, Dict, Optional, Type, Union
+
+from attrs import define, field as attrsfield
 
 FIELD_KWARGS = {
 	'init': True,
@@ -61,6 +63,53 @@ class VirtualFields:
 
 	def __contains__( self, item ) -> bool:
 		return item in self.__fields__.keys()
+
+@define
+class FormattedField:
+
+	name: str = attrsfield( default=None )
+	formatter: Callable = attrsfield( default=None )
+
+	def __call__( self, value: Any ) -> Any:
+		return self.format( value )
+
+	def format( self, value: Any ) -> Any:
+		return self.formatter( value )
+
+@define
+class FormattedFields:
+
+	__fields__: Dict[str, Union[FormattedField, Callable]] = attrsfield( factory=dict, alias='__fields__' )
+	__parent_cls__: Type = attrsfield( default=None, alias='__parent_cls__' )
+	__parent__: Any = attrsfield( default=None, alias='__parent__' )
+
+	def __call__( self, parent: Any ) -> FormattedFields:
+		if parent is None:
+			raise AttributeError( 'FormattedFields instance cannot be used without a parent instance' )
+
+		self.__parent__ = parent
+		return self
+
+	def __getattr__( self, name: str ) -> Any:
+		if self.__parent__ is None:
+			raise AttributeError( 'FormattedFields instance cannot be used without a parent instance' )
+
+		if name in self.__fields__:
+			return self.__fields__.get( name )( getattr( self.__parent__, name ) )
+		else:
+			return getattr( self.__parent__, name )
+
+	@property
+	def fields( self ) -> Dict[str, Union[FormattedField, Callable]]:
+		return self.__fields__
+
+	@property
+	def parent( self ) -> Any:
+		return self.__parent__
+
+	@property
+	def parent_cls( self ) -> Type:
+		return self.__parent_cls__
 
 @dataclass
 class Keyword:

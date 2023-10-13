@@ -82,7 +82,7 @@ def time( left, op, right, rule ) -> str:
 	else:
 		return rule
 
-Registry.register_virtual_field(
+Registry.register_virtual_fields(
 	VirtualField( 'classifiers', List[str], lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ), 'Classifiers', 'list of classifiers of an activity' ),
 	# date/time fields
 	VirtualField( 'weekday', int, lambda a: a.localtime.year, 'Weekday', 'day of week at which the activity has taken place (as number)' ),

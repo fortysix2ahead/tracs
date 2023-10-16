@@ -8,11 +8,11 @@ from os.path import join as os_path_join
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from appdirs import AppDirs
 from attrs import define, field
 from confuse import ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, YamlSource
 from fs.base import FS
 from fs.osfs import OSFS
+from platformdirs import user_config_dir
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 
@@ -21,8 +21,6 @@ from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, T
 APPNAME = 'tracs'
 APP_PKG_NAME = 'tracs'
 PLUGINS_PKG_NAME = 'plugins'
-
-APPDIRS = AppDirs( appname=APPNAME )
 
 BACKUP_DIRNAME = 'backup'
 CACHE_DIRNAME = 'cache'
@@ -40,7 +38,7 @@ CONFIG_FILENAME = 'config.yaml'
 STATE_FILENAME = 'state.yaml'
 DEFAULT_STATE_FILENAME = 'state_default.yaml'
 
-DEFAULT_CFG_DIR = Path( APPDIRS.user_config_dir )
+DEFAULT_CFG_DIR = Path( user_config_dir( APPNAME ) )
 DEFAULT_DB_DIR = Path( DEFAULT_CFG_DIR, DB_DIRNAME )
 
 TABLE_NAME_DEFAULT = '_default'
@@ -140,8 +138,8 @@ class ApplicationContext:
 	# configuration fields which can be set externally
 
 	# config + lib dir are absolute paths, lib_dir points to cfg_dir by default
-	config_dir: str = field( default=APPDIRS.user_config_dir )
-	lib_dir: str = field( default=APPDIRS.user_config_dir )
+	config_dir: str = field( default=user_config_dir( APPNAME ) )
+	lib_dir: str = field( default=user_config_dir( APPNAME ) )
 
 	# global configuration flags, can be set externally
 	force: Optional[bool] = field( default=None )
@@ -189,7 +187,7 @@ class ApplicationContext:
 
 	def __attrs_post_init__( self ):
 		# setup config fs
-		self.config_dir = APPDIRS.user_config_dir if self.config_dir is None else self.config_dir # config dir may never be None
+		self.config_dir = user_config_dir( APPNAME ) if self.config_dir is None else self.config_dir # config dir may never be None
 		self.config_fs = OSFS( root_path=self.config_dir, create=True )
 
 		# load default configuration/state

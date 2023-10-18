@@ -5,7 +5,7 @@ from lxml.objectify import ObjectifiedElement
 from pytest import mark
 
 from tracs.plugins.gpx import GPX_TYPE
-from tracs.plugins.polar import PolarFlowExercise
+from tracs.plugins.polar import PolarFlowExercise, PolarFlowImporter
 from tracs.plugins.tcx import Author, Creator, Lap, Plan, TCX_TYPE, Trackpoint, Training, TrainingCenterDatabase
 from tracs.registry import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensImporter
@@ -118,9 +118,13 @@ def test_tcx_export():
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
 def test_polar_flow_importer( path ):
-	importer = Registry.importer_for( POLAR_FLOW_TYPE )
-	assert importer.type == POLAR_FLOW_TYPE
-	assert importer.activity_cls == PolarFlowExercise
+	importer = PolarFlowImporter()
+	assert importer.TYPE == POLAR_FLOW_TYPE
+	assert importer.ACTIVITY_CLS == PolarFlowExercise
+
+	resource = importer.load( path )
+	assert resource.type == POLAR_FLOW_TYPE
+	assert type( resource.data ) == PolarFlowExercise
 
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2011-04-28T15:48:10+00:00'

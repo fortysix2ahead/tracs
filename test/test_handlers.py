@@ -8,7 +8,7 @@ from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.polar import PolarFlowExercise
 from tracs.plugins.tcx import Author, Creator, Lap, Plan, TCX_TYPE, Trackpoint, Training, TrainingCenterDatabase
 from tracs.registry import Registry
-from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE
+from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensImporter
 from tracs.plugins.bikecitizens import BikecitizensActivity
 from tracs.plugins.csv import CSV_TYPE
 from tracs.plugins.json import JSON_TYPE
@@ -146,9 +146,13 @@ def test_strava_importer( path ):
 
 @mark.file( 'libraries/default/bikecitizens/1/0/0/1000001/1000001.json' )
 def test_bikecitizens_importer( path ):
-	importer = Registry.importer_for( BIKECITIZENS_TYPE )
-	assert importer.type == BIKECITIZENS_TYPE
-	assert importer.activity_cls == BikecitizensActivity
+	importer = BikecitizensImporter()
+	assert importer.TYPE == BIKECITIZENS_TYPE
+	assert importer.ACTIVITY_CLS == BikecitizensActivity
+
+	resource = importer.load( path )
+	assert resource.type == BIKECITIZENS_TYPE
+	assert type( resource.data ) == BikecitizensActivity
 
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2020-05-09T05:03:11+00:00'

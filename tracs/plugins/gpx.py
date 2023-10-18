@@ -17,8 +17,12 @@ log = getLogger( __name__ )
 
 GPX_TYPE = 'application/gpx+xml'
 
+# todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=GPX_TYPE, activity_cls=GPX, recording=True )
 class GPXImporter( ResourceHandler ):
+
+	TYPE: str = GPX_TYPE
+	ACTIVITY_CLS = GPX
 
 	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return parse_gpx( content )

@@ -413,8 +413,12 @@ class WazeAccountInfoImporter( CSVHandler ):
 
 		return account_info
 
+# todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=WAZE_TYPE, activity_cls=WazeActivity, summary=True )
 class WazeImporter( ResourceHandler ):
+
+	TYPE: str = WAZE_TYPE
+	ACTIVITY_CLS = WazeActivity
 
 	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return LocationDetail( coordinates=content.decode( 'UTF-8' ) )

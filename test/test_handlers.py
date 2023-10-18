@@ -19,7 +19,7 @@ from tracs.plugins.polar import PolarExerciseDataActivity
 from tracs.plugins.strava import STRAVA_TYPE
 from tracs.plugins.strava import StravaActivity
 from tracs.plugins.tcx import Activity as TCXActivity
-from tracs.plugins.waze import WAZE_TYPE
+from tracs.plugins.waze import WAZE_TYPE, WazeImporter
 from tracs.plugins.waze import WazeActivity
 
 @mark.file( 'takeouts/waze/waze/2020-09/account_activity_3.csv' )
@@ -155,9 +155,13 @@ def test_bikecitizens_importer( path ):
 
 @mark.file( 'libraries/default/waze/20/07/12/200712074743/200712074743.txt' )
 def test_waze_importer( path ):
-	importer = Registry.importer_for( WAZE_TYPE )
-	assert importer.type == WAZE_TYPE
-	assert importer.activity_cls == WazeActivity
+	importer = WazeImporter()
+	assert importer.TYPE == WAZE_TYPE
+	assert importer.ACTIVITY_CLS == WazeActivity
+
+	resource = importer.load( path )
+	assert resource.type == WAZE_TYPE
+	assert type( resource.data ) == WazeActivity
 
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2020-07-12T05:47:43+00:00'

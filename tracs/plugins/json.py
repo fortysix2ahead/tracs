@@ -13,25 +13,22 @@ log = getLogger( __name__ )
 
 JSON_TYPE = 'application/json'
 
+# todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=JSON_TYPE )
 class JSONHandler( ResourceHandler ):
 
-	options = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
-
-	def __init__( self, *args, **kwargs ):
-		super().__init__( *args, **kwargs )
+	TYPE: str = JSON_TYPE
+	OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
 	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return load_json( content )
 
 	def save_raw( self, data: Any, **kwargs ) -> bytes:
-		return save_json( data, option=JSONHandler.options )
+		return save_json( data, option=JSONHandler.OPTIONS )
 
 class DataclassFactoryHandler( JSONHandler ):
 
-	def __init__( self, *args, **kwargs ):
-		super().__init__( *args, **kwargs )
-		self._factory: Factory = Factory( debug_path=True, schemas={} ) # use dataclass factory instead of callable
+	FACTORY = Factory( debug_path=True, schemas={} ) # use dataclass factory instead of callable
 
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		"""
@@ -40,7 +37,7 @@ class DataclassFactoryHandler( JSONHandler ):
 		Example: transform a dict into a dataclass.
 		"""
 		try:
-			return self._factory.load( raw, self._activity_cls )
+			return self.__class__.FACTORY.load( raw, self.__class__.ACTIVITY_CLS )
 		except RuntimeError:
 			log.error( f'unable to transform raw data into structured data by using the factory for {self._activity_cls}', exc_info=True )
 			return raw

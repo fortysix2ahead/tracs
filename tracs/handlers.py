@@ -14,7 +14,10 @@ log = getLogger( __name__ )
 
 class ResourceHandler:
 
+	# todo: remove resource_type in favour of TYPE
 	resource_type: Optional[str] = None
+	TYPE: Optional[str] = resource_type
+	ACTIVITY_CLS: Optional[Type] = None
 
 	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None ) -> None:
 		self._type: Optional[str] = resource_type
@@ -122,7 +125,7 @@ class ResourceHandler:
 
 	def load_resource( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Resource:
 		return Resource(
-			type = self._type,
+			type = self.__class__.TYPE,
 			path = path.name if path else None, # todo: use url here as well?
 			source = path.as_uri() if path else url,
 			content = self.content,
@@ -140,7 +143,7 @@ class ResourceHandler:
 
 	@property
 	def type( self ) -> Optional[str]:
-		return self._type
+		return self.__class__.TYPE
 
 	@type.setter
 	def type( self, value: str ) -> None :
@@ -148,7 +151,7 @@ class ResourceHandler:
 
 	@property
 	def activity_cls( self ) -> Optional[Type]:
-		return self._activity_cls
+		return self.__class__.ACTIVITY_CLS
 
 	@activity_cls.setter
 	def activity_cls( self, cls: Type ) -> None:

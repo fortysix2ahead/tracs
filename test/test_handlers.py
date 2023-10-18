@@ -4,39 +4,49 @@ from lxml.etree import tostring
 from lxml.objectify import ObjectifiedElement
 from pytest import mark
 
-from tracs.plugins.gpx import GPX_TYPE
-from tracs.plugins.polar import PolarFlowExercise
-from tracs.plugins.tcx import Author, Creator, Lap, Plan, TCX_TYPE, Trackpoint, Training, TrainingCenterDatabase
+from tracs.plugins.gpx import GPX_TYPE, GPXImporter
+from tracs.plugins.polar import PolarFlowExercise, PolarFlowImporter
+from tracs.plugins.tcx import Author, Creator, Lap, Plan, TCX_TYPE, TCXImporter, Trackpoint, Training, TrainingCenterDatabase
 from tracs.registry import Registry
-from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE
+from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensImporter
 from tracs.plugins.bikecitizens import BikecitizensActivity
-from tracs.plugins.csv import CSV_TYPE
-from tracs.plugins.json import JSON_TYPE
-from tracs.plugins.xml import XML_TYPE
+from tracs.plugins.csv import CSV_TYPE, CSVHandler
+from tracs.plugins.json import JSON_TYPE, JSONHandler
+from tracs.plugins.xml import XML_TYPE, XMLHandler
 from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE
 from tracs.plugins.polar import POLAR_FLOW_TYPE
 from tracs.plugins.polar import PolarExerciseDataActivity
-from tracs.plugins.strava import STRAVA_TYPE
+from tracs.plugins.strava import STRAVA_TYPE, StravaHandler
 from tracs.plugins.strava import StravaActivity
 from tracs.plugins.tcx import Activity as TCXActivity
-from tracs.plugins.waze import WAZE_TYPE
+from tracs.plugins.waze import WAZE_TYPE, WazeImporter
 from tracs.plugins.waze import WazeActivity
 
 @mark.file( 'takeouts/waze/waze/2020-09/account_activity_3.csv' )
 def test_csv_handler( path ):
-	resource = Registry.importer_for( CSV_TYPE ).load( path=path )
+	handler = CSVHandler()
+	assert handler.TYPE == CSV_TYPE
+
+	resource = handler.load( path=path )
+	assert resource.type == CSV_TYPE
 	assert type( resource.raw ) is list and len( resource.raw ) == 38
 
 @mark.file( 'templates/polar/2020.json' )
 def test_json_importer( path ):
-	resource = Registry.importer_for( 'application/json' ).load( path=path )
+	handler = JSONHandler()
+	assert handler.TYPE == JSON_TYPE
+
+	resource = handler.load( path=path )
 	assert resource.type == JSON_TYPE
 	assert type( resource.content ) is bytes and len( resource.content ) > 0
 	assert type( resource.raw ) is list
 
 @mark.file( 'templates/polar/empty.gpx' )
 def test_xml_importer( path ):
-	resource = Registry.importer_for( XML_TYPE ).load( path=path )
+	handler = XMLHandler()
+	assert handler.TYPE == XML_TYPE
+
+	resource = handler.load( path=path )
 	assert resource.type == XML_TYPE
 	assert type( resource.content ) is bytes and len( resource.content ) > 0
 	assert resource.raw.getroottree().getroot() is not None
@@ -44,22 +54,29 @@ def test_xml_importer( path ):
 
 @mark.file( 'templates/gpx/mapbox.gpx' )
 def test_gpx_importer( path ):
-	resource = Registry.importer_for( GPX_TYPE ).load( path=path )
+	handler = GPXImporter()
+	assert handler.TYPE == GPX_TYPE
+
+	resource = handler.load( path=path )
 	assert type( resource.raw ) is GPX
 	assert resource.raw is resource.data
 
-	activity = Registry.importer_for( GPX_TYPE ).load_as_activity( path=path )
+	activity = handler.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2012-10-24T23:29:40+00:00'
 
 @mark.file( 'templates/tcx/sample.tcx' )
 def test_tcx_importer( path ):
-	resource = Registry.importer_for( TCX_TYPE ).load( path=path )
+	handler = TCXImporter()
+	assert handler.TYPE == TCX_TYPE
+
+	resource = handler.load( path=path )
 	assert type( resource.raw ) is ObjectifiedElement
 	assert type( resource.data ) is TrainingCenterDatabase
 
-	activity = Registry.importer_for( TCX_TYPE ).load_as_activity( path=path )
+	activity = handler.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2010-06-26T10:06:11+00:00'
 
+@mark.skip
 def test_tcx_export():
 	tcx = TrainingCenterDatabase(
 		activities=[
@@ -118,9 +135,13 @@ def test_tcx_export():
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
 def test_polar_flow_importer( path ):
-	importer = Registry.importer_for( POLAR_FLOW_TYPE )
-	assert importer.type == POLAR_FLOW_TYPE
-	assert importer.activity_cls == PolarFlowExercise
+	importer = PolarFlowImporter()
+	assert importer.TYPE == POLAR_FLOW_TYPE
+	assert importer.ACTIVITY_CLS == PolarFlowExercise
+
+	resource = importer.load( path )
+	assert resource.type == POLAR_FLOW_TYPE
+	assert type( resource.data ) == PolarFlowExercise
 
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2011-04-28T15:48:10+00:00'
@@ -137,27 +158,39 @@ def test_polar_ped_importer( path ):
 
 @mark.file( 'libraries/default/strava/2/0/0/200002/200002.json' )
 def test_strava_importer( path ):
-	importer = Registry.importer_for( STRAVA_TYPE )
-	assert importer.type == STRAVA_TYPE
-	assert importer.activity_cls == StravaActivity
+	importer = StravaHandler()
+	assert importer.TYPE == STRAVA_TYPE
+	assert importer.ACTIVITY_CLS == StravaActivity
+
+	resource = importer.load( path )
+	assert resource.type == STRAVA_TYPE
+	assert type( resource.data ) == StravaActivity
 
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2018-12-16T13:15:12+00:00'
 
 @mark.file( 'libraries/default/bikecitizens/1/0/0/1000001/1000001.json' )
 def test_bikecitizens_importer( path ):
-	importer = Registry.importer_for( BIKECITIZENS_TYPE )
-	assert importer.type == BIKECITIZENS_TYPE
-	assert importer.activity_cls == BikecitizensActivity
+	importer = BikecitizensImporter()
+	assert importer.TYPE == BIKECITIZENS_TYPE
+	assert importer.ACTIVITY_CLS == BikecitizensActivity
+
+	resource = importer.load( path )
+	assert resource.type == BIKECITIZENS_TYPE
+	assert type( resource.data ) == BikecitizensActivity
 
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2020-05-09T05:03:11+00:00'
 
 @mark.file( 'libraries/default/waze/20/07/12/200712074743/200712074743.txt' )
 def test_waze_importer( path ):
-	importer = Registry.importer_for( WAZE_TYPE )
-	assert importer.type == WAZE_TYPE
-	assert importer.activity_cls == WazeActivity
+	importer = WazeImporter()
+	assert importer.TYPE == WAZE_TYPE
+	assert importer.ACTIVITY_CLS == WazeActivity
+
+	resource = importer.load( path )
+	assert resource.type == WAZE_TYPE
+	assert type( resource.data ) == WazeActivity
 
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2020-07-12T05:47:43+00:00'

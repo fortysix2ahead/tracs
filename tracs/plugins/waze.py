@@ -413,8 +413,12 @@ class WazeAccountInfoImporter( CSVHandler ):
 
 		return account_info
 
+# todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=WAZE_TYPE, activity_cls=WazeActivity, summary=True )
 class WazeImporter( ResourceHandler ):
+
+	TYPE: str = WAZE_TYPE
+	ACTIVITY_CLS = WazeActivity
 
 	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return LocationDetail( coordinates=content.decode( 'UTF-8' ) )
@@ -437,10 +441,10 @@ class Waze( Service ):
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME}, **kwargs } )
 
-		self._takeout_importer: WazeAccountActivityImporter = Registry.importer_for( WAZE_ACCOUNT_ACTIVITY_TYPE )
-		self._info_importer: WazeAccountInfoImporter = Registry.importer_for( WAZE_ACCOUNT_INFO_TYPE ) # don't need this at the moment
-		self._drive_importer: WazeImporter = cast( WazeImporter, Registry.importer_for( WAZE_TYPE ) )
-		self._gpx_importer: GPXImporter = cast( GPXImporter, Registry.importer_for( GPX_TYPE ) )
+		self._takeout_importer: WazeAccountActivityImporter = WazeAccountActivityImporter()
+		self._info_importer: WazeAccountInfoImporter = WazeAccountInfoImporter()
+		self._drive_importer: WazeImporter = WazeImporter()
+		self._gpx_importer: GPXImporter = GPXImporter()
 
 		self._takeout_importer.field_size_limit = kwargs.get( 'field_size_limit' ) or DEFAULT_FIELD_SIZE_LIMIT
 

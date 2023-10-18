@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
-from typing import List
+from typing import Any, List
 from typing import Optional
 from typing import Union
 
@@ -44,11 +44,14 @@ class MockActivity:
 @importer( type=MOCK_TYPE )
 class MockImporter( ResourceHandler ):
 
-	def __init__( self ) -> None:
-		super().__init__( resource_type=MOCK_TYPE, activity_cls=MockActivity )
+	def load_raw( self, content: Union[bytes, str], **kwargs ) -> Any:
+		return content # just return content
+
+	def load_data( self, raw: Any, **kwargs ) -> Any:
+		return raw # just return raw
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
-		return MockActivity( uid=resource.uid )
+		return MockActivity( uid=resource.uid ).as_activity()
 
 class Mock( Service ):
 

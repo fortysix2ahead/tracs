@@ -9,12 +9,14 @@ CSV_TYPE = 'text/csv'
 
 DEFAULT_FIELD_SIZE_LIMIT = 131072
 
+# todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=CSV_TYPE )
 class CSVHandler( ResourceHandler ):
 
-	def __init__( self, resource_type: Optional[str] = None, activity_cls: Optional[Type] = None, **kwargs ) -> None:
-		super().__init__( resource_type=resource_type or CSV_TYPE, activity_cls=activity_cls )
+	TYPE: str = CSV_TYPE
 
+	def __init__( self, *args, **kwargs ) -> None:
+		super().__init__( *args, **kwargs )
 		self._field_size_limit = kwargs.get( 'field_size_limit', DEFAULT_FIELD_SIZE_LIMIT ) # keep this later use
 
 	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:

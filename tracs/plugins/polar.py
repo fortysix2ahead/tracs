@@ -190,8 +190,12 @@ class PolarExerciseDataActivity( Activity ):
 		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
 		self.uid = f'{self.classifier}:{self.raw_id}'
 
+# todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=POLAR_FLOW_TYPE, activity_cls=PolarFlowExercise, summary=True )
 class PolarFlowImporter( DataclassFactoryHandler ):
+
+	TYPE: str = POLAR_FLOW_TYPE
+	ACTIVITY_CLS = PolarFlowExercise
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: PolarFlowExercise = resource.data

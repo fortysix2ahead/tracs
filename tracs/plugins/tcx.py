@@ -304,8 +304,12 @@ class TrainingCenterDatabase:
 			author=Author.from_xml( root ),
 		)
 
+# todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=TCX_TYPE, activity_cls=Activity, recording=True )
 class TCXImporter( XMLHandler ):
+
+	TYPE: str = TCX_TYPE
+	ACTIVITY_CLS = Activity
 
 	def load_raw( self, content: Union[bytes, str], **kwargs ) -> Any:
 		return fromstring( content )

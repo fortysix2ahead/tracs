@@ -12,7 +12,7 @@ from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensImporter
 from tracs.plugins.bikecitizens import BikecitizensActivity
 from tracs.plugins.csv import CSV_TYPE
 from tracs.plugins.json import JSON_TYPE
-from tracs.plugins.xml import XML_TYPE
+from tracs.plugins.xml import XML_TYPE, XMLHandler
 from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE
 from tracs.plugins.polar import POLAR_FLOW_TYPE
 from tracs.plugins.polar import PolarExerciseDataActivity
@@ -36,7 +36,10 @@ def test_json_importer( path ):
 
 @mark.file( 'templates/polar/empty.gpx' )
 def test_xml_importer( path ):
-	resource = Registry.importer_for( XML_TYPE ).load( path=path )
+	handler = XMLHandler()
+	assert handler.TYPE == XML_TYPE
+
+	resource = handler.load( path=path )
 	assert resource.type == XML_TYPE
 	assert type( resource.content ) is bytes and len( resource.content ) > 0
 	assert resource.raw.getroottree().getroot() is not None

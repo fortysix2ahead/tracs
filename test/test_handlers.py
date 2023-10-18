@@ -16,7 +16,7 @@ from tracs.plugins.xml import XML_TYPE
 from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE
 from tracs.plugins.polar import POLAR_FLOW_TYPE
 from tracs.plugins.polar import PolarExerciseDataActivity
-from tracs.plugins.strava import STRAVA_TYPE
+from tracs.plugins.strava import STRAVA_TYPE, StravaHandler
 from tracs.plugins.strava import StravaActivity
 from tracs.plugins.tcx import Activity as TCXActivity
 from tracs.plugins.waze import WAZE_TYPE, WazeImporter
@@ -137,9 +137,13 @@ def test_polar_ped_importer( path ):
 
 @mark.file( 'libraries/default/strava/2/0/0/200002/200002.json' )
 def test_strava_importer( path ):
-	importer = Registry.importer_for( STRAVA_TYPE )
-	assert importer.type == STRAVA_TYPE
-	assert importer.activity_cls == StravaActivity
+	importer = StravaHandler()
+	assert importer.TYPE == STRAVA_TYPE
+	assert importer.ACTIVITY_CLS == StravaActivity
+
+	resource = importer.load( path )
+	assert resource.type == STRAVA_TYPE
+	assert type( resource.data ) == StravaActivity
 
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2018-12-16T13:15:12+00:00'

@@ -44,8 +44,12 @@ FETCH_PAGE_SIZE = 30 #
 TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
 TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
 
+# todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=STRAVA_TYPE, activity_cls=StravaActivity, summary=True )
 class StravaHandler( JSONHandler ):
+
+	TYPE: str = STRAVA_TYPE
+	ACTIVITY_CLS = StravaActivity
 
 	def load_data( self, raw: Any, **kwargs ):
 		return StravaActivity.parse_obj( raw )

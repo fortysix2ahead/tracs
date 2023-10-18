@@ -15,7 +15,7 @@ from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME
 from tracs.plugins.json import DataclassFactoryHandler, JSON_TYPE, JSONHandler
-from tracs.registry import importer, Registry, service, setup
+from tracs.registry import importer, Registry, resourcetype, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
 from .gpx import GPX_TYPE
@@ -74,11 +74,13 @@ class Point:
 	delta: int = field( default=None )
 	ele: int = field( default=None )
 
+@resourcetype( type=BIKECITIZENS_RECORDING_TYPE, recording=False )
 @define
 class BikecitizensRecording:
 
 	points: List[Point] = field( factory=list )
 
+@resourcetype( type=BIKECITIZENS_TYPE, summary=True )
 @define
 class BikecitizensActivity:
 
@@ -105,14 +107,13 @@ class BikecitizensActivity:
 # resource handlers
 
 # todo: actually we can import this, but currently there are no timestamps and it's of no better use compared to the gpx
-# that's why recording is currently set to False
-@importer( type=BIKECITIZENS_RECORDING_TYPE, activity_cls=BikecitizensRecording, recording=False )
+# that's why recording is currently set to False in BikecitizensRecording (see above)
+@importer( type=BIKECITIZENS_RECORDING_TYPE )
 class BikecitizensRecordingImporter( JSONHandler ):
 
 	pass
 
-# todo: replace with @importer / remove duplicate type/cls information from here
-@importer( type=BIKECITIZENS_TYPE, activity_cls=BikecitizensActivity, summary=True )
+@importer( type=BIKECITIZENS_TYPE )
 class BikecitizensImporter( DataclassFactoryHandler ):
 
 	TYPE: str = BIKECITIZENS_TYPE

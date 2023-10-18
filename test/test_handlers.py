@@ -4,7 +4,7 @@ from lxml.etree import tostring
 from lxml.objectify import ObjectifiedElement
 from pytest import mark
 
-from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.plugins.polar import PolarFlowExercise, PolarFlowImporter
 from tracs.plugins.tcx import Author, Creator, Lap, Plan, TCX_TYPE, TCXImporter, Trackpoint, Training, TrainingCenterDatabase
 from tracs.registry import Registry
@@ -44,11 +44,14 @@ def test_xml_importer( path ):
 
 @mark.file( 'templates/gpx/mapbox.gpx' )
 def test_gpx_importer( path ):
-	resource = Registry.importer_for( GPX_TYPE ).load( path=path )
+	handler = GPXImporter()
+	assert handler.TYPE == GPX_TYPE
+
+	resource = handler.load( path=path )
 	assert type( resource.raw ) is GPX
 	assert resource.raw is resource.data
 
-	activity = Registry.importer_for( GPX_TYPE ).load_as_activity( path=path )
+	activity = handler.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2012-10-24T23:29:40+00:00'
 
 @mark.file( 'templates/tcx/sample.tcx' )

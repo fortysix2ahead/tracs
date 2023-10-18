@@ -13,9 +13,11 @@ log = getLogger( __name__ )
 
 JSON_TYPE = 'application/json'
 
+# todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=JSON_TYPE )
 class JSONHandler( ResourceHandler ):
 
+	TYPE: str = JSON_TYPE
 	OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
 	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:

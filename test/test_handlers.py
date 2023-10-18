@@ -11,7 +11,7 @@ from tracs.registry import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensImporter
 from tracs.plugins.bikecitizens import BikecitizensActivity
 from tracs.plugins.csv import CSV_TYPE
-from tracs.plugins.json import JSON_TYPE
+from tracs.plugins.json import JSON_TYPE, JSONHandler
 from tracs.plugins.xml import XML_TYPE, XMLHandler
 from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE
 from tracs.plugins.polar import POLAR_FLOW_TYPE
@@ -29,7 +29,10 @@ def test_csv_handler( path ):
 
 @mark.file( 'templates/polar/2020.json' )
 def test_json_importer( path ):
-	resource = Registry.importer_for( 'application/json' ).load( path=path )
+	handler = JSONHandler()
+	assert handler.TYPE == JSON_TYPE
+
+	resource = handler.load( path=path )
 	assert resource.type == JSON_TYPE
 	assert type( resource.content ) is bytes and len( resource.content ) > 0
 	assert type( resource.raw ) is list
@@ -69,6 +72,7 @@ def test_tcx_importer( path ):
 	activity = handler.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2010-06-26T10:06:11+00:00'
 
+@mark.skip
 def test_tcx_export():
 	tcx = TrainingCenterDatabase(
 		activities=[

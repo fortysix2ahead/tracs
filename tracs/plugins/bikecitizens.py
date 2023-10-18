@@ -1,11 +1,10 @@
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from logging import getLogger
-from pathlib import Path
 from re import DOTALL, match
 from sys import exit as sysexit
 from typing import Any, cast, Dict, List, Optional, Tuple, Union
 
+from attrs import define, field
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
@@ -15,12 +14,10 @@ from rich.prompt import Prompt
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME
-from tracs.plugin import Plugin
 from tracs.plugins.json import DataclassFactoryHandler, JSON_TYPE, JSONHandler
 from tracs.registry import importer, Registry, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
-from tracs.utils import seconds_to_time
 from .gpx import GPX_TYPE
 
 log = getLogger( __name__ )
@@ -69,7 +66,7 @@ HEADERS_OPTIONS = { **HEADERS_TEMPLATE, **{
 
 # data classes
 
-@dataclass
+@define
 class Point:
 
 	lon: float = field( default=None )
@@ -77,12 +74,12 @@ class Point:
 	delta: int = field( default=None )
 	ele: int = field( default=None )
 
-@dataclass
+@define
 class BikecitizensRecording:
 
-	points: List[Point] = field( default_factory=list )
+	points: List[Point] = field( factory=list )
 
-@dataclass
+@define
 class BikecitizensActivity:
 
 	average_speed: float = field( default=None )
@@ -90,16 +87,20 @@ class BikecitizensActivity:
 	distance: int = field( default=None )
 	duration: int = field( default=None )
 	id: int = field( default=None )
-	ping_points: List[str] = field( default_factory=list )
+	ping_points: List[str] = field( factory=list )
 	postproc_cnt: int = field( default=None )
 	postprocessed: bool = field( default=None )
 	start_time: str = field( default=None )
-	tags: List[str] = field( default_factory=list )
+	tags: List[str] = field( factory=list )
 	uuid: str = field( default=None )
 
 	@property
 	def local_id( self ) -> int:
 		return self.id
+
+	@property
+	def uid( self ) -> str:
+		return f'{SERVICE_NAME}:{self.id}'
 
 # resource handlers
 

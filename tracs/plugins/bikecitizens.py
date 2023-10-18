@@ -111,8 +111,12 @@ class BikecitizensRecordingImporter( JSONHandler ):
 
 	pass
 
+# todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=BIKECITIZENS_TYPE, activity_cls=BikecitizensActivity, summary=True )
 class BikecitizensImporter( DataclassFactoryHandler ):
+
+	TYPE: str = BIKECITIZENS_TYPE
+	ACTIVITY_CLS = BikecitizensActivity
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: BikecitizensActivity = resource.data

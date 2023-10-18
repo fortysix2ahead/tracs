@@ -358,7 +358,7 @@ class Polar( Service ):
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		try:
 			url = self.events_url_for( range_from=kwargs.get( 'range_from' ), range_to=kwargs.get( 'range_to' ) )
-			json_list = self.json_handler.load( url=url, headers=HEADERS_API, session=self._session )
+			json_list = self.json_handler.load( url=url, headers=HEADERS_API, session=self._session, stream=False )
 
 			return [
 				self.importer.save_to_resource(

@@ -6,7 +6,7 @@ from pytest import mark
 
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.polar import PolarFlowExercise, PolarFlowImporter
-from tracs.plugins.tcx import Author, Creator, Lap, Plan, TCX_TYPE, Trackpoint, Training, TrainingCenterDatabase
+from tracs.plugins.tcx import Author, Creator, Lap, Plan, TCX_TYPE, TCXImporter, Trackpoint, Training, TrainingCenterDatabase
 from tracs.registry import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensImporter
 from tracs.plugins.bikecitizens import BikecitizensActivity
@@ -53,11 +53,14 @@ def test_gpx_importer( path ):
 
 @mark.file( 'templates/tcx/sample.tcx' )
 def test_tcx_importer( path ):
-	resource = Registry.importer_for( TCX_TYPE ).load( path=path )
+	handler = TCXImporter()
+	assert handler.TYPE == TCX_TYPE
+
+	resource = handler.load( path=path )
 	assert type( resource.raw ) is ObjectifiedElement
 	assert type( resource.data ) is TrainingCenterDatabase
 
-	activity = Registry.importer_for( TCX_TYPE ).load_as_activity( path=path )
+	activity = handler.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2010-06-26T10:06:11+00:00'
 
 def test_tcx_export():

@@ -10,7 +10,7 @@ from tracs.plugins.tcx import Author, Creator, Lap, Plan, TCX_TYPE, TCXImporter,
 from tracs.registry import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensImporter
 from tracs.plugins.bikecitizens import BikecitizensActivity
-from tracs.plugins.csv import CSV_TYPE
+from tracs.plugins.csv import CSV_TYPE, CSVHandler
 from tracs.plugins.json import JSON_TYPE, JSONHandler
 from tracs.plugins.xml import XML_TYPE, XMLHandler
 from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE
@@ -24,7 +24,11 @@ from tracs.plugins.waze import WazeActivity
 
 @mark.file( 'takeouts/waze/waze/2020-09/account_activity_3.csv' )
 def test_csv_handler( path ):
-	resource = Registry.importer_for( CSV_TYPE ).load( path=path )
+	handler = CSVHandler()
+	assert handler.TYPE == CSV_TYPE
+
+	resource = handler.load( path=path )
+	assert resource.type == CSV_TYPE
 	assert type( resource.raw ) is list and len( resource.raw ) == 38
 
 @mark.file( 'templates/polar/2020.json' )

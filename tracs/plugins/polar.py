@@ -127,6 +127,7 @@ class ResourcePartlist:
 	def end( self ) -> datetime:
 		return self.range.end_datetime
 
+@resourcetype( type=POLAR_FLOW_TYPE, summary=True )
 @define
 class PolarFlowExercise:
 

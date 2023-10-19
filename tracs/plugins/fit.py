@@ -3,15 +3,14 @@ from logging import getLogger
 from typing import Any
 
 from tracs.activity import Activity
-from tracs.registry import document
-from tracs.registry import importer
+from tracs.registry import importer, resourcetype
 from tracs.handlers import ResourceHandler
 
 log = getLogger( __name__ )
 
 FIT_TYPE = 'application/fit'
 
-@document( type=FIT_TYPE )
+@resourcetype( type=FIT_TYPE )
 class FITActivity( Activity ):
 
 	def __raw_init__( self, raw: Any ) -> None:

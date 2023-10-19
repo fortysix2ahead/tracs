@@ -42,8 +42,6 @@ class Registry:
 	classifier: str = KEY_CLASSIFER
 	ctx: ApplicationContext = None
 	dataclass_factory = Factory( debug_path=True, schemas={} )
-	document_classes: Dict[str, Type] = {}
-	document_types: Dict[str, Type] = {}
 	event_listeners = {}
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
@@ -402,31 +400,6 @@ def setup( fn: Callable ):
 		return fn
 	else:
 		raise RuntimeError( 'only functions can be used with the @setup decorator' )
-
-def document( *args, **kwargs ):
-	def document_class( cls ):
-		if isclass( cls ):
-			if document_type := kwargs.get( 'type' ):
-				Registry.document_types[document_type] = cls
-				log.debug( f"registered document class {cls} with type {document_type}" )
-
-			if document_namespace := kwargs.get( 'namespace' ):
-				Registry.document_classes[document_namespace] = cls
-				log.debug( f"registered document class {cls} with namespace {document_namespace}" )
-
-			return cls
-		else:
-			raise RuntimeError( 'only classes can be used with the @document decorator' )
-
-	if len( args ) == 0:
-		return document_class
-	elif len( args ) == 1 and isclass( args[0] ):
-		module_arg, name_arg = _spec( args[0] )
-		Registry.document_classes[module_arg] = args[0]
-		log.debug( f'registered document class {args[0]} with namespace {module_arg}' )
-		return args[0]
-	else:
-		raise RuntimeError( 'only classes can be used with the @document decorator' )
 
 def importer( *args, **kwargs ):
 	def importer_cls( cls ):

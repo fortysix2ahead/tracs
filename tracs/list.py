@@ -66,22 +66,36 @@ def inspect_registry() -> None:
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 
 	table.add_row( '[bold bright_blue]Services[/bold bright_blue]' )
-	table.add_row( '[blue]name[/blue]', '[blue]display name[/blue]', '[blue]class[/blue]', '[blue]enabled[/blue]' )
-	for key, value in Registry.services.items():
-		table.add_row( value.name, value.display_name, pp( value.__class__ ), pp( value.enabled ) )
+	table.add_row( '[blue]name[/blue]', '[blue]class[/blue]', '[blue]display name[/blue]', '[blue]enabled[/blue]' )
+	for k, v in Registry.services.items():
+		table.add_row( v.name, pp( v.__class__ ), v.display_name, pp( v.enabled ) )
 
-	table.add_row( '[bold bright_blue]Document Classes[/bold bright_blue]' )
-	table.add_row( '[blue]type[/blue]', '[blue][/blue]', '[blue]class[/blue]' )
+	table.add_row( '[bold bright_blue]Virtual Fields[/bold bright_blue]' )
+	table.add_row( '[blue]name[/blue]', '[blue]type[/blue]', '[blue]display name[/blue]' )
+	for k, v in Registry.virtual_fields.items():
+		table.add_row( v.name, pp( v.type ), v.display_name )
 
-	for key, value in Registry.document_classes.items():
-		table.add_row( key, '', pp( f'{value.__module__}.{value.__name__}' ) )
+	table.add_row( '[bold bright_blue]Keywords[/bold bright_blue]' )
+	table.add_row( '[blue]name[/blue]', '[blue]expression[/blue]', '[blue]description[/blue]' )
+	for k, v in Registry.rule_keywords.items():
+		table.add_row( v.name, pp( v.expr ), v.description )
+
+	table.add_row( '[bold bright_blue]Normalizers[/bold bright_blue]' )
+	table.add_row( '[blue]name[/blue]', '[blue]type[/blue]', '[blue]description[/blue]' )
+	for k, v in Registry.rule_normalizers.items():
+		table.add_row( v.name, pp( v.type ), v.description )
 
 	table.add_row( '[bold bright_blue]Importers[/bold bright_blue]' )
 	table.add_row( '[blue]type[/blue]', '[blue][/blue]', '[blue]class[/blue]' )
+	for k, v in Registry.importers.items():
+		for v in v:
+			table.add_row( k, '', pp( v.__class__ ) )
 
-	for key, value in Registry.importers.items():
-		for v in value:
-			table.add_row( key, '', pp( v.__class__ ) )
+	table.add_row( '[bold bright_blue]Resource Types[/bold bright_blue]' )
+	table.add_row( '[blue]type[/blue]', '[blue]class[/blue]', '[blue]summary, recording, image[/blue]' )
+	for k, v in Registry.resource_types.items():
+		flags = [ v.summary, v.recording, v.image ]
+		table.add_row( k, pp( v.activity_cls ), pp( flags ) )
 
 	console.print( table )
 

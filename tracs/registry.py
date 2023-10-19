@@ -38,7 +38,6 @@ class EventTypes( Enum ):
 
 class Registry:
 
-	activity_field_resolvers = {}
 	classifier: str = KEY_CLASSIFER
 	ctx: ApplicationContext = None
 	dataclass_factory = Factory( debug_path=True, schemas={} )

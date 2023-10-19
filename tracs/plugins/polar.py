@@ -187,7 +187,7 @@ class PolarFlowExerciseHrv:
 	pass
 
 # todo: this needs an update, but has low priority
-@resourcetype( type=POLAR_EXERCISE_DATA_TYPE, summary=True )
+@resourcetype( type=POLAR_EXERCISE_DATA_TYPE )
 class PolarExerciseDataActivity( Activity ):
 
 	def __raw_init__( self, raw: Any ) -> None:
@@ -196,8 +196,7 @@ class PolarExerciseDataActivity( Activity ):
 		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
 		self.uid = f'{self.classifier}:{self.raw_id}'
 
-# todo: replace with @importer / remove duplicate type/cls information from here
-@importer( type=POLAR_FLOW_TYPE, activity_cls=PolarFlowExercise, summary=True )
+@importer( type=POLAR_FLOW_TYPE )
 class PolarFlowImporter( DataclassFactoryHandler ):
 
 	TYPE: str = POLAR_FLOW_TYPE

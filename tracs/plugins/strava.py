@@ -25,7 +25,7 @@ from tracs.plugins.json import JSON_TYPE, JSONHandler
 from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import importer, Registry, service, setup
-from tracs.resources import Resource
+from tracs.resources import Resource, ResourceType
 from tracs.service import Service
 from tracs.streams import Point, Stream
 
@@ -44,8 +44,10 @@ FETCH_PAGE_SIZE = 30 #
 TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
 TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
 
-# todo: replace with @importer / remove duplicate type/cls information from here
-@importer( type=STRAVA_TYPE, activity_cls=StravaActivity, summary=True )
+# register Strava Activity type
+Registry.register_resource_type( ResourceType( type=STRAVA_TYPE, activity_cls=StravaActivity, summary=True ) )
+
+@importer( type=STRAVA_TYPE )
 class StravaHandler( JSONHandler ):
 
 	TYPE: str = STRAVA_TYPE

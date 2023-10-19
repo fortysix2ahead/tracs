@@ -19,5 +19,5 @@ class FITActivity( Activity ):
 @importer( type=FIT_TYPE )
 class FITImporter( ResourceHandler ):
 
-	def __init__( self ) -> None:
-		super().__init__( resource_type=FIT_TYPE, activity_cls=FITActivity )
+	TYPE: str = FIT_TYPE
+	ACTIVITY_CLS = FITActivity

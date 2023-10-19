@@ -67,33 +67,32 @@ def inspect_registry() -> None:
 
 	table.add_row( '[bold bright_blue]Services[/bold bright_blue]' )
 	table.add_row( '[blue]name[/blue]', '[blue]class[/blue]', '[blue]display name[/blue]', '[blue]enabled[/blue]' )
-	for k, v in Registry.services.items():
+	for k, v in sorted( Registry.services.items(), key=lambda i: i[1].name ):
 		table.add_row( v.name, pp( v.__class__ ), v.display_name, pp( v.enabled ) )
 
 	table.add_row( '[bold bright_blue]Virtual Fields[/bold bright_blue]' )
 	table.add_row( '[blue]name[/blue]', '[blue]type[/blue]', '[blue]display name[/blue]' )
-	for k, v in Registry.virtual_fields.items():
+	for k, v in sorted( Registry.virtual_fields.items(), key=lambda i: i[1].name ):
 		table.add_row( v.name, pp( v.type ), v.display_name )
 
 	table.add_row( '[bold bright_blue]Keywords[/bold bright_blue]' )
 	table.add_row( '[blue]name[/blue]', '[blue]expression[/blue]', '[blue]description[/blue]' )
-	for k, v in Registry.rule_keywords.items():
-		table.add_row( v.name, pp( v.expr ), v.description )
+	for k, v in sorted( Registry.rule_keywords.items(), key=lambda i: i[0] ):
+		table.add_row( v.name, pp( v.expr or v.fn ), v.description )
 
 	table.add_row( '[bold bright_blue]Normalizers[/bold bright_blue]' )
 	table.add_row( '[blue]name[/blue]', '[blue]type[/blue]', '[blue]description[/blue]' )
-	for k, v in Registry.rule_normalizers.items():
+	for k, v in sorted( Registry.rule_normalizers.items(), key=lambda i: i[0] ):
 		table.add_row( v.name, pp( v.type ), v.description )
 
 	table.add_row( '[bold bright_blue]Importers[/bold bright_blue]' )
 	table.add_row( '[blue]type[/blue]', '[blue][/blue]', '[blue]class[/blue]' )
-	for k, v in Registry.importers.items():
-		for v in v:
-			table.add_row( k, '', pp( v.__class__ ) )
+	for k, l in sorted( Registry.importers.items(), key=lambda i: i[0] ):
+		[ table.add_row( k, '', pp( v.__class__ ) ) for v in l ]
 
 	table.add_row( '[bold bright_blue]Resource Types[/bold bright_blue]' )
 	table.add_row( '[blue]type[/blue]', '[blue]class[/blue]', '[blue]summary, recording, image[/blue]' )
-	for k, v in Registry.resource_types.items():
+	for k, v in sorted( Registry.resource_types.items(), key=lambda i: i[0] ):
 		flags = [ v.summary, v.recording, v.image ]
 		table.add_row( k, pp( v.activity_cls ), pp( flags ) )
 

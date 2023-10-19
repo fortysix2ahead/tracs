@@ -11,8 +11,8 @@ from lxml.objectify import Element, fromstring, ObjectifiedElement, ObjectPath, 
 
 from tracs.activity import Activity as TracsActivity
 from tracs.plugins.xml import XMLHandler
-from ..registry import importer
-from ..resources import Resource
+from ..registry import importer, Registry
+from ..resources import Resource, ResourceType
 
 log = getLogger( __name__ )
 
@@ -304,8 +304,9 @@ class TrainingCenterDatabase:
 			author=Author.from_xml( root ),
 		)
 
-# todo: replace with @importer / remove duplicate type/cls information from here
-@importer( type=TCX_TYPE, activity_cls=Activity, recording=True )
+Registry.register_resource_type( ResourceType( type=TCX_TYPE, activity_cls=Activity, recording=True ) )
+
+@importer( type=TCX_TYPE )
 class TCXImporter( XMLHandler ):
 
 	TYPE: str = TCX_TYPE

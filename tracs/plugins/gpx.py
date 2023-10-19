@@ -2,23 +2,23 @@ from datetime import timedelta
 from logging import getLogger
 from typing import Any, Optional, Union
 
-from dateutil.tz import tzlocal
-from dateutil.tz import UTC
+from dateutil.tz import tzlocal, UTC
 from gpxpy import parse as parse_gpx
 from gpxpy.gpx import GPX
 
 from tracs.activity import Activity
-from tracs.registry import importer
-from tracs.resources import Resource
 from tracs.handlers import ResourceHandler
-from tracs.utils import seconds_to_time
+from tracs.registry import importer, Registry
+from tracs.resources import Resource, ResourceType
 
 log = getLogger( __name__ )
 
 GPX_TYPE = 'application/gpx+xml'
 
-# todo: replace with @importer / remove duplicate type/cls information from here
-@importer( type=GPX_TYPE, activity_cls=GPX, recording=True )
+# register GPX type
+Registry.register_resource_type( ResourceType( type=GPX_TYPE, activity_cls=GPX, recording=True ) )
+
+@importer( type=GPX_TYPE )
 class GPXImporter( ResourceHandler ):
 
 	TYPE: str = GPX_TYPE

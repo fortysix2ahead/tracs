@@ -1,4 +1,3 @@
-from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 from logging import getLogger
 from pathlib import Path
@@ -8,6 +7,7 @@ from time import time as current_time
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 from zipfile import BadZipFile
 
+from attrs import define, field
 from bs4 import BeautifulSoup
 from click import echo
 from datetimerange import DateTimeRange
@@ -114,11 +114,12 @@ TYPES = {
 	'f4197b0c1a4d65962b9e45226c77d4d5-2015-10-20_13_45_26': Types.swim,
 }
 
-@dataclass
+@define
 class ResourcePartlist:
+
 	index: int = field( default=0 )
 	range: DateTimeRange = field( default=None )
-	resources: List[Resource] = field( default_factory=list )
+	resources: List[Resource] = field( factory=list )
 
 	def start( self ) -> datetime:
 		return self.range.start_datetime
@@ -126,7 +127,8 @@ class ResourcePartlist:
 	def end( self ) -> datetime:
 		return self.range.end_datetime
 
-@dataclass
+@resourcetype( type=POLAR_FLOW_TYPE, summary=True )
+@define
 class PolarFlowExercise:
 
 	allDay: bool = field( default=False )
@@ -165,23 +167,27 @@ class PolarFlowExercise:
 			return int( match('.*/rr/(\d+)', self.url )[1])
 		return 0
 
+	@property
+	def uid( self ):
+		return f'{SERVICE_NAME}:{self.local_id}'
+
 	def get_type( self ) -> ActivityTypes:
 		return TYPES.get( self.iconUrl.rsplit( '/', 1 )[1], Types.unknown ) if self.iconUrl else Types.unknown
 
 @resourcetype( type=POLAR_CSV_TYPE )
-@dataclass
+@define
 class PolarFlowExerciseCsv:
 
 	pass
 
 @resourcetype( type=POLAR_HRV_TYPE )
-@dataclass
+@define
 class PolarFlowExerciseHrv:
 
 	pass
 
 # todo: this needs an update, but has low priority
-@resourcetype( type=POLAR_EXERCISE_DATA_TYPE, summary=True )
+@resourcetype( type=POLAR_EXERCISE_DATA_TYPE )
 class PolarExerciseDataActivity( Activity ):
 
 	def __raw_init__( self, raw: Any ) -> None:
@@ -190,8 +196,7 @@ class PolarExerciseDataActivity( Activity ):
 		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
 		self.uid = f'{self.classifier}:{self.raw_id}'
 
-# todo: replace with @importer / remove duplicate type/cls information from here
-@importer( type=POLAR_FLOW_TYPE, activity_cls=PolarFlowExercise, summary=True )
+@importer( type=POLAR_FLOW_TYPE )
 class PolarFlowImporter( DataclassFactoryHandler ):
 
 	TYPE: str = POLAR_FLOW_TYPE

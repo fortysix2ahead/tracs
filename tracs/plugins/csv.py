@@ -1,13 +1,17 @@
 
 from csv import field_size_limit, reader as csv_reader
-from typing import Any, Optional, Type, Union
+from typing import Any, List, Optional, Type, Union
 
 from tracs.handlers import ResourceHandler
-from tracs.registry import importer
+from tracs.registry import importer, Registry
+from tracs.resources import ResourceType
 
 CSV_TYPE = 'text/csv'
 
 DEFAULT_FIELD_SIZE_LIMIT = 131072
+
+# register CSV type
+Registry.register_resource_type( ResourceType( type=CSV_TYPE, activity_cls=list ) )
 
 # todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=CSV_TYPE )

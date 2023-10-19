@@ -433,7 +433,7 @@ class Polar( Service ):
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		log.debug( f'downloading resource from {resource.source}' )
-		response = self._session.get( resource.source, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=True )
+		response = self._session.get( resource.source, headers=HEADERS_DOWNLOAD, allow_redirects=True, stream=False )
 		resource.content = response.content
 		resource.status = response.status_code
 		return response.content, response.status_code

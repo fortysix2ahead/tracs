@@ -20,7 +20,7 @@ from .utils import red
 log = getLogger( __name__ )
 
 def list_activities( activities: List[Activity], sort: str = False, reverse: bool = False, format_name: str = False, ctx: ApplicationContext = None ) -> None:
-	sort = sort or 'time'
+	sort = sort or 'starttime'
 
 	if sort in Activity.field_names():
 		activities.sort( key=lambda act: getattr( act, sort, None ) )

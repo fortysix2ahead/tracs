@@ -8,7 +8,7 @@ from urllib.request import url2pathname
 
 from tracs.activity import Activity
 from tracs.plugin import Plugin
-from tracs.registry import document, Registry, service
+from tracs.registry import Registry, service
 from tracs.resources import Resource
 from tracs.service import Service
 
@@ -19,7 +19,6 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'local'
 DISPLAY_NAME = 'Local'
 
-@document
 class LocalActivity( Activity ):
 	pass
 

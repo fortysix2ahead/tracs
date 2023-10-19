@@ -7,9 +7,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-from ..registry import document
 from ..registry import service
-from . import Plugin
 from ..activity import Activity
 from ..resources import Resource
 from ..config import ApplicationContext
@@ -22,12 +20,11 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'empty'
 DISPLAY_NAME = 'Empty Sample Service'
 
-@document
 class EmptyActivity( Activity ):
 	pass
 
 @service
-class Empty( Service, Plugin ):
+class Empty( Service ):
 
 	def __init__( self, **kwargs  ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )

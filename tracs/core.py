@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from sys import version_info
 from typing import Any, Callable, Dict, Optional, Type, Union
 
@@ -108,18 +107,23 @@ class FormattedFields:
 	def parent_cls( self ) -> Type:
 		return self.__parent_cls__
 
-@dataclass
+@define
 class Keyword:
 
 	name: str = field( default=None )
 	description: Optional[str] = field( default=None )
-	expr: Union[str, Callable] = field( default=None )
+	expr: str = field( default=None )
+	fn: Callable = field( default=None )
 
 	def __call__( self, *args, **kwargs ) -> str:
-		# return self.expr if type( self.expr ) is str else self.expr( *args, **kwargs )
-		return self.expr if type( self.expr ) is str else self.expr()
+		if self.expr:
+			return self.expr
+		elif self.fn:
+			return self.fn()
+		else:
+			raise TypeError( f'unable to call keyword {self.name}, neither expr or fn have appropriate values' )
 
-@dataclass
+@define
 class Normalizer:
 
 	name: str = field( default=None )

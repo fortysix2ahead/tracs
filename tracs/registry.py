@@ -364,6 +364,20 @@ def virtualfield( *args, **kwargs ):
 		return _inner
 
 # maybe we should go this way for decorators ... lots of copy and paste, but cleaner code ...
+# maybe we should go this way for decorators ... lots of copy and paste, but cleaner code ...
+
+def keyword( *args, **kwargs ):
+	def _inner( *inner_args ):
+		kw = Keyword( name=_fnspec( inner_args[0] )[0], description=kwargs.get( 'description' ), fn=inner_args[0] )
+		Registry.register_keywords( kw )
+		return inner_args[0]
+
+	if args and isfunction( args[0] ): # case: decorated function without arguments
+		Registry.register_keywords( Keyword( name=_fnspec( args[0] )[0], fn=args[0] ) )
+		return args[0]
+	elif kwargs and 'description' in kwargs:
+		return _inner
+
 def normalizer( *args, **kwargs ):
 	def _inner( *inner_args ):
 		Registry.register_normalizers( Normalizer( name=_fnspec( inner_args[0] )[0], type=kwargs.get( 'type' ), description=kwargs.get( 'description' ), fn=inner_args[0] ) )

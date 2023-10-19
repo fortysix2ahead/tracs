@@ -408,7 +408,7 @@ def importer( *args, **kwargs ):
 			if 'activity_cls' in kwargs:
 				_importer.activity_cls = kwargs['activity_cls']
 			Registry.register_importer( _importer, _importer.type )
-			Registry.register_resource_type( ResourceType( **kwargs ) )
+			# Registry.register_resource_type( ResourceType( **kwargs ) ) # this is done by resource type class directly
 			return cls
 		except (KeyError, NameError, TypeError) as ex:
 			log.error( 'improper use of @importer decorator', exc_info=True )

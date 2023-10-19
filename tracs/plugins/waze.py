@@ -15,7 +15,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.handlers import ResourceHandler
 from tracs.plugins.csv import CSVHandler
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
-from tracs.registry import importer, Registry, service
+from tracs.registry import importer, Registry, resourcetype, service
 from tracs.resources import Resource
 from tracs.service import Service
 from tracs.utils import as_datetime
@@ -57,6 +57,7 @@ class Point:
 	def time_as_int( self ) -> int:
 		return int( self.time_as_str() )
 
+@resourcetype( type=WAZE_TYPE, summary=True )
 @dataclass
 class WazeActivity:
 
@@ -217,6 +218,7 @@ class UserCounters:
 	points: str = field( default=None )
 	drive: str = field( default=None )
 
+@resourcetype( type=WAZE_ACCOUNT_ACTIVITY_TYPE )
 @dataclass
 class AccountActivity:
 
@@ -232,6 +234,7 @@ class AccountActivity:
 	user_feedback: List[UserFeedback] = field( default_factory=list )
 	carpool_preferences: CarpoolPreferences = field( default=CarpoolPreferences() )
 
+@resourcetype( type=WAZE_ACCOUNT_INFO_TYPE )
 @dataclass
 class AccountInfo:
 
@@ -254,6 +257,8 @@ class Takeout:
 
 @importer( type=WAZE_ACCOUNT_ACTIVITY_TYPE )
 class WazeAccountActivityImporter( CSVHandler ):
+
+	TYPE = WAZE_ACCOUNT_ACTIVITY_TYPE
 
 	class Mode( Enum ):
 		NONE = 'NONE'
@@ -282,9 +287,6 @@ class WazeAccountActivityImporter( CSVHandler ):
 				return cls.NONE
 
 			return next( iter( [m for m in cls if m.value == line[0].lower()] ), cls.NONE )
-
-	def __init__( self ) -> None:
-		super().__init__( resource_type=WAZE_ACCOUNT_ACTIVITY_TYPE, activity_cls=AccountActivity )
 
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		account_activity = AccountActivity()
@@ -363,6 +365,8 @@ class WazeAccountActivityImporter( CSVHandler ):
 @importer( type=WAZE_ACCOUNT_INFO_TYPE )
 class WazeAccountInfoImporter( CSVHandler ):
 
+	TYPE = WAZE_ACCOUNT_INFO_TYPE
+
 	class Mode( Enum ):
 		NONE = 'NONE'
 		GENERAL_INFO = '\ufeffgeneral info'
@@ -376,9 +380,6 @@ class WazeAccountInfoImporter( CSVHandler ):
 			if len( line ) != 1:
 				return cls.NONE
 			return next( iter( [m for m in cls if m.value == line[0].lower()] ), cls.NONE )
-
-	def __init__( self ) -> None:
-		super().__init__( resource_type=WAZE_ACCOUNT_INFO_TYPE, activity_cls=AccountInfo )
 
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		account_info = AccountInfo()
@@ -413,8 +414,7 @@ class WazeAccountInfoImporter( CSVHandler ):
 
 		return account_info
 
-# todo: replace with @importer / remove duplicate type/cls information from here
-@importer( type=WAZE_TYPE, activity_cls=WazeActivity, summary=True )
+@importer( type=WAZE_TYPE )
 class WazeImporter( ResourceHandler ):
 
 	TYPE: str = WAZE_TYPE

@@ -1,4 +1,3 @@
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from logging import getLogger
 from re import compile, findall
@@ -6,6 +5,7 @@ from sys import exit as sysexit
 from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
+from attrs import define, field
 from bs4 import BeautifulSoup
 from dateutil.tz import tzlocal, UTC
 from requests import Session
@@ -20,7 +20,7 @@ from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSON_TYPE, JSONHandler
 from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
-from tracs.registry import importer, Registry, service, setup
+from tracs.registry import importer, Registry, resourcetype, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
 from tracs.utils import seconds_to_time as stt, to_isotime
@@ -62,7 +62,8 @@ HEADERS_API = { **HEADERS_TEMPLATE,
    'X-Requested-With': 'XMLHttpRequest',
 }
 
-@dataclass
+@resourcetype( type=STRAVA_WEB_TYPE, summary=True )
+@define
 class StravaWebActivity:
 	activity_type_display_name: str = field( default=None )
 	activity_url: str = field( default=None )
@@ -105,15 +106,15 @@ class StravaWebActivity:
 	visibility: str = field( default=None )
 	workout_type: Optional[int] = field( default=None )
 
-@dataclass
+@define
 class ActivityPage:
 
-	models: List[StravaWebActivity] = field( default_factory=list )
+	models: List[StravaWebActivity] = field( factory=list )
 	page: int = field( default=None )
 	per_page: int = field( default=None )
 	total: int = field( default=None )
 
-@importer( type=STRAVA_WEB_TYPE, activity_cls=StravaWebActivity, summary=True )
+@importer( type=STRAVA_WEB_TYPE )
 class StravaWebImporter( JSONHandler ):
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:

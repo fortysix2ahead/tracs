@@ -377,7 +377,7 @@ def normalizer( *args, **kwargs ):
 
 def resourcetype( *args, **kwargs ):
 	def reg_resource_type( cls ):
-		Registry.register_resource_type( ResourceType( activity_cls = cls, **kwargs ) )
+		Registry.register_resource_type( ResourceType( **{'activity_cls': cls} | kwargs ) )
 		Registry.dataclass_factory.schemas[cls] = Schema( omit_default=True, skip_internal=True, unknown='unknown' )
 		return cls
 	return reg_resource_type if len( args ) == 0 else args[0]
@@ -408,7 +408,7 @@ def importer( *args, **kwargs ):
 			if 'activity_cls' in kwargs:
 				_importer.activity_cls = kwargs['activity_cls']
 			Registry.register_importer( _importer, _importer.type )
-			Registry.register_resource_type( ResourceType( **kwargs ) )
+			# Registry.register_resource_type( ResourceType( **kwargs ) ) # this is done by resource type class directly
 			return cls
 		except (KeyError, NameError, TypeError) as ex:
 			log.error( 'improper use of @importer decorator', exc_info=True )

@@ -3,16 +3,16 @@ from re import fullmatch
 from typing import List, Literal, Optional, Tuple
 
 from arrow import Arrow, now
-from dateutil.tz import UTC
 
 from tracs.core import Keyword, Normalizer, VirtualField
-from tracs.registry import normalizer, Registry
+from tracs.registry import keyword, normalizer, Registry
 from tracs.rules import DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, parse_date_range_as_str, parse_time_range, TIME_RANGE_PATTERN
-from tracs.rules import parse_ceil_str, parse_floor_str
 from tracs.utils import floor_ceil_from
 
 TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day' ]
 YEAR_RANGE = range( 2000, datetime.utcnow().year + 1 )
+
+WITHIN_STARTTIME_LOCAL = 'starttime_local >= {} and starttime_local <= {}'
 
 def floor_ceil( a1: Arrow, a2: Arrow, frame: TIME_FRAMES = 'day' ) -> Tuple[Arrow, Arrow]:
 	return a1.floor( frame ), a2.ceil( frame )
@@ -29,23 +29,79 @@ Registry.register_keywords(
 	Keyword( 'afternoon', 'time between 13:00 and 18:00', 'hour >= 13 and hour < 18' ),
 	Keyword( 'evening', 'time between 18:00 and 22:00', 'hour >= 18 and hour < 22' ),
 	Keyword( 'night', 'time between 22:00 and 6:00', 'hour >= 22 or hour < 6' ),
-	# date related keywords
-	Keyword( 'last7days', 'date is within the last 7 days', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-6 ), now() ) ) ),
-	Keyword( 'last14days', 'date is within the last 14 days', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-13 ), now() ) ) ),
-	Keyword( 'last30days', 'date is within the last 30 days', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-29 ), now() ) ) ),
-	Keyword( 'last60days', 'date is within the last 60 days', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-59 ), now() ) ) ),
-	Keyword( 'last90days', 'date is within the last 90 days', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-89 ), now() ) ) ),
-	Keyword( 'yesterday', 'date is yesterday', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( days=-1 ), None, 'day' ) ) ),
-	Keyword( 'today', 'date is today', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now(), None, 'day' ) ) ),
-	Keyword( 'lastweek', 'date is within last week', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( weeks=-1 ), None, 'week' ) ) ),
-	Keyword( 'thisweek', 'date is within the current week', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now(), None, 'week' ) ) ),
-	Keyword( 'lastmonth', 'date is within last month', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( months=-1 ), None, 'month' ) ) ),
-	Keyword( 'thismonth', 'date is within the current month', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now(), None, 'month' ) ) ),
-	Keyword( 'lastquarter', 'month of date is within last quarter', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( months=-3 ), None, 'quarter' ) ) ),
-	Keyword( 'thisquarter', 'month of date is within the current quarter', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now(), None, 'quarter' ) ) ),
-	Keyword( 'lastyear', 'year of date is last year', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now().shift( years=-1 ), None, 'year' ) ) ),
-	Keyword( 'thisyear', 'year of date is current year', lambda: 'starttime_local >= {} and starttime_local <= {}'.format( *floor_ceil_str( now(), None, 'year' ) ) ),
 )
+
+# keywords for 'within last X days'
+
+@keyword( description='date is within the last 7 days' )
+def last7days():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now().shift( days=-6 ), now() ) )
+
+@keyword( description='date is within the last 14 days' )
+def last14days():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now().shift( days=-13 ), now() ) )
+
+@keyword( description='date is within the last 30 days' )
+def last30days():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now().shift( days=-29 ), now() ) )
+
+@keyword( description='date is within the last 60 days' )
+def last60days():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now().shift( days=-59 ), now() ) )
+
+@keyword( description='date is within the last 90 days' )
+def last90days():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now().shift( days=-89 ), now() ) )
+
+# keywords for days
+
+@keyword( description='date is today' )
+def today():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now(), None, 'day' ) )
+
+@keyword( description='date is yesterday' )
+def yesterday():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now().shift( days=-1 ), None, 'day' ) )
+
+# keywords for weeks
+
+@keyword( description='date is within current week' )
+def thisweek():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now(), None, 'week' ) )
+
+@keyword( description='date is within last week' )
+def lastweek():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now().shift( weeks=-1 ), None, 'week' ) )
+
+# keywords for months
+
+@keyword( description='date is within current month' )
+def thismonth():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now(), None, 'month' ) )
+
+@keyword( description='date is within last month' )
+def lastmonth():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now().shift( months=-1 ), None, 'month' ) )
+
+# keywords for quarters
+
+@keyword( description='date is within current quarter' )
+def thisquarter():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now(), None, 'quarter' ) )
+
+@keyword( description='date is within last quarter' )
+def lastquarter():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now().shift( months=-3 ), None, 'quarter' ) )
+
+# keywords for years
+
+@keyword( description='date is within current year' )
+def thisyear():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now(), None, 'year' ) )
+
+@keyword( description='date is within last year' )
+def lastyear():
+	return WITHIN_STARTTIME_LOCAL.format( *floor_ceil_str( now().shift( years=-1 ), None, 'year' ) )
 
 # normalizers transform a field/value pair into a valid normalized expression
 # this enables operations like 'list classifier:polar' where ':' does not evaluate to '=='

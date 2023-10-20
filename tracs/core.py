@@ -20,7 +20,8 @@ class VirtualField:
 
 	name: str = field( default=None )
 	type: Type = field( default=None )
-	value: Any = field( default=None )
+	default: Any = field( default=None )
+	factory: Callable = field( default=None )
 	description: str = field( default=None )
 	display_name: str = field( default=None )
 
@@ -28,23 +29,22 @@ class VirtualField:
 		return self.value_for( value )
 
 	def value_for( self, value: Any = None ) -> Any:
-		if self.value is not None:
-			if isinstance( self.value, Callable ):
-				return self.value( value )
-			else:
-				return self.value
+		if self.default:
+			return self.default
+		elif self.factory:
+			return self.factory( value )
 		else:
-			raise AttributeError( f'virtual field {self.name} has neither a function nor a value' )
+			raise AttributeError( f'virtual field {self.name} has neither a default nor a factory' )
 
-@define
+@define( slots=False )
 class VirtualFields:
 
-	__fields__: Dict[str, Union[VirtualField, Callable]] = field( factory=dict, alias='__fields__' )
+	__fields__: Dict[str, VirtualField] = field( factory=dict, alias='__fields__' )
 	__parent__: Any = field( default=None, alias='__parent__' )
 
 	def __call__( self, parent: Any ) -> VirtualFields:
 		if parent is None:
-			raise AttributeError( 'VirtualFields instance cannot be used without a parent instance' )
+			raise ValueError( 'VirtualFields instance cannot be used without a parent instance' )
 
 		self.__parent__ = parent
 		return self
@@ -57,6 +57,18 @@ class VirtualFields:
 
 	def __contains__( self, item ) -> bool:
 		return item in self.__fields__.keys()
+
+	def __getitem__( self, key: str ) -> VirtualField:
+		return self.__fields__[key]
+
+	def __setitem__( self, key: str, field: VirtualField ) -> None:
+		if not isinstance( field, VirtualField ):
+			raise ValueError( f'value must be of type {VirtualField}' )
+
+		self.__fields__[key] = field
+
+	def add( self, field: VirtualField ) -> None:
+		self.__fields__[field.name] = field
 
 	def set_field( self, name: str, vf: VirtualField ) -> None:
 		self.__fields__[name] = vf

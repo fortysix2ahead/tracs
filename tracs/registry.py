@@ -187,6 +187,9 @@ class Registry:
 
 	@classmethod
 	def register_importer( cls, importer: Importer, type: str ):
+		if not type:
+			raise ValueError( f'unable to register {importer}: missing type' )
+
 		importer_list = Registry.importers.get( type ) or []
 		if importer not in importer_list:
 			importer_list.append( importer )
@@ -416,23 +419,14 @@ def setup( fn: Callable ):
 
 def importer( *args, **kwargs ):
 	def importer_cls( cls ):
-		try:
-			_importer = cls()
-			_importer.type = _importer.type if _importer.type else kwargs['type']
-			if 'activity_cls' in kwargs:
-				_importer.activity_cls = kwargs['activity_cls']
-			Registry.register_importer( _importer, _importer.type )
-			# Registry.register_resource_type( ResourceType( **kwargs ) ) # this is done by resource type class directly
-			return cls
-		except (KeyError, NameError, TypeError) as ex:
-			log.error( 'improper use of @importer decorator', exc_info=True )
-			raise RuntimeError( f'improper use of @importer decorator on {cls} with kwargs = {kwargs}' )
+		Registry.register_importer( cls(), cls.TYPE or kwargs.get( 'type' ) )
+		return cls
 
 	# return importer_cls if (not args and kwargs) else importer_cls( args[0] )
 	if not args and kwargs:
 		return importer_cls
 	elif args:
-		importer_cls( args[0] )
+		return importer_cls( args[0] )
 	else:
 		raise RuntimeError( f'error in decorator @importer: {args}, {kwargs} (this should not happen!)' ) # should not happen
 

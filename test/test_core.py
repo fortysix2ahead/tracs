@@ -75,12 +75,25 @@ def test_formatted_fields():
 	class FormattedDataclass( FormattedFieldsBase ):
 
 		name: str = field( default = 'Name' )
+		age: int = field( default=10 )
+		speed: float = field( default=12345.6 )
+		width: float = field( default=None )
 
 	FormattedDataclass.__fmf__['name'] = lambda v, f, l: v.lower()
+	FormattedDataclass.__fmf__.add( FormattedField( name='speed', formatter=lambda v, f, l: format_decimal( v, f, l ), locale='en' ) )
 
 	fdc = FormattedDataclass()
 
 	assert fdc.fmf.name == 'name'
+	assert fdc.fmf.age == 10
+	assert fdc.fmf.speed == '12,345.6'
 
 	with raises( AttributeError ):
 		assert fdc.fmf.noexist == 0
+
+	assert fdc.fmf.as_list( 'name', 'age', 'speed', 'width' ) == ['name', 10, '12,345.6', None]
+
+	with raises( AttributeError ):
+		assert fdc.fmf.as_list( 'name', 'age', 'speed', 'height' ) == ['name', 10, '12,345.6', None]
+
+	assert fdc.fmf.as_list( 'name', 'age', 'speed', 'height', suppress_error=True ) == ['name', 10, '12,345.6', None]

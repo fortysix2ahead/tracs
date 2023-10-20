@@ -134,6 +134,7 @@ class FormattedFields:
 		if name in self.__fields__:
 			return self.__fields__.get( name )( getattr( self.__parent__, name ) )
 		else:
+			# todo: this return the parent value, we could also call str( value ) here instead, to be decided later
 			return getattr( self.__parent__, name )
 
 	def __getitem__( self, key: str ) -> FormattedField:
@@ -150,6 +151,18 @@ class FormattedFields:
 
 	def add( self, field: FormattedField ) -> None:
 		self[field.name] = field
+
+	def as_list( self, *fields: str, suppress_error: bool = False ) -> List[str]:
+		if suppress_error:
+			rval = []
+			for f in fields:
+				try:
+					rval.append( getattr( self, f ) )
+				except AttributeError:
+					rval.append( None )
+			return rval
+		else:
+			return [ getattr( self, f ) for f in fields ]
 
 	@property
 	def fields( self ) -> Dict[str, Union[FormattedField, Callable]]:

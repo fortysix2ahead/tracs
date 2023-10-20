@@ -1,14 +1,13 @@
 
-from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 from logging import getLogger
 from typing import List, Optional, Tuple
 
+from attrs import define, field
 from rich.prompt import Confirm
 
 from tracs.service import Service
 from tracs.activity import Activity, ActivityPart
-from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext
 from tracs.ui import Choice, dict_table, diff_table_3
 from tracs.utils import seconds_to_time
@@ -19,10 +18,10 @@ DELTA = 180
 MAX_DELTA = timedelta( seconds=180 )
 PART_THRESHOLD = 4
 
-@dataclass
+@define
 class ActivityGroup:
 
-	members: List[Activity] = field( default_factory=list )
+	members: List[Activity] = field( factory=list )
 	time: datetime = field( default=None )
 
 	@property

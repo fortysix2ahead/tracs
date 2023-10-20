@@ -14,6 +14,7 @@ from .activity import Activity
 from .config import ApplicationContext
 from .config import console
 from .registry import Registry
+from .ui.utils import style
 from .utils import fmt
 from .utils import red
 
@@ -90,8 +91,8 @@ def inspect_registry() -> None:
 	for k, l in sorted( Registry.importers.items(), key=lambda i: i[0] ):
 		[ table.add_row( k, '', pp( v.__class__ ) ) for v in l ]
 
-	table.add_row( '[bold bright_blue]Resource Types[/bold bright_blue]' )
-	table.add_row( '[blue]type[/blue]', '[blue]class[/blue]', '[blue]summary, recording, image[/blue]' )
+	table.add_row( *style( 'Resource Types', style='bold bright_blue' ) )
+	table.add_row( *style( 'type', 'class', 'summary, recording, image', style='blue' ) )
 	for k, v in sorted( Registry.resource_types.items(), key=lambda i: i[0] ):
 		flags = [ v.summary, v.recording, v.image ]
 		table.add_row( k, pp( v.activity_cls ), pp( flags ) )

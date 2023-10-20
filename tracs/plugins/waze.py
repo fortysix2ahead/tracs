@@ -1,4 +1,3 @@
-from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from logging import getLogger
@@ -6,6 +5,7 @@ from pathlib import Path
 from re import compile as regex_compile
 from typing import Any, cast, List, Optional, Tuple, Union
 
+from attrs import define, field
 from dateutil.parser import parse as parse_datetime
 from dateutil.tz import gettz, UTC
 from gpxpy.gpx import GPX, GPXTrack, GPXTrackPoint, GPXTrackSegment
@@ -15,7 +15,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.handlers import ResourceHandler
 from tracs.plugins.csv import CSVHandler
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
-from tracs.registry import importer, Registry, resourcetype, service
+from tracs.registry import importer, resourcetype, service
 from tracs.resources import Resource
 from tracs.service import Service
 from tracs.utils import as_datetime
@@ -35,7 +35,7 @@ WAZE_TAKEOUT_TYPE = WAZE_ACCOUNT_ACTIVITY_TYPE # for backward compatibility
 
 DEFAULT_FIELD_SIZE_LIMIT = 131072
 
-@dataclass
+@define
 class Point:
 
 	str_format = '%y%m%d%H%M%S'
@@ -44,7 +44,7 @@ class Point:
 	lat: float = field( default=None )
 	lon: float = field( default=None )
 
-	def __post_init__(self):
+	def __attrs_post_init__(self):
 		self.lat = float( self.lat ) if type( self.lat ) is str else self.lat
 		self.lon = float( self.lon ) if type( self.lon ) is str else self.lon
 		if type( self.time ) is str:
@@ -58,26 +58,26 @@ class Point:
 		return int( self.time_as_str() )
 
 @resourcetype( type=WAZE_TYPE, summary=True )
-@dataclass
+@define
 class WazeActivity:
 
-	points: List[Point] = field( default_factory=list )
+	points: List[Point] = field( factory=list )
 
-@dataclass
+@define
 class DriveSummary:
 
 	date: str = field( default=None )
 	destination: str = field( default=None )
 	source: str = field( default=None )
 
-@dataclass
+@define
 class Favourite:
 
 	place: str = field( default=None )
 	name: str = field( default=None )
 	type: str = field( default=None )
 
-@dataclass
+@define
 class LocationDetail:
 
 	DATE = regex_compile( r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} (GMT|UTC)$' )
@@ -100,7 +100,7 @@ class LocationDetail:
 	# - 2023 V2: 2023-02-23 13:49:52 UTC(50.0 10.0)|2023-02-23 13:49:55 UTC(50.1 10.1)| ...
 	coordinates: str = field( default=None )
 
-	def __post_init__(self):
+	def __attrs_post_init__( self ):
 		self.coordinates = self.coordinates.strip()
 
 	def as_point_list( self ) -> List[Point]:
@@ -139,7 +139,7 @@ class LocationDetail:
 		b = b1 and ( b2 or b3 )
 		return b
 
-@dataclass
+@define
 class LoginDetail:
 
 	login_time: str = field( default=None )
@@ -151,7 +151,7 @@ class LoginDetail:
 	device_os_version: str = field( default=None )
 	waze_version: str = field( default=None )
 
-@dataclass
+@define
 class UsageData:
 
 	driven_kilometers: str = field( default=None )
@@ -159,7 +159,7 @@ class UsageData:
 	map_edits: str = field( default=None )
 	munched_meters: str = field( default=None )
 
-@dataclass
+@define
 class EditHistoryEntry:
 
 	time: str = field( default=None )
@@ -167,13 +167,13 @@ class EditHistoryEntry:
 	unknown_field_1: str = field( default=None )
 	unknown_field_2: str = field( default=None )
 
-@dataclass
+@define
 class Photo:
 
 	name: str = field( default=None )
 	image: str = field( default=None )
 
-@dataclass
+@define
 class SearchHistoryEntry:
 
 	time: str = field( default=None )
@@ -183,7 +183,7 @@ class SearchHistoryEntry:
 	term: str = field( default=None )
 	term_2: str = field( default=None )
 
-@dataclass
+@define
 class CarpoolPreferences:
 
 	free_text: str = field( default=None )
@@ -193,7 +193,7 @@ class CarpoolPreferences:
 	pets_allowed: str = field( default=None )
 	smoking_allowed: str = field( default=None )
 
-@dataclass
+@define
 class UserReport:
 
 	event_date: str = field( default=None )
@@ -202,14 +202,14 @@ class UserReport:
 	pos_y: str = field( default=None )
 	subtype: str = field( default=None )
 
-@dataclass
+@define
 class UserFeedback:
 
 	event_date: str = field( default=None )
 	type: str = field( default=None )
 	alert_type: str = field( default=None )
 
-@dataclass
+@define
 class UserCounters:
 
 	traffic_feedback: str = field( default=None )
@@ -219,23 +219,23 @@ class UserCounters:
 	drive: str = field( default=None )
 
 @resourcetype( type=WAZE_ACCOUNT_ACTIVITY_TYPE )
-@dataclass
+@define
 class AccountActivity:
 
-	drive_summaries: List[DriveSummary] = field( default_factory=list )
-	favourites: List[Favourite] = field( default_factory=list )
-	location_details: List[LocationDetail] = field( default_factory=list )
-	login_details: List[LoginDetail] = field( default_factory=list )
+	drive_summaries: List[DriveSummary] = field( factory=list )
+	favourites: List[Favourite] = field( factory=list )
+	location_details: List[LocationDetail] = field( factory=list )
+	login_details: List[LoginDetail] = field( factory=list )
 	usage_data: UsageData = field( default=UsageData() )
-	edit_history: List[EditHistoryEntry] = field( default_factory=list )
-	photos_added: List[Photo] = field( default_factory=list )
-	search_history: List[SearchHistoryEntry] = field( default_factory=list )
-	user_reports: List[UserReport] = field( default_factory=list )
-	user_feedback: List[UserFeedback] = field( default_factory=list )
+	edit_history: List[EditHistoryEntry] = field( factory=list )
+	photos_added: List[Photo] = field( factory=list )
+	search_history: List[SearchHistoryEntry] = field( factory=list )
+	user_reports: List[UserReport] = field( factory=list )
+	user_feedback: List[UserFeedback] = field( factory=list )
 	carpool_preferences: CarpoolPreferences = field( default=CarpoolPreferences() )
 
 @resourcetype( type=WAZE_ACCOUNT_INFO_TYPE )
-@dataclass
+@define
 class AccountInfo:
 
 	email: str = field( default=None )
@@ -244,12 +244,12 @@ class AccountInfo:
 	first_name: str = field( default=None )
 	last_name: str = field( default=None )
 	last_login: str = field( default=None )
-	connected_accounts: List[str] = field( default_factory=list )
-	user_reports: List[UserReport] = field( default_factory=list )
-	user_feedback: List[UserFeedback] = field( default_factory=list )
+	connected_accounts: List[str] = field( factory=list )
+	user_reports: List[UserReport] = field( factory=list )
+	user_feedback: List[UserFeedback] = field( factory=list )
 	user_counters: UserCounters = field( default=UserCounters() )
 
-@dataclass
+@define
 class Takeout:
 
 	account_activity: AccountActivity = field( default=AccountActivity() )

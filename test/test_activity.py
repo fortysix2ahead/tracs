@@ -1,6 +1,7 @@
 
 from datetime import datetime, timedelta
 from datetime import time
+from logging import getLogger
 
 from pytest import mark, raises
 
@@ -10,6 +11,12 @@ from tracs.core import VirtualField, VirtualFields
 from tracs.registry import virtualfield
 from tracs.resources import Resource
 from tracs.uid import UID
+
+log = getLogger( __name__ )
+
+def setup_module( module ):
+	import tracs.plugins.rule_extensions
+	log.info( 'importing tracs.plugins.rule_extensions' )
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
 def test_union( json ):
@@ -116,9 +123,6 @@ def test_resource():
 	assert r.text == some_string
 
 def test_fields():
-	# load rule extension plugin
-	from tracs.plugins.rule_extensions import TIME_FRAMES
-
 	fields = Activity.fields()
 	assert next( f for f in fields if f.name == 'name' )
 	field_names = Activity.field_names()

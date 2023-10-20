@@ -174,7 +174,7 @@ class Activity:
 
 	@property
 	def vf( self ) -> VirtualFields:
-		return self.__vf__
+		return self.__class__.__vf__( self )
 
 	@property
 	def fmf( self ) -> FormattedFields:

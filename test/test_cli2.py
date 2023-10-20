@@ -5,6 +5,7 @@ from typing import List
 
 from click.testing import CliRunner
 from pytest import mark
+from rich.console import Console
 
 from tracs.cli import cli
 from tracs.config import ApplicationContext
@@ -31,8 +32,7 @@ class Invocation:
 		assert term in self.err[line_no]
 
 	def assert_term_in_stdout( self, term ):
-		assert len( self.out ) > 0
-		assert any( term in l for l in self.out )
+		assert len( self.out ) > 0 and any( term in l for l in self.out )
 
 
 cmd_list = 'list'
@@ -46,7 +46,7 @@ def test_nocommand( ctx ):
 
 # list
 
-@mark.context( library='default', config='default', takeout='default', cleanup=True )
+@mark.context( library='default', config='default', takeout='default', cleanup=False )
 def test_list( ctx ):
 	invoke( ctx, cmd_list ).assert_term_in_stdout( 'Berlin' )
 
@@ -59,5 +59,6 @@ def test_version( ctx ):
 def invoke( ctx: ApplicationContext, cmdline: str ) -> Invocation:
 	runner = CliRunner( mix_stderr=False )
 	cmdline = f'-c {ctx.config_dir} {cmdline}'
-	result = runner.invoke( cli, cmdline )
+	result = runner.invoke( cli, cmdline, catch_exceptions=False )
+	ctx.console.print( result.exc_info )
 	return Invocation( result.exit_code, result.stdout.splitlines(), result.stderr.splitlines() )

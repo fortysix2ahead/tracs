@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from logging import getLogger
 from typing import Any, List, Optional, Union
 
+from attrs import define, field
 from dateutil.parser import parse as parse_dt
 from dateutil.tz import tzlocal
 from lxml.objectify import Element, fromstring, ObjectifiedElement, ObjectPath, SubElement
@@ -18,11 +18,11 @@ log = getLogger( __name__ )
 
 TCX_TYPE = 'application/tcx+xml'
 
-@dataclass
+@define
 class Extensions:
-	other_elements: List = field( default_factory=list )
+	other_elements: List = field( factory=list )
 
-@dataclass
+@define
 class Trackpoint:
 
 	__xml_name__ = 'Trackpoint'
@@ -70,7 +70,7 @@ class Trackpoint:
 			) for tp in parent.Track.Trackpoint
 		]
 
-@dataclass
+@define
 class Lap:
 
 	__xml_name__ = 'Lap'
@@ -85,7 +85,7 @@ class Lap:
 	cadence: int = field( default=None )
 	intensity: str = field( default=None )
 	trigger_method: str = field( default=None )
-	trackpoints: List[Trackpoint] = field( default_factory=list )
+	trackpoints: List[Trackpoint] = field( factory=list )
 	notes: Optional[str] = field( default=None )
 	extensions: Optional[Extensions] = field( default=None )
 
@@ -133,7 +133,7 @@ class Lap:
 			) for l in parent.Lap
 		]
 
-@dataclass
+@define
 class Plan:
 
 	__xml_name__ = 'Plan'
@@ -146,7 +146,7 @@ class Plan:
 	def as_xml( self, parent: Element ) -> Element:
 		return SubElement( parent, self.__class__.__xml_name__, attrib={ 'Type': self.type, 'IntervalWorkout': str( self.interval_workout ).lower() } )
 
-@dataclass
+@define
 class Training:
 
 	__xml_name__ = 'Training'
@@ -159,7 +159,7 @@ class Training:
 		plan = self.plan.as_xml( training )
 		return training
 
-@dataclass
+@define
 class Creator:
 
 	__xml_name__ = 'Creator'
@@ -200,13 +200,13 @@ class Creator:
 			return None
 
 
-@dataclass
+@define
 class Activity:
 
 	__xml_name__ = 'Activity'
 
 	id: str = field( default=None )
-	laps: List[Lap] = field( default_factory=list )
+	laps: List[Lap] = field( factory=list )
 	notes: Optional[str] = field( default=None )
 	training: Optional[Training] = field( default=None )
 	creator: Optional[Creator] = field( default=None )
@@ -231,7 +231,7 @@ class Activity:
 			) for a in parent.Activities.Activity
 		]
 
-@dataclass
+@define
 class Author:
 
 	__xml_name__ = 'Author'
@@ -262,13 +262,13 @@ class Author:
 		else:
 			return None
 
-@dataclass
+@define
 class TrainingCenterDatabase:
 
 	__xml_name__ = 'TrainingCenterDatabase'
 
 	# folders: Optional[Folders] = field( default=None )
-	activities: List[Activity] = field( default_factory=list )
+	activities: List[Activity] = field( factory=list )
 	# workouts: Optional[WorkoutList] = field( default=None )
 	# courses: Optional[CourseList] = field( default=None )
 	author: Optional[Author] = field( default=None )

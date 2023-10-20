@@ -1,19 +1,16 @@
 
-from dataclasses import dataclass
-from dataclasses import field
-from pathlib import Path
-from re import match
-from sys import modules
-from typing import List
-
 from logging import getLogger
+from pathlib import Path
+from sys import modules
+from typing import ClassVar, List
+
+from attrs import define, field
 from rich import box
 from rich.table import Table
 
-from .activity import Activity
-from .config import ApplicationContext
-from .config import console
-from .service import Service
+from tracs.activity import Activity
+from tracs.config import ApplicationContext, console
+from tracs.service import Service
 
 log = getLogger( __name__ )
 
@@ -21,7 +18,7 @@ ERROR = 'ERROR'
 WARNING = 'WARNING'
 INFO = 'INFO'
 
-@dataclass
+@define
 class ReportItem:
 
 	status: str = field( default=ERROR )
@@ -75,13 +72,13 @@ class ReportItem:
 
 		return columns
 
-@dataclass
+@define
 class ReportData:
 
-	ctx: ApplicationContext = None
+	ctx: ClassVar[ApplicationContext] = None
 
 	name: str = field( default=None )
-	items: List[ReportItem] = field( default_factory=list )
+	items: List[ReportItem] = field( factory=list )
 
 	def info( self, issue, details = None, path = None ):
 		self.items.append( ReportItem( status=INFO, issue=issue, details=details, path=path ) )

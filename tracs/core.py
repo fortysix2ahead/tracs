@@ -152,17 +152,19 @@ class FormattedFields:
 	def add( self, field: FormattedField ) -> None:
 		self[field.name] = field
 
-	def as_list( self, *fields: str, suppress_error: bool = False ) -> List[str]:
+	def as_list( self, *fields: str, suppress_error: bool = False, converter: Callable = None ) -> List[str]:
+		results = []
 		if suppress_error:
-			rval = []
 			for f in fields:
 				try:
-					rval.append( getattr( self, f ) )
+					results.append( getattr( self, f ) )
 				except AttributeError:
-					rval.append( None )
-			return rval
+					results.append( None )
 		else:
-			return [ getattr( self, f ) for f in fields ]
+			results = [ getattr( self, f ) for f in fields ]
+
+		results = [ converter( r ) for r in results ] if converter else results
+		return results
 
 	@property
 	def fields( self ) -> Dict[str, Union[FormattedField, Callable]]:

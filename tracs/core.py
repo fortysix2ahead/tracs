@@ -25,14 +25,14 @@ class VirtualField:
 	description: str = field( default=None )
 	display_name: str = field( default=None )
 
-	def __call__( self, value: Any = None ) -> Any:
-		return self.value_for( value )
+	def __call__( self, parent: Any = None ) -> Any:
+		return self.value_for( parent )
 
-	def value_for( self, value: Any = None ) -> Any:
+	def value_for( self, parent: Any = None ) -> Any:
 		if self.default:
 			return self.default
 		elif self.factory:
-			return self.factory( value )
+			return self.factory( parent )
 		else:
 			raise AttributeError( f'virtual field {self.name} has neither a default nor a factory' )
 

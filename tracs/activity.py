@@ -6,6 +6,7 @@ from datetime import datetime, time, timedelta
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Optional, TypeVar
 
+from attrs import define, field as attrsfield
 from dataclass_factory import Schema
 from tzlocal import get_localzone_name
 
@@ -21,15 +22,15 @@ T = TypeVar('T')
 
 PROTECTED_FIELDS = [ 'id' ]
 
-@dataclass( eq=True )
+@define( eq=True )
 class ActivityPart:
 
-	gap: time = field( default=None )
-	uids: List[str] = field( default_factory=list )
+	gap: time = attrsfield( default=None )
+	uids: List[str] = attrsfield( factory=list )
 
-	__uids__: List[UID] = field( default_factory=list )
+	__uids__: List[UID] = attrsfield( factory=list, alias='__uids__' )
 
-	def __post_init__(self):
+	def __attrs_post_init__(self):
 		self.__uids__ = [UID( uid ) for uid in self.uids]
 
 	@classmethod

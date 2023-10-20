@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
 from datetime import datetime, time
+from logging import getLogger
 from re import match
 from typing import cast
 
@@ -30,6 +30,12 @@ from tracs.rules import parse_rule
 from tracs.rules import RANGE_PATTERN
 from tracs.rules import RULE_PATTERN
 from tracs.rules import TIME_PATTERN
+
+log = getLogger( __name__ )
+
+def setup_module( module ):
+	import tracs.plugins.rule_extensions
+	log.info( 'importing tracs.plugins.rule_extensions' )
 
 NOW = datetime.utcnow()
 ATTRIBUTE_CONTEXT = Context(resolver=resolve_attribute)
@@ -345,9 +351,6 @@ def test_range():
 	assert parse_eval( 'heartrate:100.0..200.0', A1 )
 
 def test_date_time():
-	# test will only succeed if the date normalizer from rule_extensions plugin is registered
-	import tracs.plugins.rule_extensions
-
 	assert parse_eval( 'date:2023', A1 )
 	assert parse_eval( 'date:2023-01', A1 )
 	assert parse_eval( 'date:2023-01-13', A1 )

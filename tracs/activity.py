@@ -13,7 +13,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.core import FormattedFields, VirtualField, VirtualFields
 from tracs.resources import Resource
 from tracs.uid import UID
-from tracs.utils import sum_timedeltas, sum_times, unique_sorted
+from tracs.utils import sum_timedeltas, unique_sorted
 
 log = getLogger( __name__ )
 
@@ -174,7 +174,7 @@ class Activity:
 
 	@property
 	def vf( self ) -> VirtualFields:
-		return self.__vf__
+		return self.__class__.__vf__( self )
 
 	@property
 	def fmf( self ) -> FormattedFields:

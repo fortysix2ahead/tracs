@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from inspect import getmembers
 from logging import getLogger
@@ -23,8 +22,6 @@ from tracs.resources import Resource
 from tracs.core import Keyword
 
 log = getLogger( __name__ )
-
-@dataclass
 
 # ---- base class for a service ----
 

@@ -1,12 +1,11 @@
 
 from __future__ import annotations
 
-from dataclasses import Field, fields, InitVar, MISSING, replace
 from datetime import datetime, time, timedelta
 from logging import getLogger
 from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar
 
-from attrs import define, field
+from attrs import define, evolve, field, fields, Attribute
 from dataclass_factory import Schema
 from tzlocal import get_localzone_name
 
@@ -118,9 +117,9 @@ class Activity:
 
 	# init variables
 	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
-	others: InitVar = field( default=None )
-	other_parts: InitVar = field( default=None )
-	uid: InitVar = field( default=None ) # we keep this as init var
+	others = field( default=None )
+	other_parts = field( default=None )
+	uid: str = field( default=None ) # we keep this as init var
 
 	## internal fields
 	__uids__: List[UID] = field( factory=list, repr=False, eq=False )
@@ -139,7 +138,7 @@ class Activity:
 
 	@classmethod
 	# todo: change default of include_internal to False (keep at the moment for compatibility reasons)
-	def fields( cls, include_internal = True, include_virtual = False ) -> List[Field]:
+	def fields( cls, include_internal = True, include_virtual = False ) -> List[Attribute]:
 		_fields = list( fields( Activity ) )
 		if include_virtual:
 			_fields.extend( [f for f in cls.__vf__.__fields__.values()] )
@@ -223,10 +222,10 @@ class Activity:
 		return len( self.parts ) > 0
 
 	# post init, this contains mostly convenience things
-	def __post_init__( self, others: List[Activity], other_parts: List[Activity], uid: str ):
+	def __attrs_post_init__( self ):
 		# convenience: if called with an uid, store it in uids list + setup __uids__
-		if uid:
-			self.uids = [uid]
+		if self.uid:
+			self.uids = [self.uid]
 
 		# uid list handling, depending on parts
 		if self.parts:
@@ -238,10 +237,10 @@ class Activity:
 			self.__uids__ = [UID( uid ) for uid in self.uids]
 
 		# convenience: allow init from other activities
-		if others:
-			self.union( others )
-		elif other_parts:
-			self.add( other_parts )
+		if self.others:
+			self.union( self.others )
+		elif self.other_parts:
+			self.add( self.other_parts )
 
 		# set self/cls to virtual/formatted fields
 		self.__vf__.__parent__ = self
@@ -263,7 +262,7 @@ class Activity:
 
 	# def union( self, others: List[Activity], strategy: Literal['first', 'last'] = 'first' ) -> Activity: # todo: are different strategies useful?
 	def union( self, others: List[Activity], ignore: List[str] = None, copy: bool = False, force: bool = False ) -> Activity:
-		this = replace( self ) if copy else self
+		this = evolve( self ) if copy else self
 		ignore = ignore if ignore else []
 
 		for f in this.fields():
@@ -276,7 +275,7 @@ class Activity:
 			value = getattr( this, f.name )
 
 			# case 1: non-factory types
-			if f.default != MISSING and f.factory == MISSING:
+			if f.default is not None and f.factory is None:
 				if not force and value != f.default:  # do not overwrite when a value is already set
 					continue
 
@@ -288,7 +287,7 @@ class Activity:
 							break
 
 			# case 2: factory types
-			elif f.default == MISSING and f.factory != MISSING:
+			elif f.default is None and f.factory is not None:
 				for other in others:
 					other_value = getattr( other, f.name )
 					if f.factory is list:
@@ -309,7 +308,7 @@ class Activity:
 		:return:
 		"""
 
-		this = replace( self ) if copy else self
+		this = evolve( self ) if copy else self
 		activities = [this, *others]
 
 		this.type = t if (t := _unique( activities, 'type' ) ) else ActivityTypes.multisport

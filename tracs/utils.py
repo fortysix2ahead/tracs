@@ -1,5 +1,4 @@
 
-from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from difflib import SequenceMatcher
 from enum import Enum
@@ -11,6 +10,7 @@ from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Typ
 from urllib.parse import ParseResult, ParseResultBytes, urlparse as urllibparse
 
 from arrow import Arrow, get as getarrow
+from attrs import define, field
 from babel.dates import format_date, format_datetime, format_time, format_timedelta, get_timezone
 from babel.numbers import format_decimal
 from click import style
@@ -37,7 +37,7 @@ HOUR = rxcompile( '^(?P<hour>[0-1]\d|2[0-4])$' )
 HOUR_MINUTE = rxcompile( '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d)$' )
 HOUR_MINUTE_SECOND = rxcompile( '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d):(?P<second>[0-5]\d)$' )
 
-@dataclass
+@define
 class UtilityConfiguration:
 
 	config: Configuration = field( default=None )

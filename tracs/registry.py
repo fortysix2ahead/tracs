@@ -357,7 +357,7 @@ def virtualfield( *args, **kwargs ):
 
 	if len( args ) == 1 and isfunction( args[0] ): # case: decorated function without arguments
 		name, mod, qname, rtype = _fnspec( args[0] )
-		Registry.register_virtual_fields( VirtualField( name=name, type=rtype, value=args[0] ) )
+		Registry.register_virtual_fields( VirtualField( name=name, type=rtype, default=args[0] ) )
 		return args[0]
 	elif len( args ) == 0 and len( kwargs ) > 0:
 		_ARGS, _KWARGS = args, kwargs

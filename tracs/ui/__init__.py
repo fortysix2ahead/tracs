@@ -1,30 +1,16 @@
 
 from platform import system
 from sys import exit as sysexit
-from typing import Any
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import TextIO
-from typing import Tuple
-from typing import Union
-from typing import overload
+from typing import Any, Dict, List, Optional, TextIO, Tuple
 
 from rich.console import Console
 from rich.pretty import Pretty
-from rich.prompt import Confirm
-from rich.prompt import DefaultType
-from rich.prompt import Prompt
-from rich.prompt import PromptType
+from rich.prompt import Confirm, DefaultType, Prompt, PromptType
 from rich.table import Table
-from rich.text import Text
-from rich.text import TextType
+from rich.text import Text, TextType
 
-from tracs.utils import colored_diff
-from tracs.utils import colored_diff_2
-from tracs.utils import fmt
-from .config import console as cs
+from tracs.config import console as cs
+from tracs.utils import colored_diff, colored_diff_2, fmt
 
 def dict_table( d: Dict, header: Tuple[str, str] = None, sort_entries: bool = False ) -> Table:
 	table = Table( box=None, show_header=True, show_footer=False )
@@ -290,7 +276,6 @@ def combo():
 	from rich.live import Live
 	from rich.table import Table
 	from rich.console import Group
-	from rich.prompt import Prompt
 
 	table = Table( box=None, show_header=False )
 	table.add_column( "Row ID" )

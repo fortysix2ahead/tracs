@@ -13,7 +13,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.core import FormattedFields, VirtualField, VirtualFields
 from tracs.resources import Resource
 from tracs.uid import UID
-from tracs.utils import sum_timedeltas, sum_times, unique_sorted
+from tracs.utils import sum_timedeltas, unique_sorted
 
 log = getLogger( __name__ )
 

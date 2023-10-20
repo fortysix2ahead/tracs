@@ -352,12 +352,12 @@ def virtualfield( *args, **kwargs ):
 	def _inner( *inner_args ):
 		global _KWARGS
 		inner_name, inner_mod, inner_qname, inner_rtype = _fnspec( inner_args[0] )
-		Registry.register_virtual_fields( VirtualField( **{ 'name': inner_name, 'type': inner_rtype, 'value': inner_args[0], **_KWARGS } ) )
+		Registry.register_virtual_fields( VirtualField( **{ 'name': inner_name, 'type': inner_rtype, 'factory': inner_args[0], **_KWARGS } ) )
 		return inner_args[0]
 
 	if len( args ) == 1 and isfunction( args[0] ): # case: decorated function without arguments
 		name, mod, qname, rtype = _fnspec( args[0] )
-		Registry.register_virtual_fields( VirtualField( name=name, type=rtype, default=args[0] ) )
+		Registry.register_virtual_fields( VirtualField( name=name, type=rtype, factory=args[0] ) )
 		return args[0]
 	elif len( args ) == 0 and len( kwargs ) > 0:
 		_ARGS, _KWARGS = args, kwargs

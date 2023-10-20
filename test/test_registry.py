@@ -35,31 +35,32 @@ def test_resource_type():
 def test_importer2():
 
 	# importer without type is not allowed
-	with raises( RuntimeError ):
+	with raises( ValueError ):
 		@importer
 		class ImporterWithoutArgs( ResourceHandler ):
 			pass
 
-	# this is also not possible: without kwargs there is no way to identify the caller ...
-	with raises( RuntimeError ):
+	# this is also not possible: don't allow non-kwargs
+	with raises( TypeError ):
 		@importer( 'TYPE_2' )
 		class ImporterWithArgsOnly( ResourceHandler ):
 			pass
 
-	# plain importer without any specific resource type information
+	print()
 
-	@importer( type='TYPE_1' )
+	# plain importer without any specific resource type information
+	@importer
 	class ImporterOne( ResourceHandler ):
-		pass
+		TYPE = 'TYPE_1'
 
 	assert type( Registry.importer_for( 'TYPE_1' ) ) == ImporterOne
 
-	@importer( type='TYPE_2', activity_cls=ActivityThree, summary=True )
+	# allowed: define type via decorator, but bad for testing
+	@importer( type='TYPE_2' )
 	class ImporterTwo( ResourceHandler ):
 		pass
 
 	assert type( Registry.importer_for( 'TYPE_2' ) ) == ImporterTwo
-	assert Registry.resource_types.get( 'TYPE_2' ) == ResourceType( type='TYPE_2', activity_cls=ActivityThree, summary=True )
 
 def test_fields_and_types( keywords ):
 	from tracs.plugins.rule_extensions import TIME_FRAMES # load rule extensions plugin

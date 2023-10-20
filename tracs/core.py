@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from sys import version_info
-from typing import Any, Callable, ClassVar, Dict, Optional, Type, Union
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, Union
 
-from attrs import define, field
+from attr import AttrsInstance
+from attrs import define, field, fields, Attribute
 
 FIELD_KWARGS = {
 	'init': True,
@@ -74,13 +74,26 @@ class VirtualFields:
 		self.__fields__[name] = vf
 
 @define
-class VirtualFieldsBase:
+class VirtualFieldsBase( AttrsInstance ):
 
 	__vf__: ClassVar[VirtualFields] = VirtualFields()
 
 	@classmethod
 	def VF( cls ) -> VirtualFields:
 		return cls.__vf__
+
+	@classmethod
+	def fields( cls, include_internal = True, include_virtual = False ) -> List[Attribute | VirtualField]:
+		_fields = list( fields( cls ) )
+		if include_virtual:
+			_fields.extend( [f for f in cls.__vf__.__fields__.values()] )
+		if not include_internal:
+			_fields = list( filter( lambda f: not f.name.startswith( '_' ), _fields ) )
+		return _fields
+
+	@classmethod
+	def field_names( cls, include_internal = True, include_virtual = False ) -> List[str]:
+		return [f.name for f in cls.fields( include_internal=include_internal, include_virtual=include_virtual )]
 
 	@property
 	def vf( self ) -> VirtualFields:
@@ -133,7 +146,7 @@ class FormattedFields:
 	def parent_cls( self ) -> Type:
 		return self.__parent_cls__
 
-@dataclass
+@define
 class Keyword:
 
 	name: str = field( default=None )
@@ -144,7 +157,7 @@ class Keyword:
 		# return self.expr if type( self.expr ) is str else self.expr( *args, **kwargs )
 		return self.expr if type( self.expr ) is str else self.expr()
 
-@dataclass
+@define
 class Normalizer:
 
 	name: str = field( default=None )

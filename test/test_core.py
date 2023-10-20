@@ -30,6 +30,7 @@ def test_virtual_fields():
 	class EnrichedDataclass( VirtualFieldsBase ):
 
 		name: str = field( default='Name' )
+		__internal_name__ = field( default='Internal Name', alias='__internal_name__' )
 
 	vf = EnrichedDataclass.__vf__
 
@@ -42,6 +43,12 @@ def test_virtual_fields():
 	assert edc.vf.index == 10
 
 	assert 'index' in edc.vf and 'upper_name' in edc.vf
+
+	assert EnrichedDataclass.field_names() == [ 'name', '__internal_name__' ]
+	assert EnrichedDataclass.field_names( False ) == [ 'name' ]
+	assert EnrichedDataclass.field_names( True ) == [ 'name', '__internal_name__' ]
+	assert EnrichedDataclass.field_names( True, True ) == [ 'name', '__internal_name__', 'index', 'upper_name' ]
+	assert EnrichedDataclass.field_names( False, True ) == [ 'name', 'index', 'upper_name' ]
 
 def test_formatted_field():
 

@@ -6,7 +6,7 @@ from datetime import datetime, time, timedelta
 from logging import getLogger
 from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar
 
-from attrs import define, field as attrsfield
+from attrs import define, field
 from dataclass_factory import Schema
 from tzlocal import get_localzone_name
 
@@ -25,10 +25,10 @@ PROTECTED_FIELDS = [ 'id' ]
 @define( eq=True )
 class ActivityPart:
 
-	gap: time = attrsfield( default=None )
-	uids: List[str] = attrsfield( factory=list )
+	gap: time = field( default=None )
+	uids: List[str] = field( factory=list )
 
-	__uids__: List[UID] = attrsfield( factory=list, alias='__uids__' )
+	__uids__: List[UID] = field( factory=list, alias='__uids__' )
 
 	def __attrs_post_init__(self):
 		self.__uids__ = [UID( uid ) for uid in self.uids]
@@ -61,75 +61,75 @@ class Activity:
 	__vf__: ClassVar[VirtualFields] = VirtualFields()
 
 	# fields
-	id: int = attrsfield( default=None )
+	id: int = field( default=None )
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
-	uids: List[str] = attrsfield( factory=list )
+	uids: List[str] = field( factory=list )
 	"""List of uids of resources which belong to this activity"""
 
-	name: Optional[str] = attrsfield( default=None )
+	name: Optional[str] = field( default=None )
 	"""activity name"""
-	type: Optional[ActivityTypes] = attrsfield( default=None )
+	type: Optional[ActivityTypes] = field( default=None )
 	"""activity type"""
-	description: str = attrsfield( default=None )
+	description: str = field( default=None )
 	"""description"""
-	tags: List[str] = attrsfield( factory=list )
+	tags: List[str] = field( factory=list )
 	"""list of tags"""
-	equipment: List[str] = attrsfield( factory=list )
+	equipment: List[str] = field( factory=list )
 	"""list of equipment tags"""
 
-	location_country: Optional[str] = attrsfield( default=None ) #
-	location_state: Optional[str] = attrsfield( default=None ) #
-	location_city: Optional[str] = attrsfield( default=None ) #
-	location_place: Optional[str] = attrsfield( default=None ) #
-	location_latitude_start: float = attrsfield( default=None ) #
-	location_longitude_start: float = attrsfield( default=None ) #
-	location_latitude_end: float = attrsfield( default=None ) #
-	location_longitude_end: float = attrsfield( default=None ) #
-	route: str = attrsfield( default=None ) #
+	location_country: Optional[str] = field( default=None ) #
+	location_state: Optional[str] = field( default=None ) #
+	location_city: Optional[str] = field( default=None ) #
+	location_place: Optional[str] = field( default=None ) #
+	location_latitude_start: float = field( default=None ) #
+	location_longitude_start: float = field( default=None ) #
+	location_latitude_end: float = field( default=None ) #
+	location_longitude_end: float = field( default=None ) #
+	route: str = field( default=None ) #
 
-	starttime: datetime = attrsfield( default=None )
+	starttime: datetime = field( default=None )
 	"""activity time (UTC)"""
-	endtime: Optional[datetime] = attrsfield( default=None )
+	endtime: Optional[datetime] = field( default=None )
 	"""activity end time (UTC)"""
-	starttime_local: datetime = attrsfield( default=None )
+	starttime_local: datetime = field( default=None )
 	"""activity time (local)"""
-	endtime_local: Optional[datetime] = attrsfield( default=None )
+	endtime_local: Optional[datetime] = field( default=None )
 	"""activity end time (local)"""
-	timezone: str = attrsfield( default=get_localzone_name() )
+	timezone: str = field( default=get_localzone_name() )
 	"""timezone of the activity, local timezone by default"""
 
-	duration: Optional[timedelta] = attrsfield( default=None ) #
-	duration_moving: Optional[timedelta] = attrsfield( default=None ) #
+	duration: Optional[timedelta] = field( default=None ) #
+	duration_moving: Optional[timedelta] = field( default=None ) #
 
-	distance: Optional[float] = attrsfield( default=None ) #
-	ascent: Optional[float] = attrsfield( default=None ) #
-	descent: Optional[float] = attrsfield( default=None ) #
-	elevation_max: Optional[float] = attrsfield( default=None ) #
-	elevation_min: Optional[float] = attrsfield( default=None ) #
-	speed: Optional[float] = attrsfield( default=None ) #
-	speed_max: Optional[float] = attrsfield( default=None ) #
+	distance: Optional[float] = field( default=None ) #
+	ascent: Optional[float] = field( default=None ) #
+	descent: Optional[float] = field( default=None ) #
+	elevation_max: Optional[float] = field( default=None ) #
+	elevation_min: Optional[float] = field( default=None ) #
+	speed: Optional[float] = field( default=None ) #
+	speed_max: Optional[float] = field( default=None ) #
 
-	heartrate: Optional[int] = attrsfield( default=None ) #
-	heartrate_max: Optional[int] = attrsfield( default=None ) #
-	heartrate_min: Optional[int] = attrsfield( default=None ) #
-	calories: Optional[int] = attrsfield( default=None ) #
+	heartrate: Optional[int] = field( default=None ) #
+	heartrate_max: Optional[int] = field( default=None ) #
+	heartrate_min: Optional[int] = field( default=None ) #
+	calories: Optional[int] = field( default=None ) #
 
-	parts: List[ActivityPart] = attrsfield( factory=list )
+	parts: List[ActivityPart] = field( factory=list )
 
 	# init variables
 	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
-	others: InitVar = attrsfield( default=None )
-	other_parts: InitVar = attrsfield( default=None )
-	uid: InitVar = attrsfield( default=None ) # we keep this as init var
+	others: InitVar = field( default=None )
+	other_parts: InitVar = field( default=None )
+	uid: InitVar = field( default=None ) # we keep this as init var
 
-	## internal attrsfields
-	__uids__: List[UID] = attrsfield( factory=list, repr=False, eq=False )
-	__dirty__: bool = attrsfield( init=False, default=False, repr=False )
-	__metadata__: Dict[str, Any] = attrsfield( init=False, factory=dict )
-	__parts__: List[Activity] = attrsfield( init=False, factory=list, repr=False )
-	__resources__: List[Resource] = attrsfield( init=False, factory=list, repr=False, eq=False )
-	__parent__: Activity = attrsfield( init=False, default=0 )
-	__parent_id__: int = attrsfield( init=False, default=0 )
+	## internal fields
+	__uids__: List[UID] = field( factory=list, repr=False, eq=False )
+	__dirty__: bool = field( init=False, default=False, repr=False )
+	__metadata__: Dict[str, Any] = field( init=False, factory=dict )
+	__parts__: List[Activity] = field( init=False, factory=list, repr=False )
+	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False )
+	__parent__: Activity = field( init=False, default=0 )
+	__parent_id__: int = field( init=False, default=0 )
 
 	# class methods
 

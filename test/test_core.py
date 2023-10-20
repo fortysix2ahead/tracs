@@ -1,9 +1,8 @@
-from typing import ClassVar
-
-from attrs import define, field, fields
+from attrs import define, field
+from babel.numbers import format_decimal
 from pytest import raises
 
-from tracs.core import FormattedField, FormattedFields, VirtualField, VirtualFields, VirtualFieldsBase
+from tracs.core import FormattedField, FormattedFields, FormattedFieldsBase, VirtualField, VirtualFields, VirtualFieldsBase
 
 def test_virtual_field():
 
@@ -52,33 +51,50 @@ def test_virtual_fields():
 
 def test_formatted_field():
 
-	fmf = FormattedField( name='lower', formatter=lambda s: s.lower() )
-	assert fmf.format( "TEST" ) == 'test'
-	assert fmf( "TEST" ) == 'test'
+	ff = FormattedField( name='lower', formatter=lambda v, f, l: v.lower() )
+	assert ff( "TEST" ) == 'test'
+	assert ff.__format__( "TEST" ) == 'test'
+
+	# test babel fields
+	ffe = FormattedField( name='en_int', formatter=lambda v, f, l: format_decimal( v, f, l ), locale='en' )
+	ffd = FormattedField( name='en_de', formatter=lambda v, f, l: format_decimal( v, f, l ), locale='de' )
+
+	assert ffe( 1000 ) == '1,000'
+	assert ffd( 1000 ) == '1.000'
 
 def test_formatted_fields():
-	ff = FormattedFields()
-	ff.fields['lower'] = lambda s: s.lower()
-	ff.fields['upper'] = FormattedField( name='upper', formatter=lambda s: s.upper() )
+
+	ffs = FormattedFields()
+	ffs['lower'] = lambda v, f, l: v.lower()
+	ffs['upper'] = FormattedField( name='upper', formatter=lambda s: s.upper() )
+
+	assert 'lower' in ffs.__fields__ and type( ffs.__fields__.get( 'lower' ) ) is FormattedField
+	assert 'upper' in ffs.__fields__ and type( ffs.__fields__.get( 'upper' ) ) is FormattedField
 
 	@define
-	class FormattedDataclass:
+	class FormattedDataclass( FormattedFieldsBase ):
 
-		__fmf__: FormattedFields = ff
+		name: str = field( default = 'Name' )
+		age: int = field( default=10 )
+		speed: float = field( default=12345.6 )
+		width: float = field( default=None )
 
-		lower: str = field( default = 'Lower' )
-		upper: str = field( default = 'Upper' )
-
-		@property
-		def fmf( self ) -> FormattedFields:
-			self.__class__.__fmf__.__parent__ = self
-			return self.__class__.__fmf__
+	FormattedDataclass.__fmf__['name'] = lambda v, f, l: v.lower()
+	FormattedDataclass.__fmf__.add( FormattedField( name='speed', formatter=lambda v, f, l: format_decimal( v, f, l ), locale='en' ) )
 
 	fdc = FormattedDataclass()
-	FormattedDataclass.__fmf__ = ff
 
-	assert fdc.fmf.lower == 'lower'
-	assert fdc.fmf.upper == 'UPPER'
+	assert fdc.fmf.name == 'name'
+	assert fdc.fmf.age == 10
+	assert fdc.fmf.speed == '12,345.6'
 
 	with raises( AttributeError ):
 		assert fdc.fmf.noexist == 0
+
+	assert fdc.fmf.as_list( 'name', 'age', 'speed', 'width' ) == ['name', 10, '12,345.6', None]
+
+	with raises( AttributeError ):
+		assert fdc.fmf.as_list( 'name', 'age', 'speed', 'height' ) == ['name', 10, '12,345.6', None]
+
+	assert fdc.fmf.as_list( 'name', 'age', 'speed', 'height', suppress_error=True ) == ['name', 10, '12,345.6', None]
+	assert fdc.fmf.as_list( 'name', 'age', 'speed', 'width', converter=lambda v: str( v ) ) == ['name', '10', '12,345.6', 'None']

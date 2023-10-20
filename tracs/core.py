@@ -104,17 +104,19 @@ class FormattedField:
 
 	name: str = field( default=None )
 	formatter: Callable = field( default=None )
+	format: str = field( default=None )
+	locale: str = field( default=None )
 
 	def __call__( self, value: Any ) -> Any:
-		return self.format( value )
+		return self.__format__( value )
 
-	def format( self, value: Any ) -> Any:
-		return self.formatter( value )
+	def __format__( self, value: Any ) -> Any:
+		return self.formatter( value, self.format, self.locale )
 
-@define
+@define( slots=False )
 class FormattedFields:
 
-	__fields__: Dict[str, Union[FormattedField, Callable]] = field( factory=dict, alias='__fields__' )
+	__fields__: Dict[str, FormattedField] = field( factory=dict, alias='__fields__' )
 	__parent_cls__: Type = field( default=None, alias='__parent_cls__' )
 	__parent__: Any = field( default=None, alias='__parent__' )
 
@@ -132,7 +134,37 @@ class FormattedFields:
 		if name in self.__fields__:
 			return self.__fields__.get( name )( getattr( self.__parent__, name ) )
 		else:
+			# todo: this return the parent value, we could also call str( value ) here instead, to be decided later
 			return getattr( self.__parent__, name )
+
+	def __getitem__( self, key: str ) -> FormattedField:
+		return self.__fields__[key]
+
+	def __setitem__( self, key: str, field: FormattedField | Callable ) -> None:
+		if not callable( field ):
+			raise ValueError( f'value must be of type {FormattedField} or Callable' )
+
+		if not isinstance( field, FormattedField ):
+			field = FormattedField( name=key, formatter=field )
+
+		self.__fields__[key] = field
+
+	def add( self, field: FormattedField ) -> None:
+		self[field.name] = field
+
+	def as_list( self, *fields: str, suppress_error: bool = False, converter: Callable = None ) -> List[str]:
+		results = []
+		if suppress_error:
+			for f in fields:
+				try:
+					results.append( getattr( self, f ) )
+				except AttributeError:
+					results.append( None )
+		else:
+			results = [ getattr( self, f ) for f in fields ]
+
+		results = [ converter( r ) for r in results ] if converter else results
+		return results
 
 	@property
 	def fields( self ) -> Dict[str, Union[FormattedField, Callable]]:
@@ -145,6 +177,19 @@ class FormattedFields:
 	@property
 	def parent_cls( self ) -> Type:
 		return self.__parent_cls__
+
+@define
+class FormattedFieldsBase( AttrsInstance ):
+
+	__fmf__: ClassVar[FormattedFields] = FormattedFields()
+
+	@classmethod
+	def FMF( cls ) -> FormattedFields:
+		return cls.__fmf__
+
+	@property
+	def fmf( self ) -> FormattedFields:
+		return self.__class__.__fmf__( self )
 
 @define
 class Keyword:

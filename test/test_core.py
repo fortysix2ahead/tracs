@@ -1,9 +1,9 @@
 from typing import ClassVar
 
-from attrs import define, field
+from attrs import define, field, fields
 from pytest import raises
 
-from tracs.core import FormattedField, FormattedFields, VirtualField, VirtualFields
+from tracs.core import FormattedField, FormattedFields, VirtualField, VirtualFields, VirtualFieldsBase
 
 def test_virtual_field():
 
@@ -27,14 +27,9 @@ def test_virtual_fields():
 
 	# test class enriched with virtual fields
 	@define
-	class EnrichedDataclass:
+	class EnrichedDataclass( VirtualFieldsBase ):
 
-		__vf__: ClassVar[VirtualFields] = VirtualFields()
 		name: str = field( default='Name' )
-
-		@property
-		def vf( self ) -> VirtualFields:
-			return self.__class__.__vf__( self )
 
 	vf = EnrichedDataclass.__vf__
 
@@ -47,7 +42,7 @@ def test_virtual_fields():
 	assert edc.vf.index == 10
 
 	assert 'index' in edc.vf and 'upper_name' in edc.vf
-	
+
 def test_formatted_field():
 
 	fmf = FormattedField( name='lower', formatter=lambda s: s.lower() )

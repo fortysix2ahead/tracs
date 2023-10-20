@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from sys import version_info
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, ClassVar, Dict, Optional, Type, Union
 
 from attrs import define, field
 
@@ -72,6 +72,19 @@ class VirtualFields:
 
 	def set_field( self, name: str, vf: VirtualField ) -> None:
 		self.__fields__[name] = vf
+
+@define
+class VirtualFieldsBase:
+
+	__vf__: ClassVar[VirtualFields] = VirtualFields()
+
+	@classmethod
+	def VF( cls ) -> VirtualFields:
+		return cls.__vf__
+
+	@property
+	def vf( self ) -> VirtualFields:
+		return self.__class__.__vf__( self )
 
 @define
 class FormattedField:

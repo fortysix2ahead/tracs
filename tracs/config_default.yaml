@@ -21,9 +21,9 @@ formats:
   time: medium # allowed values: short, medium, long, full
   timedelta: short  # allowed values: narrow, short, long
   list:
-    default: id name type localtime uids
+    default: id name type starttime_local uids
   show:
-    default: id name type localtime timezone duration distance
+    default: id name type starttime_local timezone duration distance
     all:
 
 # experimental: allow predefined filters

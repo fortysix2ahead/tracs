@@ -62,7 +62,9 @@ class Activity:
 	# fields
 	id: int = field( default=None )
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
-	uids: List[str] = field( factory=list )
+	uid: str = field( default=None ) # field will become more important (again) in the future
+	"""UID of this activity"""
+	uids: List[str] = field( factory=list ) # referenced list activities
 	"""List of uids of resources which belong to this activity"""
 
 	name: Optional[str] = field( default=None )
@@ -119,16 +121,15 @@ class Activity:
 	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
 	others = field( default=None )
 	other_parts = field( default=None )
-	uid: str = field( default=None ) # we keep this as init var
 
 	## internal fields
-	__uids__: List[UID] = field( factory=list, repr=False, eq=False )
-	__dirty__: bool = field( init=False, default=False, repr=False )
-	__metadata__: Dict[str, Any] = field( init=False, factory=dict )
-	__parts__: List[Activity] = field( init=False, factory=list, repr=False )
-	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False )
-	__parent__: Activity = field( init=False, default=0 )
-	__parent_id__: int = field( init=False, default=0 )
+	__uids__: List[UID] = field( factory=list, repr=False, eq=False, alias='__uids__' )
+	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
+	__metadata__: Dict[str, Any] = field( init=False, factory=dict, alias='__metadata__' )
+	__parts__: List[Activity] = field( init=False, factory=list, repr=False, alias='__parts__' )
+	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False, alias='__resources__' )
+	__parent__: Activity = field( init=False, default=0, alias='__parent__' )
+	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
 
 	# class methods
 

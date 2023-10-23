@@ -10,7 +10,7 @@ from dataclass_factory import Schema
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import FormattedFields, FormattedFieldsBase, VirtualField, VirtualFields, VirtualFieldsBase
+from tracs.core import Container, FormattedFields, FormattedFieldsBase, VirtualField, VirtualFields, VirtualFieldsBase
 from tracs.resources import Resource
 from tracs.uid import UID
 from tracs.utils import sum_timedeltas, unique_sorted
@@ -138,7 +138,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	__metadata__: Dict[str, Any] = field( init=False, factory=dict, alias='__metadata__' )
 	__parts__: List[Activity] = field( init=False, factory=list, repr=False, alias='__parts__' )
 	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False, alias='__resources__' )
-	__parent__: Activity = field( init=False, default=0, alias='__parent__' )
+	__parent__: Optional[Activity] = field( init=False, default=None, alias='__parent__' )
 	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
 
 	# class methods
@@ -325,6 +325,12 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	def untag( self, tag: str ):
 		self.tags.remove( tag )
+
+@define
+class Activities( Container ):
+	"""
+	Dict-like container for activities.
+	"""
 
 # helper
 

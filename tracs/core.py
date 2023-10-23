@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sys import version_info
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, Union
+from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
 
 from attr import AttrsInstance
 from attrs import define, field, fields, Attribute
@@ -14,6 +14,20 @@ FIELD_KWARGS = {
 }
 
 FIELD_KWARGS = FIELD_KWARGS if version_info.minor < 10 else { **FIELD_KWARGS, 'kw_only': False }
+
+T = TypeVar('T')
+
+@define
+class Container( Generic[T] ):
+	"""
+	Dict-like container for activities/resources and the like. Super class to put common methods into.
+	"""
+
+	data: List[T] = field( factory=list )
+
+	__id_map__: Dict[int, T] = field( factory=dict, init=False, alias='__id_map__' )
+	__uid_map__: Dict[str, T] = field( factory=dict, init=False, alias='__uid_map__' )
+	__it__: Iterator = field( default=None, init=False, alias='__it__' )
 
 @define
 class VirtualField:

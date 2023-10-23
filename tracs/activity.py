@@ -10,7 +10,7 @@ from dataclass_factory import Schema
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import FormattedFields, VirtualField, VirtualFields
+from tracs.core import FormattedFields, FormattedFieldsBase, VirtualField, VirtualFields, VirtualFieldsBase
 from tracs.resources import Resource
 from tracs.uid import UID
 from tracs.utils import sum_timedeltas, unique_sorted
@@ -65,11 +65,7 @@ def on_set__uid__( inst, att: Optional, val ):
 	return val
 
 @define( eq=True ) # todo: mark fields with proper eq attributes
-class Activity:
-
-	# class variables
-	__fmf__: ClassVar[FormattedFields] = FormattedFields()
-	__vf__: ClassVar[VirtualFields] = VirtualFields()
+class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	# fields
 	id: int = field( default=None )
@@ -131,6 +127,7 @@ class Activity:
 
 	# init variables
 	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
+	# todo: move this into a factory method?
 	others = field( default=None )
 	other_parts = field( default=None )
 
@@ -147,36 +144,6 @@ class Activity:
 	# class methods
 
 	@classmethod
-	def set_virtual_field( cls, name: str, vf: VirtualField ) -> None:
-		Activity.__fmf__.__fields__[name] = vf
-
-	@classmethod
-	# todo: change default of include_internal to False (keep at the moment for compatibility reasons)
-	def fields( cls, include_internal = True, include_virtual = False ) -> List[Attribute]:
-		_fields = list( fields( Activity ) )
-		if include_virtual:
-			_fields.extend( [f for f in cls.__vf__.__fields__.values()] )
-		if not include_internal:
-			_fields = list( filter( lambda f: not f.name.startswith( '_' ), _fields ) )
-		return _fields
-
-	@classmethod
-	# todo: change default of include_internal to False (keep at the moment for compatibility reasons)
-	def field_names( cls, include_internal = True, include_virtual = False ) -> List[str]:
-		return [f.name for f in cls.fields( include_internal=include_internal, include_virtual=include_virtual )]
-
-	@classmethod
-	def field_type( cls, field_name: str ) -> Any:
-		if f := next( (f for f in cls.fields( include_internal=True, include_virtual=True ) if f.name == field_name), None ):
-			return f.type
-		else:
-			return None
-
-	@classmethod
-	def set_formatter( cls, field_name: str, fn: Callable ) -> None:
-		Activity.__fmf__.__fields__[field_name] = fn
-
-	@classmethod
 	def schema( cls ) -> Schema:
 		return Schema(
 			omit_default=True,
@@ -185,14 +152,6 @@ class Activity:
 		)
 
 	# additional properties
-
-	@property
-	def vf( self ) -> VirtualFields:
-		return self.__class__.__vf__( self )
-
-	@property
-	def fmf( self ) -> FormattedFields:
-		return Activity.__fmf__( self )
 
 	@property
 	def classifiers( self ) -> List[str]:

@@ -52,6 +52,18 @@ class ActivityPart:
 	def as_activity_uids( self ) -> List[UID]:
 		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.__uids__ ] )
 
+# helper for automatically setting uid/__uid__ - future use
+
+def on_set_uid( inst, att: Optional, val ):
+	if val:
+		object.__setattr__( inst, '__uid__', UID( val ) )
+	return val
+
+def on_set__uid__( inst, att: Optional, val ):
+	if val and val.uid:
+		object.__setattr__( inst, 'uid', val.uid )
+	return val
+
 @define( eq=True ) # todo: mark fields with proper eq attributes
 class Activity:
 
@@ -62,7 +74,7 @@ class Activity:
 	# fields
 	id: int = field( default=None )
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
-	uid: str = field( default=None ) # field will become more important (again) in the future
+	uid: str = field( default=None, on_setattr=on_set_uid ) # field will become more important (again) in the future
 	"""UID of this activity"""
 	uids: List[str] = field( factory=list ) # referenced list activities
 	"""List of uids of resources which belong to this activity"""
@@ -123,6 +135,7 @@ class Activity:
 	other_parts = field( default=None )
 
 	## internal fields
+	__uid__: UID = field( default=None, repr=False, eq=False, on_setattr=on_set__uid__, alias='__uid__' )
 	__uids__: List[UID] = field( factory=list, repr=False, eq=False, alias='__uids__' )
 	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
 	__metadata__: Dict[str, Any] = field( init=False, factory=dict, alias='__metadata__' )
@@ -224,6 +237,10 @@ class Activity:
 
 	# post init, this contains mostly convenience things
 	def __attrs_post_init__( self ):
+		if self.uid or self.__uid__:
+			on_set_uid( self, None, self.uid )
+			on_set__uid__( self, None, self.__uid__ )
+
 		# convenience: if called with an uid, store it in uids list + setup __uids__
 		if self.uid:
 			self.uids = [self.uid]
@@ -242,10 +259,6 @@ class Activity:
 			self.union( self.others )
 		elif self.other_parts:
 			self.add( self.other_parts )
-
-		# set self/cls to virtual/formatted fields
-		self.__vf__.__parent__ = self
-		# self.__class__.__fmf__.parent = self.__class__
 
 	# additional methods
 

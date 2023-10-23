@@ -231,7 +231,7 @@ def test_formatted_activity_fields():
 	assert a1.fmf.name == 'Morning Run in Berlin'
 	assert a2.fmf.name == 'Afternoon Walk in Berlin'
 
-	Activity.set_formatter( 'name', lambda s: s.lower() )
+	Activity.FMF()['name'] = lambda s, a, b: s.lower()
 
 	assert a1.fmf.name == 'morning run in berlin'
 	assert a2.fmf.name == 'afternoon walk in berlin'

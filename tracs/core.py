@@ -95,6 +95,13 @@ class VirtualFieldsBase( AttrsInstance ):
 	def field_names( cls, include_internal = True, include_virtual = False ) -> List[str]:
 		return [f.name for f in cls.fields( include_internal=include_internal, include_virtual=include_virtual )]
 
+	@classmethod
+	def field_type( cls, field_name: str ) -> Any:
+		if f := next( (f for f in cls.fields( include_internal=True, include_virtual=True ) if f.name == field_name), None ):
+			return f.type
+		else:
+			return None
+
 	@property
 	def vf( self ) -> VirtualFields:
 		return self.__class__.__vf__( self )

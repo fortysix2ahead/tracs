@@ -29,4 +29,4 @@ rich~=13.6.0
 rule-engine~=4.1.0
 stravalib~=1.5.0
 tcxreader~=0.4.4
-tzlocal~=5.1.0
+tzlocal~=5.2

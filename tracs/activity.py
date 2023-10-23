@@ -5,7 +5,7 @@ from datetime import datetime, time, timedelta
 from logging import getLogger
 from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar
 
-from attrs import define, evolve, field, fields, Attribute
+from attrs import define, evolve, field, fields, Attribute, Factory
 from dataclass_factory import Schema
 from tzlocal import get_localzone_name
 
@@ -289,7 +289,7 @@ class Activity:
 			value = getattr( this, f.name )
 
 			# case 1: non-factory types
-			if f.default is not None and f.factory is None:
+			if not isinstance( f.default, Factory ):
 				if not force and value != f.default:  # do not overwrite when a value is already set
 					continue
 
@@ -301,15 +301,15 @@ class Activity:
 							break
 
 			# case 2: factory types
-			elif f.default is None and f.factory is not None:
+			else:
 				for other in others:
 					other_value = getattr( other, f.name )
-					if f.factory is list:
+					if f.default.factory is list:
 						setattr( this, f.name, sorted( list( set().union( getattr( this, f.name ), other_value ) ) ) )
-					elif f.factory is dict:
+					elif f.default.factory is dict:
 						setattr( this, f.name, { **value, **other_value } )
 					else:
-						raise RuntimeError( f'unsupported factory datatype: {f.factory}' )
+						raise RuntimeError( f'unsupported factory datatype: {f.default}' )
 
 		return this
 

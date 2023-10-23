@@ -1,3 +1,4 @@
+from datetime import time, timedelta
 from logging import getLogger
 from typing import List, Union
 
@@ -7,22 +8,38 @@ from cattrs.preconf.orjson import make_converter
 from fs.base import FS
 from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 
+from tracs.activity import Activities, Activity
+from tracs.activity_types import ActivityTypes
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
+from tracs.utils import fromisoformat, str_to_timedelta
 
 log = getLogger( __name__ )
 
 ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
+ACTIVITIES_NAME = 'activities.json'
+ACTIVITIES_PATH = f'/{ACTIVITIES_NAME}'
 RESOURCES_NAME = 'resources.json'
 RESOURCES_PATH = f'/{RESOURCES_NAME}'
 SCHEMA_NAME = 'schema.json'
 SCHEMA_PATH = f'/{SCHEMA_NAME}'
 
+ACTIVITIES_CONVERTER = make_converter()
 RESOURCE_CONVERTER = make_converter()
 SCHEMA_CONVERTER = make_converter()
 
 # converter configuration
+
+activity_structure_hook = make_dict_structure_fn(
+	Activity,
+	ACTIVITIES_CONVERTER,
+	_cattrs_forbid_extra_keys=True,
+)
+
+ACTIVITIES_CONVERTER.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
+ACTIVITIES_CONVERTER.register_structure_hook( time, lambda obj, cls: fromisoformat( obj ) )
+ACTIVITIES_CONVERTER.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
 
 # resource
 
@@ -64,6 +81,16 @@ def load_resources( fs: FS ) -> Resources:
 def write_resources( resources: Resources, fs: FS ) -> None:
 	fs.writebytes( RESOURCES_PATH, RESOURCE_CONVERTER.dumps( resources.all( sort=True ), unstructure_as=List[Resource], option=ORJSON_OPTIONS ) )
 	log.debug( f'wrote {len( resources )} resource entries to {RESOURCES_NAME}' )
+
+# activity handling
+
+def load_activities( fs: FS ) -> Activities:
+	try:
+		activities = ACTIVITIES_CONVERTER.loads( fs.readbytes( ACTIVITIES_PATH ), List[Activity] )
+		log.debug( f'loaded {len( activities )} activities from {ACTIVITIES_NAME}' )
+		return Activities( data = activities )
+	except RuntimeError:
+		log.error( f'error loading db', exc_info=True )
 
 # schema handling
 

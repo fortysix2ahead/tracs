@@ -16,15 +16,15 @@ from fs.copy import copy_file, copy_file_if
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from orjson import dumps, loads, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import dumps, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
 
-from tracs.activity import Activity, ActivityPart
+from tracs.activity import Activities, Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext
-from tracs.io import load_resources, load_schema, Schema, write_resources
+from tracs.io import load_activities, load_resources, load_schema, Schema, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
 from tracs.resources import Resource, Resources, ResourceType
@@ -183,10 +183,7 @@ class ActivityDb:
 	def _load_db( self ):
 		self._schema = load_schema( self.dbfs )
 		self._resources: Resources = load_resources( self.dbfs )
-
-		json = loads( self.dbfs.readbytes( ACTIVITIES_NAME ) )
-		self._activities = self._factory.load( json, Dict[int, Activity] )
-		log.debug( f'loaded {len( self._activities )} activity entries from {ACTIVITIES_NAME}' )
+		self._activities: Activities = load_activities( self.dbfs )
 
 	def commit( self, do_commit: bool = True ):
 		if do_commit:

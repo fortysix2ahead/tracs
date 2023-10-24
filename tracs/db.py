@@ -384,7 +384,7 @@ class ActivityDb:
 		"""
 		Returns the activity with the provided id.
 		"""
-		return self.activity_map.get( id )
+		return self._activities.idget( id )
 
 	def get_by_uid( self, uid: str, include_resources: bool = False ) -> Optional[Activity]:
 		"""

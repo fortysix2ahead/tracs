@@ -134,22 +134,22 @@ def test_find_multipart( db ):
 	assert ids( db.find_by_classifier( 'polar' ) ) == [ 1, 3, 5, 6 ]
 
 	# test for strava run 1
-	a = db.activity_map.get( 2 )
+	a = db.get_by_id( 2 )
 	assert a.uids == ['strava:1001']
 	assert ids( db.find_resources_for( a ) ) == [ 7, 8, 9 ]
 
 	# test for the multipart polar activity
-	a = db.activity_map.get( 1 )
+	a = db.get_by_id( 1 )
 	assert a.uids == ['polar:1001'] and a.multipart
 	assert ids( db.find_resources_for( a ) ) == [ 1, 2, 3, 4, 5, 6 ]
 
 	# test for the polar run 1
-	a = db.activity_map.get( 3 )
+	a = db.get_by_id( 3 )
 	assert all( uid.startswith( 'polar:1001/' ) for uid in a.uids ) and not a.multipart
 	assert ids( db.find_resources_for( a ) ) == [ 3, 5 ]
 
 	# test for run 2
-	a = db.activity_map.get( 6 )
+	a = db.get_by_id( 6 )
 	assert ids( db.find_resources_for( a ) ) == [ 4, 6, 10, 11, 12 ]
 
 @mark.db( template='default', read_only=True )

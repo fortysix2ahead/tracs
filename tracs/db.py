@@ -262,7 +262,11 @@ class ActivityDb:
 
 	@property
 	def activity_keys( self ) -> List[int]:
-		return sorted( list( self._activities.keys() ) )
+		return sorted( list( self._activities.id_keys() ) )
+
+	@property
+	def activity_ids( self ) -> List[int]:
+		return sorted( list( self._activities.id_keys() ) )
 
 	@property
 	def resource_map( self ) -> Mapping[int, Resource]:
@@ -289,13 +293,8 @@ class ActivityDb:
 
 	# insert/upsert activities
 
-	def insert( self, *activities ) -> Union[int, List[int]]:
-		ids = []
-		for a in activities:
-			a.id = self._next_id( self._activities )
-			self._activities[a.id] = a
-			ids.append( a.id )
-		return ids[0] if len( ids ) == 1 else ids
+	def insert( self, *activities ) -> List[int]:
+		return self._activities.add( *activities )
 
 	def insert_activity( self, activity: Activity ) -> int:
 		activity.id = self._next_id( self._activities )

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, time, timedelta
 from logging import getLogger
-from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar
+from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar, Union
 
 from attrs import define, evolve, field, fields, Attribute, Factory
 from dataclass_factory import Schema
@@ -13,7 +13,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.core import Container, FormattedFields, FormattedFieldsBase, VirtualField, VirtualFields, VirtualFieldsBase
 from tracs.resources import Resource
 from tracs.uid import UID
-from tracs.utils import sum_timedeltas, unique_sorted
+from tracs.utils import sum_timedeltas, unchain, unique_sorted
 
 log = getLogger( __name__ )
 
@@ -327,10 +327,26 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 		self.tags.remove( tag )
 
 @define
-class Activities( Container ):
+class Activities( Container[Activity] ):
 	"""
 	Dict-like container for activities.
 	"""
+
+	# def __attrs_post_init__( self ):
+	#	super().__attrs_post_init__()
+
+	def add( self, *activities: Union[Activity, List[Activity]] ) -> List[int]:
+		for a in unchain( *activities ):
+			# todo: activate insertion checker later
+			#if a.uid in self.__uid_map__:
+			#	raise KeyError( f'activity with UID {a.uid} already contained in activities' )
+
+			a.id = self.__next_id__()
+			self.data.append( a )
+			# self.__uid_map__[a.uid] = a
+			self.__id_map__[a.id] = a
+
+		return [a.id for a in activities]
 
 # helper
 

@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from itertools import chain, groupby
 from logging import getLogger
 from pathlib import Path
@@ -10,26 +10,23 @@ from sys import exit as sysexit
 from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
 
 from click import confirm
-from dataclass_factory import Factory, Schema as DataclassFactorySchema
 from fs.base import FS
 from fs.copy import copy_file, copy_file_if
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from orjson import dumps, loads, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
 
-from tracs.activity import Activity, ActivityPart
-from tracs.activity_types import ActivityTypes
+from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
-from tracs.io import load_resources, load_schema, Schema, write_resources
+from tracs.io import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
 from tracs.resources import Resource, Resources, ResourceType
 from tracs.rules import parse_rules
-from tracs.utils import str_to_timedelta, timedelta_to_str
 
 log = getLogger( __name__ )
 
@@ -51,25 +48,6 @@ DB_FILES = {
 
 UNDERLAY = 'underlay'
 OVERLAY = 'overlay'
-
-class IdSchema( DataclassFactorySchema ):
-
-	def __init__(self):
-		super().__init__( pre_parse=IdSchema.pre_parse, post_serialize=IdSchema.post_serialize )
-
-	@classmethod
-	def pre_parse( cls, data: Dict[str, Dict] ) -> Dict[str, Dict]:
-		return { int( k ): { **v, 'id': int( k ) } for k, v in data.items() }
-
-	@classmethod
-	def post_serialize( cls, data: Dict[int, Dict] ) -> Dict[int, Dict]:
-		return { str( k1 ): { k2: v2 for k2, v2 in v1.items() if k2 != 'id' } for k1, v1 in data.items() }
-
-	# noinspection PyMethodMayBeStatic
-	def _keys_to_str( self, mapping: Dict ) -> Dict:
-		for key in [k for k in mapping.keys()]:
-			mapping[str( key )] = mapping.pop( key )
-		return mapping
 
 class ActivityDbIndex:
 
@@ -105,9 +83,6 @@ class ActivityDb:
 
 		# initialize db file system(s)
 		self._init_db_filesystem()
-
-		# initialize db factory
-		self._init_db_factory()
 
 		# load content from disk
 		self._load_db()
@@ -167,26 +142,10 @@ class ActivityDb:
 		for file, content in DB_FILES.items():
 			self.underlay_fs.writetext( f'/{file}', content )
 
-	def _init_db_factory( self ):
-		self._factory = Factory(
-			# debug_path=True,
-			schemas={
-				# name_mapping={}
-				Activity: Activity.schema(),
-				ActivityPart: ActivityPart.schema(),
-				ActivityTypes: ActivityTypes.schema(),
-				Dict[int, Activity]: IdSchema(),
-				timedelta: DataclassFactorySchema( parser=str_to_timedelta, serializer=timedelta_to_str ),
-			}
-		)
-
 	def _load_db( self ):
 		self._schema = load_schema( self.dbfs )
 		self._resources: Resources = load_resources( self.dbfs )
-
-		json = loads( self.dbfs.readbytes( ACTIVITIES_NAME ) )
-		self._activities = self._factory.load( json, Dict[int, Activity] )
-		log.debug( f'loaded {len( self._activities )} activity entries from {ACTIVITIES_NAME}' )
+		self._activities: Activities = load_activities( self.dbfs )
 
 	def commit( self, do_commit: bool = True ):
 		if do_commit:
@@ -194,8 +153,7 @@ class ActivityDb:
 			self.commit_activities()
 
 	def commit_activities( self ):
-		json = self._factory.dump( self._activities, Dict[int, Activity] )
-		self.overlay_fs.writebytes( f'/{ACTIVITIES_NAME}', dumps( json, option=ORJSON_OPTIONS ) )
+		write_activities( self._activities, self.overlay_fs )
 
 	def commit_resources( self ):
 		write_resources( self._resources, self.overlay_fs )
@@ -219,10 +177,6 @@ class ActivityDb:
 	@property
 	def overlay_fs( self ) -> FS:
 		return self.dbfs.get_fs( OVERLAY )
-
-	@property
-	def factory( self ) -> Factory:
-		return self._factory
 
 	@property
 	def schema( self ) -> Schema:
@@ -262,11 +216,15 @@ class ActivityDb:
 
 	@property
 	def activities( self ) -> List[Activity]:
-		return list( self._activities.values() )
+		return list( self._activities.all() )
 
 	@property
 	def activity_keys( self ) -> List[int]:
-		return sorted( list( self._activities.keys() ) )
+		return sorted( list( self._activities.id_keys() ) )
+
+	@property
+	def activity_ids( self ) -> List[int]:
+		return sorted( list( self._activities.id_keys() ) )
 
 	@property
 	def resource_map( self ) -> Mapping[int, Resource]:
@@ -293,13 +251,8 @@ class ActivityDb:
 
 	# insert/upsert activities
 
-	def insert( self, *activities ) -> Union[int, List[int]]:
-		ids = []
-		for a in activities:
-			a.id = self._next_id( self._activities )
-			self._activities[a.id] = a
-			ids.append( a.id )
-		return ids[0] if len( ids ) == 1 else ids
+	def insert( self, *activities ) -> List[int]:
+		return self._activities.add( *activities )
 
 	def insert_activity( self, activity: Activity ) -> int:
 		activity.id = self._next_id( self._activities )
@@ -339,7 +292,7 @@ class ActivityDb:
 	# remove items
 
 	def remove_activity( self, a: Activity ) -> None:
-		del self.activity_map[a.id]
+		self._activities.remove( a.id )
 
 	def remove_activities( self, activities: List[Activity], auto_commit: bool = False ) -> None:
 		[self.remove_activity( a ) for a in activities]
@@ -389,7 +342,7 @@ class ActivityDb:
 		"""
 		Returns the activity with the provided id.
 		"""
-		return self.activity_map.get( id )
+		return self._activities.idget( id )
 
 	def get_by_uid( self, uid: str, include_resources: bool = False ) -> Optional[Activity]:
 		"""

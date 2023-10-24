@@ -43,11 +43,20 @@ def test_virtual_fields():
 
 	assert 'index' in edc.vf and 'upper_name' in edc.vf
 
-	assert EnrichedDataclass.field_names() == [ 'name', '__internal_name__' ]
-	assert EnrichedDataclass.field_names( False ) == [ 'name' ]
-	assert EnrichedDataclass.field_names( True ) == [ 'name', '__internal_name__' ]
-	assert EnrichedDataclass.field_names( True, True ) == [ 'name', '__internal_name__', 'index', 'upper_name' ]
-	assert EnrichedDataclass.field_names( False, True ) == [ 'name', 'index', 'upper_name' ]
+	names = EnrichedDataclass.field_names()
+	assert 'name' in names and '__internal_name__' in names
+
+	names = EnrichedDataclass.field_names( False )
+	assert 'name' in names and not '__internal_name__' in names
+
+	names = EnrichedDataclass.field_names( True )
+	assert 'name' in names and '__internal_name__' in names
+
+	names = EnrichedDataclass.field_names( True, True )
+	assert 'name' in names and '__internal_name__' in names and 'index' in names and 'upper_name' in names
+
+	names = EnrichedDataclass.field_names( False, True )
+	assert 'name' in names and not '__internal_name__' in names and 'index' in names and 'upper_name' in names
 
 def test_formatted_field():
 

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from sys import version_info
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, Union
+from types import MappingProxyType
+from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mapping, Optional, Tuple, Type, TypeVar, Union
 
 from attr import AttrsInstance
 from attrs import define, field, fields, Attribute
@@ -14,6 +15,102 @@ FIELD_KWARGS = {
 }
 
 FIELD_KWARGS = FIELD_KWARGS if version_info.minor < 10 else { **FIELD_KWARGS, 'kw_only': False }
+
+T = TypeVar('T')
+
+@define
+class Container( Generic[T] ):
+	"""
+	Dict-like container for activities/resources and the like. Super class to put common methods into.
+	"""
+
+	data: List[T] = field( factory=list )
+
+	__id_map__: Dict[int, T] = field( factory=dict, init=False, alias='__id_map__' )
+	__uid_map__: Dict[str, T] = field( factory=dict, init=False, alias='__uid_map__' )
+	__it__: Iterator = field( default=None, init=False, alias='__it__' )
+
+	# fill post init later
+	def __attrs_post_init__( self ):
+		pass
+
+	# calculation of next id
+	def __next_id__( self ) -> int:
+		existing_ids = [r.id for r in self.data]
+		id_range = range( 1, max( existing_ids ) + 2 ) if len( existing_ids ) > 0 else [1]
+		return set( id_range ).difference( set( existing_ids ) ).pop()
+
+	# len() support
+
+	def __len__( self ) -> int:
+		return len( self.data )
+
+	# iteration support
+
+	def __iter__( self ):
+		self.__it__ = self.data.__iter__()
+		return self.__it__
+
+	def __next__( self ):
+		return self.__it__.__next__()
+
+	# dict-like access
+
+	# this might be overridden in subclasses
+	def __contains__( self, item: T ) -> bool:
+		try:
+			return any( [item.uid == r.uid for r in self.data] )
+		except AttributeError:
+			return False
+
+	def __getitem__( self, key: str ):
+		return self.__uid_map__[key]
+
+	# various helpers
+
+	def get( self, key: str ) -> Optional[T]:
+		return next( (i for i in self.data if i.uid == key ), None )
+
+	def idget( self, key: int ) -> Optional[T]:
+		return next( (i for i in self.data if i.id == key ), None )
+
+	def ids( self ) -> List[int]:
+		return [r.id for r in self.data]
+
+	def keys( self ) -> List[str]:
+		return list( self.__uid_map__.keys() )
+
+	def values( self ) -> List[T]:
+		return list( self.data )
+
+	def items( self ) -> List[Tuple[str, T]]:
+		return list( self.__uid_map__.items() )
+
+	def uid_map( self ) -> Mapping[str, T]:
+		return MappingProxyType( self.__uid_map__ )
+
+	def uid_keys( self ) -> List[str]:
+		return list( self.__uid_map__.keys() )
+
+	def id_map( self ) -> Mapping[int, T]:
+		return MappingProxyType( self.__id_map__ )
+
+	def id_keys( self ) -> List[int]:
+		return list( self.__id_map__.keys() )
+
+	# content access
+
+	def all( self, sort=False ) -> List[T]:
+		# todo: we could also sort by id, not str( id )
+		return list( self.data ) if not sort else sorted( self.data, key=lambda r: str( r.id ) )
+
+	# content modification, check if this can be generalized
+
+	def add( self, *items: Union[T, List[T]] ) -> List[int]:
+		pass
+
+	def update( self, *items: Union[T, List[T]] ) -> Tuple[List[int], List[int]]:
+		pass
 
 @define
 class VirtualField:
@@ -94,6 +191,13 @@ class VirtualFieldsBase( AttrsInstance ):
 	@classmethod
 	def field_names( cls, include_internal = True, include_virtual = False ) -> List[str]:
 		return [f.name for f in cls.fields( include_internal=include_internal, include_virtual=include_virtual )]
+
+	@classmethod
+	def field_type( cls, field_name: str ) -> Any:
+		if f := next( (f for f in cls.fields( include_internal=True, include_virtual=True ) if f.name == field_name), None ):
+			return f.type
+		else:
+			return None
 
 	@property
 	def vf( self ) -> VirtualFields:

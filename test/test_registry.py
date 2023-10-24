@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Optional
 
 from pytest import raises
 
@@ -7,6 +8,10 @@ from tracs.registry import importer
 from tracs.registry import Registry
 from tracs.registry import resourcetype
 from tracs.resources import ResourceType
+
+def setup_module( module ):
+	# noinspection PyUnresolvedReferences
+	import tracs.plugins.rule_extensions
 
 @resourcetype( type='application/one', summary=True )
 class ActivityOne:
@@ -63,19 +68,17 @@ def test_importer2():
 	assert type( Registry.importer_for( 'TYPE_2' ) ) == ImporterTwo
 
 def test_fields_and_types( keywords ):
-	from tracs.plugins.rule_extensions import TIME_FRAMES # load rule extensions plugin
-
-	assert (f := Registry.activity_field( 'name' )) is not None and f.type == 'Optional[str]'
-	assert (f := Registry.activity_field( 'id' )) is not None and f.type == 'int'
-	assert (f := Registry.activity_field( 'distance' )) is not None and f.type == 'Optional[float]'
-	assert (f := Registry.activity_field( 'duration' )) is not None and f.type == 'Optional[timedelta]'
-	assert (f := Registry.activity_field( 'starttime' )) is not None and f.type == 'datetime'
+	assert (f := Registry.activity_field( 'name' )) is not None and f.type == Optional[str]
+	assert (f := Registry.activity_field( 'id' )) is not None and f.type == int
+	assert (f := Registry.activity_field( 'distance' )) is not None and f.type == Optional[float]
+	assert (f := Registry.activity_field( 'duration' )) is not None and f.type == Optional[timedelta]
+	assert (f := Registry.activity_field( 'starttime' )) is not None and f.type == datetime
 	assert Registry.activity_field( 'not_existing_field' ) is None
 
 	# check above fields against normalizers
-	assert Registry.rule_normalizer_type( 'name' ) == 'Optional[str]'
+	assert Registry.rule_normalizer_type( 'name' ) == Optional[str]
 	assert Registry.rule_normalizer_type( 'id' ) == int
-	assert Registry.rule_normalizer_type( 'distance' ) == 'Optional[float]'
-	assert Registry.rule_normalizer_type( 'duration' ) == 'Optional[timedelta]'
+	assert Registry.rule_normalizer_type( 'distance' ) == Optional[float]
+	assert Registry.rule_normalizer_type( 'duration' ) == Optional[timedelta]
 	assert Registry.rule_normalizer_type( 'time' ) == datetime
 	assert Registry.rule_normalizer_type( 'not_existing_field' ) is None

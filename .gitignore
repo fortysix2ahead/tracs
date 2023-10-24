@@ -130,4 +130,5 @@ dmypy.json
 # development environments
 /.idea
 /.vscode
+settings
 test/takeouts/live

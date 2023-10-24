@@ -1,6 +1,7 @@
 
 from datetime import datetime, time, timedelta
 from logging import getLogger
+from typing import List, Optional
 
 from pytest import mark, raises
 
@@ -152,8 +153,8 @@ def test_fields():
 	field_names = Activity.field_names( include_virtual=True )
 	assert 'name' in field_names and '__uids__' in field_names and 'weekday' in field_names
 
-	assert Activity.field_type( 'name' ) == 'Optional[str]'
-	assert Activity.field_type( '__uids__' ) == 'List[UID]'
+	assert Activity.field_type( 'name' ) == Optional[str]
+	assert Activity.field_type( '__uids__' ) == List[UID]
 	assert Activity.field_type( 'weekday' ) == int
 	assert Activity.field_type( 'noexist' ) is None
 

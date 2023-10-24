@@ -24,7 +24,7 @@ from rich.table import Table as RichTable
 from tracs.activity import Activities, Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext
-from tracs.io import load_activities, load_resources, load_schema, Schema, write_resources
+from tracs.io import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
 from tracs.resources import Resource, Resources, ResourceType
@@ -191,8 +191,7 @@ class ActivityDb:
 			self.commit_activities()
 
 	def commit_activities( self ):
-		json = self._factory.dump( self._activities, Dict[int, Activity] )
-		self.overlay_fs.writebytes( f'/{ACTIVITIES_NAME}', dumps( json, option=ORJSON_OPTIONS ) )
+		write_activities( self._activities, self.overlay_fs )
 
 	def commit_resources( self ):
 		write_resources( self._resources, self.overlay_fs )

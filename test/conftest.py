@@ -1,4 +1,5 @@
 
+from importlib.resources import path as resource_path
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, List
@@ -6,6 +7,11 @@ from typing import Optional
 from typing import Tuple
 
 from bottle import Bottle
+from fs.base import FS
+from fs.memoryfs import MemoryFS
+from fs.mountfs import MountFS
+from fs.multifs import MultiFS
+from fs.osfs import OSFS
 from pytest import fixture
 from yaml import load as load_yaml
 from yaml import SafeLoader
@@ -38,6 +44,14 @@ from .strava_server import strava_server_thread
 log = getLogger( __name__ )
 
 ENABLE_LIVE_TESTS = 'ENABLE_LIVE_TESTS'
+PERSISTANCE_NAME = 'persistance_layer'
+
+def marker( request, name, key, default ):
+	try:
+		return request.node.get_closest_marker( name ).kwargs.get( key )
+	except (AttributeError, TypeError):
+		log.error( f'unable to access marker {name}.{key}', exc_info=True )
+		return default
 
 # shared fixtures
 
@@ -99,6 +113,54 @@ def ctx( request ) -> Optional[ApplicationContext]:
 
 	except ValueError:
 		log.error( 'unable to run fixture context', exc_info=True )
+
+@fixture
+def fs( request ) -> FS:
+	cfg_name = marker( request, 'context', 'config', None )
+	lib_name = marker( request, 'context', 'lib', None )
+	overlay_name = marker( request, 'context', 'overlay', None )
+	takeout_name = marker( request, 'context', 'takeout', None )
+	var_name = marker( request, 'context', 'var', None )
+	persist = marker( request, 'context', 'persist', False )
+	cleanup = marker( request, 'context', 'cleanup', True )
+
+	root_fs = MultiFS()
+	mount_fs = MountFS()
+
+	if persist == 'disk':
+		vrp = var_run_path().absolute()
+		root_fs.add_fs( PERSISTANCE_NAME, OSFS( str( vrp ) ), write=True )
+		log.info( f'created new temporary persistance dir in {str( vrp )}' )
+
+	elif persist == 'mem':
+		root_fs.add_fs( PERSISTANCE_NAME, MemoryFS(), write=True )
+
+	root_fs.add_fs( 'mount', mount_fs )
+
+	with resource_path( 'test', '__init__.py' ) as rp:
+		tp = str( rp.parent.resolve().absolute() )
+		if cfg_name:
+			root_fs.add_fs( 'cfg', OSFS( f'{tp}/configurations/{cfg_name}' ) )
+
+		if lib_name:
+			mount_fs.mount( '/db', OSFS( f'{tp}/libraries/{lib_name}' ) )
+
+		if overlay_name:
+			mount_fs.mount( '/overlay', OSFS( f'{tp}/overlays/{overlay_name}' ) )
+
+		if takeout_name:
+			mount_fs.mount( '/takeouts', OSFS( f'{tp}/takeouts/{takeout_name}' ) )
+
+		if var_name:
+			mount_fs.mount( '/var', OSFS( f'{tp}/var/{var_name}' ) )
+
+	yield root_fs
+
+	if cleanup:
+		if (pl := root_fs.get_fs( PERSISTANCE_NAME )) and isinstance( pl, OSFS ):
+			syspath = pl.getsyspath( '/' )
+			cleanup_path( Path( syspath ) )
+			log.info( f'cleaned up temporary persistance dir {syspath}' )
 
 @fixture
 def json( request ) -> Optional[Dict]:

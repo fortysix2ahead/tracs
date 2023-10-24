@@ -66,7 +66,7 @@ def test_open_db( db ):
 def test_insert( db ):
 	assert len( db.activities ) == 0
 	id = db.insert( Activity() )
-	assert len( db.activities ) == 1 and id == 1
+	assert len( db.activities ) == 1 and id == [1]
 	ids = db.insert( Activity(), Activity() )
 	assert len( db.activities ) == 3 and ids == [2, 3]
 	assert db.activity_keys == [1, 2, 3]

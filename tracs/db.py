@@ -258,7 +258,7 @@ class ActivityDb:
 
 	@property
 	def activities( self ) -> List[Activity]:
-		return list( self._activities.values() )
+		return list( self._activities.all() )
 
 	@property
 	def activity_keys( self ) -> List[int]:

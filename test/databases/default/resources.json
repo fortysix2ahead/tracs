@@ -1,5 +1,6 @@
-{
-	"1": {
+[
+	{
+		"id": 1,
 		"name": null,
 		"path": "1234567890.raw.json",
 		"type": "application/json+polar",
@@ -7,4 +8,4 @@
 		"status": 200,
 		"uid": "polar:1234567890"
 	}
-}
+]

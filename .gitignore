@@ -17,7 +17,7 @@ eggs/
 lib/
 lib64/
 sdist/
-var/
+/var/
 wheels/
 pip-wheel-metadata/
 share/python-wheels/

@@ -108,12 +108,12 @@ class BikecitizensActivity:
 
 # todo: actually we can import this, but currently there are no timestamps and it's of no better use compared to the gpx
 # that's why recording is currently set to False in BikecitizensRecording (see above)
-@importer( type=BIKECITIZENS_RECORDING_TYPE )
+@importer
 class BikecitizensRecordingImporter( JSONHandler ):
 
-	pass
+	TYPE: str = BIKECITIZENS_RECORDING_TYPE
 
-@importer( type=BIKECITIZENS_TYPE )
+@importer
 class BikecitizensImporter( DataclassFactoryHandler ):
 
 	TYPE: str = BIKECITIZENS_TYPE

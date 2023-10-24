@@ -1,7 +1,6 @@
 
 from __future__ import annotations
 
-from dataclasses import Field, fields
 from enum import Enum
 from importlib import import_module
 from inspect import getmembers, isclass, isfunction
@@ -11,8 +10,8 @@ from pkgutil import walk_packages
 from re import match
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
+from attrs import fields, Attribute
 from confuse import NotFoundError
-from dataclass_factory import Factory, Schema
 
 from tracs.activity import Activity
 from tracs.config import ApplicationContext, KEY_CLASSIFER
@@ -40,7 +39,6 @@ class Registry:
 
 	classifier: str = KEY_CLASSIFER
 	ctx: ApplicationContext = None
-	dataclass_factory = Factory( debug_path=True, schemas={} )
 	event_listeners = {}
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
@@ -125,7 +123,7 @@ class Registry:
 		log.debug( f'registered virtual fields {[vf.name for vf in unchain( *virtual_fields )]}' )
 
 	@classmethod
-	def activity_field( cls, name: str ) -> Optional[Field]:
+	def activity_field( cls, name: str ) -> Optional[Attribute]:
 		if f := next( (f for f in fields( Activity ) if f.name == name), None ):
 			return f
 		else:
@@ -395,7 +393,6 @@ def normalizer( *args, **kwargs ):
 def resourcetype( *args, **kwargs ):
 	def reg_resource_type( cls ):
 		Registry.register_resource_type( ResourceType( **{'activity_cls': cls} | kwargs ) )
-		Registry.dataclass_factory.schemas[cls] = Schema( omit_default=True, skip_internal=True, unknown='unknown' )
 		return cls
 	return reg_resource_type if len( args ) == 0 else args[0]
 

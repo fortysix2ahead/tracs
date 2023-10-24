@@ -1,19 +1,18 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, Field, fields, InitVar, MISSING, replace
 from datetime import datetime, time, timedelta
 from logging import getLogger
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Dict, List, Optional, TypeVar, Union
 
-from dataclass_factory import Schema
+from attrs import define, evolve, Factory, field
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import FormattedFields, VirtualField, VirtualFields
+from tracs.core import Container, FormattedFieldsBase, VirtualFieldsBase
 from tracs.resources import Resource
 from tracs.uid import UID
-from tracs.utils import sum_timedeltas, unique_sorted
+from tracs.utils import sum_timedeltas, unchain, unique_sorted
 
 log = getLogger( __name__ )
 
@@ -21,20 +20,16 @@ T = TypeVar('T')
 
 PROTECTED_FIELDS = [ 'id' ]
 
-@dataclass( eq=True )
+@define( eq=True )
 class ActivityPart:
 
 	gap: time = field( default=None )
-	uids: List[str] = field( default_factory=list )
+	uids: List[str] = field( factory=list )
 
-	__uids__: List[UID] = field( default_factory=list )
+	__uids__: List[UID] = field( factory=list, alias='__uids__' )
 
-	def __post_init__(self):
+	def __attrs_post_init__(self):
 		self.__uids__ = [UID( uid ) for uid in self.uids]
-
-	@classmethod
-	def schema( cls ) -> Schema:
-		return Schema( omit_default=True, skip_internal=True, unknown='unknown' )
 
 	@property
 	def classifiers( self ) -> List[str]:
@@ -52,17 +47,27 @@ class ActivityPart:
 	def as_activity_uids( self ) -> List[UID]:
 		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.__uids__ ] )
 
-@dataclass( eq=True ) # todo: mark fields with proper eq attributes
-class Activity:
+# helper for automatically setting uid/__uid__ - future use
 
-	# class variables
-	__fmf__: FormattedFields = FormattedFields()
-	__vf__: VirtualFields = VirtualFields()
+def on_set_uid( inst, att: Optional, val ):
+	if val:
+		object.__setattr__( inst, '__uid__', UID( val ) )
+	return val
+
+def on_set__uid__( inst, att: Optional, val ):
+	if val and val.uid:
+		object.__setattr__( inst, 'uid', val.uid )
+	return val
+
+@define( eq=True ) # todo: mark fields with proper eq attributes
+class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	# fields
 	id: int = field( default=None )
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
-	uids: List[str] = field( default_factory=list )
+	uid: str = field( default=None, on_setattr=on_set_uid ) # field will become more important (again) in the future
+	"""UID of this activity"""
+	uids: List[str] = field( factory=list ) # referenced list activities
 	"""List of uids of resources which belong to this activity"""
 
 	name: Optional[str] = field( default=None )
@@ -71,9 +76,9 @@ class Activity:
 	"""activity type"""
 	description: str = field( default=None )
 	"""description"""
-	tags: List[str] = field( default_factory=list )
+	tags: List[str] = field( factory=list )
 	"""list of tags"""
-	equipment: List[str] = field( default_factory=list )
+	equipment: List[str] = field( factory=list )
 	"""list of equipment tags"""
 
 	location_country: Optional[str] = field( default=None ) #
@@ -113,72 +118,25 @@ class Activity:
 	heartrate_min: Optional[int] = field( default=None ) #
 	calories: Optional[int] = field( default=None ) #
 
-	parts: List[ActivityPart] = field( default_factory=list )
+	parts: List[ActivityPart] = field( factory=list )
 
 	# init variables
 	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
-	others: InitVar = field( default=None )
-	other_parts: InitVar = field( default=None )
-	uid: InitVar = field( default=None ) # we keep this as init var
+	# todo: move this into a factory method?
+	others = field( default=None )
+	other_parts = field( default=None )
 
 	## internal fields
-	__uids__: List[UID] = field( default_factory=list, repr=False, compare=False )
-	__dirty__: bool = field( init=False, default=False, repr=False )
-	__metadata__: Dict[str, Any] = field( init=False, default_factory=dict )
-	__parts__: List[Activity] = field( init=False, default_factory=list, repr=False )
-	__resources__: List[Resource] = field( init=False, default_factory=list, repr=False, compare=False )
-	__parent__: Activity = field( init=False, default=0 )
-	__parent_id__: int = field( init=False, default=0 )
-
-	# class methods
-
-	@classmethod
-	def set_virtual_field( cls, name: str, vf: VirtualField ) -> None:
-		Activity.__fmf__.__fields__[name] = vf
-
-	@classmethod
-	# todo: change default of include_internal to False (keep at the moment for compatibility reasons)
-	def fields( cls, include_internal = True, include_virtual = False ) -> List[Field]:
-		_fields = list( fields( Activity ) )
-		if include_virtual:
-			_fields.extend( [f for f in cls.__vf__.__fields__.values()] )
-		if not include_internal:
-			_fields = list( filter( lambda f: not f.name.startswith( '_' ), _fields ) )
-		return _fields
-
-	@classmethod
-	# todo: change default of include_internal to False (keep at the moment for compatibility reasons)
-	def field_names( cls, include_internal = True, include_virtual = False ) -> List[str]:
-		return [f.name for f in cls.fields( include_internal=include_internal, include_virtual=include_virtual )]
-
-	@classmethod
-	def field_type( cls, field_name: str ) -> Any:
-		if f := next( (f for f in cls.fields( include_internal=True, include_virtual=True ) if f.name == field_name), None ):
-			return f.type
-		else:
-			return None
-
-	@classmethod
-	def set_formatter( cls, field_name: str, fn: Callable ) -> None:
-		Activity.__fmf__.__fields__[field_name] = fn
-
-	@classmethod
-	def schema( cls ) -> Schema:
-		return Schema(
-			omit_default=True,
-			skip_internal=True,
-			unknown='unknown'
-		)
+	__uid__: UID = field( default=None, repr=False, eq=False, on_setattr=on_set__uid__, alias='__uid__' )
+	__uids__: List[UID] = field( factory=list, repr=False, eq=False, alias='__uids__' )
+	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
+	__metadata__: Dict[str, Any] = field( init=False, factory=dict, alias='__metadata__' )
+	__parts__: List[Activity] = field( init=False, factory=list, repr=False, alias='__parts__' )
+	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False, alias='__resources__' )
+	__parent__: Optional[Activity] = field( init=False, default=None, alias='__parent__' )
+	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
 
 	# additional properties
-
-	@property
-	def vf( self ) -> VirtualFields:
-		return self.__class__.__vf__( self )
-
-	@property
-	def fmf( self ) -> FormattedFields:
-		return Activity.__fmf__( self )
 
 	@property
 	def classifiers( self ) -> List[str]:
@@ -222,10 +180,14 @@ class Activity:
 		return len( self.parts ) > 0
 
 	# post init, this contains mostly convenience things
-	def __post_init__( self, others: List[Activity], other_parts: List[Activity], uid: str ):
+	def __attrs_post_init__( self ):
+		if self.uid or self.__uid__:
+			on_set_uid( self, None, self.uid )
+			on_set__uid__( self, None, self.__uid__ )
+
 		# convenience: if called with an uid, store it in uids list + setup __uids__
-		if uid:
-			self.uids = [uid]
+		if self.uid:
+			self.uids = [self.uid]
 
 		# uid list handling, depending on parts
 		if self.parts:
@@ -237,14 +199,10 @@ class Activity:
 			self.__uids__ = [UID( uid ) for uid in self.uids]
 
 		# convenience: allow init from other activities
-		if others:
-			self.union( others )
-		elif other_parts:
-			self.add( other_parts )
-
-		# set self/cls to virtual/formatted fields
-		self.__vf__.__parent__ = self
-		# self.__class__.__fmf__.parent = self.__class__
+		if self.others:
+			self.union( self.others )
+		elif self.other_parts:
+			self.add( self.other_parts )
 
 	# additional methods
 
@@ -262,7 +220,7 @@ class Activity:
 
 	# def union( self, others: List[Activity], strategy: Literal['first', 'last'] = 'first' ) -> Activity: # todo: are different strategies useful?
 	def union( self, others: List[Activity], ignore: List[str] = None, copy: bool = False, force: bool = False ) -> Activity:
-		this = replace( self ) if copy else self
+		this = evolve( self ) if copy else self
 		ignore = ignore if ignore else []
 
 		for f in this.fields():
@@ -275,7 +233,7 @@ class Activity:
 			value = getattr( this, f.name )
 
 			# case 1: non-factory types
-			if f.default != MISSING and f.default_factory == MISSING:
+			if not isinstance( f.default, Factory ):
 				if not force and value != f.default:  # do not overwrite when a value is already set
 					continue
 
@@ -287,15 +245,15 @@ class Activity:
 							break
 
 			# case 2: factory types
-			elif f.default == MISSING and f.default_factory != MISSING:
+			else:
 				for other in others:
 					other_value = getattr( other, f.name )
-					if f.default_factory is list:
+					if f.default.factory is list:
 						setattr( this, f.name, sorted( list( set().union( getattr( this, f.name ), other_value ) ) ) )
-					elif f.default_factory is dict:
+					elif f.default.factory is dict:
 						setattr( this, f.name, { **value, **other_value } )
 					else:
-						raise RuntimeError( f'unsupported factory datatype: {f.default_factory}' )
+						raise RuntimeError( f'unsupported factory datatype: {f.default}' )
 
 		return this
 
@@ -308,7 +266,7 @@ class Activity:
 		:return:
 		"""
 
-		this = replace( self ) if copy else self
+		this = evolve( self ) if copy else self
 		activities = [this, *others]
 
 		this.type = t if (t := _unique( activities, 'type' ) ) else ActivityTypes.multisport
@@ -352,6 +310,36 @@ class Activity:
 
 	def untag( self, tag: str ):
 		self.tags.remove( tag )
+
+@define
+class Activities( Container[Activity] ):
+	"""
+	Dict-like container for activities.
+	"""
+
+	# def __attrs_post_init__( self ):
+	#	super().__attrs_post_init__()
+
+	def add( self, *activities: Union[Activity, List[Activity]] ) -> List[int]:
+		for a in unchain( *activities ):
+			# todo: activate insertion checker later
+			#if a.uid in self.__uid_map__:
+			#	raise KeyError( f'activity with UID {a.uid} already contained in activities' )
+
+			a.id = self.__next_id__()
+			self.data.append( a )
+			# self.__uid_map__[a.uid] = a
+			self.__id_map__[a.id] = a
+
+		return [a.id for a in activities]
+
+	def remove( self, *ids: Union[int, List[int]] ) -> None:
+		for id in unchain( *ids ):
+			try:
+				self.data.remove( self.idget( id ) )
+				del self.__id_map__[id]
+			except KeyError:
+				pass
 
 # helper
 

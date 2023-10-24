@@ -1,22 +1,41 @@
 
-from datetime import datetime, timedelta
-from datetime import time
+from datetime import datetime, time, timedelta
 from logging import getLogger
+from typing import List, Optional
 
 from pytest import mark, raises
 
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
-from tracs.core import VirtualField, VirtualFields
+from tracs.core import VirtualField
 from tracs.registry import virtualfield
 from tracs.resources import Resource
 from tracs.uid import UID
 
 log = getLogger( __name__ )
 
+# noinspection PyUnresolvedReferences
 def setup_module( module ):
 	import tracs.plugins.rule_extensions
 	log.info( 'importing tracs.plugins.rule_extensions' )
+
+def test_activity_uid():
+	a = Activity()
+	assert a.uid is None and a.__uid__ is None
+	a.uid = 'polar:100'
+	assert a.uid == 'polar:100' and a.__uid__ == UID( classifier='polar', local_id=100 )
+	a.__uid__ = UID( 'polar:101' )
+	assert a.uid == 'polar:101' and a.__uid__ == UID( classifier='polar', local_id=101 )
+
+	a = Activity( uid='polar:100' )
+	assert a.uid == 'polar:100' and a.__uid__ == UID( classifier='polar', local_id=100 )
+
+	a = Activity( __uid__=UID( 'polar:101' ) )
+	assert a.uid == 'polar:101' and a.__uid__ == UID( classifier='polar', local_id=101 )
+
+	# uid wins
+	a = Activity( uid='polar:200', __uid__=UID( 'strava:300' ) )
+	assert a.uid == 'polar:200' and a.__uid__ == UID( classifier='polar', local_id=200 )
 
 @mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
 def test_union( json ):
@@ -134,8 +153,8 @@ def test_fields():
 	field_names = Activity.field_names( include_virtual=True )
 	assert 'name' in field_names and '__uids__' in field_names and 'weekday' in field_names
 
-	assert Activity.field_type( 'name' ) == 'Optional[str]'
-	assert Activity.field_type( '__uids__' ) == 'List[UID]'
+	assert Activity.field_type( 'name' ) == Optional[str]
+	assert Activity.field_type( '__uids__' ) == List[UID]
 	assert Activity.field_type( 'weekday' ) == int
 	assert Activity.field_type( 'noexist' ) is None
 
@@ -213,7 +232,7 @@ def test_formatted_activity_fields():
 	assert a1.fmf.name == 'Morning Run in Berlin'
 	assert a2.fmf.name == 'Afternoon Walk in Berlin'
 
-	Activity.set_formatter( 'name', lambda s: s.lower() )
+	Activity.FMF()['name'] = lambda s, a, b: s.lower()
 
 	assert a1.fmf.name == 'morning run in berlin'
 	assert a2.fmf.name == 'afternoon walk in berlin'

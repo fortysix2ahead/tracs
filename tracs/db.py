@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from itertools import chain, groupby
 from logging import getLogger
 from pathlib import Path
@@ -10,26 +10,23 @@ from sys import exit as sysexit
 from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
 
 from click import confirm
-from dataclass_factory import Factory, Schema as DataclassFactorySchema
 from fs.base import FS
 from fs.copy import copy_file, copy_file_if
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from orjson import dumps, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
 
-from tracs.activity import Activities, Activity, ActivityPart
-from tracs.activity_types import ActivityTypes
+from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
 from tracs.io import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.registry import Registry, service_names
 from tracs.resources import Resource, Resources, ResourceType
 from tracs.rules import parse_rules
-from tracs.utils import str_to_timedelta, timedelta_to_str
 
 log = getLogger( __name__ )
 
@@ -51,25 +48,6 @@ DB_FILES = {
 
 UNDERLAY = 'underlay'
 OVERLAY = 'overlay'
-
-class IdSchema( DataclassFactorySchema ):
-
-	def __init__(self):
-		super().__init__( pre_parse=IdSchema.pre_parse, post_serialize=IdSchema.post_serialize )
-
-	@classmethod
-	def pre_parse( cls, data: Dict[str, Dict] ) -> Dict[str, Dict]:
-		return { int( k ): { **v, 'id': int( k ) } for k, v in data.items() }
-
-	@classmethod
-	def post_serialize( cls, data: Dict[int, Dict] ) -> Dict[int, Dict]:
-		return { str( k1 ): { k2: v2 for k2, v2 in v1.items() if k2 != 'id' } for k1, v1 in data.items() }
-
-	# noinspection PyMethodMayBeStatic
-	def _keys_to_str( self, mapping: Dict ) -> Dict:
-		for key in [k for k in mapping.keys()]:
-			mapping[str( key )] = mapping.pop( key )
-		return mapping
 
 class ActivityDbIndex:
 
@@ -105,9 +83,6 @@ class ActivityDb:
 
 		# initialize db file system(s)
 		self._init_db_filesystem()
-
-		# initialize db factory
-		self._init_db_factory()
 
 		# load content from disk
 		self._load_db()
@@ -167,19 +142,6 @@ class ActivityDb:
 		for file, content in DB_FILES.items():
 			self.underlay_fs.writetext( f'/{file}', content )
 
-	def _init_db_factory( self ):
-		self._factory = Factory(
-			# debug_path=True,
-			schemas={
-				# name_mapping={}
-				Activity: Activity.schema(),
-				ActivityPart: ActivityPart.schema(),
-				ActivityTypes: ActivityTypes.schema(),
-				Dict[int, Activity]: IdSchema(),
-				timedelta: DataclassFactorySchema( parser=str_to_timedelta, serializer=timedelta_to_str ),
-			}
-		)
-
 	def _load_db( self ):
 		self._schema = load_schema( self.dbfs )
 		self._resources: Resources = load_resources( self.dbfs )
@@ -215,10 +177,6 @@ class ActivityDb:
 	@property
 	def overlay_fs( self ) -> FS:
 		return self.dbfs.get_fs( OVERLAY )
-
-	@property
-	def factory( self ) -> Factory:
-		return self._factory
 
 	@property
 	def schema( self ) -> Schema:

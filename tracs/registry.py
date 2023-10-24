@@ -12,7 +12,6 @@ from re import match
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from confuse import NotFoundError
-from dataclass_factory import Factory, Schema
 
 from tracs.activity import Activity
 from tracs.config import ApplicationContext, KEY_CLASSIFER
@@ -40,7 +39,6 @@ class Registry:
 
 	classifier: str = KEY_CLASSIFER
 	ctx: ApplicationContext = None
-	dataclass_factory = Factory( debug_path=True, schemas={} )
 	event_listeners = {}
 	handlers: Dict[str, List[Handler]] = {}
 	importers: Dict[str, List[Importer]] = {}
@@ -395,7 +393,6 @@ def normalizer( *args, **kwargs ):
 def resourcetype( *args, **kwargs ):
 	def reg_resource_type( cls ):
 		Registry.register_resource_type( ResourceType( **{'activity_cls': cls} | kwargs ) )
-		Registry.dataclass_factory.schemas[cls] = Schema( omit_default=True, skip_internal=True, unknown='unknown' )
 		return cls
 	return reg_resource_type if len( args ) == 0 else args[0]
 

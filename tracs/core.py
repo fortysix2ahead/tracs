@@ -68,11 +68,14 @@ class Container( Generic[T] ):
 
 	# various helpers
 
+	def get( self, key: str ) -> Optional[T]:
+		return next( (i for i in self.data if i.uid == key ), None )
+
+	def idget( self, key: int ) -> Optional[T]:
+		return next( (i for i in self.data if i.id == key ), None )
+
 	def ids( self ) -> List[int]:
 		return [r.id for r in self.data]
-
-	def get( self, key: str ):
-		return self.__uid_map__.get( key )
 
 	def keys( self ) -> List[str]:
 		return list( self.__uid_map__.keys() )

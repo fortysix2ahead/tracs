@@ -161,6 +161,9 @@ class Resources( Container[Resource] ):
 		except AttributeError:
 			return False
 
+	def get( self, key: str ) -> Optional[Resource]:
+		return next( (i for i in self.data if i.uidpath == key), None )
+
 	# add/remove etc.
 
 	def add( self, *resources: Union[Resource, List[Resource]] ) -> List[int]:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from logging import getLogger
 from typing import Any, Union
 
-from dataclass_factory import Factory
+from cattrs.preconf.orjson import make_converter
 from orjson import dumps as save_json, loads as load_json, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 
 from tracs.handlers import ResourceHandler
@@ -31,7 +31,7 @@ class JSONHandler( ResourceHandler ):
 
 class DataclassFactoryHandler( JSONHandler ):
 
-	FACTORY = Factory( debug_path=True, schemas={} ) # use dataclass factory instead of callable
+	CONVERTER = make_converter()
 
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		"""
@@ -40,7 +40,7 @@ class DataclassFactoryHandler( JSONHandler ):
 		Example: transform a dict into a dataclass.
 		"""
 		try:
-			return self.__class__.FACTORY.load( raw, self.__class__.ACTIVITY_CLS )
+			return self.__class__.CONVERTER.loads( raw, self.__class__.ACTIVITY_CLS )
 		except RuntimeError:
 			log.error( f'unable to transform raw data into structured data by using the factory for {self._activity_cls}', exc_info=True )
 			return raw

@@ -3,14 +3,13 @@ from __future__ import annotations
 
 from datetime import datetime, time, timedelta
 from logging import getLogger
-from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar, Union
+from typing import Any, Dict, List, Optional, TypeVar, Union
 
-from attrs import define, evolve, field, fields, Attribute, Factory
-from dataclass_factory import Schema
+from attrs import define, evolve, Factory, field
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import Container, FormattedFields, FormattedFieldsBase, VirtualField, VirtualFields, VirtualFieldsBase
+from tracs.core import Container, FormattedFieldsBase, VirtualFieldsBase
 from tracs.resources import Resource
 from tracs.uid import UID
 from tracs.utils import sum_timedeltas, unchain, unique_sorted
@@ -31,10 +30,6 @@ class ActivityPart:
 
 	def __attrs_post_init__(self):
 		self.__uids__ = [UID( uid ) for uid in self.uids]
-
-	@classmethod
-	def schema( cls ) -> Schema:
-		return Schema( omit_default=True, skip_internal=True, unknown='unknown' )
 
 	@property
 	def classifiers( self ) -> List[str]:
@@ -140,16 +135,6 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False, alias='__resources__' )
 	__parent__: Optional[Activity] = field( init=False, default=None, alias='__parent__' )
 	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
-
-	# class methods
-
-	@classmethod
-	def schema( cls ) -> Schema:
-		return Schema(
-			omit_default=True,
-			skip_internal=True,
-			unknown='unknown'
-		)
 
 	# additional properties
 

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from enum import Enum
 
-from dataclass_factory import Schema
-
 class ActivityTypes( Enum ):
 	aerobics = 'Aerobics'
 	badminton = 'Badminton'
@@ -69,10 +67,6 @@ class ActivityTypes( Enum ):
 			return cls[name]
 		except KeyError:
 			return ActivityTypes.unknown
-
-	@classmethod
-	def schema( cls ) -> Schema:
-		return Schema( parser=ActivityTypes.from_str, serializer=ActivityTypes.to_str )
 
 	@classmethod
 	def from_str( cls, s: str ) -> ActivityTypes:

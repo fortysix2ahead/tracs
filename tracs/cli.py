@@ -12,7 +12,7 @@ from tracs.config import ApplicationContext, APPNAME
 from tracs.db import backup_db, maintain_db, restore_db, status_db
 from tracs.edit import edit_activities, equip_activities, modify_activities, rename_activities, set_activity_type, tag_activities, unequip_activities, untag_activities
 from tracs.group import group_activities, part_activities, ungroup_activities, unpart_activities
-from tracs.inout import export_activities, import_activities, open_activities, reimport_activities
+from tracs.aio import export_activities, import_activities, open_activities, reimport_activities
 from tracs.link import link_activities
 from tracs.list import inspect_activities, inspect_registry, inspect_resources, list_activities, show_config, show_fields
 from tracs.setup import setup as setup_application

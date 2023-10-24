@@ -22,7 +22,7 @@ from rich.prompt import Prompt
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes, ActivityTypes as Types
 from tracs.config import ApplicationContext, APPNAME
-from tracs.inout import load_resource
+from tracs.aio import load_resource
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import DataclassFactoryHandler, JSON_TYPE, JSONHandler
 from tracs.plugins.tcx import TCX_TYPE

@@ -1,7 +1,6 @@
 
 from __future__ import annotations
 
-from dataclasses import Field, fields
 from enum import Enum
 from importlib import import_module
 from inspect import getmembers, isclass, isfunction
@@ -11,6 +10,7 @@ from pkgutil import walk_packages
 from re import match
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
+from attrs import fields, Attribute
 from confuse import NotFoundError
 
 from tracs.activity import Activity
@@ -123,7 +123,7 @@ class Registry:
 		log.debug( f'registered virtual fields {[vf.name for vf in unchain( *virtual_fields )]}' )
 
 	@classmethod
-	def activity_field( cls, name: str ) -> Optional[Field]:
+	def activity_field( cls, name: str ) -> Optional[Attribute]:
 		if f := next( (f for f in fields( Activity ) if f.name == name), None ):
 			return f
 		else:

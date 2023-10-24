@@ -1,5 +1,6 @@
-{
-	"1": {
+[
+	{
+		"id": 1,
 		"name": "Unknown Location",
 		"type": "xcski",
 		"starttime": "2012-01-07T10:40:56+00:00",
@@ -12,7 +13,8 @@
 			"waze:20210101010101"
 		]
 	},
-	"2": {
+	{
+		"id": 2,
 		"name": "03:23:53;0.0 km",
 		"calories": 2904,
 		"distance": 30000.1,
@@ -25,7 +27,8 @@
 			"polar:1234567890"
 		]
 	},
-	"3": {
+	{
+		"id": 3,
 		"name": "Run at Noon",
 		"raw_id": 12345678,
 		"starttime": "2012-01-07T10:40:56+00:00",
@@ -36,7 +39,8 @@
 			"strava:12345678"
 		]
 	},
-	"4": {
+	{
+		"id": 4,
 		"name": "Unknown Location",
 		"raw_id": 20210101010101,
 		"heartrate": 130,
@@ -46,7 +50,8 @@
 			"waze:20210101010101"
 		]
 	},
-	"100": {
+	{
+		"id": 100,
 		"name": null,
 		"heartrate": null,
 		"location": "",
@@ -56,4 +61,4 @@
 			"polar:123456"
 		]
 	}
-}
+]

@@ -348,6 +348,14 @@ class Activities( Container[Activity] ):
 
 		return [a.id for a in activities]
 
+	def remove( self, *ids: Union[int, List[int]] ) -> None:
+		for id in unchain( *ids ):
+			try:
+				self.data.remove( self.idget( id ) )
+				del self.__id_map__[id]
+			except KeyError:
+				pass
+
 # helper
 
 def _unique( activities: List[Activity], name: str ) -> Any:

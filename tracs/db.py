@@ -334,7 +334,7 @@ class ActivityDb:
 	# remove items
 
 	def remove_activity( self, a: Activity ) -> None:
-		del self.activity_map[a.id]
+		self._activities.remove( a.id )
 
 	def remove_activities( self, activities: List[Activity], auto_commit: bool = False ) -> None:
 		[self.remove_activity( a ) for a in activities]

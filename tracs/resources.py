@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from enum import Enum
 from re import compile, Pattern
-from types import MappingProxyType
-from typing import Any, cast, Dict, Iterator, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, cast, List, Optional, Tuple, Type, Union
 
-from attrs import asdict, Attribute, define, evolve, field, fields
+from attrs import Attribute, define, field, fields
 
+from tracs.core import Container
 from tracs.uid import UID
 from tracs.utils import unchain
 
@@ -143,18 +143,13 @@ class Resource:
 		return next( (r for r in self.resources if r.type == resource_type), None )
 
 @define
-class Resources:
+class Resources( Container[Resource] ):
 	"""
 	Dict-like container for resources.
 	"""
 
-	data: List[Resource] = field( factory=list )
-
-	__id_map__: Dict[int, Resource] = field( factory=dict, init=False, alias='__id_map__' )
-	__uid_map__: Dict[str, Resource] = field( factory=dict, init=False, alias='__uid_map__' )
-	__it__: Iterator = field( default=None, init=False, alias='__it__' )
-
 	def __attrs_post_init__( self ):
+		super().__attrs_post_init__()
 		for r in self.data:
 			self.__uid_map__[r.uid] = r
 
@@ -166,43 +161,6 @@ class Resources:
 		except AttributeError:
 			return False
 
-	def __iter__( self ):
-		self.__it__ = self.data.__iter__()
-		return self.__it__
-
-	def __next__( self ):
-		return self.__it__.__next__()
-
-	def __len__( self ) -> int:
-		return len( self.data )
-
-	def __getitem__( self, item: str ):
-		return self.__uid_map__[item]
-
-	def get( self, item: str ):
-		return self.__uid_map__.get( item )
-
-	def ids( self ) -> List[int]:
-		return [r.id for r in self.data]
-
-	def keys( self ) -> List[str]:
-		return list( self.__uid_map__.keys() )
-
-	def values( self ) -> List[Resource]:
-		return list( self.data )
-
-	def id_map( self ) -> Mapping[int, Resource]:
-		return MappingProxyType( self.__id_map__ )
-
-	def id_keys( self ) -> List[int]:
-		return list( self.__id_map__.keys() )
-
-	def uid_map( self ) -> Mapping[str, Resource]:
-		return MappingProxyType( self.__uid_map__ )
-
-	def uid_keys( self ) -> List[str]:
-		return list( self.__uid_map__.keys() )
-
 	# add/remove etc.
 
 	def add( self, *resources: Union[Resource, List[Resource]] ) -> List[int]:
@@ -210,7 +168,7 @@ class Resources:
 			if r.uidpath in self.__uid_map__:
 				raise KeyError( f'resource with UID {r.uidpath} already contained in resources' )
 
-			r.id = _next_id( self.data )
+			r.id = self.__next_id__()
 			self.data.append( r )
 			self.__uid_map__[r.uidpath] = r
 			self.__id_map__[r.id] = r
@@ -237,10 +195,6 @@ class Resources:
 
 	# access methods
 
-	# todo: change the sort order later?
-	def all( self, sort=False ) -> List[Resource]:
-		return list( self.data ) if not sort else sorted( self.data, key=lambda r: str( r.id ) )
-
 	def all_for( self, uid: str = None, path: str = None ) -> List[Resource]:
 		_all = filter( lambda r: r.uid == uid, self.all() ) if uid else self.all()
 		_all = filter( lambda r: r.path == path, _all ) if path else _all
@@ -254,8 +208,3 @@ class Resources:
 
 	def recordings( self ) -> List[Resource]:
 		return [r for r in self.data if not r.summary]
-
-def _next_id( resources: List[Resource] ) -> int:
-	existing_ids = [r.id for r in resources]
-	id_range = range( 1, max( existing_ids ) + 2 ) if len( existing_ids ) > 0 else [1]
-	return set( id_range ).difference( set( existing_ids ) ).pop()

@@ -29,6 +29,12 @@ class Container( Generic[T] ):
 	__uid_map__: Dict[str, T] = field( factory=dict, init=False, alias='__uid_map__' )
 	__it__: Iterator = field( default=None, init=False, alias='__it__' )
 
+	def __len__( self ) -> int:
+		return len( self.data )
+
+	def all( self, sort=False ) -> List[T]:
+		return list( self.data ) if not sort else sorted( self.data, key=lambda r: str( r.id ) )
+
 @define
 class VirtualField:
 

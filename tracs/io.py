@@ -8,11 +8,11 @@ from cattrs.preconf.orjson import make_converter
 from fs.base import FS
 from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 
-from tracs.activity import Activities, Activity
+from tracs.activity import Activities, Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
-from tracs.utils import fromisoformat, str_to_timedelta
+from tracs.utils import fromisoformat, str_to_timedelta, timedelta_to_str
 
 log = getLogger( __name__ )
 
@@ -31,6 +31,11 @@ SCHEMA_CONVERTER = make_converter()
 
 # converter configuration
 
+# activity structuring
+
+ACTIVITIES_CONVERTER.register_structure_hook( time, lambda obj, cls: fromisoformat( obj ) )
+ACTIVITIES_CONVERTER.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
+
 activity_structure_hook = make_dict_structure_fn(
 	Activity,
 	ACTIVITIES_CONVERTER,
@@ -38,8 +43,39 @@ activity_structure_hook = make_dict_structure_fn(
 )
 
 ACTIVITIES_CONVERTER.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
-ACTIVITIES_CONVERTER.register_structure_hook( time, lambda obj, cls: fromisoformat( obj ) )
-ACTIVITIES_CONVERTER.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
+
+# activity unstructuring
+
+ACTIVITIES_CONVERTER.register_unstructure_hook( timedelta, timedelta_to_str )
+ACTIVITIES_CONVERTER.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
+
+activity_part_unstructure_hook = make_dict_unstructure_fn(
+	ActivityPart,
+	ACTIVITIES_CONVERTER,
+	_cattrs_omit_if_default=True,
+	__uids__=override( omit=True ),
+)
+
+ACTIVITIES_CONVERTER.register_unstructure_hook( ActivityPart, activity_part_unstructure_hook )
+
+activity_unstructure_hook = make_dict_unstructure_fn(
+	Activity,
+	ACTIVITIES_CONVERTER,
+	_cattrs_omit_if_default=True,
+	__uid__=override( omit=True ),
+	__uids__=override( omit=True ),
+	__dirty__=override( omit=True ),
+	__metadata__=override( omit=True ),
+	__parts__=override( omit=True ),
+	__resources__=override( omit=True ),
+	__parent__=override( omit=True ),
+	__parent_id__=override( omit=True ),
+	others=override( omit=True ),
+	other_parts=override( omit=True ),
+
+)
+
+ACTIVITIES_CONVERTER.register_unstructure_hook( Activity, activity_unstructure_hook )
 
 # resource
 
@@ -91,6 +127,10 @@ def load_activities( fs: FS ) -> Activities:
 		return Activities( data = activities )
 	except RuntimeError:
 		log.error( f'error loading db', exc_info=True )
+
+def write_activities( activities: Activities, fs: FS ) -> None:
+	fs.writebytes( ACTIVITIES_PATH, ACTIVITIES_CONVERTER.dumps( activities.all( sort=True ), unstructure_as=List[Activity], option=ORJSON_OPTIONS ) )
+	log.debug( f'wrote {len( activities )} activities to {ACTIVITIES_NAME}' )
 
 # schema handling
 

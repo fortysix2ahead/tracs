@@ -31,7 +31,9 @@ class JSONHandler( ResourceHandler ):
 
 class DataclassFactoryHandler( JSONHandler ):
 
-	CONVERTER = make_converter()
+	def __init__( self ):
+		super().__init__()
+		self.converter = make_converter()
 
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		"""
@@ -40,7 +42,7 @@ class DataclassFactoryHandler( JSONHandler ):
 		Example: transform a dict into a dataclass.
 		"""
 		try:
-			return self.__class__.CONVERTER.loads( raw, self.__class__.ACTIVITY_CLS )
+			return self.converter.unstructure( raw )
 		except RuntimeError:
 			log.error( f'unable to transform raw data into structured data by using the factory for {self._activity_cls}', exc_info=True )
 			return raw

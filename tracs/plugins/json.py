@@ -42,7 +42,7 @@ class DataclassFactoryHandler( JSONHandler ):
 		Example: transform a dict into a dataclass.
 		"""
 		try:
-			return self.converter.unstructure( raw )
+			return self.converter.structure( raw, self.__class__.ACTIVITY_CLS )
 		except RuntimeError:
 			log.error( f'unable to transform raw data into structured data by using the factory for {self._activity_cls}', exc_info=True )
 			return raw

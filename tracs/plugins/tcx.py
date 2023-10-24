@@ -13,6 +13,7 @@ from tracs.activity import Activity as TracsActivity
 from tracs.plugins.xml import XMLHandler
 from ..registry import importer, Registry
 from ..resources import Resource, ResourceType
+from ..utils import fromisoformat
 
 log = getLogger( __name__ )
 
@@ -284,11 +285,17 @@ class TrainingCenterDatabase:
 
 	@property
 	def time( self ) -> Optional[datetime]:
-		return self.activities[0].laps[0].time if len( self.activities ) and len( self.activities[0].laps ) else None
+		if len( self.activities ) and len( self.activities[0].laps ):
+			return fromisoformat( self.activities[0].laps[0].time )
+		else:
+			return None
 
 	@property
 	def time_end( self ) -> Optional[datetime]:
-		return self.activities[-1].laps[-1].time_end if len( self.activities ) and len( self.activities[0].laps ) else None
+		if len( self.activities ) and len( self.activities[0].laps ):
+			return fromisoformat( self.activities[-1].laps[-1].time_end )
+		else:
+			return None
 
 	def as_xml( self ) -> Element:
 		root = Element( self.__class__.__xml_name__ )
@@ -306,7 +313,7 @@ class TrainingCenterDatabase:
 
 Registry.register_resource_type( ResourceType( type=TCX_TYPE, activity_cls=Activity, recording=True ) )
 
-@importer( type=TCX_TYPE )
+@importer
 class TCXImporter( XMLHandler ):
 
 	TYPE: str = TCX_TYPE

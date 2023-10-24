@@ -146,7 +146,7 @@ class PolarFlowExercise:
 	index: Optional[int] = field( default=None )
 	isTest: Optional[bool] = field( default=False )
 	listItemId: int = field( default=None )
-	start: Optional[Union[int, str]] = field( default=None )
+	start: Optional[int] = field( default=None )
 	textColor: Optional[str] = field( default=None )
 	timestamp: int = field( default=None )
 	title: str = field( default=None )
@@ -196,7 +196,7 @@ class PolarExerciseDataActivity( Activity ):
 		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
 		self.uid = f'{self.classifier}:{self.raw_id}'
 
-@importer( type=POLAR_FLOW_TYPE )
+@importer
 class PolarFlowImporter( DataclassFactoryHandler ):
 
 	TYPE: str = POLAR_FLOW_TYPE

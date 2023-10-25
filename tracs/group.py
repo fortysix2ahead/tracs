@@ -99,11 +99,16 @@ def confirm_grouping( ctx: ApplicationContext, group: ActivityGroup, force: bool
 
 # ---------------------
 
-def ungroup_activities( ctx: ApplicationContext, activities: List[Activity], force: bool = False, pretend: bool = False ) -> Optional[Tuple[List[Activity], List[Activity]]]:
+def ungroup_activities( ctx: ApplicationContext,
+                        activities: List[Activity],
+                        keep: bool = False,
+                        force: bool = False,
+                        pretend: bool = False ) -> Optional[Tuple[List[Activity], List[Activity]]]:
 	"""
 	Ungroups activities
 	:param ctx: context
 	:param activities: groups to be ungrouped
+	:param keep: keeps the groups, do not remove them from the db
 	:param force: do not ask for permission
 	:param pretend: when true does not persist changes to db
 	:return:
@@ -119,7 +124,8 @@ def ungroup_activities( ctx: ApplicationContext, activities: List[Activity], for
 
 	# persist changes
 	if not pretend:
-		ctx.db.remove_activities( all_parents )
+		if not keep:
+			ctx.db.remove_activities( all_parents )
 		ctx.db.insert_activities( all_children )
 		ctx.db.commit()
 

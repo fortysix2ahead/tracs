@@ -42,7 +42,7 @@ class Application( object ):
 	# 'None' as default value means value has not been provided from the outside (via command line switch)
 	def __setup__( self, *args, **kwargs ):
 		# ---- create context, based on cfg_dir ----
-		self._ctx = ApplicationContext( **kwargs )
+		self._ctx = ApplicationContext( *args, **kwargs )
 
 		# ---- logging setup: only possible after configuration has been loaded --
 		self._setup_logging( self._ctx )

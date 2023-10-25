@@ -1,10 +1,10 @@
 
-from dataclasses import fields
 from logging import getLogger
 from pathlib import Path
 from re import split
 from typing import List
 
+from attrs import fields
 from confuse.exceptions import NotFoundError
 from rich import box
 from rich.pretty import Pretty as pp
@@ -104,7 +104,7 @@ def show_fields():
 	table.add_column( 'field' )
 	table.add_column( 'type' )
 
-	for f in fields( Activity ):
+	for f in sorted( Activity.fields( include_internal=False, include_virtual=True ), key=lambda fld: fld.name ):
 		table.add_row( f.name, pp( f.type ) )
 
 	console.print( table )

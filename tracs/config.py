@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from attrs import define, field
-from confuse import ConfigReadError, ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, YamlSource
+from confuse import ConfigReadError, ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, NotFoundError, YamlSource
 from fs.base import FS
 from fs.osfs import OSFS
 from fs.path import abspath, basename, dirname, normpath
@@ -137,7 +137,15 @@ class ApplicationContext:
 	apptime: datetime = field( default=None )
 
 	def __setup_configuration__( self ):
+		# create configuration -> this reads the default config files automatically
 		self.config = Configuration( APPNAME, APP_PKG_NAME )
+
+		# read default plugin configuration
+		plugins_pkg_path = find_package_path( f'{APP_PKG_NAME}.{PLUGINS_PKG_NAME}' )
+		self.config.set_file( f'{plugins_pkg_path}/{DEFAULT_CFG_FILENAME}' )
+
+		if not self.configuration:
+			self.configuration = user_config_dir( APPNAME )
 
 		# add user configuration file provided via -c option
 		try:
@@ -145,8 +153,9 @@ class ApplicationContext:
 			user_configuration = normpath( abspath( user_configuration ) )
 			self.configuration = dirname( user_configuration )
 			self.config.set_file( user_configuration, base_for_paths=True )
-		except KeyError:
-			self.configuration = self.config.config_dir()
+		except (AttributeError, KeyError):
+			# self.configuration = self.config.config_dir() # this returns ~/.config/tracs on Mac OS X -> wrong
+			self.configuration = user_config_dir( APPNAME )
 		except ConfigReadError:
 			# noinspection PyUnboundLocalVariable
 			log.error( f'error reading configuration from {user_configuration}' )
@@ -155,7 +164,8 @@ class ApplicationContext:
 
 		# add configuration from command line arguments
 		# todo: there might be other kwargs apart from config-related -> remove first
-		self.config.set( self.__kwargs__ )
+		kwargs = { k: v for k, v in self.__kwargs__.items() if v is not None and v != '' and k != 'db' }
+		self.config.set( kwargs )
 
 	def __setup_state__( self ):
 		self.state = Configuration( APPNAME, APP_PKG_NAME, read=False )
@@ -177,6 +187,31 @@ class ApplicationContext:
 
 		self.state.read( user=False, defaults=False )
 
+	def __setup_library__( self ):
+		try:
+			self.library = self.config['library'].get()
+		except NotFoundError:
+			pass
+		finally:
+			if self.library is None:
+				self.library = self.configuration
+			self.lib_fs = OSFS( root_path=self.library, create=True )
+
+	def __create_default_directories__( self ):
+		# create directories depending on config_dir
+		self.config_fs.makedir( self.log_dir, recreate=True )
+
+		# create directories depending on lib_dir
+		self.lib_fs.makedir( self.db_dir, recreate=True )
+		self.lib_fs.makedir( self.overlay_dir, recreate=True )
+		self.lib_fs.makedir( self.takeout_dir, recreate=True )
+
+		# var and its children
+		self.lib_fs.makedir( self.var_dir, recreate=True )
+		self.lib_fs.makedir( self.backup_dir, recreate=True )
+		self.lib_fs.makedir( self.cache_dir, recreate=True )
+		self.lib_fs.makedir( self.tmp_dir, recreate=True )
+
 	def __init__( self, *args, **kwargs ):
 		# noinspection PyUnresolvedReferences
 		self.__attrs_init__( *args, **kwargs, __kwargs__={ **kwargs } )
@@ -191,30 +226,8 @@ class ApplicationContext:
 		self.force = self.config['force'].get()
 		self.pretend = self.config['pretend'].get()
 
-		self.__setup_library()
-
-		# setup library fs
-		if (library := self.config['library'].get()) is None:
-			self.lib_dir = self.config_dir
-		else:
-			self.lib_dir = library
-
-		self.lib_fs = OSFS( root_path=self.lib_dir, create=True )
-		self.config['library'] = self.lib_dir
-
-		# create directories depending on config_dir
-		self.config_fs.makedir( self.log_dir, recreate=True )
-
-		# create directories depending on lib_dir
-		self.lib_fs.makedir( self.db_dir, recreate=True )
-		self.lib_fs.makedir( self.overlay_dir, recreate=True )
-		self.lib_fs.makedir( self.takeout_dir, recreate=True )
-
-		# var and its children
-		self.lib_fs.makedir( self.var_dir, recreate=True )
-		self.lib_fs.makedir( self.backup_dir, recreate=True )
-		self.lib_fs.makedir( self.cache_dir, recreate=True )
-		self.lib_fs.makedir( self.tmp_dir, recreate=True )
+		self.__setup_library__()
+		self.__create_default_directories__()
 
 	@property
 	def config_dir( self ) -> str:

@@ -57,7 +57,7 @@ def setup( ctx: ApplicationContext, services: List[str] ):
 	service_names = services if services else Registry.setup_functions.keys()
 
 	for name in service_names:
-		answer = Confirm.ask( f'Would you like to run setup function for plugin {name}?', default=False )
+		answer = ctx.force or Confirm.ask( f'Would you like to run setup function for plugin {name}?', default=False )
 		if answer:
 			console.print()
 			console.rule( f'[bold]Setup {name}[/bold]' )

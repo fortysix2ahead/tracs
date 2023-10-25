@@ -2,14 +2,24 @@
 from pathlib import Path
 from platform import system
 
+from confuse import ConfigSource, Configuration
 from pytest import mark
 
 from tracs.application import Application
-from tracs.config import APPNAME
+from tracs.config import ApplicationContext, APPNAME
 from tracs.registry import service_names
 
+def test_context():
+	cfg = Configuration( 'tracs', 'tracs' )
+	cfg.set_env()
+	cfg.set_args( {'debug': 'arg'} )
+	cfg.set( ConfigSource.of( { 'debug': 10 } ) )
+
+	print( cfg['debug'].get() )
+	print( cfg['debug'].as_number() )
+
 def test_app_constructor():
-	app =  Application.__new__( Application, config_dir=None, lib_dir=None, verbose=False, debug=False, force=False )
+	app =  Application.__new__( Application, configuration=None, library=None, verbose=False, debug=False, force=False )
 	home = Path.home()
 
 	if system() == 'Windows':
@@ -27,7 +37,8 @@ def test_app_constructor():
 @mark.context( config='empty', library='empty' )
 def test_app_constructor_cfg_dir( ctx ):
 	cfg_dir = ctx.config_dir
-	app =  Application.__new__( Application, config_dir=cfg_dir, lib_dir=None, verbose=False, debug=False, force=False )
+	cfg = f'{cfg_dir}/config.yaml'
+	app =  Application.__new__( Application, configuration=cfg, library=None, verbose=False, debug=False, force=False )
 
 	assert app.ctx.config_dir == str( cfg_dir )
 	assert app.ctx.lib_dir == str( Path( cfg_dir ) )

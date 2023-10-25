@@ -255,9 +255,7 @@ class ActivityDb:
 		return self._activities.add( *activities )
 
 	def insert_activity( self, activity: Activity ) -> int:
-		activity.id = self._next_id( self._activities )
-		self._activities[activity.id] = activity
-		return activity.id
+		return self.insert( activity )[0]
 
 	def insert_activities( self, activities: List[Activity] ) -> List[int]:
 		return [ self.insert_activity( a ) for a in activities ]

@@ -21,9 +21,9 @@ first release, so use it at your own risk.
 
 ## Features
 
-- fetch activities from Polar Flow, Strava, Bikecitizens and Waze
+- fetch activity data from Polar Flow, Strava, Bikecitizens web services
 - download GPX, TCX, CSV and HRV files from Polar Flow, Strava and Bikecitizens
-- read and convert takeouts from Waze
+- read and convert exported takeouts from Waze
 - maintain a structured archive containing all activities
 - semi-automatically group activities from different services
 - list activities based on various filters

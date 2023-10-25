@@ -13,6 +13,7 @@ from rich.table import Table
 from .activity import Activity
 from .config import ApplicationContext
 from .config import console
+from .core import VirtualField
 from .registry import Registry
 from .ui.utils import style
 from .utils import fmt
@@ -101,11 +102,12 @@ def inspect_registry() -> None:
 
 def show_fields():
 	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
-	table.add_column( 'field' )
+	table.add_column( 'field (\u2055 virtual)' )
 	table.add_column( 'type' )
 
 	for f in sorted( Activity.fields( include_internal=False, include_virtual=True ), key=lambda fld: fld.name ):
-		table.add_row( f.name, pp( f.type ) )
+		name = f'{f.name} \u2055' if isinstance( f, VirtualField ) else f.name
+		table.add_row( name, pp( f.type ) )
 
 	console.print( table )
 

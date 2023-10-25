@@ -150,7 +150,9 @@ class ApplicationContext:
 		# add user configuration file provided via -c option
 		try:
 			user_configuration = self.__kwargs__.pop( 'configuration' )
-			user_configuration = normpath( abspath( user_configuration ) )
+			# todo: is it possible to expand relative paths without creating a FS?
+			fs = OSFS( root_path=dirname( user_configuration ), expand_vars=True )
+			user_configuration = fs.getsyspath( basename( user_configuration ) )
 			self.configuration = dirname( user_configuration )
 			self.config.set_file( user_configuration, base_for_paths=True )
 		except (AttributeError, KeyError):

@@ -151,7 +151,7 @@ class Resources( Container[Resource] ):
 	def __attrs_post_init__( self ):
 		super().__attrs_post_init__()
 		for r in self.data:
-			self.__uid_map__[r.uid] = r
+			self.__uid_map__[r.uidpath] = r
 
 	# magic/dict methods
 

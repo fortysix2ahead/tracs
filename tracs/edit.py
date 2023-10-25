@@ -10,8 +10,8 @@ from rich.prompt import IntPrompt
 from .activity import Activity
 from .activity_types import ActivityTypes
 from .config import ApplicationContext
-from .inout import load_all_resources
-from .inout import open_activities
+from .aio import load_all_resources
+from .aio import open_activities
 from .ui import Choice
 from .utils import fmt
 

@@ -147,10 +147,11 @@ def group( ctx: ApplicationContext, filters: List[str] ):
 	group_activities( ctx, list( ctx.db.find( filters ) ), force=ctx.force )
 
 @cli.command( help='reverts activity groupings' )
+@option( '-k', '--keep', is_flag=True, required=False, hidden=True, default=False, help='do not remove group after ungrouping' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
-def ungroup( ctx: ApplicationContext, filters: List[str] ):
-	ungroup_activities( ctx, ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend )
+def ungroup( ctx: ApplicationContext, filters: List[str], keep: bool = False ):
+	ungroup_activities( ctx, ctx.db.find( filters ), keep, force=ctx.force, pretend=ctx.pretend )
 
 @cli.command( hidden=True, help='combines activities to multipart activities' )
 @argument( 'filters', nargs=-1 )

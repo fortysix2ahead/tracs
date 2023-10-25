@@ -9,9 +9,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from attrs import define, field
-from confuse import ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, YamlSource
+from confuse import ConfigReadError, ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, YamlSource
 from fs.base import FS
 from fs.osfs import OSFS
+from fs.path import abspath, basename, dirname, normpath
 from platformdirs import user_config_dir
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
@@ -77,69 +78,16 @@ def default_resources_path() -> Path:
 	with pkg_path( APP_PKG_NAME, f'{RESOURCES_DIRNAME}' ) as path:
 		return path
 
-class ApplicationConfiguration( Configuration ):
-
-	def __init__( self, config_file_path: Optional[str] = None, args: Dict = None ):
-		self._arguments = args if args is not None else {}
-		self._plugins_package_path = find_package_path( f'{APP_PKG_NAME}.{PLUGINS_PKG_NAME}' )
-		self._config_file_path = config_file_path
-
-		# call super().init
-		super().__init__( appname=APPNAME, modname=APPNAME )
-
-	def read( self, user=True, defaults=True ):
-		self._add_arguments_source()
-		self._add_user_source()
-		self._add_plugins_default_source()
-		self._add_default_source()
-
-	def user_config_path( self ):
-		return self._config_file_path if self._config_file_path else super().user_config_path()
-
-	def _add_arguments_source( self ):
-		self.add( ConfigSource.of( self._arguments ) )
-
-	def _add_plugins_default_source( self ):
-		filename = os_path_join( self._plugins_package_path, DEFAULT_CFG_FILENAME )
-		self.add( YamlSource( filename, loader=self.loader, optional=True, default=True ) )
-
-# similar to ApplicationConfiguration above, but slightly different
-
-class ApplicationStateCls( Configuration ):
-
-	def __init__( self, state_file_path: Optional[str] = None ):
-		self._plugins_package_path = find_package_path( f'{APP_PKG_NAME}.{PLUGINS_PKG_NAME}' )
-		self._state_file_path = state_file_path
-
-		# call super().init
-		super().__init__( appname=APPNAME, modname=APPNAME )
-
-	def read( self, user=True, defaults=True ):
-		self._add_user_source()
-		self._add_plugins_default_source()
-		self._add_default_source()
-
-	def user_config_path( self ):
-		return self._state_file_path if self._state_file_path else os_path_join( self.config_dir(), STATE_FILENAME )
-
-	def _add_plugins_default_source( self ):
-		filename = os_path_join( self._plugins_package_path, DEFAULT_STATE_FILENAME )
-		self.add( YamlSource( filename, loader=self.loader, optional=True, default=True ) )
-
-	def _add_default_source( self ):
-		filename = os_path_join( self._package_path, DEFAULT_STATE_FILENAME )
-		self.add( YamlSource( filename, loader=self.loader, optional=True, default=True ) )
-
 # application context
 
-@define
+@define( init=False )
 class ApplicationContext:
 
-	# configuration fields which can be set externally
+	config: Configuration = field( default=None )
 
-	# config + lib dir are absolute paths, lib_dir points to cfg_dir by default
-	config_dir: str = field( default=user_config_dir( APPNAME ) )
-	lib_dir: str = field( default=user_config_dir( APPNAME ) )
+	# configuration + library are absolute paths, library points to configuration by default
+	configuration: str = field( default=None )
+	library: str = field( default=None )
 
 	# global configuration flags, can be set externally
 	force: Optional[bool] = field( default=None )
@@ -173,39 +121,77 @@ class ApplicationContext:
 	instance: Any = field( default=None )
 
 	# app configuration + state
-	config: Configuration = field( default=None )
 	state: Configuration = field( default=None )
 	meta: Any = field( default=None ) # not used yet
 
 	plugins_dir: List[Path] = field( factory=list )
 
+	# todo: remove the console from here
 	console: Console = field( default=CONSOLE )
 	progress: Progress = field( default=None )
 	task_id: Any = field( default=None )
 
+	# internal fields
+
+	__kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )
 	apptime: datetime = field( default=None )
 
-	def __attrs_post_init__( self ):
-		# setup config fs
-		self.config_dir = user_config_dir( APPNAME ) if self.config_dir is None else self.config_dir # config dir may never be None
-		self.config_fs = OSFS( root_path=self.config_dir, create=True )
+	def __setup_configuration__( self ):
+		self.config = Configuration( APPNAME, APP_PKG_NAME )
 
-		# load default configuration/state
-		args = { k: v for k, v in {
-			'debug': self.debug,
-			'verbose': self.verbose,
-			'force': self.force,
-			'pretend': self.pretend,
-			'library': self.lib_dir,
-		}.items() if v is not None }
-		self.config = ApplicationConfiguration( config_file_path=os_path_join( self.config_dir, self.config_file ), args = args )
-		self.state = ApplicationStateCls( state_file_path=os_path_join( self.config_dir, self.state_file ) )
+		# add user configuration file provided via -c option
+		try:
+			user_configuration = self.__kwargs__.pop( 'configuration' )
+			user_configuration = normpath( abspath( user_configuration ) )
+			self.configuration = dirname( user_configuration )
+			self.config.set_file( user_configuration, base_for_paths=True )
+		except KeyError:
+			self.configuration = self.config.config_dir()
+		except ConfigReadError:
+			# noinspection PyUnboundLocalVariable
+			log.error( f'error reading configuration from {user_configuration}' )
+		finally:
+			self.config_fs = OSFS( root_path=self.configuration, create=True )
+
+		# add configuration from command line arguments
+		# todo: there might be other kwargs apart from config-related -> remove first
+		self.config.set( self.__kwargs__ )
+
+	def __setup_state__( self ):
+		self.state = Configuration( APPNAME, APP_PKG_NAME, read=False )
+
+		app_pkg_path = find_package_path( APP_PKG_NAME )
+		plugins_pkg_path = find_package_path( f'{APP_PKG_NAME}.{PLUGINS_PKG_NAME}' )
+
+		# default state
+		self.state.set_file( f'{app_pkg_path}/{DEFAULT_STATE_FILENAME}' )
+
+		# plugin state
+		self.state.set_file( f'{plugins_pkg_path}/{DEFAULT_STATE_FILENAME}' )
+
+		# user state
+		try:
+			self.state.set_file( f'{self.configuration}/{STATE_FILENAME}', base_for_paths=True )
+		except ConfigReadError:
+			log.error( f'error reading application state from {self.configuration}/{STATE_FILENAME}' )
+
+		self.state.read( user=False, defaults=False )
+
+	def __init__( self, *args, **kwargs ):
+		# noinspection PyUnresolvedReferences
+		self.__attrs_init__( *args, **kwargs, __kwargs__={ **kwargs } )
+
+	def __attrs_post_init__( self ):
+		self.__setup_configuration__()
+		self.__setup_state__()
 
 		# update global options fields from config -> todo: this should be removed in the future, access should be like cfg.debug
-		self.debug = self.config['debug'].get( bool )
-		self.verbose = self.config['verbose'].get( bool )
-		self.force = self.config['force'].get( bool )
-		self.pretend = self.config['pretend'].get( bool )
+		self.debug = self.config['debug'].get()
+		self.verbose = self.config['verbose'].get()
+		self.force = self.config['force'].get()
+		self.pretend = self.config['pretend'].get()
+
+		self.__setup_library()
 
 		# setup library fs
 		if (library := self.config['library'].get()) is None:
@@ -229,6 +215,14 @@ class ApplicationContext:
 		self.lib_fs.makedir( self.backup_dir, recreate=True )
 		self.lib_fs.makedir( self.cache_dir, recreate=True )
 		self.lib_fs.makedir( self.tmp_dir, recreate=True )
+
+	@property
+	def config_dir( self ) -> str:
+		return self.configuration
+
+	@property
+	def lib_dir( self ) -> str:
+		return self.library
 
 	@property
 	def config_file_path( self ) -> Path:

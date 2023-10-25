@@ -37,8 +37,8 @@ def cli( ctx, configuration, library, force, verbose, pretend, debug ):
 
 	global APPLICATION_INSTANCE
 	APPLICATION_INSTANCE = Application.instance(
-		config_dir=configuration,
-		lib_dir=library,
+		configuration=configuration,
+		library=library,
 		verbose=verbose,
 		debug=debug,
 		force=force,

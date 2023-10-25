@@ -102,11 +102,11 @@ def inspect_registry() -> None:
 
 def show_fields():
 	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
-	table.add_column( 'field (\u2055 virtual)' )
+	table.add_column( 'field (virtual=\u24e5 )' )
 	table.add_column( 'type' )
 
 	for f in sorted( Activity.fields( include_internal=False, include_virtual=True ), key=lambda fld: fld.name ):
-		name = f'{f.name} \u2055' if isinstance( f, VirtualField ) else f.name
+		name = f'{f.name} \u24e5' if isinstance( f, VirtualField ) else f.name
 		table.add_row( name, pp( f.type ) )
 
 	console.print( table )

@@ -2,15 +2,18 @@
 from __future__ import annotations
 
 from datetime import datetime
+from importlib import import_module
 from importlib.resources import path as pkg_path
 from logging import getLogger
 from os.path import join as os_path_join
 from pathlib import Path
+from pkgutil import extend_path, iter_modules
 from typing import Any, Dict, List, Optional
 
 from attrs import define, field
 from confuse import ConfigReadError, ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, NotFoundError, YamlSource
 from fs.base import FS
+from fs.multifs import MultiFS
 from fs.osfs import OSFS
 from fs.path import abspath, basename, dirname, normpath
 from platformdirs import user_config_dir
@@ -74,6 +77,10 @@ CONSOLE = Console( tab_size=2 )
 console = CONSOLE
 cs = CONSOLE
 
+def default_plugin_path() -> Path:
+	with pkg_path( APP_PKG_NAME, f'{PLUGINS_PKG_NAME}/__init__.py' ) as path:
+		return path
+
 def default_resources_path() -> Path:
 	with pkg_path( APP_PKG_NAME, f'{RESOURCES_DIRNAME}' ) as path:
 		return path
@@ -124,6 +131,9 @@ class ApplicationContext:
 	state: Configuration = field( default=None )
 	meta: Any = field( default=None ) # not used yet
 
+	# plugins
+	plugins: Dict[str, Any] = field( factory=dict )
+	plugin_fs: FS = field( factory=MultiFS )
 	plugins_dir: List[Path] = field( factory=list )
 
 	# todo: remove the console from here
@@ -214,6 +224,22 @@ class ApplicationContext:
 		self.lib_fs.makedir( self.cache_dir, recreate=True )
 		self.lib_fs.makedir( self.tmp_dir, recreate=True )
 
+	def __setup_plugins__( self ):
+		# noinspection PyUnresolvedReferences
+		import tracs.plugins
+
+		try:
+			pluginpath = self.config['pluginpath'].get().split( ' ' )
+			for pp in pluginpath:
+				plugin_path = OSFS( root_path=pp, expand_vars=True ).getsyspath( '/tracs/plugins' )
+				tracs.plugins.__path__ = extend_path( [plugin_path], 'tracs.plugins' )
+		except NotFoundError:
+			log.error( 'error loading value from configuration key pluginpath' )
+
+		for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
+			self.plugins[f'{name}'] = import_module( f'tracs.plugins.{name}' )
+			log.debug( f'imported plugin {name} from {finder.path}' )
+
 	def __init__( self, *args, **kwargs ):
 		# noinspection PyUnresolvedReferences
 		self.__attrs_init__( *args, **kwargs, __kwargs__={ **kwargs } )
@@ -229,7 +255,11 @@ class ApplicationContext:
 		self.pretend = self.config['pretend'].get()
 
 		self.__setup_library__()
+
 		self.__create_default_directories__()
+
+		# load/manage plugins
+		self.__setup_plugins__()
 
 	@property
 	def config_dir( self ) -> str:

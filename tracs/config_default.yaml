@@ -39,3 +39,5 @@ import:
 
 gpx:
   parser: gpxpy # allowed values: internal, gpxpy, currently ignored
+
+pluginpath: # list of additional plugin paths, separated by whitespace

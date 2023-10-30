@@ -61,7 +61,7 @@ class Application:
 		log.debug( f'using config dir: {self._ctx.config_dir} and library dir: {self._ctx.lib_dir}' )
 
 		# create registry
-		self._registry = Registry()
+		self._registry = Registry.instance()
 		self.__setup_registry__()
 
 		# open db from config_dir

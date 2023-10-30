@@ -14,7 +14,7 @@ from tracs.edit import edit_activities, equip_activities, modify_activities, ren
 from tracs.group import group_activities, part_activities, ungroup_activities, unpart_activities
 from tracs.aio import export_activities, import_activities, open_activities, reimport_activities
 from tracs.link import link_activities
-from tracs.list import inspect_activities, inspect_registry, inspect_resources, list_activities, show_config, show_fields
+from tracs.list import inspect_activities, inspect_plugins, inspect_registry, inspect_resources, list_activities, show_config, show_fields
 from tracs.setup import setup as setup_application
 from tracs.show import show_activities, show_aggregate, show_equipments, show_keywords, show_resources, show_tags, show_types
 from tracs.validate import validate_activities
@@ -299,12 +299,15 @@ def init():
 	load_plugins()
 
 @cli.command( hidden=True, help='inspects activities/resources/internal registry' )
-@option( '-g', '--registry', is_flag=True, required=False, help='inspects the internal registry, filter will be ignored' )
+@option( '-g', '--registry', is_flag=True, required=False, help='inspects the internal registry (filter will be ignored)' )
+@option( '-p', '--plugins', is_flag=True, required=False, help='inspects all discoverable plugins (filter will be ignored)' )
 @option( '-r', '--resource', is_flag=True, required=False, help='applies the provided filters to resources instead of activities' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
-def inspect( ctx: ApplicationContext, filters, registry: bool, resource: bool ):
-	if registry:
+def inspect( ctx: ApplicationContext, filters, plugins: bool, registry: bool, resource: bool ):
+	if plugins:
+		inspect_plugins( ctx )
+	elif registry:
 		inspect_registry()
 	elif resource:
 		inspect_resources()

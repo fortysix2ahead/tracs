@@ -64,6 +64,15 @@ def inspect_activities( activities: [Activity] ) -> None:
 def inspect_resources() -> None:
 	raise NotImplementedError
 
+def inspect_plugins( ctx: ApplicationContext ) -> None:
+	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
+	table.add_column( '[bold bright_blue]name[/bold bright_blue]' )
+	table.add_column( '[bold bright_blue]plugin[/bold bright_blue]' )
+
+	[ table.add_row( n, str( p ) ) for n, p in ctx.plugins.items() ]
+
+	ctx.console.print( table )
+
 def inspect_registry() -> None:
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 

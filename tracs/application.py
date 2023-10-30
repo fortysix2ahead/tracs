@@ -22,6 +22,7 @@ class Application:
 
 	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
 	_db: ActivityDb = field( default=None, alias='_db' )
+	_registry: Registry = field( default=None, alias='_registry' )
 
 	_config: Configuration = field( default=None, alias='_config' )
 	_state: Configuration = field( default=None, alias='_state' )
@@ -59,6 +60,10 @@ class Application:
 		log.debug( f'triggered CLI with flags debug={kwargs}' )
 		log.debug( f'using config dir: {self._ctx.config_dir} and library dir: {self._ctx.lib_dir}' )
 
+		# create registry
+		self._registry = Registry()
+		self.__setup_registry__()
+
 		# open db from config_dir
 		self._db = ActivityDb( path=self._ctx.db_dir_path, read_only=self._ctx.pretend, enable_index=self.ctx.config['db']['index'].get() )
 		self._ctx.db = self._db
@@ -73,6 +78,9 @@ class Application:
 		register_atexit( self._ctx.db.close )
 		register_atexit( self._ctx.dump_state )
 
+	def __setup_registry__( self ):
+		pass
+	
 	# properties
 
 	@property
@@ -82,6 +90,10 @@ class Application:
 	@property
 	def db( self ) -> ActivityDb:
 		return self._db
+
+	@property
+	def registry( self ) -> Registry:
+		return self._registry
 
 	@property
 	def config( self ) -> Configuration:

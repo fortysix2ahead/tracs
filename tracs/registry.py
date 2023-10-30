@@ -8,9 +8,9 @@ from logging import getLogger
 from pathlib import Path
 from pkgutil import walk_packages
 from re import match
-from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
 
-from attrs import fields, Attribute
+from attrs import define, field, fields, Attribute
 from confuse import NotFoundError
 
 from tracs.activity import Activity
@@ -35,20 +35,21 @@ class EventTypes( Enum ):
 	service_created = 'service_created'
 	virtual_field_registered = 'virtual_field_registered'
 
+@define
 class Registry:
 
-	classifier: str = KEY_CLASSIFER
-	ctx: ApplicationContext = None
-	event_listeners = {}
-	handlers: Dict[str, List[Handler]] = {}
-	importers: Dict[str, List[Importer]] = {}
-	resource_types: Dict[str, ResourceType] = {}
-	rule_keywords: Dict[str, Keyword] = {}
-	rule_normalizers: Dict[str, Normalizer] = {}
-	setup_functions: Dict[str, Callable] = {}
-	services: Dict[str, Service] = {}
-	service_classes: Dict[str, Type] = {}
-	virtual_fields: Dict[str, VirtualField] = Activity.__vf__.__fields__
+	classifier: ClassVar[str] = KEY_CLASSIFER
+	ctx: ClassVar[ApplicationContext] = None
+	event_listeners: ClassVar[Dict] = {}
+	handlers: ClassVar[Dict[str, List[Handler]]] = {}
+	importers: ClassVar[Dict[str, List[Importer]]] = {}
+	resource_types: ClassVar[Dict[str, ResourceType]] = {}
+	rule_keywords: ClassVar[Dict[str, Keyword]] = {}
+	rule_normalizers: ClassVar[Dict[str, Normalizer]] = {}
+	setup_functions: ClassVar[Dict[str, Callable]] = {}
+	services: ClassVar[Dict[str, Service]] = {}
+	service_classes: ClassVar[Dict[str, Type]] = {}
+	virtual_fields: ClassVar[Dict[str, VirtualField]] = Activity.__vf__.__fields__
 
 	@classmethod
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):

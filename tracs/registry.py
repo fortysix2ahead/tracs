@@ -38,6 +38,8 @@ class EventTypes( Enum ):
 @define
 class Registry:
 
+	_instance: ClassVar[Registry] = None
+
 	classifier: ClassVar[str] = KEY_CLASSIFER
 	ctx: ClassVar[ApplicationContext] = None
 	event_listeners: ClassVar[Dict] = {}
@@ -50,6 +52,12 @@ class Registry:
 	services: ClassVar[Dict[str, Service]] = {}
 	service_classes: ClassVar[Dict[str, Type]] = {}
 	virtual_fields: ClassVar[Dict[str, VirtualField]] = Activity.__vf__.__fields__
+
+	@classmethod
+	def instance( cls ) -> Registry:
+		if cls._instance is None:
+			cls._instance = Registry()
+		return cls._instance
 
 	@classmethod
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):

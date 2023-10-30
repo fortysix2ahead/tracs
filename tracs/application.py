@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from atexit import register as register_atexit
 from logging import getLogger
-from typing import ClassVar
+from typing import ClassVar, Tuple
 
 from attrs import define, field
 
@@ -20,6 +20,7 @@ class Application:
 	_instance: ClassVar[Application] = None  # application singleton
 
 	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
+	_db: ActivityDb = field( default=None, alias='_db' )
 
 	@classmethod
 	def instance( cls, *args, **kwargs ):
@@ -53,7 +54,8 @@ class Application:
 		log.debug( f'using config dir: {self._ctx.config_dir} and library dir: {self._ctx.lib_dir}' )
 
 		# open db from config_dir
-		self._ctx.db = ActivityDb( path=self._ctx.db_dir_path, read_only=self._ctx.pretend, enable_index=self.ctx.config['db']['index'].get() )
+		self._db = ActivityDb( path=self._ctx.db_dir_path, read_only=self._ctx.pretend, enable_index=self.ctx.config['db']['index'].get() )
+		self._ctx.db = self._db
 
 		# ---- create service instances ----
 		Registry.instantiate_services( ctx=self._ctx )
@@ -65,8 +67,16 @@ class Application:
 		register_atexit( self._ctx.db.close )
 		register_atexit( self._ctx.dump_state )
 
-	# ---- context ---------------------------------------------------------------
+	# properties
 
 	@property
 	def ctx( self ) -> ApplicationContext:
 		return self._ctx
+
+	@property
+	def db( self ) -> ActivityDb:
+		return self._db
+
+	@property
+	def as_tuple( self ) -> Tuple[ApplicationContext, ActivityDb]:
+		return self.ctx, self.db

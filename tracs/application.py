@@ -5,6 +5,7 @@ from logging import getLogger
 from typing import ClassVar, Tuple
 
 from attrs import define, field
+from confuse import Configuration
 
 from tracs import setup_console_logging, setup_file_logging
 from .config import ApplicationContext
@@ -21,6 +22,9 @@ class Application:
 
 	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
 	_db: ActivityDb = field( default=None, alias='_db' )
+
+	_config: Configuration = field( default=None, alias='_config' )
+	_state: Configuration = field( default=None, alias='_state' )
 
 	@classmethod
 	def instance( cls, *args, **kwargs ):
@@ -45,6 +49,8 @@ class Application:
 
 		# create context, based on cfg_dir
 		self._ctx = ApplicationContext( *args, **kwargs )
+		self._config = self._ctx.config
+		self._state = self._ctx.state
 
 		# file logging setup after configuration has been loaded --
 		setup_file_logging( self._ctx.verbose, self._ctx.debug, self._ctx.log_file_path )
@@ -76,6 +82,14 @@ class Application:
 	@property
 	def db( self ) -> ActivityDb:
 		return self._db
+
+	@property
+	def config( self ) -> Configuration:
+		return self._config
+
+	@property
+	def state( self ) -> Configuration:
+		return self._state
 
 	@property
 	def as_tuple( self ) -> Tuple[ApplicationContext, ActivityDb]:

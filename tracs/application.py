@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from atexit import register as register_atexit
 from logging import getLogger
+from typing import ClassVar
+
+from attrs import define, field
 
 from tracs import setup_console_logging, setup_file_logging
 from .config import ApplicationContext
@@ -11,8 +14,12 @@ from .utils import UCFG
 
 log = getLogger( __name__ )
 
-class Application( object ):
-	_instance = None  # application singleton
+@define( init=False )
+class Application:
+
+	_instance: ClassVar[Application] = None  # application singleton
+
+	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
 
 	@classmethod
 	def instance( cls, *args, **kwargs ):

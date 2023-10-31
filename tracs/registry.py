@@ -15,7 +15,7 @@ from attrs import Attribute, define, field, fields
 from confuse import NotFoundError
 
 from tracs.activity import Activity
-from tracs.config import ApplicationContext, KEY_CLASSIFER
+from tracs.config import ApplicationContext
 from tracs.core import Keyword, Normalizer, VirtualField, VirtualFields
 from tracs.protocols import Handler, Importer, Service
 from tracs.resources import ResourceType
@@ -52,7 +52,6 @@ class Registry:
 	__setup_fns__: List[Tuple] = field( factory=list, alias='__setup_fns__' )
 	__virtual_fields_fns__: List[Tuple] = field( factory=list, alias='__virtual_fields_fns__' )
 
-	classifier: ClassVar[str] = KEY_CLASSIFER
 	ctx: ClassVar[ApplicationContext] = None
 	handlers: ClassVar[Dict[str, List[Handler]]] = {}
 	importers: ClassVar[Dict[str, List[Importer]]] = {}

@@ -65,8 +65,7 @@ class Registry:
 			cls._instance = Registry()
 		return cls._instance
 
-	def setup( self ):
-		# keywords
+	def __setup_keywords__( self ):
 		for fn, args, kwargs in self.__keyword_fns__:
 			try:
 				name, modname, qname, params, rval = _fnspec( fn )
@@ -81,7 +80,7 @@ class Registry:
 			except RuntimeError:
 				log.error( f'unable to register keyword from function {fn}' )
 
-		# normalizers
+	def __setup_normalizers__( self ):
 		for fn, args, kwargs in self.__normalizer_fns__:
 			try:
 				name, modname, qname, params, rval = _fnspec( fn )
@@ -96,9 +95,14 @@ class Registry:
 			except RuntimeError:
 				log.error( f'unable to register normalizer from function {fn}' )
 
-		# setup functions
+	def __setup_setup_functions__( self ):
 		for fn, args, kwargs in self.__setup_fns__:
 			self._setups[_fnspec( fn )[1]] = fn
+
+	def setup( self ):
+		self.__setup_keywords__()
+		self.__setup_normalizers__()
+		self.__setup_setup_functions__()
 
 	# properties
 

@@ -166,8 +166,8 @@ def normalize( rule: str ) -> str:
 			normalized_rule = f'{left} {op} {right}'
 
 	# apply normalizer, if a normalizer for the left side of the expression exists
-	if left in Registry.rule_normalizers:
-		normalized_rule = Registry.rule_normalizers[left]( left, op, right, normalized_rule )  # pass the already normalized rule, just in case a normalizer is interested
+	if left in Registry.instance().normalizers:
+		normalized_rule = Registry.instance().normalizers[left]( left, op, right, normalized_rule )  # pass the already normalized rule, just in case a normalizer is interested
 
 	# log rule
 	log.debug( f'normalized rule {rule} to {normalized_rule}' )

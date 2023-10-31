@@ -54,14 +54,14 @@ def setup( ctx: ApplicationContext, services: List[str] ):
 	table.add_row( 'State file:', pp( ctx.state_file_path ) )
 	ctx.console.print( table )
 
-	service_names = services if services else Registry.setup_functions.keys()
+	service_names = services if services else Registry.instance().setups.keys()
 
 	for name in service_names:
 		answer = ctx.force or Confirm.ask( f'Would you like to run setup function for plugin {name}?', default=False )
 		if answer:
 			console.print()
 			console.rule( f'[bold]Setup {name}[/bold]' )
-			setup_function = Registry.setup_functions.get( name )
+			setup_function = Registry.instance().setups.get( name )
 			if setup_function:
 				existing_config = ctx.config['plugins'][name].get()
 				existing_state = ctx.state['plugins'][name].get()

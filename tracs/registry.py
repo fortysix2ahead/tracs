@@ -42,8 +42,10 @@ class Registry:
 	_instance: ClassVar[Registry] = None
 
 	_keywords: Dict[str, Keyword] = field( factory=dict, alias='_keywords' )
+	_setups: Dict[str, Callable] = field( factory=dict, alias='_setups' )
 
 	__keyword_fns__: List[Tuple] = field( factory=list, alias='__keyword_fns__' )
+	__setup_fns__: List[Tuple] = field( factory=list, alias='__setup_fns__' )
 
 	classifier: ClassVar[str] = KEY_CLASSIFER
 	ctx: ClassVar[ApplicationContext] = None
@@ -52,7 +54,6 @@ class Registry:
 	importers: ClassVar[Dict[str, List[Importer]]] = {}
 	resource_types: ClassVar[Dict[str, ResourceType]] = {}
 	rule_normalizers: ClassVar[Dict[str, Normalizer]] = {}
-	setup_functions: ClassVar[Dict[str, Callable]] = {}
 	services: ClassVar[Dict[str, Service]] = {}
 	service_classes: ClassVar[Dict[str, Type]] = {}
 	virtual_fields: ClassVar[Dict[str, VirtualField]] = Activity.__vf__.__fields__
@@ -79,11 +80,19 @@ class Registry:
 			except RuntimeError:
 				log.error( f'unable to register keyword from function {fn}' )
 
+		# setup functions
+		for fn, args, kwargs in self.__setup_fns__:
+			self._setups[_fnspec( fn )[1]] = fn
+
 	# properties
 
 	@property
 	def keywords( self ) -> Mapping[str, Keyword]:
 		return MappingProxyType( self._keywords )
+
+	@property
+	def setups( self ) -> Mapping[str, Callable]:
+		return MappingProxyType( self._setups )
 
 	@classmethod
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
@@ -352,6 +361,9 @@ def virtualfield( *args, **kwargs ):
 def keyword( *args, **kwargs ):
 	return _register( *args, **kwargs, __function_list__ = Registry.instance().__keyword_fns__, __decorator_name__='keyword' )
 
+def setup( *args, **kwargs ):
+	return _register( *args, **kwargs, __function_list__ = Registry.instance().__setup_fns__, __decorator_name__='setup' )
+
 def normalizer( *args, **kwargs ):
 	def _inner( *inner_args ):
 		Registry.register_normalizers( Normalizer( name=_fnspec( inner_args[0] )[0], type=kwargs.get( 'type' ), description=kwargs.get( 'description' ), fn=inner_args[0] ) )
@@ -377,15 +389,6 @@ def service( cls: Type ):
 		return cls
 	else:
 		raise RuntimeError( 'only classes can be used with the @service decorator' )
-
-def setup( fn: Callable ):
-	if isfunction( fn ):
-		module, name = _spec( fn )
-		Registry.setup_functions[module] = fn
-		log.debug( f'registered setup function {module}#{name}' )
-		return fn
-	else:
-		raise RuntimeError( 'only functions can be used with the @setup decorator' )
 
 def importer( *args, **kwargs ):
 	def importer_cls( cls ):

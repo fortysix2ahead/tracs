@@ -13,6 +13,45 @@ def setup_module( module ):
 	# noinspection PyUnresolvedReferences
 	import tracs.plugins.rule_extensions
 
+# sample code for generic decorating:
+
+def decorator_with_args( *args, **kwargs ):
+	def decorator( func ):
+		def wrapper( *wrapper_args, **wrapper_kwargs ):
+			func( *wrapper_args, **wrapper_kwargs )
+		if args and not kwargs:
+			print( 'with args only' )
+		elif not args and kwargs:
+			print( 'with kwargs only' )
+		elif args and kwargs:
+			print( 'with args and kwargs' )
+		return wrapper
+
+	if args and not kwargs and callable( args[0] ):
+		print( 'without arguments' )
+	return decorator
+
+def real_decorator( *args, **kwargs ):
+	return decorator_with_args( *args, **kwargs )
+
+@real_decorator
+def one():
+	pass
+
+@real_decorator( 'some value', 'some other value' )
+def two():
+	pass
+
+@real_decorator( kwarg_one='some value', kwarg_two='some other value' )
+def three():
+	pass
+
+@real_decorator( 'some value', 'some other value', kwarg_one='some value', kwarg_two='some other value' )
+def four():
+	pass
+
+# test cases
+
 @resourcetype( type='application/one', summary=True )
 class ActivityOne:
 	pass

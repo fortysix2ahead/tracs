@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from enum import Enum
 from importlib import import_module
-from inspect import getmembers, isclass, isfunction, signature as getsignature
+from inspect import getmembers, isclass, signature as getsignature
 from logging import getLogger
 from pathlib import Path
 from pkgutil import walk_packages
@@ -11,7 +11,7 @@ from re import match
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
 
-from attrs import define, field, fields, Attribute
+from attrs import Attribute, define, field, fields
 from confuse import NotFoundError
 
 from tracs.activity import Activity
@@ -42,6 +42,7 @@ class Registry:
 	_instance: ClassVar[Registry] = None
 
 	_keywords: Dict[str, Keyword] = field( factory=dict, alias='_keywords' )
+	_listeners: Dict[EventTypes, List[Callable]] = field( factory=dict, alias='_listeners' )
 	_normalizers: Dict[str, Normalizer] = field( factory=dict, alias='_normalizers' )
 	_setups: Dict[str, Callable] = field( factory=dict, alias='_setups' )
 	_virtual_fields: VirtualFields = field( default=Activity.VF() )
@@ -53,7 +54,6 @@ class Registry:
 
 	classifier: ClassVar[str] = KEY_CLASSIFER
 	ctx: ClassVar[ApplicationContext] = None
-	event_listeners: ClassVar[Dict] = {}
 	handlers: ClassVar[Dict[str, List[Handler]]] = {}
 	importers: ClassVar[Dict[str, List[Importer]]] = {}
 	resource_types: ClassVar[Dict[str, ResourceType]] = {}
@@ -223,14 +223,14 @@ class Registry:
 
 	@classmethod
 	def notify( cls, event_type: EventTypes, *args, **kwargs ) -> None:
-		for fn in Registry.event_listeners.get( event_type, [] ):
+		for fn in Registry._listeners.get( event_type, [] ):
 			fn( *args, **kwargs )
 
 	@classmethod
 	def register_listener( cls, event_type: EventTypes, fn: Callable ) -> None:
-		if not event_type in Registry.event_listeners.keys():
-			Registry.event_listeners[event_type] = []
-		Registry.event_listeners.get( event_type ).append( fn )
+		if not event_type in Registry._listeners.keys():
+			Registry._listeners[event_type] = []
+		Registry._listeners.get( event_type ).append( fn )
 
 	# handlers
 

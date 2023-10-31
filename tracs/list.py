@@ -107,6 +107,10 @@ def inspect_registry() -> None:
 		flags = [ v.summary, v.recording, v.image ]
 		table.add_row( k, pp( v.activity_cls ), pp( flags ) )
 
+	table.add_row( '[bold bright_blue]Setup Functions[/bold bright_blue]' )
+	table.add_row( '[blue]name[/blue]', '[blue]function[/blue]' )
+	[ table.add_row( k, pp( f ) ) for k, f in sorted( Registry.instance().setups.items(), key=lambda i: i[0] ) ]
+
 	console.print( table )
 
 def show_fields():

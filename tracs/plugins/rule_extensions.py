@@ -118,12 +118,22 @@ def lastyear():
 # normalizers transform a field/value pair into a valid normalized expression
 # this enables operations like 'list classifier:polar' where ':' does not evaluate to '=='
 # the normalizer is called like function( left, operator, right, normalized_rule )
-Registry.register_normalizers(
-	Normalizer( 'classifier', str, 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda l, o, r, nr: f'"{r}" in classifiers' ),
-	Normalizer( 'service', str, 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' ),
-	Normalizer( 'source', str, 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' ),
-	Normalizer( 'type', str, 'normalizer to support filtering for type names', lambda l, o, r, nr: f'type.name == "{r.lower()}"' ),
-)
+
+@normalizer
+def classifier() -> Normalizer:
+	return Normalizer( 'classifier', str, 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda l, o, r, nr: f'"{r}" in classifiers' )
+
+@normalizer
+def service() -> Normalizer:
+	return Normalizer( 'service', str, 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' )
+
+@normalizer
+def source() -> Normalizer:
+	return Normalizer( 'source', str, 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' )
+
+@normalizer
+def type() -> Normalizer:
+	return Normalizer( 'type', str, 'normalizer to support filtering for type names', lambda l, o, r, nr: f'type.name == "{r.lower()}"' )
 
 @normalizer( type=int, description='treat ids from 2000 to current year as years rather than ids' )
 def id( left, op, right, rule ) -> str:

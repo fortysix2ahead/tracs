@@ -93,7 +93,7 @@ def inspect_registry() -> None:
 
 	table.add_row( '[bold bright_blue]Normalizers[/bold bright_blue]' )
 	table.add_row( '[blue]name[/blue]', '[blue]type[/blue]', '[blue]description[/blue]' )
-	for k, v in sorted( Registry.rule_normalizers.items(), key=lambda i: i[0] ):
+	for k, v in sorted( Registry.instance().normalizers.items(), key=lambda i: i[0] ):
 		table.add_row( v.name, pp( v.type ), v.description )
 
 	table.add_row( '[bold bright_blue]Importers[/bold bright_blue]' )

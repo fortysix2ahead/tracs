@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from enum import Enum
 from importlib import import_module
-from inspect import getmembers, isclass, isfunction
+from inspect import getmembers, isclass, isfunction, signature as getsignature
 from logging import getLogger
 from pathlib import Path
 from pkgutil import walk_packages
@@ -42,9 +42,11 @@ class Registry:
 	_instance: ClassVar[Registry] = None
 
 	_keywords: Dict[str, Keyword] = field( factory=dict, alias='_keywords' )
+	_normalizers: Dict[str, Normalizer] = field( factory=dict, alias='_normalizers' )
 	_setups: Dict[str, Callable] = field( factory=dict, alias='_setups' )
 
 	__keyword_fns__: List[Tuple] = field( factory=list, alias='__keyword_fns__' )
+	__normalizer_fns__: List[Tuple] = field( factory=list, alias='__normalizer_fns__' )
 	__setup_fns__: List[Tuple] = field( factory=list, alias='__setup_fns__' )
 
 	classifier: ClassVar[str] = KEY_CLASSIFER
@@ -53,7 +55,6 @@ class Registry:
 	handlers: ClassVar[Dict[str, List[Handler]]] = {}
 	importers: ClassVar[Dict[str, List[Importer]]] = {}
 	resource_types: ClassVar[Dict[str, ResourceType]] = {}
-	rule_normalizers: ClassVar[Dict[str, Normalizer]] = {}
 	services: ClassVar[Dict[str, Service]] = {}
 	service_classes: ClassVar[Dict[str, Type]] = {}
 	virtual_fields: ClassVar[Dict[str, VirtualField]] = Activity.__vf__.__fields__
@@ -68,7 +69,7 @@ class Registry:
 		# keywords
 		for fn, args, kwargs in self.__keyword_fns__:
 			try:
-				name, modname, qname, rval = _fnspec( fn )
+				name, modname, qname, params, rval = _fnspec( fn )
 				kw = fn()
 				if isinstance( kw, Keyword ):
 					self._keywords[kw.name] = kw
@@ -80,6 +81,21 @@ class Registry:
 			except RuntimeError:
 				log.error( f'unable to register keyword from function {fn}' )
 
+		# normalizers
+		for fn, args, kwargs in self.__normalizer_fns__:
+			try:
+				name, modname, qname, params, rval = _fnspec( fn )
+				if not params and rval == Normalizer:
+					nrm = fn()
+					self._normalizers[nrm.name] = nrm
+					log.debug( f'registered normalizer [orange1]{nrm.name}[/orange1] from module [orange1]{modname}[/orange1]' )
+				else:
+					self._normalizers[name] = Normalizer( name=name, type=kwargs.get( 'type' ), description=kwargs.get( 'description' ), fn=fn )
+					log.debug( f'registered normalizer [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1]' )
+
+			except RuntimeError:
+				log.error( f'unable to register normalizer from function {fn}' )
+
 		# setup functions
 		for fn, args, kwargs in self.__setup_fns__:
 			self._setups[_fnspec( fn )[1]] = fn
@@ -89,6 +105,10 @@ class Registry:
 	@property
 	def keywords( self ) -> Mapping[str, Keyword]:
 		return MappingProxyType( self._keywords )
+
+	@property
+	def normalizers( self ) -> Mapping[str, Normalizer]:
+		return MappingProxyType( self._normalizers )
 
 	@property
 	def setups( self ) -> Mapping[str, Callable]:
@@ -137,7 +157,7 @@ class Registry:
 
 		return None
 
-	# rules and normalizing
+	# keywords and normalizers
 
 	@classmethod
 	def register_keywords( cls, *keywords: Union[Keyword, List[Keyword]] ):
@@ -149,13 +169,13 @@ class Registry:
 	@classmethod
 	def register_normalizers( cls, *normalizers: Union[Normalizer, List[Normalizer]] ) -> None:
 		for n in unchain( *normalizers ):
-			cls.rule_normalizers[n.name] = n
+			cls.instance()._normalizers[n.name] = n
 			cls.notify( EventTypes.rule_normalizer_registered, field=n )
 		log.debug( f'registered rule normalizers {[n.name for n in unchain( *normalizers )]}' )
 
 	@classmethod
 	def rule_normalizer_type( cls, name: str ) -> Any:
-		return n.type if ( n := cls.rule_normalizers.get( name ) ) else Activity.field_type( name )
+		return n.type if ( n := cls.instance().normalizers.get( name ) ) else Activity.field_type( name )
 
 	# field resolving
 
@@ -304,7 +324,7 @@ def _spec( func: Callable ) -> Tuple[str, str]:
 
 	return module, name
 
-def _fnspec( func: Callable ) -> Tuple[str, str, str, Any]:
+def _fnspec( func: Callable ) -> Tuple[str, str, str, Mapping, Any]:
 	"""
 	Helper for examining a provided function. Returns a tuple containing
 	(function name, module name, qualified name, return value type)
@@ -312,12 +332,12 @@ def _fnspec( func: Callable ) -> Tuple[str, str, str, Any]:
 	:param func: function to be examined
 	:return: tuple
 	"""
-	members = getmembers( func )
+	members, signature = getmembers( func ), getsignature( func )
 	name = next( m[1] for m in members if m[0] == '__name__' )
 	module = next( m[1] for m in members if m[0] == '__module__' )
 	qname = next( m[1] for m in members if m[0] == '__qualname__' )
 	return_type = next( m[1].get( 'return' ) for m in members if m[0] == '__annotations__' )
-	return name, module, qname, return_type
+	return name, module, qname, signature.parameters, return_type
 
 def _register( *args, **kwargs ) -> Callable:
 	_fnlist = kwargs.pop( '__function_list__' )
@@ -344,36 +364,28 @@ def virtualfield( *args, **kwargs ):
 
 	def _inner( *inner_args ):
 		global _KWARGS
-		inner_name, inner_mod, inner_qname, inner_rtype = _fnspec( inner_args[0] )
+		inner_name, inner_mod, inner_qname, inner_params, inner_rtype = _fnspec( inner_args[0] )
 		Registry.register_virtual_fields( VirtualField( **{ 'name': inner_name, 'type': inner_rtype, 'factory': inner_args[0], **_KWARGS } ) )
 		return inner_args[0]
 
 	if len( args ) == 1 and isfunction( args[0] ): # case: decorated function without arguments
-		name, mod, qname, rtype = _fnspec( args[0] )
+		name, mod, qname, params, rtype = _fnspec( args[0] )
 		Registry.register_virtual_fields( VirtualField( name=name, type=rtype, factory=args[0] ) )
 		return args[0]
 	elif len( args ) == 0 and len( kwargs ) > 0:
 		_ARGS, _KWARGS = args, kwargs
 		return _inner
 
-# maybe we should go this way for decorators ... lots of copy and paste, but cleaner code ...
+# actual real-world decorators below
 
 def keyword( *args, **kwargs ):
 	return _register( *args, **kwargs, __function_list__ = Registry.instance().__keyword_fns__, __decorator_name__='keyword' )
 
+def normalizer( *args, **kwargs ):
+	return _register( *args, **kwargs, __function_list__ = Registry.instance().__normalizer_fns__, __decorator_name__='normalizer' )
+
 def setup( *args, **kwargs ):
 	return _register( *args, **kwargs, __function_list__ = Registry.instance().__setup_fns__, __decorator_name__='setup' )
-
-def normalizer( *args, **kwargs ):
-	def _inner( *inner_args ):
-		Registry.register_normalizers( Normalizer( name=_fnspec( inner_args[0] )[0], type=kwargs.get( 'type' ), description=kwargs.get( 'description' ), fn=inner_args[0] ) )
-		return inner_args[0]
-
-	if args and isfunction( args[0] ): # case: decorated function without arguments
-		Registry.register_normalizers( Normalizer( name=_fnspec( args[0] )[0], fn=args[0] ) )
-		return args[0]
-	elif kwargs and 'description' in kwargs:
-		return _inner
 
 def resourcetype( *args, **kwargs ):
 	def reg_resource_type( cls ):

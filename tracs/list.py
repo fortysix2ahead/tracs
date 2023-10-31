@@ -88,7 +88,7 @@ def inspect_registry() -> None:
 
 	table.add_row( '[bold bright_blue]Keywords[/bold bright_blue]' )
 	table.add_row( '[blue]name[/blue]', '[blue]expression[/blue]', '[blue]description[/blue]' )
-	for k, v in sorted( Registry.rule_keywords.items(), key=lambda i: i[0] ):
+	for k, v in sorted( Registry.instance().keywords.items(), key=lambda i: i[0] ):
 		table.add_row( v.name, pp( v.expr or v.fn ), v.description )
 
 	table.add_row( '[bold bright_blue]Normalizers[/bold bright_blue]' )

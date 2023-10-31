@@ -147,11 +147,11 @@ def show_aggregate( activities: [Activity], ctx: ApplicationContext ) -> None:
 	console.print( table )
 
 def show_keywords( ctx: ApplicationContext ) -> None:
-	keywords = sorted( Registry.rule_keywords.keys() )
+	keywords = sorted( Registry.instance().keywords.keys() )
 	if ctx.verbose:
 		table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
 		[ table.add_column( f'[blue]{c}[/blue]' ) for c in [ 'keyword', 'description' ] ]
-		[ table.add_row( k, Registry.rule_keywords[k].description ) for k in keywords ]
+		[ table.add_row( k, Registry.instance().keywords[k].description ) for k in keywords ]
 		ctx.console.print( table )
 	else:
 		ctx.console.print( Columns( keywords, padding=(0, 4), equal=True, column_first=True ) )

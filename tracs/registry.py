@@ -51,7 +51,6 @@ class Registry:
 	handlers: ClassVar[Dict[str, List[Handler]]] = {}
 	importers: ClassVar[Dict[str, List[Importer]]] = {}
 	resource_types: ClassVar[Dict[str, ResourceType]] = {}
-	rule_keywords: ClassVar[Dict[str, Keyword]] = {}
 	rule_normalizers: ClassVar[Dict[str, Normalizer]] = {}
 	setup_functions: ClassVar[Dict[str, Callable]] = {}
 	services: ClassVar[Dict[str, Service]] = {}
@@ -134,7 +133,7 @@ class Registry:
 	@classmethod
 	def register_keywords( cls, *keywords: Union[Keyword, List[Keyword]] ):
 		for kw in unchain( *keywords ):
-			cls.rule_keywords[kw.name] = kw
+			cls.instance()._keywords[kw.name] = kw
 			cls.notify( EventTypes.keyword_registered, field=kw )
 		log.debug( f'registered keywords {[kw.name for kw in unchain( *keywords )]}' )
 

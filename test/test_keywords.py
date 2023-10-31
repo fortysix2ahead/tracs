@@ -19,4 +19,4 @@ def test_keywords():
 	assert kw( 'thisyear' )().startswith( 'starttime_local >= d"20' )
 
 def kw( name: str ) -> Keyword:
-	return Registry.rule_keywords.get( name )
+	return Registry.instance().keywords.get( name )

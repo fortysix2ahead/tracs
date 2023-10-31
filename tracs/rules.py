@@ -113,8 +113,8 @@ def normalize( rule: str ) -> str:
 		left, right, normalized_rule = 'id', rule, f'id in [{rule}]'
 
 	elif match( KEYWORD_PATTERN, rule ):  # keywords
-		if rule in Registry.rule_keywords.keys():
-			right, normalized_rule = rule, Registry.rule_keywords[rule]( rule )
+		if rule in Registry.instance().keywords.keys():
+			right, normalized_rule = rule, Registry.instance().keywords[rule]( rule )
 		else:
 			raise RuleSyntaxError( f'syntax error: unsupported keyword "{rule}"' )
 

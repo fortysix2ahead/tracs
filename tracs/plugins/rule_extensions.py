@@ -159,29 +159,3 @@ def time( left, op, right, rule ) -> str:
 		return '__time__ >= d"{}" and __time__ <= d"{}"'.format( *parse_time_range( right, as_str=True ) )
 	else:
 		return rule
-
-Registry.register_virtual_fields(
-	VirtualField( 'classifiers', List[str], display_name='Classifiers', description='list of classifiers of an activity',
-	            factory=lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ) ),
-	# date/time fields
-	VirtualField( 'weekday', int, display_name='Weekday', description='day of week at which the activity has taken place (as number)',
-	              factory=lambda a: a.starttime_local.year ),
-	VirtualField( 'hour', int, display_name='Hour of Day', description='hour in which the activity has been started',
-	              factory=lambda a: a.starttime_local.hour ),
-	VirtualField( 'day', int, display_name='Day of Month', description='day on which the activity has taken place',
-	              factory=lambda a: a.starttime_local.day ),
-	VirtualField( 'month', int, display_name='Month', description='month in which the activity has taken place',
-	              factory=lambda a: a.starttime_local.month ),
-	VirtualField( 'year', int, display_name='Year', description='year in which the activity has taken place',
-	              factory=lambda a: a.starttime_local.year ),
-	# date/time helpers
-	VirtualField( 'date', timedelta, display_name='Date', description='Date without date',
-	              factory=lambda a: timedelta( days=a.starttime_local.timetuple().tm_yday ) ),
-	VirtualField( 'time', timedelta, display_name='Time', description='Local time without date',
-	              factory= lambda a: timedelta( hours=a.starttime_local.hour, minutes=a.starttime_local.minute, seconds=a.starttime_local.second ) ),
-	# time helper
-	VirtualField( '__time__', datetime, display_name='__time__', description='local time without a date and tz',
-						# rules does not care about timezones -> that's why we need to return time without tz information
-	              # lambda a: datetime( 1, 1, 1, a.localtime.hour, a.localtime.minute, a.localtime.second, tzinfo=UTC ),
-	              factory=lambda a: datetime( 1, 1, 1, a.starttime_local.hour, a.starttime_local.minute, a.starttime_local.second ) ),
-)

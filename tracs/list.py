@@ -83,7 +83,7 @@ def inspect_registry() -> None:
 
 	table.add_row( '[bold bright_blue]Virtual Fields[/bold bright_blue]' )
 	table.add_row( '[blue]name[/blue]', '[blue]type[/blue]', '[blue]display name[/blue]' )
-	for k, v in sorted( Registry.virtual_fields.items(), key=lambda i: i[1].name ):
+	for k, v in sorted( Registry.instance().virtual_fields.items(), key=lambda i: i[1].name ):
 		table.add_row( v.name, pp( v.type ), v.display_name )
 
 	table.add_row( '[bold bright_blue]Keywords[/bold bright_blue]' )

@@ -8,6 +8,7 @@ from logging import getLogger
 from pathlib import Path
 from pkgutil import walk_packages
 from re import match
+from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from attrs import define, field, fields, Attribute
@@ -40,6 +41,10 @@ class Registry:
 
 	_instance: ClassVar[Registry] = None
 
+	_keywords: Dict[str, Keyword] = field( factory=dict, alias='_keywords' )
+
+	__keyword_fns__: List[Tuple] = field( factory=list, alias='__keyword_fns__' )
+
 	classifier: ClassVar[str] = KEY_CLASSIFER
 	ctx: ClassVar[ApplicationContext] = None
 	event_listeners: ClassVar[Dict] = {}
@@ -58,6 +63,28 @@ class Registry:
 		if cls._instance is None:
 			cls._instance = Registry()
 		return cls._instance
+
+	def setup( self ):
+		# keywords
+		for fn, args, kwargs in self.__keyword_fns__:
+			try:
+				name, modname, qname, rval = _fnspec( fn )
+				kw = fn()
+				if isinstance( kw, Keyword ):
+					self._keywords[kw.name] = kw
+					log.debug( f'registered keyword [orange1]{kw.name}[/orange1] from module [orange1]{modname}[/orange1] with static expression' )
+				else:
+					self._keywords[name] = Keyword( name=name, description=kwargs.get( 'description' ), fn=fn )
+					log.debug( f'registered keyword [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1] with function' )
+
+			except RuntimeError:
+				log.error( f'unable to register keyword from function {fn}' )
+
+	# properties
+
+	@property
+	def keywords( self ) -> Mapping[str, Keyword]:
+		return MappingProxyType( self._keywords )
 
 	@classmethod
 	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
@@ -284,75 +311,23 @@ def _fnspec( func: Callable ) -> Tuple[str, str, str, Any]:
 	return_type = next( m[1].get( 'return' ) for m in members if m[0] == '__annotations__' )
 	return name, module, qname, return_type
 
-def _register( args, kwargs, dictionary, callable_fn = False ) -> Union[Type, Callable]:
-	"""
-	Helper for registering mappings returned from the provided decorated function to the provided dictionary.
+def _register( *args, **kwargs ) -> Callable:
+	_fnlist = kwargs.pop( '__function_list__' )
+	_decorator_name = kwargs.pop( '__decorator_name__' )
 
-	:param args:
-	:param kwargs:
-	:param dictionary:
-	:param callable_fn:
-	:return: returns the provided callable (as convenience for callers)
-	"""
-	def decorated_fn( fn ):
-		dec_ns, dec_name = _spec( fn )
-		if callable_fn:
-			dec_call_result = fn()
-			for dec_fn_name, dec_fn_value in dec_call_result.items():
-				if kwargs['classifier']:
-					Registry.register_function( (kwargs['classifier'], dec_fn_name), dec_fn_value, dictionary )
-				else:
-					Registry.register_function( dec_fn_name, dec_fn_value, dictionary )
-		else:
-			if kwargs['classifier']:
-				Registry.register_function( (kwargs['classifier'], dec_name), fn, dictionary )
-			else:
-				Registry.register_function( dec_name, fn, dictionary )
+	def _inner( fn ):
+		def _wrapper( *wrapper_args, **wrapper_kwargs ):
+			fn( *wrapper_args, **wrapper_kwargs )
 
-		return fn
+		_fnlist.append( (fn, args, kwargs) )
+		log.debug( f'registered {_decorator_name} function from {fn} in module {_fnspec( fn )[1]}' )
+		return _wrapper
 
-	# call via standard decorator, no namespace argument is provided, namespace is taken from module containing the function
-	if len( args ) == 1:
-		ns, name = _spec( args[0] )
-		if callable_fn:
-			call_result = args[0]()
-			for fn_name, fn_value in call_result.items():
-				Registry.register_function( (ns, fn_name), fn_value, dictionary )
-		else:
-			Registry.register_function( (ns, name), args[0], dictionary )
-		return args[0]
-	# call via decorator with arguments, namespace argument is provided
-	elif len( args ) == 0 and 'classifier' in kwargs:
-		return decorated_fn
-	else:
-		raise RuntimeError( 'unable to register function -> this needs to be reported' )
+	if args and not kwargs and callable( args[0] ):
+		_fnlist.append( ( args[0], (), {} ) )
+		log.debug( f'registered {_decorator_name} function from {args[0]} in module {_fnspec( args[0] )[1]}' )
 
-def _register_function( *args, **kwargs ) -> Callable:
-	"""
-	Used for registering a function in a provided dictionary with a provided name. Valid examples:
-	@decorator, @decorator( 'name' ) or @decorator( name = 'name' )
-	"""
-	_decorator_name = kwargs.get( '_decorator_name', 'None' ) # name of the decorator, only used for logging
-	_mapping = kwargs.get( '_mapping' ) # mapping to use for registering the function
-	_parameter = None
-
-	def _inner( *inner_args ):
-		inner_module, inner_name = _spec( inner_args[0] )
-		_mapping[_parameter] = inner_args[0]
-		log.debug( f'registered {_decorator_name} function from {inner_module}#{inner_name} with parameter {_parameter}' )
-		return _parameter
-
-	if len( args ) == 1 and isfunction( args[0] ): # case: decorated function without arguments
-		module, name = _spec( args[0] )
-		_mapping[name] = args[0]
-		log.debug( f'registered {_decorator_name} function from {module}#{name}' )
-		return args[0]
-	elif len( args ) == 1 and type( args[0] ) is str: # case: decorated function with single parameter, args[0] contains the sole parameter
-		_parameter = args[0]
-		return _inner
-	elif 'name' in kwargs:
-		_parameter = kwargs.get( 'name' )
-		return _inner
+	return _inner
 
 # hm, works but doesn't feel nice, especially for using global helper variables
 def virtualfield( *args, **kwargs ):
@@ -374,19 +349,9 @@ def virtualfield( *args, **kwargs ):
 		return _inner
 
 # maybe we should go this way for decorators ... lots of copy and paste, but cleaner code ...
-# maybe we should go this way for decorators ... lots of copy and paste, but cleaner code ...
 
 def keyword( *args, **kwargs ):
-	def _inner( *inner_args ):
-		kw = Keyword( name=_fnspec( inner_args[0] )[0], description=kwargs.get( 'description' ), fn=inner_args[0] )
-		Registry.register_keywords( kw )
-		return inner_args[0]
-
-	if args and isfunction( args[0] ): # case: decorated function without arguments
-		Registry.register_keywords( Keyword( name=_fnspec( args[0] )[0], fn=args[0] ) )
-		return args[0]
-	elif kwargs and 'description' in kwargs:
-		return _inner
+	return _register( *args, **kwargs, __function_list__ = Registry.instance().__keyword_fns__, __decorator_name__='keyword' )
 
 def normalizer( *args, **kwargs ):
 	def _inner( *inner_args ):

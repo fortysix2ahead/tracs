@@ -79,7 +79,7 @@ class Application:
 		register_atexit( self._ctx.dump_state )
 
 	def __setup_registry__( self ):
-		pass
+		self.registry.setup()
 	
 	# properties
 

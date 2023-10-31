@@ -21,15 +21,27 @@ def floor_ceil_str( a1: Arrow, a2: Optional[Arrow] = None, frame: TIME_FRAMES = 
 	a2 = a1 if a2 is None else a2
 	return tuple( f'd"{t.isoformat()}"' for t in floor_ceil( a1, a2, frame ) )
 
-# noinspection PyTypeChecker
-Registry.register_keywords(
-	# time related keywords
-	Keyword( 'morning', 'time between 6:00 and 11:00', 'hour >= 6 and hour < 11' ),
-	Keyword( 'noon', 'time between 11:00 and 13:00', 'hour >= 11 and hour < 13' ),
-	Keyword( 'afternoon', 'time between 13:00 and 18:00', 'hour >= 13 and hour < 18' ),
-	Keyword( 'evening', 'time between 18:00 and 22:00', 'hour >= 18 and hour < 22' ),
-	Keyword( 'night', 'time between 22:00 and 6:00', 'hour >= 22 or hour < 6' ),
-)
+# static keywords for periods of day
+
+@keyword
+def morning():
+	return Keyword( 'morning', 'time between 6:00 and 11:00', 'hour >= 6 and hour < 11' )
+
+@keyword
+def noon():
+	return Keyword( 'noon', 'time between 11:00 and 13:00', 'hour >= 11 and hour < 13' )
+
+@keyword
+def afternoon():
+	return Keyword( 'afternoon', 'time between 13:00 and 18:00', 'hour >= 13 and hour < 18' )
+
+@keyword
+def evening():
+	return Keyword( 'evening', 'time between 18:00 and 22:00', 'hour >= 18 and hour < 22' )
+
+@keyword
+def night():
+	return Keyword( 'night', 'time between 22:00 and 6:00', 'hour >= 22 or hour < 6' )
 
 # keywords for 'within last X days'
 

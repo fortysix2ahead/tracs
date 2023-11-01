@@ -24,7 +24,7 @@ from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSON_TYPE, JSONHandler
 from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
-from tracs.registry import importer, Registry, service, setup
+from tracs.registry import importer, Registry, resourcetype, service, setup
 from tracs.resources import Resource, ResourceType
 from tracs.service import Service
 from tracs.streams import Point, Stream
@@ -45,7 +45,10 @@ TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
 TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
 
 # register Strava Activity type
-Registry.register_resource_type( ResourceType( type=STRAVA_TYPE, activity_cls=StravaActivity, summary=True ) )
+# register CSV type
+@resourcetype
+def strava_resource_type() -> ResourceType:
+	return ResourceType( type=STRAVA_TYPE, activity_cls=StravaActivity, summary=True )
 
 @importer( type=STRAVA_TYPE )
 class StravaHandler( JSONHandler ):

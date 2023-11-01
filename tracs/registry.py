@@ -55,7 +55,6 @@ class Registry:
 	__virtual_fields_fns__: List[Tuple] = field( factory=list, alias='__virtual_fields_fns__' )
 
 	ctx: ClassVar[ApplicationContext] = None
-	handlers: ClassVar[Dict[str, List[Handler]]] = {}
 	importers: ClassVar[Dict[str, List[Importer]]] = {}
 	services: ClassVar[Dict[str, Service]] = {}
 	service_classes: ClassVar[Dict[str, Type]] = {}
@@ -251,25 +250,6 @@ class Registry:
 		if not event_type in Registry.instance()._listeners.keys():
 			Registry.instance()._listeners[event_type] = []
 		Registry.instance()._listeners.get( event_type ).append( fn )
-
-	# handlers
-
-	@classmethod
-	def handler_for( cls, type: str ) -> Optional[Handler]:
-		handler_list = Registry.handlers.get( type ) or []
-		return handler_list[0] if len( handler_list ) > 0 else None
-
-	@classmethod
-	def handlers_for( cls, type: str ) -> List[Handler]:
-		return Registry.handlers.get( type ) or []
-
-	@classmethod
-	def register_handler( cls, handler: Handler, type: str ) -> None:
-		handler_list = Registry.handlers.get( type ) or []
-		if handler not in handler_list:
-			handler_list.append( handler )
-			Registry.handlers[type] = handler_list
-			log.debug( f'registered handler {handler.__class__} for type {type}' )
 
 	# importers
 

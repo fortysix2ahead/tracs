@@ -17,6 +17,7 @@ from confuse import NotFoundError
 from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.core import Keyword, Normalizer, VirtualField, VirtualFields
+from tracs.handlers import ResourceHandler
 from tracs.protocols import Handler, Importer, Service
 from tracs.resources import ResourceType
 from tracs.uid import UID
@@ -41,6 +42,7 @@ class Registry:
 
 	_instance: ClassVar[Registry] = None
 
+	_importers: Dict[str, List[ResourceHandler]] = field( factory=dict, alias='_importers' )
 	_keywords: Dict[str, Keyword] = field( factory=dict, alias='_keywords' )
 	_listeners: Dict[EventTypes, List[Callable]] = field( factory=dict, alias='_listeners' )
 	_normalizers: Dict[str, Normalizer] = field( factory=dict, alias='_normalizers' )
@@ -48,6 +50,7 @@ class Registry:
 	_setups: Dict[str, Callable] = field( factory=dict, alias='_setups' )
 	_virtual_fields: VirtualFields = field( default=Activity.VF() )
 
+	__importer_cls__: List[Tuple] = field( factory=list, alias='__importer_cls__' )
 	__keyword_fns__: List[Tuple] = field( factory=list, alias='__keyword_fns__' )
 	__normalizer_fns__: List[Tuple] = field( factory=list, alias='__normalizer_fns__' )
 	__resource_type_cls__: List[Tuple] = field( factory=list, alias='__resource_type_cls__' )
@@ -55,7 +58,6 @@ class Registry:
 	__virtual_fields_fns__: List[Tuple] = field( factory=list, alias='__virtual_fields_fns__' )
 
 	ctx: ClassVar[ApplicationContext] = None
-	importers: ClassVar[Dict[str, List[Importer]]] = {}
 	services: ClassVar[Dict[str, Service]] = {}
 	service_classes: ClassVar[Dict[str, Type]] = {}
 
@@ -99,13 +101,24 @@ class Registry:
 		for fncls, args, kwargs in self.__resource_type_cls__:
 			try:
 				name, modname, qname, params, rval = _fnspec( fncls )
-				# todo: rval is 'ResourceType' for tcx.py? WHY???
-				if not params and rval in [ResourceType, 'ResourceType']:
+				if not params and rval in [ResourceType, 'ResourceType']: # todo: rval is 'ResourceType' for tcx.py? WTF? WHY???
 					rt = fncls()
 				else:
 					rt = ResourceType( **kwargs )
 				self._resource_types[rt.type] = rt
 				log.debug( f'registered resource type [orange1]{rt.name}[/orange1] from module [orange1]{modname}[/orange1] for type [orange1]{rt.type}[/orange1]' )
+
+			except RuntimeError:
+				log.error( f'unable to register resource type from {fncls}' )
+
+	def __setup_importers__( self ):
+		for fncls, args, kwargs in self.__importer_cls__:
+			try:
+				name, modname, qname, params, rval = _fnspec( fncls )
+				i = fncls()
+				type = i.TYPE or kwargs( 'type' )
+				self._importers[type] = [ *self._importers[type], i ] if type in self._importers else [i]
+				log.debug( f'registered importer [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1] for type [orange1]{type}[/orange1]' )
 
 			except RuntimeError:
 				log.error( f'unable to register resource type from {fncls}' )
@@ -134,10 +147,15 @@ class Registry:
 		self.__setup_keywords__()
 		self.__setup_normalizers__()
 		self.__setup_resource_types__()
+		self.__setup_importers__()
 		self.__setup_virtual_fields__()
 		self.__setup_setup_functions__()
 
 	# properties
+
+	@property
+	def importers( self ) -> Mapping[str, List[ResourceHandler]]:
+		return MappingProxyType( self._importers )
 
 	@property
 	def keywords( self ) -> Mapping[str, Keyword]:
@@ -181,22 +199,22 @@ class Registry:
 
 	@classmethod
 	def register_resource_type( cls, resource_type ) -> None:
-		Registry.resource_types[resource_type.type] = resource_type
+		Registry.instance()._resource_types[resource_type.type] = resource_type
 
 	# noinspection PyUnresolvedReferences
 	@classmethod
 	def resource_type_for_extension( cls, extension: str ) -> Optional[ResourceType]:
-		return next( (rt for rt in Registry.resource_types.values() if rt.extension() == extension), None )
+		return next( (rt for rt in Registry.instance().resource_types.values() if rt.extension() == extension), None )
 
 	@classmethod
 	def resource_type_for_suffix( cls, suffix: str ) -> Optional[str]:
 		# first round: prefer suffix in special part of type: 'gpx' matches 'application/xml+gpx'
-		for key in Registry.importers.keys():
+		for key in Registry.instance().importers.keys():
 			if m := match( f'^(\w+)/(\w+)\+{suffix}$', key ):
 				return key
 
 		# second round: suffix after slash: 'gpx' matches 'application/gpx'
-		for key in Registry.importers.keys():
+		for key in Registry.instance().importers.keys():
 			if m := match( f'^(\w+)/{suffix}(\+([\w-]+))?$', key ):
 				return key
 
@@ -255,16 +273,16 @@ class Registry:
 
 	@classmethod
 	def importer_for( cls, type: str ) -> Optional[Importer]:
-		return next( iter( Registry.importers.get( type, [] ) ), None )
+		return next( iter( Registry.instance().importers.get( type, [] ) ), None )
 
 	@classmethod
 	def importers_for( cls, type: str ) -> List[Importer]:
-		return Registry.importers.get( type, [] )
+		return Registry.instance().importers.get( type, [] )
 
 	@classmethod
 	def importers_for_suffix( cls, suffix: str ) -> List[Importer]:
 		importers = []
-		for key, value in Registry.importers.items():
+		for key, value in Registry.instance().importers.items():
 			if m := match( f'^(\w+)/{suffix}(\+([\w-]+))?$', key ) or match( f'^(\w+)/(\w+)\+{suffix}$', key ):
 				# g1, g2, g3 = m.groups()
 				if '+' in key:
@@ -278,10 +296,10 @@ class Registry:
 		if not type:
 			raise ValueError( f'unable to register {importer}: missing type' )
 
-		importer_list = Registry.importers.get( type ) or []
+		importer_list = Registry.instance().importers.get( type ) or []
 		if importer not in importer_list:
 			importer_list.append( importer )
-			Registry.importers[type] = importer_list
+			Registry.instance()._importers[type] = importer_list
 			log.debug( f'registered importer {importer.__class__} for type {type}' )
 
 	@classmethod
@@ -367,19 +385,20 @@ def _fnspec( fncls: Union[Callable, Type] ) -> Tuple[str, str, str, Mapping, Any
 	return name, module, qname, params, rval
 
 def _register( *args, **kwargs ) -> Callable:
-	_fnlist = kwargs.pop( '__function_list__' )
+	_fncls_list = kwargs.pop( '__fncls_list__' )
 	_decorator_name = kwargs.pop( '__decorator_name__' )
 
-	def _inner( fn ):
-		def _wrapper( *wrapper_args, **wrapper_kwargs ):
-			fn( *wrapper_args, **wrapper_kwargs )
+	def _inner( fncls ):
+		# def _wrapper( *wrapper_args, **wrapper_kwargs ):
+		#	fn( *wrapper_args, **wrapper_kwargs )
 
-		_fnlist.append( (fn, args, kwargs) )
-		log.debug( f'registered {_decorator_name} function from {fn} in module {_fnspec( fn )[1]}' )
-		return _wrapper
+		_fncls_list.append( (fncls, args, kwargs) )
+		log.debug( f'registered {_decorator_name} function/class from {fncls} in module {_fnspec( fncls )[1]}' )
+		# return _wrapper
+		return fncls
 
 	if args and not kwargs and callable( args[0] ):
-		_fnlist.append( ( args[0], (), {} ) )
+		_fncls_list.append( (args[0], (), {}) )
 		log.debug( f'registered {_decorator_name} function from {args[0]} in module {_fnspec( args[0] )[1]}' )
 
 	return _inner
@@ -387,19 +406,22 @@ def _register( *args, **kwargs ) -> Callable:
 # actual real-world decorators below
 
 def keyword( *args, **kwargs ):
-	return _register( *args, **kwargs, __function_list__ = Registry.instance().__keyword_fns__, __decorator_name__='keyword' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__keyword_fns__, __decorator_name__='keyword' )
 
 def normalizer( *args, **kwargs ):
-	return _register( *args, **kwargs, __function_list__ = Registry.instance().__normalizer_fns__, __decorator_name__='normalizer' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__normalizer_fns__, __decorator_name__='normalizer' )
 
 def virtualfield( *args, **kwargs ):
-	return _register( *args, **kwargs, __function_list__ = Registry.instance().__virtual_fields_fns__, __decorator_name__='virtualfield' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__virtual_fields_fns__, __decorator_name__='virtualfield' )
+
+def importer( *args, **kwargs ):
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__importer_cls__, __decorator_name__='importer' )
 
 def resourcetype( *args, **kwargs ):
-	return _register( *args, **kwargs, __function_list__ = Registry.instance().__resource_type_cls__, __decorator_name__='resourcetype' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__resource_type_cls__, __decorator_name__='resourcetype' )
 
 def setup( *args, **kwargs ):
-	return _register( *args, **kwargs, __function_list__ = Registry.instance().__setup_fns__, __decorator_name__='setup' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__setup_fns__, __decorator_name__='setup' )
 
 def service( cls: Type ):
 	if isclass( cls ):
@@ -409,19 +431,6 @@ def service( cls: Type ):
 		return cls
 	else:
 		raise RuntimeError( 'only classes can be used with the @service decorator' )
-
-def importer( *args, **kwargs ):
-	def importer_cls( cls ):
-		Registry.register_importer( cls(), cls.TYPE or kwargs.get( 'type' ) )
-		return cls
-
-	# return importer_cls if (not args and kwargs) else importer_cls( args[0] )
-	if not args and kwargs:
-		return importer_cls
-	elif args:
-		return importer_cls( args[0] )
-	else:
-		raise RuntimeError( f'error in decorator @importer: {args}, {kwargs} (this should not happen!)' ) # should not happen
 
 def load( plugin_pkgs: List[str] = None, disabled: List[str] = None, ctx: ApplicationContext = None ):
 	plugin_pkgs = plugin_pkgs if plugin_pkgs else [NS_PLUGINS]

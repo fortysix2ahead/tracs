@@ -97,9 +97,9 @@ def inspect_registry() -> None:
 		table.add_row( v.name, pp( v.type ), v.description )
 
 	table.add_row( '[bold bright_blue]Importers[/bold bright_blue]' )
-	table.add_row( '[blue]type[/blue]', '[blue][/blue]', '[blue]class[/blue]' )
-	for k, l in sorted( Registry.importers.items(), key=lambda i: i[0] ):
-		[ table.add_row( k, '', pp( v.__class__ ) ) for v in l ]
+	table.add_row( '[blue]type[/blue]', '[blue]class[/blue]', '[blue][/blue]' )
+	for k, l in sorted( Registry.instance().importers.items(), key=lambda i: i[0] ):
+		[ table.add_row( k, pp( v.__class__ ), '' ) for v in l ]
 
 	table.add_row( *style( 'Resource Types', style='bold bright_blue' ) )
 	table.add_row( *style( 'type', 'class', 'summary, recording, image', style='blue' ) )

@@ -17,14 +17,9 @@ def _decorator_with_args_and_kwargs( *args, **kwargs ):
 			DECORATIONS.append( (fncls, args, kwargs) )
 			return fncls
 		else:
-			if isfunction( args[0] ):
-				return args[0]()
-			elif isclass( args[0] ):
-				return args[0].__new__( args[0] )
-			else:
-				raise RuntimeError( 'should not happen!' )
+			return args[0]()
 
-	if args and not kwargs and ( isfunction( args[0] ) or isclass( args[0] ) ):
+	if args and not kwargs and callable( args[0] ):
 		DECORATIONS.append( (args[0], (), {} ) )
 		if isclass( args[0] ):
 			return args[0]

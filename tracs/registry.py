@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from inspect import getmembers, signature as getsignature
+from inspect import getmembers, isclass, signature as getsignature
 from logging import getLogger
 from pathlib import Path
 from re import match
@@ -18,7 +18,6 @@ from tracs.handlers import ResourceHandler
 from tracs.protocols import Importer, Service
 from tracs.resources import ResourceType
 from tracs.uid import UID
-from tracs.utils import unchain
 
 log = getLogger( __name__ )
 
@@ -309,14 +308,19 @@ def _register( *args, **kwargs ) -> Callable:
 		# def _wrapper( *wrapper_args, **wrapper_kwargs ):
 		#	fn( *wrapper_args, **wrapper_kwargs )
 
-		_fncls_list.append( (fncls, args, kwargs) )
-		log.debug( f'registered {_decorator_name} function/class from {fncls} in module {_fnspec( fncls )[1]}' )
-		# return _wrapper
-		return fncls
+		if fncls is not None:
+			_fncls_list.append( (fncls, args, kwargs) )
+			log.debug( f'registered {_decorator_name} function/class from {fncls} in module {_fnspec( fncls )[1]}' )
+			return fncls
+		else:
+			return args[0]()
 
 	if args and not kwargs and callable( args[0] ):
 		_fncls_list.append( (args[0], (), {}) )
 		log.debug( f'registered {_decorator_name} function from {args[0]} in module {_fnspec( args[0] )[1]}' )
+
+		if isclass( args[0] ):
+			return args[0]
 
 	return _inner
 

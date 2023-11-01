@@ -62,14 +62,14 @@ class Application:
 
 		# create registry
 		self._registry = Registry.instance()
-		self.__setup_registry__()
+		self._registry.setup()
 
 		# open db from config_dir
 		self._db = ActivityDb( path=self._ctx.db_dir_path, read_only=self._ctx.pretend, enable_index=self.ctx.config['db']['index'].get() )
-		self._ctx.db = self._db
+		self._ctx.db = self._db # todo: really put db into ctx? or keep it here?
 
 		# ---- create service instances ----
-		Registry.instantiate_services( ctx=self._ctx )
+		self._registry.setup_services( self._ctx )
 
 		# ---- announce context/configuration to utils module ----
 		UCFG.reconfigure( self._ctx.config )
@@ -78,9 +78,6 @@ class Application:
 		register_atexit( self._ctx.db.close )
 		register_atexit( self._ctx.dump_state )
 
-	def __setup_registry__( self ):
-		self.registry.setup()
-	
 	# properties
 
 	@property

@@ -8,7 +8,7 @@ from logging import getLogger
 from os.path import join as os_path_join
 from pathlib import Path
 from pkgutil import extend_path, iter_modules
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from attrs import define, field
 from confuse import ConfigReadError, ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, NotFoundError, YamlSource
@@ -378,6 +378,22 @@ class ApplicationContext:
 			self.apptime = datetime.now()
 
 	# plugin configuration helpers
+
+	def plugin_config_state( self, name, as_dict: bool = False ) -> Tuple:
+		name = name.lower()
+		cfg, state = self.config['plugins'][name], self.state['plugins'][name]
+		if as_dict:
+			try:
+				cfg = cfg.get()
+			except NotFoundError:
+				cfg = dict()
+
+			try:
+				state = state.get()
+			except NotFoundError:
+				cfg = dict()
+
+		return cfg, state
 
 	def plugin_config( self, plugin_name ) -> Dict:
 		if not self.config['plugins'][plugin_name].get():

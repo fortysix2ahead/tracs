@@ -293,11 +293,6 @@ def setup( ctx: ApplicationContext, services: List[str] ):
 def aggregate( ctx: ApplicationContext, filters ):
 	show_aggregate( list( ctx.db.find( filters ) ), ctx=ctx )
 
-@cli.command( hidden=True, help='For testing plugin system' )
-def init():
-	from tracs.registry import load as load_plugins
-	load_plugins()
-
 @cli.command( hidden=True, help='inspects activities/resources/internal registry' )
 @option( '-g', '--registry', is_flag=True, required=False, help='inspects the internal registry (filter will be ignored)' )
 @option( '-p', '--plugins', is_flag=True, required=False, help='inspects all discoverable plugins (filter will be ignored)' )

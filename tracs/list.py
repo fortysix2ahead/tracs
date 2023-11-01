@@ -78,7 +78,7 @@ def inspect_registry() -> None:
 
 	table.add_row( '[bold bright_blue]Services[/bold bright_blue]' )
 	table.add_row( '[blue]name[/blue]', '[blue]class[/blue]', '[blue]display name[/blue]', '[blue]enabled[/blue]' )
-	for k, v in sorted( Registry.services.items(), key=lambda i: i[1].name ):
+	for k, v in sorted( Registry.instance().services.items(), key=lambda i: i[1].name ):
 		table.add_row( v.name, pp( v.__class__ ), v.display_name, pp( v.enabled ) )
 
 	table.add_row( '[bold bright_blue]Virtual Fields[/bold bright_blue]' )

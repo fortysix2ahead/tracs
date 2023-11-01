@@ -2,31 +2,25 @@
 from __future__ import annotations
 
 from enum import Enum
-from importlib import import_module
-from inspect import getmembers, isclass, signature as getsignature
+from inspect import getmembers, signature as getsignature
 from logging import getLogger
 from pathlib import Path
-from pkgutil import walk_packages
 from re import match
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from attrs import Attribute, define, field, fields
-from confuse import NotFoundError
 
 from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.core import Keyword, Normalizer, VirtualField, VirtualFields
 from tracs.handlers import ResourceHandler
-from tracs.protocols import Handler, Importer, Service
+from tracs.protocols import Importer, Service
 from tracs.resources import ResourceType
 from tracs.uid import UID
 from tracs.utils import unchain
 
 log = getLogger( __name__ )
-
-NS_PLUGINS = 'tracs.plugins'
-_ARGS, _KWARGS = (), {} # helpers ...
 
 class EventTypes( Enum ):
 
@@ -47,6 +41,7 @@ class Registry:
 	_listeners: Dict[EventTypes, List[Callable]] = field( factory=dict, alias='_listeners' )
 	_normalizers: Dict[str, Normalizer] = field( factory=dict, alias='_normalizers' )
 	_resource_types: Dict[str, ResourceType] = field( factory=dict, alias='_resource_types' )
+	_services: Dict[str, Service] = field( factory=dict, alias='_services' )
 	_setups: Dict[str, Callable] = field( factory=dict, alias='_setups' )
 	_virtual_fields: VirtualFields = field( default=Activity.VF() )
 
@@ -54,12 +49,9 @@ class Registry:
 	__keyword_fns__: List[Tuple] = field( factory=list, alias='__keyword_fns__' )
 	__normalizer_fns__: List[Tuple] = field( factory=list, alias='__normalizer_fns__' )
 	__resource_type_cls__: List[Tuple] = field( factory=list, alias='__resource_type_cls__' )
+	__service_cls__: List[Tuple] = field( factory=list, alias='__service_cls__' )
 	__setup_fns__: List[Tuple] = field( factory=list, alias='__setup_fns__' )
 	__virtual_fields_fns__: List[Tuple] = field( factory=list, alias='__virtual_fields_fns__' )
-
-	ctx: ClassVar[ApplicationContext] = None
-	services: ClassVar[Dict[str, Service]] = {}
-	service_classes: ClassVar[Dict[str, Type]] = {}
 
 	@classmethod
 	def instance( cls ) -> Registry:
@@ -118,10 +110,11 @@ class Registry:
 				i = fncls()
 				type = i.TYPE or kwargs( 'type' )
 				self._importers[type] = [ *self._importers[type], i ] if type in self._importers else [i]
+
 				log.debug( f'registered importer [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1] for type [orange1]{type}[/orange1]' )
 
 			except RuntimeError:
-				log.error( f'unable to register resource type from {fncls}' )
+				log.error( f'unable to register importer from {fncls}' )
 
 	def __setup_virtual_fields__( self ):
 		for fn, args, kwargs in self.__virtual_fields_fns__:
@@ -137,11 +130,30 @@ class Registry:
 					log.debug( f'registered virtual field [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1]' )
 
 			except RuntimeError:
-				log.error( f'unable to virtual field from function {fn}' )
+				log.error( f'unable to register virtual field from {fn}' )
 
 	def __setup_setup_functions__( self ):
 		for fn, args, kwargs in self.__setup_fns__:
 			self._setups[_fnspec( fn )[1]] = fn
+
+	# todo: setup service here?
+	def __setup_services__( self ):
+		pass
+
+	def setup_services( self, ctx: ApplicationContext ):
+		for fncls, args, kwargs in self.__service_cls__:
+			try:
+				name, modname, qname, params, rval = _fnspec( fncls )
+				base_path = Path( ctx.db_dir_path, name )
+				overlay_path = Path( ctx.db_overlay_path, name )
+				cfg, state = ctx.plugin_config_state( name, as_dict=True )
+				s: Service = fncls( ctx=ctx, **cfg, **state, base_path=base_path, overlay_path=overlay_path )
+				self._services[s.name] = s
+
+				log.debug( f'registered service [orange1]{s.name}[/orange1] from module [orange1]{modname}[/orange1]' )
+
+			except RuntimeError:
+				log.error( f'unable to setup service from {fncls}' )
 
 	def setup( self ):
 		self.__setup_keywords__()
@@ -150,6 +162,7 @@ class Registry:
 		self.__setup_importers__()
 		self.__setup_virtual_fields__()
 		self.__setup_setup_functions__()
+		self.__setup_services__()
 
 	# properties
 
@@ -166,6 +179,10 @@ class Registry:
 		return MappingProxyType( self._normalizers )
 
 	@property
+	def services( self ) -> Mapping[str, Service]:
+		return MappingProxyType( self._services )
+
+	@property
 	def setups( self ) -> Mapping[str, Callable]:
 		return MappingProxyType( self._setups )
 
@@ -177,23 +194,16 @@ class Registry:
 	def virtual_fields( self ) -> Mapping[str, VirtualField]:
 		return MappingProxyType( self._virtual_fields.__fields__ )
 
+	# services
+
 	@classmethod
-	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
-		_ctx = ctx if ctx else Registry.ctx
-		for name, service_type in Registry.service_classes.items():
-			service_base_path = Path( _ctx.db_dir_path, name )
-			service_overlay_path = Path( _ctx.db_overlay_path, name )
+	def service_names( cls ) -> List[str]:
+		return sorted( list( Registry.instance().services.keys() ) )
 
-			# find config/state values
-			service_cfg = ctx.plugin_config( name )
-			service_state = ctx.plugin_state( name )
-
-			if service_cfg.get( 'enabled', True ):
-				Registry.services[name] = service_type( ctx=ctx, **{ **kwargs, **service_cfg, **service_state, **{ 'base_path': service_base_path, 'overlay_path': service_overlay_path } } )
-				# log.debug( f'created service instance {name}, with base path {service_base_path}' )
-				Registry.notify( EventTypes.service_created, Registry.services[name] )
-			else:
-				log.debug( f'skipping instance creation for disabled plugin {name}' )
+	@classmethod
+	def service_for( cls, uid: Union[str, UID] ) -> Optional[Service]:
+		uid = UID( uid ) if type( uid ) is str else uid
+		return Registry.instance().services.get( uid.classifier )
 
 	# resource types
 
@@ -336,38 +346,6 @@ class Registry:
 				rval[item_key] = item_fn
 		return rval
 
-# helpers to access registry information
-
-def service_names() -> List[str]:
-	return sorted( list( Registry.services.keys() ) )
-
-def service_for( uid: Union[str, UID] ) -> Optional[Service]:
-	uid = UID( uid ) if type( uid ) is str else uid
-	return Registry.services.get( uid.classifier )
-
-# decorators
-
-def _spec( func: Callable ) -> Tuple[str, str]:
-	"""
-	Helper for examining a provided function. Returns the module name and the name of the function as a tuple.
-	The module only contains the name of the module alone, not the fully qualified name.
-
-	:param func: function to be examined
-	:return: module + name as a tuple
-	"""
-	name = None
-	module = None
-	#members = getmembers( func )
-	for k, v in getmembers( func ):
-		if k == '__name__':
-			name = v
-		elif k == '__module__':
-			module = v.rsplit( '.', 1 )[1]
-
-	#print( getfullargspec( fn ) )
-
-	return module, name
-
 def _fnspec( fncls: Union[Callable, Type] ) -> Tuple[str, str, str, Mapping, Any]:
 	"""
 	Helper for examining a provided function. Returns a tuple containing
@@ -383,6 +361,8 @@ def _fnspec( fncls: Union[Callable, Type] ) -> Tuple[str, str, str, Mapping, Any
 	params = signature.parameters
 	rval = next( (m[1].get( 'return' ) for m in members if m[0] == '__annotations__'), None )
 	return name, module, qname, params, rval
+
+# decorators
 
 def _register( *args, **kwargs ) -> Callable:
 	_fncls_list = kwargs.pop( '__fncls_list__' )
@@ -420,36 +400,8 @@ def importer( *args, **kwargs ):
 def resourcetype( *args, **kwargs ):
 	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__resource_type_cls__, __decorator_name__='resourcetype' )
 
+def service( *args, **kwargs ):
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__service_cls__, __decorator_name__='service' )
+
 def setup( *args, **kwargs ):
 	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__setup_fns__, __decorator_name__='setup' )
-
-def service( cls: Type ):
-	if isclass( cls ):
-		module, name = _spec( cls )
-		Registry.service_classes[module] = cls
-		log.debug( f'registered service class {cls}' )
-		return cls
-	else:
-		raise RuntimeError( 'only classes can be used with the @service decorator' )
-
-def load( plugin_pkgs: List[str] = None, disabled: List[str] = None, ctx: ApplicationContext = None ):
-	plugin_pkgs = plugin_pkgs if plugin_pkgs else [NS_PLUGINS]
-	disabled = disabled if disabled else []
-
-	for plugin_pkg in plugin_pkgs:
-		plugins_module = import_module( plugin_pkg )
-		for finder, name, ispkg in walk_packages( plugins_module.__path__ ):
-			try:
-				if not ctx.config['plugins'][name]['enabled'].get() or name in disabled:
-					log.debug( f'skipping import of disabled plugin {name} in package {plugin_pkg}' )
-					continue
-			except NotFoundError:
-				pass
-
-			qname = f'{plugin_pkg}.{name}'
-			try:
-				log.debug( f'importing plugin {qname}' )
-				plugin = import_module( qname )
-				Registry.notify( EventTypes.plugin_loaded, plugin )
-			except ModuleNotFoundError:
-				log.error( f'error imporing module {qname}', exc_info=True )

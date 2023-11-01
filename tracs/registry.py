@@ -301,51 +301,6 @@ class Registry:
 					importers.extend( value )
 		return importers
 
-	@classmethod
-	def register_importer( cls, importer: Importer, type: str ):
-		if not type:
-			raise ValueError( f'unable to register {importer}: missing type' )
-
-		importer_list = Registry.instance().importers.get( type ) or []
-		if importer not in importer_list:
-			importer_list.append( importer )
-			Registry.instance()._importers[type] = importer_list
-			log.debug( f'registered importer {importer.__class__} for type {type}' )
-
-	@classmethod
-	def register_functions( cls, functions: Dict[Union[str, Tuple[str, str]], Callable], dictionary: Dict ) -> None:
-		for item_key, item_value in functions.items():
-			dictionary[item_key] = item_value
-
-	@classmethod
-	def register_function( cls, key: str or Tuple[str, str], fn: Callable, dictionary: Mapping ) -> Callable:
-		if not key or not fn:
-			log.warning( 'unable to register function with an empty key and/or function' )
-		else:
-			if type( key ) is tuple and key[0] is None: # allow (None, 'field') as key and treat it as 'field'
-				key = key[1]
-			dictionary[key] = fn
-
-		return fn
-
-	@classmethod
-	def unregister_function( cls, key: str or Tuple[str, str], dictionary: Dict ) -> None:
-		del dictionary[key]
-
-	@classmethod
-	def function_for( cls, key: str or Tuple[str, str], dictionary: Mapping ) -> Optional[Callable]:
-		return dictionary.get( key )
-
-	@classmethod
-	def functions_for( cls, key: Optional[str], dictionary: Mapping ) -> Dict[str, Callable]:
-		rval = {}
-		for item_key, item_fn in dictionary.items():
-			if key and type( item_key ) is tuple and key == item_key[0]:
-				rval[item_key[1]] = item_fn
-			elif not key and type( item_key ) is str:
-				rval[item_key] = item_fn
-		return rval
-
 def _fnspec( fncls: Union[Callable, Type] ) -> Tuple[str, str, str, Mapping, Any]:
 	"""
 	Helper for examining a provided function. Returns a tuple containing

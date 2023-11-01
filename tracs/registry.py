@@ -150,6 +150,9 @@ class Registry:
 				s: Service = fncls( ctx=ctx, **cfg, **state, base_path=base_path, overlay_path=overlay_path )
 				self._services[s.name] = s
 
+				# register service name as keyword
+				self._keywords[s.name] = Keyword( s.name, f'classifier "{s.name}" is contained in classifiers list', f'"{s.name}" in classifiers' )
+
 				log.debug( f'registered service [orange1]{s.name}[/orange1] from module [orange1]{modname}[/orange1]' )
 
 			except RuntimeError:
@@ -240,24 +243,10 @@ class Registry:
 		log.debug( f'registered keywords {[kw.name for kw in unchain( *keywords )]}' )
 
 	@classmethod
-	def register_normalizers( cls, *normalizers: Union[Normalizer, List[Normalizer]] ) -> None:
-		for n in unchain( *normalizers ):
-			cls.instance()._normalizers[n.name] = n
-			cls.notify( EventTypes.rule_normalizer_registered, field=n )
-		log.debug( f'registered rule normalizers {[n.name for n in unchain( *normalizers )]}' )
-
-	@classmethod
 	def rule_normalizer_type( cls, name: str ) -> Any:
 		return n.type if ( n := cls.instance().normalizers.get( name ) ) else Activity.field_type( name )
 
 	# field resolving
-
-	@classmethod
-	def register_virtual_fields( cls, *virtual_fields: Union[VirtualField, List[VirtualField]] ) -> None:
-		for vf in unchain( *virtual_fields ):
-			cls._virtual_fields[vf.name] = vf
-			cls.notify( EventTypes.virtual_field_registered, field=vf )
-		log.debug( f'registered virtual fields {[vf.name for vf in unchain( *virtual_fields )]}' )
 
 	@classmethod
 	def activity_field( cls, name: str ) -> Optional[Attribute]:

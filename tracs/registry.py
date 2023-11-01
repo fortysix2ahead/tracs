@@ -236,13 +236,6 @@ class Registry:
 	# keywords and normalizers
 
 	@classmethod
-	def register_keywords( cls, *keywords: Union[Keyword, List[Keyword]] ):
-		for kw in unchain( *keywords ):
-			cls.instance()._keywords[kw.name] = kw
-			cls.notify( EventTypes.keyword_registered, field=kw )
-		log.debug( f'registered keywords {[kw.name for kw in unchain( *keywords )]}' )
-
-	@classmethod
 	def rule_normalizer_type( cls, name: str ) -> Any:
 		return n.type if ( n := cls.instance().normalizers.get( name ) ) else Activity.field_type( name )
 

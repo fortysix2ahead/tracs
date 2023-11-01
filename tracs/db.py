@@ -303,7 +303,7 @@ class ActivityDb:
 		"""
 		Returns all resource of type summary.
 		"""
-		return [r for r in self.resources if (rt := cast( ResourceType, Registry.resource_types.get( r.type ) )) and rt.summary]
+		return [r for r in self.resources if (rt := cast( ResourceType, Registry.instance().resource_types.get( r.type ) )) and rt.summary]
 
 	@property
 	def uids( self, classifier: str = None ) -> List[str]:
@@ -443,19 +443,19 @@ class ActivityDb:
 		Finds all recording resources, restricts itself to the provided resource list if given.
 		"""
 		resources = self.resources if resources is None else resources
-		return [r for r in resources if (rt := Registry.resource_types.get( r.type )) and rt.recording ]
+		return [r for r in resources if (rt := Registry.instance().resource_types.get( r.type )) and rt.recording ]
 
 	def find_summaries( self, uid: str ) -> List[Resource]:
 		"""
 		Finds all summary resources having the provided uid.
 		"""
-		return [r for r in self.find_resources( uid ) if (rt := Registry.resource_types.get( r.type )) and rt.summary ]
+		return [r for r in self.find_resources( uid ) if (rt := Registry.instance().resource_types.get( r.type )) and rt.summary ]
 
 	def find_all_summaries( self, uids: List[str] ) -> List[Resource]:
 		"""
 		Finds all summary resources having an uid contained in the provided list.
 		"""
-		return [r for r in self.find_all_resources( uids ) if (rt := Registry.resource_types.get( r.type ) ) and rt.summary]
+		return [r for r in self.find_all_resources( uids ) if (rt := Registry.instance().resource_types.get( r.type ) ) and rt.summary]
 
 	def find_all_resources_for( self, activities: Union[Activity, List[Activity]] ) -> List[Resource]:
 		activities = [activities] if type( activities ) is Activity else activities

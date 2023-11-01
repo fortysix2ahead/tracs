@@ -14,7 +14,7 @@ from tracs.config import ApplicationContext
 from tracs.db import ActivityDb
 from tracs.fsio import ACTIVITIES_CONVERTER
 from tracs.plugins.gpx import GPX_TYPE
-from tracs.registry import Registry, service_names
+from tracs.registry import Registry
 from tracs.resources import Resource
 from tracs.service import Service
 from tracs.streams import as_str
@@ -30,11 +30,11 @@ MAXIMUM_OPEN = 8
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
 
-uid_pattern = compile( f'^({"|".join( service_names() )}):(\d+)$' )
+uid_pattern = compile( f'^({"|".join( Registry.instance().service_names() )}):(\d+)$' )
 
 def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **kwargs ):
-	for src in (sources or service_names()):
-		if service := Registry.services.get( src ):
+	for src in (sources or Registry.instance().service_names() ):
+		if service := Registry.instance().services.get( src ):
 			log.debug( f'importing activities from service {src}' )
 			service.import_activities(
 				ctx=ctx,

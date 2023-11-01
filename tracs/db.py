@@ -24,7 +24,7 @@ from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
 from tracs.fsio import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
-from tracs.registry import Registry, service_names
+from tracs.registry import Registry
 from tracs.resources import Resource, Resources, ResourceType
 from tracs.rules import parse_rules
 
@@ -483,7 +483,7 @@ def restore_db( ctx: ApplicationContext ) -> None:
 def status_db( ctx: ApplicationContext ) -> None:
 	table = RichTable( box=box.MINIMAL, show_header=False, show_footer=False )
 	table.add_row( 'activities', pp( len( ctx.db.activity_map ) ) )
-	for s in service_names():
+	for s in Registry.instance().service_names():
 		table.add_row( f'activities ({s})', pp( len( list( ctx.db.find_by_classifier( s ) ) ) ) )
 
 	table.add_row( 'resources', pp( len( ctx.db.resource_map ) ) )

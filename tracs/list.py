@@ -103,7 +103,7 @@ def inspect_registry() -> None:
 
 	table.add_row( *style( 'Resource Types', style='bold bright_blue' ) )
 	table.add_row( *style( 'type', 'class', 'summary, recording, image', style='blue' ) )
-	for k, v in sorted( Registry.resource_types.items(), key=lambda i: i[0] ):
+	for k, v in sorted( Registry.instance().resource_types.items(), key=lambda i: i[0] ):
 		flags = [ v.summary, v.recording, v.image ]
 		table.add_row( k, pp( v.activity_cls ), pp( flags ) )
 

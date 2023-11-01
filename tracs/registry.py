@@ -44,18 +44,19 @@ class Registry:
 	_keywords: Dict[str, Keyword] = field( factory=dict, alias='_keywords' )
 	_listeners: Dict[EventTypes, List[Callable]] = field( factory=dict, alias='_listeners' )
 	_normalizers: Dict[str, Normalizer] = field( factory=dict, alias='_normalizers' )
+	_resource_types: Dict[str, ResourceType] = field( factory=dict, alias='_resource_types' )
 	_setups: Dict[str, Callable] = field( factory=dict, alias='_setups' )
 	_virtual_fields: VirtualFields = field( default=Activity.VF() )
 
 	__keyword_fns__: List[Tuple] = field( factory=list, alias='__keyword_fns__' )
 	__normalizer_fns__: List[Tuple] = field( factory=list, alias='__normalizer_fns__' )
+	__resource_type_cls__: List[Tuple] = field( factory=list, alias='__resource_type_cls__' )
 	__setup_fns__: List[Tuple] = field( factory=list, alias='__setup_fns__' )
 	__virtual_fields_fns__: List[Tuple] = field( factory=list, alias='__virtual_fields_fns__' )
 
 	ctx: ClassVar[ApplicationContext] = None
 	handlers: ClassVar[Dict[str, List[Handler]]] = {}
 	importers: ClassVar[Dict[str, List[Importer]]] = {}
-	resource_types: ClassVar[Dict[str, ResourceType]] = {}
 	services: ClassVar[Dict[str, Service]] = {}
 	service_classes: ClassVar[Dict[str, Type]] = {}
 
@@ -95,6 +96,21 @@ class Registry:
 			except RuntimeError:
 				log.error( f'unable to register normalizer from function {fn}' )
 
+	def __setup_resource_types__( self ):
+		for fncls, args, kwargs in self.__resource_type_cls__:
+			try:
+				name, modname, qname, params, rval = _fnspec( fncls )
+				# todo: rval is 'ResourceType' for tcx.py? WHY???
+				if not params and rval in [ResourceType, 'ResourceType']:
+					rt = fncls()
+				else:
+					rt = ResourceType( **kwargs )
+				self._resource_types[rt.type] = rt
+				log.debug( f'registered resource type [orange1]{rt.name}[/orange1] from module [orange1]{modname}[/orange1] for type [orange1]{rt.type}[/orange1]' )
+
+			except RuntimeError:
+				log.error( f'unable to register resource type from {fncls}' )
+
 	def __setup_virtual_fields__( self ):
 		for fn, args, kwargs in self.__virtual_fields_fns__:
 			try:
@@ -118,6 +134,7 @@ class Registry:
 	def setup( self ):
 		self.__setup_keywords__()
 		self.__setup_normalizers__()
+		self.__setup_resource_types__()
 		self.__setup_virtual_fields__()
 		self.__setup_setup_functions__()
 
@@ -134,6 +151,10 @@ class Registry:
 	@property
 	def setups( self ) -> Mapping[str, Callable]:
 		return MappingProxyType( self._setups )
+
+	@property
+	def resource_types( self ) -> Mapping[str, ResourceType]:
+		return MappingProxyType( self._resource_types )
 
 	@property
 	def virtual_fields( self ) -> Mapping[str, VirtualField]:
@@ -222,14 +243,14 @@ class Registry:
 
 	@classmethod
 	def notify( cls, event_type: EventTypes, *args, **kwargs ) -> None:
-		for fn in Registry._listeners.get( event_type, [] ):
+		for fn in Registry.instance()._listeners.get( event_type, [] ):
 			fn( *args, **kwargs )
 
 	@classmethod
 	def register_listener( cls, event_type: EventTypes, fn: Callable ) -> None:
-		if not event_type in Registry._listeners.keys():
-			Registry._listeners[event_type] = []
-		Registry._listeners.get( event_type ).append( fn )
+		if not event_type in Registry.instance()._listeners.keys():
+			Registry.instance()._listeners[event_type] = []
+		Registry.instance()._listeners.get( event_type ).append( fn )
 
 	# handlers
 
@@ -349,20 +370,21 @@ def _spec( func: Callable ) -> Tuple[str, str]:
 
 	return module, name
 
-def _fnspec( func: Callable ) -> Tuple[str, str, str, Mapping, Any]:
+def _fnspec( fncls: Union[Callable, Type] ) -> Tuple[str, str, str, Mapping, Any]:
 	"""
 	Helper for examining a provided function. Returns a tuple containing
 	(function name, module name, qualified name, return value type)
 
-	:param func: function to be examined
+	:param fncls: function to be examined
 	:return: tuple
 	"""
-	members, signature = getmembers( func ), getsignature( func )
-	name = next( m[1] for m in members if m[0] == '__name__' )
-	module = next( m[1] for m in members if m[0] == '__module__' )
-	qname = next( m[1] for m in members if m[0] == '__qualname__' )
-	return_type = next( m[1].get( 'return' ) for m in members if m[0] == '__annotations__' )
-	return name, module, qname, signature.parameters, return_type
+	members, signature = getmembers( fncls ), getsignature( fncls )
+	name = fncls.__name__
+	module = fncls.__module__
+	qname = f'{fncls.__module__}.{fncls.__name__}'
+	params = signature.parameters
+	rval = next( (m[1].get( 'return' ) for m in members if m[0] == '__annotations__'), None )
+	return name, module, qname, params, rval
 
 def _register( *args, **kwargs ) -> Callable:
 	_fnlist = kwargs.pop( '__function_list__' )
@@ -393,14 +415,11 @@ def normalizer( *args, **kwargs ):
 def virtualfield( *args, **kwargs ):
 	return _register( *args, **kwargs, __function_list__ = Registry.instance().__virtual_fields_fns__, __decorator_name__='virtualfield' )
 
+def resourcetype( *args, **kwargs ):
+	return _register( *args, **kwargs, __function_list__ = Registry.instance().__resource_type_cls__, __decorator_name__='resourcetype' )
+
 def setup( *args, **kwargs ):
 	return _register( *args, **kwargs, __function_list__ = Registry.instance().__setup_fns__, __decorator_name__='setup' )
-
-def resourcetype( *args, **kwargs ):
-	def reg_resource_type( cls ):
-		Registry.register_resource_type( ResourceType( **{'activity_cls': cls} | kwargs ) )
-		return cls
-	return reg_resource_type if len( args ) == 0 else args[0]
 
 def service( cls: Type ):
 	if isclass( cls ):

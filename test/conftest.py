@@ -132,14 +132,9 @@ def db_path( request, fs: MultiFS ) -> Path:
 @fixture
 def db( request, fs: MultiFS ) -> ActivityDb:
 	env_fs = fs.get_fs( PERSISTANCE_NAME )
-	persist = marker( request, 'context', 'persist', 'mem' )
-
-	db_path = get_db_path( template_name=template, read_only=read_only )
-	return ActivityDb( path=db_path.parent, read_only=read_only )
-
-	db = get_db( template=template, read_only=read_only )
-
-	yield db
+	env_fs.makedir( DB_DIRNAME, recreate=True )
+	db_path = Path( env_fs.getsyspath( '/' ), DB_DIRNAME )
+	yield ActivityDb( path=db_path, read_only=False )
 
 @fixture
 def ctx( request, db ) -> ApplicationContext:

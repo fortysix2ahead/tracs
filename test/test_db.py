@@ -48,7 +48,7 @@ def test_new_db_with_readonly_path( db_path ):
 	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
 	assert db.schema.version == 12
 
-@mark.db( template='default', read_only=True )
+@mark.context( env='default', persist='clone', cleanup=True )
 def test_open_db( db ):
 	assert db.schema.version == 12
 
@@ -63,7 +63,7 @@ def test_open_db( db ):
 		uids=['polar:1234567890', 'strava:12345678', 'waze:20210101010101'],
 	)
 
-@mark.db( template='empty', read_only=True )
+@mark.context( env='empty', persist='clone', cleanup=True )
 def test_insert( db ):
 	assert len( db.activities ) == 0
 	id = db.insert( Activity() )
@@ -72,7 +72,7 @@ def test_insert( db ):
 	assert len( db.activities ) == 3 and ids == [2, 3]
 	assert db.activity_keys == [1, 2, 3]
 
-@mark.db( template='empty', read_only=True )
+@mark.context( env='empty', persist='clone', cleanup=True )
 def test_insert_resources( db ):
 	assert len( db.resources ) == 0
 
@@ -81,13 +81,13 @@ def test_insert_resources( db ):
 
 	assert db.insert_resources( r1, r2 ) == [1, 2]
 
-@mark.db( template='default', read_only=True )
+@mark.context( env='default', persist='clone', cleanup=True )
 def test_contains( db ):
 	# check activity table
 	assert db.contains_activity( uid='polar:1234567890' ) is True
 	assert db.contains_activity( uid='polar:9999' ) is False
 
-@mark.db( template='default', read_only=True )
+@mark.context( env='default', persist='clone', cleanup=True )
 def test_get( db ):
 	assert (a := db.get_by_id( 1 )) and a.id == 1 and isinstance( a, Activity )
 	assert (a := db.get_by_id( 4 )) and a.id == 4 and isinstance( a, Activity )
@@ -108,7 +108,7 @@ def test_get( db ):
 	# get with id=0
 	assert db.get_by_id( 0 ) is None
 
-@mark.db( template='parts', read_only=True )
+@mark.context( env='parts', persist='clone', cleanup=True )
 def test_find_resources( db ):
 	assert ids( db.find_resources( 'strava:1001' ) ) == [ 7, 8, 9 ]
 	assert ids( db.find_resources( 'strava:1001', '1001.gpx' ) ) == [ 7 ]
@@ -129,7 +129,7 @@ def test_find_resources( db ):
 	assert ids( db.find_recordings() ) == [3, 4, 5, 6, 7, 8, 10, 11]
 	assert ids( db.find_recordings( db.find_resources( 'strava:1001' ) ) ) == [7, 8]
 
-@mark.db( template='parts', read_only=True )
+@mark.context( env='parts', persist='clone', cleanup=True )
 def test_find_multipart( db ):
 	assert ids( db.find_by_classifier( 'strava' ) ) == [ 2, 4, 6 ]
 	assert ids( db.find_by_classifier( 'polar' ) ) == [ 1, 3, 5, 6 ]
@@ -153,7 +153,7 @@ def test_find_multipart( db ):
 	a = db.get_by_id( 6 )
 	assert ids( db.find_resources_for( a ) ) == [ 4, 6, 10, 11, 12 ]
 
-@mark.db( template='default', read_only=True )
+@mark.context( env='default', persist='clone', cleanup=True )
 def test_remove( db ):
 	assert ( a := db.get_by_id( 4 ) ) and a is not None
 	db.remove_activity( a )

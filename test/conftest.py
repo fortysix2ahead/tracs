@@ -138,9 +138,9 @@ def db( request, fs: MultiFS ) -> ActivityDb:
 
 @fixture
 def ctx( request, db ) -> ApplicationContext:
-	# env_fs = fs.get_fs( PERSISTANCE_NAME )
-	context: ApplicationContext = ApplicationContext( configuration=env_fs.getsyspath( '/' ), verbose=True )
-
+	db_fs = db.dbfs.get_fs( 'underlay' )
+	cfg_file = f'{dirname( dirname( db_fs.getsyspath( "/" ) ) )}/config.yaml'
+	context: ApplicationContext = ApplicationContext( configuration=cfg_file, verbose=True )
 	context.db = db # attach db to ctx
 
 	yield context

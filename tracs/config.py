@@ -229,7 +229,7 @@ class ApplicationContext:
 		import tracs.plugins
 
 		try:
-			pluginpath = self.config['pluginpath'].get().split( ' ' )
+			pluginpath = (self.config['pluginpath'].get() or '').split( ' ' )
 			for pp in pluginpath:
 				plugin_path = OSFS( root_path=pp, expand_vars=True ).getsyspath( '/tracs/plugins' )
 				tracs.plugins.__path__ = extend_path( [plugin_path], 'tracs.plugins' )

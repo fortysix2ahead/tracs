@@ -6,8 +6,8 @@ from confuse import ConfigSource, Configuration
 from pytest import mark
 
 from tracs.application import Application
-from tracs.config import ApplicationContext, APPNAME
-from tracs.registry import service_names
+from tracs.config import APPNAME
+from tracs.registry import Registry
 
 def test_context():
 	cfg = Configuration( 'tracs', 'tracs' )
@@ -67,7 +67,7 @@ def test_default_environment():
 	assert app.ctx.verbose == False
 	assert app.ctx.force == False
 
-	assert service_names() == [ 'bikecitizens', 'local', 'polar', 'strava', 'waze' ]
+	assert Registry.instance().service_names() == [ 'bikecitizens', 'local', 'polar', 'strava', 'waze' ]
 
 @mark.context( config='debug', library='empty' )
 def test_debug_environment( ctx ):
@@ -90,4 +90,4 @@ def test_parameterized_environment( ctx ):
 def test_disabled_environment( ctx ):
 	cfg_file = f'{ctx.config_dir}/config.yaml'
 	Application.__new__( Application, configuration=cfg_file )
-	assert service_names() == [ 'local' ]
+	assert Registry.instance().service_names() == [ 'local' ]

@@ -147,7 +147,7 @@ class Registry:
 			self._setups[_fnspec( fn )[1]] = fn
 
 	def __setup_services__( self, *args, **kwargs ):
-		self.setup_services()
+		self.setup_services( *args, **kwargs )
 
 	def setup_services( self, *args, **kwargs ):
 		ctx: ApplicationContext = kwargs.get( 'ctx' )

@@ -34,15 +34,16 @@ def test_new_db_without_path():
 	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
 	assert db.schema.version == 12
 
-def test_new_db_with_path():
-	db_path = get_db_path( 'empty', read_only=False )
-	db = ActivityDb( path=db_path.parent, read_only=False )
+@mark.context( env='empty', persist='clone', cleanup=True )
+def test_new_db_with_writable_path( db_path ):
+	db = ActivityDb( path=db_path, read_only=False )
 	assert db.dbfs is not None and type( db.underlay_fs ) is OSFS and type( db.overlay_fs ) is MemoryFS
 	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
 	assert db.schema.version == 12
 
-	db_path = get_db_path( 'empty', read_only=True )
-	db = ActivityDb( path=db_path.parent, read_only=True )
+@mark.context( env='empty', persist='clone', cleanup=True )
+def test_new_db_with_readonly_path( db_path ):
+	db = ActivityDb( path=db_path, read_only=True )
 	assert db.dbfs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
 	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
 	assert db.schema.version == 12

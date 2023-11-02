@@ -12,6 +12,7 @@ from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
 from click import confirm
 from fs.base import FS
 from fs.copy import copy_file, copy_file_if
+from fs.errors import ResourceNotFound
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
@@ -132,7 +133,10 @@ class ActivityDb:
 		dbfs.add_fs( OVERLAY, MemoryFS(), write=True )
 
 		for f in DB_FILES.keys():
-			copy_file( self.osfs, f'/{f}', self.underlay_fs, f'/{f}', preserve_time=True )
+			try:
+				copy_file( self.osfs, f'/{f}', self.underlay_fs, f'/{f}', preserve_time=True )
+			except ResourceNotFound:
+				self.underlay_fs.writetext( f, DB_FILES.get( f ) )
 
 	# for development only ...
 	def _init_inmemory_filesystem( self, dbfs: MultiFS ):

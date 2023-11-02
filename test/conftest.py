@@ -1,27 +1,25 @@
 from datetime import datetime
 from importlib import import_module
 from importlib.resources import path as pkgpath
-from importlib.resources import path as resource_path
 from logging import getLogger
 from os.path import dirname
 from pathlib import Path
 from pkgutil import iter_modules
 from shutil import copytree, rmtree
-from typing import Any, Dict, List
+from typing import Dict, List
 from typing import Optional
 from typing import Tuple
 
 from bottle import Bottle
 from fs.base import FS
 from fs.memoryfs import MemoryFS
-from fs.mountfs import MountFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
 from pytest import fixture
 from yaml import load as load_yaml
 from yaml import SafeLoader
 
-from tracs.config import ApplicationConfig as cfg
+from tracs.config import ApplicationConfig as cfg, DB_DIRNAME
 from tracs.config import ApplicationConfig as state
 from tracs.config import ApplicationContext
 from tracs.config import KEY_PLUGINS
@@ -37,8 +35,6 @@ from .helpers import get_db
 from .helpers import get_db_as_json
 from .helpers import get_file_as_json
 from .helpers import get_file_path
-from .helpers import prepare_context
-from .helpers import var_run_path
 from .polar_server import LIVE_BASE_URL as POLAR_LIVE_BASE_URL
 from .polar_server import polar_server
 from .polar_server import polar_server_thread
@@ -61,29 +57,6 @@ def marker( request, name, key, default ):
 # shared fixtures
 
 @fixture
-def db( request ) -> ActivityDb:
-	if marker := request.node.get_closest_marker( 'db' ):
-		template = marker.kwargs.get( 'template' )
-		library_template = marker.kwargs.get( 'library' )
-		read_only = marker.kwargs.get( 'read_only', True )
-		cleanup = marker.kwargs.get( 'cleanup', True )
-	else:
-		return None
-
-	db = get_db( template=template, read_only=read_only )
-
-	# set base path in services
-	if library_template:
-		for name, instance in Registry.services.items():
-			# noinspection PyPropertyAccess
-			instance.base_path = Path( db.path, name )
-
-	yield db
-
-	if cleanup and not read_only:
-		cleanup_path( db.path )
-
-@fixture
 def config( request ) -> None:
 	if marker := request.node.get_closest_marker( 'config' ):
 		template = marker.kwargs.get( 'template' )
@@ -91,30 +64,6 @@ def config( request ) -> None:
 		cleanup = marker.kwargs.get( 'cleanup', True )
 	else:
 		return None
-
-@fixture
-def ctx( request ) -> Optional[ApplicationContext]:
-	try:
-		config = marker( request, 'context', 'config', None )
-		lib = marker( request, 'context', 'library', None )
-		takeout = marker( request, 'context', 'takeout', None )
-		do_cleanup = marker( request, 'context', 'cleanup', False )
-
-		if config:
-			context: ApplicationContext = prepare_context( config, lib, takeout )
-		else:
-			context: ApplicationContext = ApplicationContext( configuration=str( var_run_path() ), verbose=True )
-
-		yield context
-
-		if context.db is not None:
-			context.db.close()
-
-		if do_cleanup:
-			cleanup_path( Path( context.config_dir ) )
-
-	except ValueError:
-		log.error( 'unable to run fixture context', exc_info=True )
 
 @fixture
 def registry( request ) -> Registry:
@@ -128,58 +77,15 @@ def registry( request ) -> Registry:
 
 @fixture
 def varfs( request ) -> FS:
-	yield OSFS( str( var_run_path() ) )
+	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
+		tp = test_pkg_path.parent
+		vrp = Path( tp, f'../var/run/{datetime.now().strftime( "%H%M%S_%f" )}' ).resolve()
+		vrp.mkdir( parents=True, exist_ok=True )
+		log.info( f'created new temporary persistance dir in {str( vrp )}' )
+		yield OSFS( str( vrp ) )
 
 @fixture
 def fs( request ) -> FS:
-	cfg_name = marker( request, 'context', 'config', None )
-	lib_name = marker( request, 'context', 'lib', None )
-	overlay_name = marker( request, 'context', 'overlay', None )
-	takeout_name = marker( request, 'context', 'takeout', None )
-	var_name = marker( request, 'context', 'var', None )
-	persist = marker( request, 'context', 'persist', False )
-	cleanup = marker( request, 'context', 'cleanup', True )
-
-	root_fs = MultiFS()
-	mount_fs = MountFS()
-
-	if persist == 'disk':
-		vrp = var_run_path().absolute()
-		root_fs.add_fs( PERSISTANCE_NAME, OSFS( str( vrp ) ), write=True )
-		log.info( f'created new temporary persistance dir in {str( vrp )}' )
-
-	elif persist == 'mem':
-		root_fs.add_fs( PERSISTANCE_NAME, MemoryFS(), write=True )
-
-	root_fs.add_fs( 'mount', mount_fs )
-
-	with resource_path( 'test', '__init__.py' ) as rp:
-		tp = str( rp.parent.resolve().absolute() )
-		if cfg_name:
-			root_fs.add_fs( 'cfg', OSFS( f'{tp}/configurations/{cfg_name}' ) )
-
-		if lib_name:
-			mount_fs.mount( '/db', OSFS( f'{tp}/libraries/{lib_name}' ) )
-
-		if overlay_name:
-			mount_fs.mount( '/overlay', OSFS( f'{tp}/overlays/{overlay_name}' ) )
-
-		if takeout_name:
-			mount_fs.mount( '/takeouts', OSFS( f'{tp}/takeouts/{takeout_name}' ) )
-
-		if var_name:
-			mount_fs.mount( '/var', OSFS( f'{tp}/var/{var_name}' ) )
-
-	yield root_fs
-
-	if cleanup:
-		if (pl := root_fs.get_fs( PERSISTANCE_NAME )) and isinstance( pl, OSFS ):
-			syspath = pl.getsyspath( '/' )
-			cleanup_path( Path( syspath ) )
-			log.info( f'cleaned up temporary persistance dir {syspath}' )
-
-@fixture
-def fs2( request ) -> FS:
 	env = marker( request, 'context', 'env', 'empty' )
 	persist = marker( request, 'context', 'persist', 'mem' )
 	cleanup = marker( request, 'context', 'cleanup', True )
@@ -215,9 +121,32 @@ def fs2( request ) -> FS:
 				log.info( f'cleaned up temporary persistance dir {sp}' )
 
 @fixture
-def ctx2( request, fs2: MultiFS ) -> ApplicationContext:
-	env_fs = fs2.get_fs( PERSISTANCE_NAME )
+def db_path( request, fs: MultiFS ) -> Path:
+	env_fs = fs.get_fs( PERSISTANCE_NAME )
+	env_fs.makedir( DB_DIRNAME, recreate=True )
+	yield Path( env_fs.getsyspath( '/' ), DB_DIRNAME )
+	#env = marker( request, 'context', 'env', 'empty' )
+	#with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
+	#	yield Path( test_pkg_path.parent, f'environments/{env}/db' )
+
+@fixture
+def db( request, fs: MultiFS ) -> ActivityDb:
+	env_fs = fs.get_fs( PERSISTANCE_NAME )
+	persist = marker( request, 'context', 'persist', 'mem' )
+
+	db_path = get_db_path( template_name=template, read_only=read_only )
+	return ActivityDb( path=db_path.parent, read_only=read_only )
+
+	db = get_db( template=template, read_only=read_only )
+
+	yield db
+
+@fixture
+def ctx( request, db ) -> ApplicationContext:
+	# env_fs = fs.get_fs( PERSISTANCE_NAME )
 	context: ApplicationContext = ApplicationContext( configuration=env_fs.getsyspath( '/' ), verbose=True )
+
+	context.db = db # attach db to ctx
 
 	yield context
 
@@ -259,15 +188,15 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 
 @fixture
 def service( request, varfs ) -> Optional[Service]:
-		service_class = marker( request, 'service', 'cls', None )
-		register = marker( request, 'service', 'register', False )
-		service_class_name = service_class.__name__.lower()
-		service = service_class( fs=varfs )
-		if register:
-			# noinspection PyProtectedMember
-			Registry.instance()._services[service_class_name] = service
+	service_class = marker( request, 'service', 'cls', None )
+	register = marker( request, 'service', 'register', False )
+	service_class_name = service_class.__name__.lower()
+	service = service_class( fs=varfs )
+	if register:
+		# noinspection PyProtectedMember
+		Registry.instance()._services[service_class_name] = service
 
-		return service
+	yield service
 
 # bikecitizens specific fixtures
 

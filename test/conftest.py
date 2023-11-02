@@ -115,6 +115,10 @@ def ctx( request ) -> Optional[ApplicationContext]:
 		log.error( 'unable to run fixture context', exc_info=True )
 
 @fixture
+def registry( request ) -> Registry:
+	yield Registry.instance()
+
+@fixture
 def fs( request ) -> FS:
 	cfg_name = marker( request, 'context', 'config', None )
 	lib_name = marker( request, 'context', 'lib', None )
@@ -203,8 +207,8 @@ def service( request, ctx ) -> Optional[Service]:
 		service_class_name = service_class.__name__.lower()
 		base_path = Path( ctx.db_dir, service_class_name )
 
-		Registry.services[service_class_name] = service_class( ctx=ctx, **{ 'base_path': base_path, **marker.kwargs} )
-		return Registry.services[service_class_name]
+		Registry.instance()._services[service_class_name] = service_class( ctx=ctx, **{ 'base_path': base_path, **marker.kwargs} )
+		return Registry.instance().services[service_class_name]
 
 	except ValueError:
 		log.error( 'unable to run fixture service', exc_info=True )

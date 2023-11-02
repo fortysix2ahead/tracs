@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from inspect import getmembers, isclass, signature as getsignature
+from inspect import getmembers, isclass, isfunction, signature as getsignature
 from logging import getLogger
 from pathlib import Path
 from re import match
@@ -30,36 +30,45 @@ class EventTypes( Enum ):
 	service_created = 'service_created'
 	virtual_field_registered = 'virtual_field_registered'
 
-@define
+@define( init=False )
 class Registry:
 
 	_instance: ClassVar[Registry] = None
 
-	_importers: Dict[str, List[ResourceHandler]] = field( factory=dict, alias='_importers' )
+	_importers: Dict[str, ResourceHandler] = field( factory=dict, alias='_importers' )
 	_keywords: Dict[str, Keyword] = field( factory=dict, alias='_keywords' )
 	_listeners: Dict[EventTypes, List[Callable]] = field( factory=dict, alias='_listeners' )
 	_normalizers: Dict[str, Normalizer] = field( factory=dict, alias='_normalizers' )
 	_resource_types: Dict[str, ResourceType] = field( factory=dict, alias='_resource_types' )
 	_services: Dict[str, Service] = field( factory=dict, alias='_services' )
 	_setups: Dict[str, Callable] = field( factory=dict, alias='_setups' )
-	_virtual_fields: VirtualFields = field( default=Activity.VF() )
+	_virtual_fields: VirtualFields = field( factory=VirtualFields )
 
-	__importer_cls__: List[Tuple] = field( factory=list, alias='__importer_cls__' )
-	__keyword_fns__: List[Tuple] = field( factory=list, alias='__keyword_fns__' )
-	__normalizer_fns__: List[Tuple] = field( factory=list, alias='__normalizer_fns__' )
-	__resource_type_cls__: List[Tuple] = field( factory=list, alias='__resource_type_cls__' )
-	__service_cls__: List[Tuple] = field( factory=list, alias='__service_cls__' )
-	__setup_fns__: List[Tuple] = field( factory=list, alias='__setup_fns__' )
-	__virtual_fields_fns__: List[Tuple] = field( factory=list, alias='__virtual_fields_fns__' )
+	_importer_cls: List[Tuple] = field( factory=list, alias='_importer_cls' )
+	_keyword_fns: List[Tuple] = field( factory=list, alias='_keyword_fns' )
+	_normalizer_fns: List[Tuple] = field( factory=list, alias='_normalizer_fns' )
+	_resource_type_cls: List[Tuple] = field( factory=list, alias='_resource_type_cls' )
+	_service_cls: List[Tuple] = field( factory=list, alias='_service_cls' )
+	_setup_fns: List[Tuple] = field( factory=list, alias='_setup_fns' )
+	_virtual_fields_fns: List[Tuple] = field( factory=list, alias='_virtual_fields_fns' )
 
 	@classmethod
-	def instance( cls ) -> Registry:
+	def instance( cls, *args, **kwargs ) -> Registry:
 		if cls._instance is None:
-			cls._instance = Registry()
+			cls._instance = super( Registry, cls ).__new__( cls, *args, **kwargs )
+			# noinspection PyUnresolvedReferences
+			cls._instance.__attrs_init__( *args, **kwargs )
+
+		cls._instance.setup( *args, **kwargs )
+
 		return cls._instance
 
+	# constructor is not allowed
+	def __init__( self ):
+		raise RuntimeError( f'instance can only be created by using {self.__class__}.instance( cls ) method' )
+
 	def __setup_keywords__( self ):
-		for fn, args, kwargs in self.__keyword_fns__:
+		for fn, args, kwargs in self._keyword_fns:
 			try:
 				name, modname, qname, params, rval = _fnspec( fn )
 				kw = fn()
@@ -74,7 +83,7 @@ class Registry:
 				log.error( f'unable to register keyword from function {fn}' )
 
 	def __setup_normalizers__( self ):
-		for fn, args, kwargs in self.__normalizer_fns__:
+		for fn, args, kwargs in self._normalizer_fns:
 			try:
 				name, modname, qname, params, rval = _fnspec( fn )
 				if not params and rval == Normalizer:
@@ -89,34 +98,33 @@ class Registry:
 				log.error( f'unable to register normalizer from function {fn}' )
 
 	def __setup_resource_types__( self ):
-		for fncls, args, kwargs in self.__resource_type_cls__:
+		for fncls, args, kwargs in self._resource_type_cls:
 			try:
-				name, modname, qname, params, rval = _fnspec( fncls )
-				if not params and rval in [ResourceType, 'ResourceType']: # todo: rval is 'ResourceType' for tcx.py? WTF? WHY???
-					rt = fncls()
-				else:
-					rt = ResourceType( **kwargs )
-				self._resource_types[rt.type] = rt
-				log.debug( f'registered resource type [orange1]{rt.name}[/orange1] from module [orange1]{modname}[/orange1] for type [orange1]{rt.type}[/orange1]' )
+				if isfunction( fncls ):
+					self._resource_types[rt.type] = (rt := fncls())
+				elif isclass( fncls ):
+					self._resource_types[rt.type] = (rt := ResourceType( **kwargs, activity_cls=fncls ) )
 
-			except RuntimeError:
+				# noinspection PyUnboundLocalVariable
+				log.debug( f'registered resource type [orange1]{_qname( fncls )}[/orange1] for type [orange1]{rt.type}[/orange1]' )
+
+			except (RuntimeError, UnboundLocalError):
 				log.error( f'unable to register resource type from {fncls}' )
 
 	def __setup_importers__( self ):
-		for fncls, args, kwargs in self.__importer_cls__:
+		for fncls, args, kwargs in self._importer_cls:
 			try:
-				name, modname, qname, params, rval = _fnspec( fncls )
 				i = fncls()
-				type = i.TYPE or kwargs( 'type' )
-				self._importers[type] = [ *self._importers[type], i ] if type in self._importers else [i]
+				t = i.TYPE or kwargs.get( 'type' )
+				self._importers[t] = i
 
-				log.debug( f'registered importer [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1] for type [orange1]{type}[/orange1]' )
+				log.debug( f'registered importer [orange1]{_qname( fncls )}[/orange1] for type [orange1]{t}[/orange1]' )
 
 			except RuntimeError:
 				log.error( f'unable to register importer from {fncls}' )
 
 	def __setup_virtual_fields__( self ):
-		for fn, args, kwargs in self.__virtual_fields_fns__:
+		for fn, args, kwargs in self._virtual_fields_fns:
 			try:
 				name, modname, qname, params, rval = _fnspec( fn )
 				if not params and rval == VirtualField:
@@ -131,40 +139,66 @@ class Registry:
 			except RuntimeError:
 				log.error( f'unable to register virtual field from {fn}' )
 
+		# announce virtuals fields to activity class
+		for k, vf in self._virtual_fields.__fields__.items():
+			Activity.VF().set_field( k, vf )
+
 	def __setup_setup_functions__( self ):
-		for fn, args, kwargs in self.__setup_fns__:
+		for fn, args, kwargs in self._setup_fns:
 			self._setups[_fnspec( fn )[1]] = fn
 
-	# todo: setup service here?
-	def __setup_services__( self ):
-		pass
+	def __setup_services__( self, *args, **kwargs ):
+		self.setup_services()
 
-	def setup_services( self, ctx: ApplicationContext ):
-		for fncls, args, kwargs in self.__service_cls__:
+	def setup_services( self, *args, **kwargs ):
+		ctx: ApplicationContext = kwargs.get( 'ctx' )
+		# library: str = kwargs.get( 'library' )
+
+		for fncls, args, kwargs in self._service_cls:
 			try:
 				name, modname, qname, params, rval = _fnspec( fncls )
-				base_path = Path( ctx.db_dir_path, name )
-				overlay_path = Path( ctx.db_overlay_path, name )
-				cfg, state = ctx.plugin_config_state( name, as_dict=True )
-				s: Service = fncls( ctx=ctx, **cfg, **state, base_path=base_path, overlay_path=overlay_path )
-				self._services[s.name] = s
 
-				# register service name as keyword
-				self._keywords[s.name] = Keyword( s.name, f'classifier "{s.name}" is contained in classifiers list', f'"{s.name}" in classifiers' )
+				if ctx:
+					base_path = Path( ctx.db_dir_path, name )
+					overlay_path = Path( ctx.db_overlay_path, name )
+					cfg, state = ctx.plugin_config_state( name, as_dict=True )
 
-				log.debug( f'registered service [orange1]{s.name}[/orange1] from module [orange1]{modname}[/orange1]' )
+					self._services[s.name] = (s := fncls( ctx=ctx, **cfg, **state, base_path=base_path, overlay_path=overlay_path ))
+					# register service name as keyword
+					self._keywords[s.name] = Keyword( s.name, f'classifier "{s.name}" is contained in classifiers list', f'"{s.name}" in classifiers' )
+
+					log.debug( f'registered service [orange1]{s.name}[/orange1] from module [orange1]{modname}[/orange1]' )
+
+				else:
+					# todo: improve this later, see github #156
+					log.debug( f'skipped registering service module [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1] because of missing context' )
+
+				# elif library: # this is mainly for test cases
+				# 	base_path = Path( library, name )
+				# 	overlay_path = Path( base_path.parent, 'overlay', name )
+				# 	cfg, state = {}, {}
+				# else: # fallback, also for test cases
+				# 	base_path = Path( user_config_dir( 'tracs' ), 'db', name )
+				# 	overlay_path = Path( base_path.parent.parent, 'overlay', name )
+				# 	cfg, state = {}, {}
+
+
 
 			except RuntimeError:
 				log.error( f'unable to setup service from {fncls}' )
 
-	def setup( self ):
+	def setup( self, *args, **kwargs ):
+		if kwargs.get( 'nosetup' ) is True:
+			return
+
 		self.__setup_keywords__()
 		self.__setup_normalizers__()
 		self.__setup_resource_types__()
 		self.__setup_importers__()
 		self.__setup_virtual_fields__()
 		self.__setup_setup_functions__()
-		self.__setup_services__()
+
+		self.__setup_services__( *args, **kwargs )
 
 	# properties
 
@@ -264,7 +298,7 @@ class Registry:
 
 	@classmethod
 	def importer_for( cls, type: str ) -> Optional[Importer]:
-		return next( iter( Registry.instance().importers.get( type, [] ) ), None )
+		return Registry.instance().importers.get( type )
 
 	@classmethod
 	def importers_for( cls, type: str ) -> List[Importer]:
@@ -281,6 +315,9 @@ class Registry:
 				else:
 					importers.extend( value )
 		return importers
+
+def _qname( fncls: Union[Callable, Type] ) -> str:
+	return f'{fncls.__module__}.{fncls.__name__}'
 
 def _fnspec( fncls: Union[Callable, Type] ) -> Tuple[str, str, str, Mapping, Any]:
 	"""
@@ -327,22 +364,22 @@ def _register( *args, **kwargs ) -> Callable:
 # actual real-world decorators below
 
 def keyword( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__keyword_fns__, __decorator_name__='keyword' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._keyword_fns, __decorator_name__='keyword' )
 
 def normalizer( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__normalizer_fns__, __decorator_name__='normalizer' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._normalizer_fns, __decorator_name__='normalizer' )
 
 def virtualfield( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__virtual_fields_fns__, __decorator_name__='virtualfield' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._virtual_fields_fns, __decorator_name__='virtualfield' )
 
 def importer( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__importer_cls__, __decorator_name__='importer' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._importer_cls, __decorator_name__='importer' )
 
 def resourcetype( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__resource_type_cls__, __decorator_name__='resourcetype' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._resource_type_cls, __decorator_name__='resourcetype' )
 
 def service( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__service_cls__, __decorator_name__='service' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._service_cls, __decorator_name__='service' )
 
 def setup( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = Registry.instance().__setup_fns__, __decorator_name__='setup' )
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._setup_fns, __decorator_name__='setup' )

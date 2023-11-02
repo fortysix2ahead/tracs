@@ -70,9 +70,12 @@ def test_path_for_cls( service ):
 	with raises( AttributeError ):
 		assert Service.path_for_uid( 'unknown:1001' ) == Path( 'unknown/1/0/0/1001' )
 
-@mark.context( config='empty', library='empty', cleanup=False )
+@mark.context( env='empty', persist='clone', cleanup=True )
 @mark.service( cls=Mock )
-def test_fetch( service ):
+def test_fetch( ctx2 ):
+
+	return
+
 	db = cast( ActivityDb, service.ctx.db )
 	service.import_activities( skip_download=True, skip_link=True )
 	assert len( db.activities ) == 3

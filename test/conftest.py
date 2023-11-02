@@ -91,18 +91,15 @@ def config( request ) -> None:
 @fixture
 def ctx( request ) -> Optional[ApplicationContext]:
 	try:
-		marker = request.node.get_closest_marker( 'context' )
+		config = marker( request, 'context', 'config', None )
+		lib = marker( request, 'context', 'library', None )
+		takeout = marker( request, 'context', 'takeout', None )
+		do_cleanup = marker( request, 'context', 'cleanup', False )
 
-		if marker:
-			config = marker.kwargs.get( 'config' )
-			lib = marker.kwargs.get( 'library' )
-			takeout = marker.kwargs.get( 'takeout' )
-			do_cleanup = marker.kwargs.get( 'cleanup' )
-
+		if config:
 			context: ApplicationContext = prepare_context( config, lib, takeout )
 		else:
-			do_cleanup = True
-			context: ApplicationContext = ApplicationContext( config_dir=str( var_run_path() ), verbose=True )
+			context: ApplicationContext = ApplicationContext( configuration=str( var_run_path() ), verbose=True )
 
 		yield context
 

@@ -10,8 +10,10 @@ from typing import Any, List, Optional, Tuple, Union
 
 from dateutil.tz import UTC
 from fs.base import FS
+from fs.errors import ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
+from fs.path import combine
 
 from tracs.activity import Activity
 from tracs.config import DEFAULT_DB_DIR, OVERLAY_DIRNAME
@@ -19,6 +21,7 @@ from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.registry import Registry
 from tracs.resources import Resource
+from tracs.uid import UID
 
 log = getLogger( __name__ )
 
@@ -99,23 +102,20 @@ class Service( Plugin ):
 	# class methods for helping with various things
 
 	@classmethod
-	def path_for_uid( cls, uid: str ) -> Optional[Path]:
+	def path_for_uid( cls, uid: str, as_path=True ) -> Union[Path, str]:
 		"""
 		Returns the relative path for a given uid.
 		A service with the classifier of the uid has to exist, otherwise None will be returned.
 		"""
-		classifier, local_id = uid.split( ':', 1 )
-		if service := Registry.instance().services.get( classifier ):
-			return service.path_for_id( local_id, Path( service.name ) )
-		else:
-			return path_for_id( local_id, Path( classifier ) )
+		uid = UID( uid )
+		# todo: what to do with unknown services?
+		service = Registry.instance().services.get( uid.classifier )
+		path = service.path_for_id( uid.local_id, service.name, uid.path )
+		return Path( path ) if as_path else path
 
 	@classmethod
 	def path_for_resource( cls, resource: Resource ) -> Optional[Path]:
-		if service := Registry.instance().services.get( resource.classifier ):
-			return service.path_for( resource=resource ).resolve()
-		else:
-			return None
+		return Registry.instance().services.get( resource.classifier ).path_for( resource=resource ).resolve()
 
 	@classmethod
 	def url_for_uid( cls, uid: str ) -> Optional[str]:
@@ -141,10 +141,15 @@ class Service( Plugin ):
 
 	# service methods
 
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
-		return path_for_id( local_id, base_path, resource_path ) # use the default path calculation
+	# todo: set as_path to a default of False
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = True ) -> Union[Path, str]:
+		local_id_rjust = str( local_id ).rjust( 3, '0' )
+		path = f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
+		path = combine( base_path, path ) if base_path else path
+		path = combine( path, resource_path ) if resource_path else path
+		return Path( path ) if as_path else path
 
-	def path_for( self, resource: Resource, ignore_overlay: bool = True, absolute: bool = True, omit_classifier: bool = False ) -> Optional[Path]:
+	def path_for( self, resource: Resource, ignore_overlay: bool = True, absolute: bool = True, omit_classifier: bool = False, as_path: bool = True ) -> Optional[Path]:
 		"""
 		Returns the path in the local file system where all artefacts of a provided activity are located.
 
@@ -152,21 +157,27 @@ class Service( Plugin ):
 		:param ignore_overlay: if True ignores the overlay
 		:param absolute: if True returns an absolute path
 		:param omit_classifier: if True, the relative path will not include the leading name of the service
+		:param as_path: if True, return the result as Path
 		:return: path of the resource in the local file system
 		"""
-		if resource.classifier == self.name:
-			path = Path( self.path_for_id( resource.local_id, base_path=Path( self.name ) ), resource.path )
-		else:
-			if s := Registry.instance().services.get( resource.classifier ):
-				path = s.path_for_id( resource.local_id, Path( resource.classifier ), Path( resource.path ) )
-			else:
-				return None
+		uid = resource.uid_obj
 
-		if not absolute and omit_classifier:
-			path = path.relative_to( path.parts[0] )
+		if uid.classifier != self.name:
+			# this should not happen, if it does, something's wrong
+			log.warning( f'called path_for() on service {self.name} for a foreign resource with UID {resource.uidpath}' )
 
-		# return Path( self.base_fs.getsyspath( str( path ) ) ) if absolute else path
-		return Path( Path( self.ctx.db_dir_path ), path ) if absolute else path
+		path = self.path_for_id( uid.local_id, uid.classifier if not omit_classifier else None, resource_path=uid.path, as_path=False )
+
+		if absolute:
+			try:
+				path = self.fs.getsyspath( path )
+			except ResourceNotFound:
+				try:
+					path = self.ctx.lib_fs.getsyspath( f'{self.ctx.db_dir}/{path}' )
+				except ResourceNotFound:
+					raise ResourceNotFound()
+
+		return Path( path ) if as_path else path
 
 	def url_for( self, activity: Optional[Activity] = None, resource: Optional[Resource] = None, local_id: Optional[int] = None ) -> Optional[str]:
 		url = None

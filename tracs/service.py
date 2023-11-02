@@ -26,8 +26,8 @@ log = getLogger( __name__ )
 
 class Service( Plugin ):
 
-	def __init__( self, **kwargs ):
-		super().__init__( **kwargs )
+	def __init__( self, *args, **kwargs ):
+		super().__init__( *args, **kwargs )
 
 		# paths + plugin filesystem area
 		self._base_path: Path = kwargs.get( 'base_path', Path( DEFAULT_DB_DIR, self.name ) )

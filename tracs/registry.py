@@ -124,20 +124,19 @@ class Registry:
 				log.error( f'unable to register importer from {fncls}' )
 
 	def __setup_virtual_fields__( self ):
-		for fn, args, kwargs in self._virtual_fields_fns:
+		for fncls, args, kwargs in self._virtual_fields_fns:
 			try:
-				name, modname, qname, params, rval = _fnspec( fn )
-				if not params and rval == VirtualField:
-					vf = fn()
-					self._virtual_fields[vf.name] = vf
-					log.debug( f'registered virtual field [orange1]{vf.name}[/orange1] from module [orange1]{modname}[/orange1]' )
-				else:
-					self._virtual_fields[name] = VirtualField( name=name, type=kwargs.get( 'type' ), description=kwargs.get( 'description' ),
-					                                           display_name=kwargs.get( 'display_name' ), factory=fn )
-					log.debug( f'registered virtual field [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1]' )
+				if isfunction( fncls ):
+					params, rval = _params( fncls )
+					if not params and rval in [VirtualField, 'VirtualField']:
+						self._virtual_fields[vf.name] = (vf := fncls())
+					else:
+						self._virtual_fields[vf.name] = (vf := VirtualField( **{'name': _lname( fncls ), 'factory': fncls} | kwargs ))
 
-			except RuntimeError:
-				log.error( f'unable to register virtual field from {fn}' )
+					log.debug( f'registered virtual field [orange1]{vf.name}[/orange1] from module [orange1]{_qname( fncls )}[/orange1]' )
+
+			except (RuntimeError, UnboundLocalError):
+				log.error( f'unable to register virtual field from {fncls}' )
 
 		# announce virtuals fields to activity class
 		for k, vf in self._virtual_fields.__fields__.items():
@@ -203,7 +202,7 @@ class Registry:
 	# properties
 
 	@property
-	def importers( self ) -> Mapping[str, List[ResourceHandler]]:
+	def importers( self ) -> Mapping[str, ResourceHandler]:
 		return MappingProxyType( self._importers )
 
 	@property
@@ -316,8 +315,14 @@ class Registry:
 					importers.extend( value )
 		return importers
 
+def _lname( fncls: Union[Callable, Type] ) -> str:
+	return fncls.__name__.lower()
+
 def _qname( fncls: Union[Callable, Type] ) -> str:
 	return f'{fncls.__module__}.{fncls.__name__}'
+
+def _params( fncls: Union[Callable, Type] ) -> Tuple[Mapping, Any]:
+	return getsignature( fncls ).parameters, next( (m[1].get( 'return' ) for m in getmembers( fncls ) if m[0] == '__annotations__'), None )
 
 def _fnspec( fncls: Union[Callable, Type] ) -> Tuple[str, str, str, Mapping, Any]:
 	"""

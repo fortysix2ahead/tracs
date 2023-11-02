@@ -61,8 +61,7 @@ class Application:
 		log.debug( f'using config dir: {self._ctx.config_dir} and library dir: {self._ctx.lib_dir}' )
 
 		# create registry
-		self._registry = Registry.instance()
-		self._registry.setup()
+		self._registry = Registry.instance( ctx=self._ctx )
 
 		# open db from config_dir
 		self._db = ActivityDb( path=self._ctx.db_dir_path, read_only=self._ctx.pretend, enable_index=self.ctx.config['db']['index'].get() )

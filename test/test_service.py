@@ -4,14 +4,34 @@ from typing import cast
 
 from pytest import mark
 
-from test.mock_service import Mock
-from test.mock_service import MOCK_TYPE
-from test.mock_service import MockActivity
+from test.mock import Mock, MOCK_TYPE, MockActivity
 from tracs.db import ActivityDb
 from tracs.registry import Registry
-from tracs.resources import Resource
-from tracs.resources import ResourceType
+from tracs.resources import Resource, ResourceType
 from tracs.service import Service
+
+def test_constructor():
+	mock = Mock()
+
+	assert mock.ctx is None
+	assert mock.name == 'mock'
+	assert mock.display_name == 'Mock'
+	assert mock.enabled is True
+
+	assert mock.config_value( 'test' ) is None
+	assert mock.config_value( 'test', 10 ) == 10
+	assert mock.state_value( 'test' ) is None
+	assert mock.state_value( 'test', 10 ) == 10
+
+	mock.set_config_value( 'test', 20 )
+	assert mock.config_value( 'test' ) == 20
+	mock.set_state_value( 'test', 30 )
+	assert mock.state_value( 'test' ) == 30
+
+	mock = Mock( name='MOCK', display_name='A Mock Service', enabled=False )
+	assert mock.name == 'MOCK'
+	assert mock.display_name == 'A Mock Service'
+	assert mock.enabled is False
 
 @mark.service( cls=Mock )
 def test_path_for( service ):

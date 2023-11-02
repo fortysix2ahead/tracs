@@ -1,18 +1,17 @@
 
-from dataclasses import dataclass
-from dataclasses import field
 from datetime import datetime
 from typing import Any, List
 from typing import Optional
 from typing import Union
 
+from attrs import define, field
 from dateutil.tz import tzlocal
 
 from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.handlers import ResourceHandler
 from tracs.plugins.gpx import GPX_TYPE
-from tracs.registry import importer
+from tracs.registry import importer, service
 from tracs.registry import resourcetype
 from tracs.resources import Resource
 from tracs.service import Service
@@ -28,7 +27,7 @@ MINIMAL_GPX = \
 	r'</gpx>'
 
 @resourcetype( type=MOCK_TYPE, summary=True )
-@dataclass
+@define
 class MockActivity:
 
 	uid: str = field( default=None )
@@ -53,10 +52,11 @@ class MockImporter( ResourceHandler ):
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		return MockActivity( uid=resource.uid ).as_activity()
 
+@service
 class Mock( Service ):
 
-	def __init__( self, **kwargs ):
-		super().__init__( name='mock', display_name='Mock', **kwargs )
+	def __init__( self, *args, **kwargs ):
+		super().__init__( *args, **kwargs )
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		return [

@@ -1,7 +1,8 @@
-
+from importlib import import_module
 from importlib.resources import path as resource_path
 from logging import getLogger
 from pathlib import Path
+from pkgutil import iter_modules
 from typing import Any, Dict, List
 from typing import Optional
 from typing import Tuple
@@ -116,6 +117,12 @@ def ctx( request ) -> Optional[ApplicationContext]:
 
 @fixture
 def registry( request ) -> Registry:
+	# load all plugins first
+	import tracs.plugins
+	for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
+		import_module( f'tracs.plugins.{name}' )
+		log.debug( f'imported plugin {name} from {finder.path}' )
+
 	yield Registry.instance()
 
 @fixture

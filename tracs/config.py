@@ -165,7 +165,7 @@ class ApplicationContext:
 			user_configuration = fs.getsyspath( basename( user_configuration ) )
 			self.configuration = dirname( user_configuration )
 			self.config.set_file( user_configuration, base_for_paths=True )
-		except (AttributeError, KeyError):
+		except (AttributeError, KeyError, TypeError):
 			# self.configuration = self.config.config_dir() # this returns ~/.config/tracs on Mac OS X -> wrong
 			self.configuration = user_config_dir( APPNAME )
 		except ConfigReadError:

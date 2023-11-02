@@ -34,6 +34,10 @@ def test_constructor():
 	assert mock.display_name == 'A Mock Service'
 	assert mock.enabled is False
 
+	# absolute paths fail when FS is missing
+	r = Resource( uid='mock:1001', path='recording.gpx' )
+	assert mock.path_for( r, absolute=True, as_path=False ) is None
+
 @mark.service( cls=Mock )
 def test_path_for( service ):
 	# path for a given id
@@ -53,9 +57,11 @@ def test_path_for( service ):
 	assert service.path_for( r, absolute=False, as_path=False ) == 'mock/1/0/0/1001/recording.gpx'
 	assert service.path_for( r, absolute=False, omit_classifier=True, as_path=False ) == '1/0/0/1001/recording.gpx'
 
-	assert service.path_for( r, absolute=True ) == Path( Path( service.ctx.db_dir_path ), 'mock/1/0/0/1001/recording.gpx' )
+	# absolute paths work, as there is an FS behind
+	assert service.path_for( r, absolute=True, as_path=False ) == service.fs.getsyspath( 'mock/1/0/0/1001/recording.gpx' )
+	assert service.path_for( r, absolute=True, omit_classifier=True, as_path=False ) == service.fs.getsyspath( 'mock/1/0/0/1001/recording.gpx' )
 
-@mark.service( cls=Mock )
+@mark.service( cls=Mock, register=True )
 def test_path_for_cls( service ):
 	# path for a uid (this calls path_for_id internally)
 	assert Service.path_for_uid( 'mock:1001' ) == Path( 'mock/1/0/0/1001' )
@@ -63,10 +69,6 @@ def test_path_for_cls( service ):
 
 	with raises( AttributeError ):
 		assert Service.path_for_uid( 'unknown:1001' ) == Path( 'unknown/1/0/0/1001' )
-
-	r = Resource( uid='mock:1001', path='recording.gpx' )
-	assert service.path_for( r, absolute=True ) == Path( Path( service.ctx.db_dir_path ), 'mock/1/0/0/1001/recording.gpx' )
-	assert service.path_for( r, absolute=True, omit_classifier=True ) == Path( Path( service.ctx.db_dir_path ), '1/0/0/1001/recording.gpx' )
 
 @mark.context( config='empty', library='empty', cleanup=False )
 @mark.service( cls=Mock )

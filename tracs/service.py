@@ -33,14 +33,8 @@ class Service( Plugin ):
 		super().__init__( *args, **kwargs )
 
 		# paths + plugin filesystem area
-		self._base_path: Path = kwargs.get( 'base_path', Path( DEFAULT_DB_DIR, self.name ) )
-		self._overlay_path: Path = kwargs.get( 'overlay_path', Path( self._base_path.parent, OVERLAY_DIRNAME, self.name ) )
+		self._fs: FS = kwargs.get( 'fs' )
 		self._base_url = None
-
-		self._fs: MultiFS = MultiFS()
-		self._fs.add_fs( 'base', OSFS( str( self._base_path ), create=True ), write=True )
-		self._fs.add_fs( 'overlay', OSFS( str( self._overlay_path ), create=True ), write=False )
-
 		self._logged_in: bool = False
 
 		# set service properties from kwargs, if a setter exists
@@ -48,7 +42,7 @@ class Service( Plugin ):
 			if p[0] in kwargs.keys() and not p[0].startswith( '_' ):
 				setattr( self, p[0], kwargs.get( p[0] ) )
 
-		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
+		log.debug( f'service instance {self._name} created, with plugin fs = {self._fs}' )
 
 	# properties
 
@@ -102,7 +96,7 @@ class Service( Plugin ):
 	# class methods for helping with various things
 
 	@classmethod
-	def path_for_uid( cls, uid: str, as_path=True ) -> Union[Path, str]:
+	def path_for_uid( cls, uid: str, absolute: bool = False, as_path=True ) -> Union[Path, str]:
 		"""
 		Returns the relative path for a given uid.
 		A service with the classifier of the uid has to exist, otherwise None will be returned.
@@ -111,6 +105,10 @@ class Service( Plugin ):
 		# todo: what to do with unknown services?
 		service = Registry.instance().services.get( uid.classifier )
 		path = service.path_for_id( uid.local_id, service.name, uid.path )
+
+		if absolute:
+			path = service.path_for_id(  )
+
 		return Path( path ) if as_path else path
 
 	@classmethod
@@ -166,16 +164,16 @@ class Service( Plugin ):
 			# this should not happen, if it does, something's wrong
 			log.warning( f'called path_for() on service {self.name} for a foreign resource with UID {resource.uidpath}' )
 
-		path = self.path_for_id( uid.local_id, uid.classifier if not omit_classifier else None, resource_path=uid.path, as_path=False )
+		if omit_classifier and not absolute:
+			path = self.path_for_id( uid.local_id, None, resource_path=uid.path, as_path=False )
+		else:
+			path = self.path_for_id( uid.local_id, uid.classifier, resource_path=uid.path, as_path=False )
 
 		if absolute:
 			try:
 				path = self.fs.getsyspath( path )
-			except ResourceNotFound:
-				try:
-					path = self.ctx.lib_fs.getsyspath( f'{self.ctx.db_dir}/{path}' )
-				except ResourceNotFound:
-					raise ResourceNotFound()
+			except (AttributeError, ResourceNotFound):
+				return None
 
 		return Path( path ) if as_path else path
 

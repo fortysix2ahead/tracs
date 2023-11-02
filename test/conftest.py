@@ -123,6 +123,14 @@ def registry( request ) -> Registry:
 	yield Registry.instance()
 
 @fixture
+def varfs( request ) -> FS:
+	fs = OSFS( str( var_run_path() ) )
+
+	yield fs
+
+
+
+@fixture
 def fs( request ) -> FS:
 	cfg_name = marker( request, 'context', 'config', None )
 	lib_name = marker( request, 'context', 'lib', None )
@@ -204,18 +212,16 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 	return config_dict, state_dict
 
 @fixture
-def service( request, ctx ) -> Optional[Service]:
-	try:
-		marker = request.node.get_closest_marker( 'service' )
-		service_class = marker.kwargs.get( 'cls' )
+def service( request, varfs ) -> Optional[Service]:
+		service_class = marker( request, 'service', 'cls', None )
+		register = marker( request, 'service', 'register', False )
 		service_class_name = service_class.__name__.lower()
-		base_path = Path( ctx.db_dir, service_class_name )
+		service = service_class( fs=varfs )
+		if register:
+			# noinspection PyProtectedMember
+			Registry.instance()._services[service_class_name] = service
 
-		Registry.instance()._services[service_class_name] = service_class( ctx=ctx, **{ 'base_path': base_path, **marker.kwargs} )
-		return Registry.instance().services[service_class_name]
-
-	except ValueError:
-		log.error( 'unable to run fixture service', exc_info=True )
+		return service
 
 # bikecitizens specific fixtures
 

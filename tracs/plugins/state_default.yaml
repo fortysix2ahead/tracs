@@ -1,13 +1,11 @@
 
 plugins:
 
-  bikecitizens:
+  bikecitizens: {}
 
-  empty:
+  local: {}
 
-  local:
-
-  polar:
+  polar: {}
 
   strava:
     access_token:
@@ -17,4 +15,4 @@ plugins:
   stravaweb:
     session:
 
-  waze:
+  waze: {}

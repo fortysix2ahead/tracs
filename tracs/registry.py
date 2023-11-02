@@ -2,29 +2,24 @@
 from __future__ import annotations
 
 from enum import Enum
-from importlib import import_module
-from inspect import getmembers, isclass, isfunction
+from inspect import getmembers, isclass, isfunction, signature as getsignature
 from logging import getLogger
 from pathlib import Path
-from pkgutil import walk_packages
 from re import match
-from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
+from types import MappingProxyType
+from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
 
-from attrs import fields, Attribute
-from confuse import NotFoundError
+from attrs import Attribute, define, field, fields
 
 from tracs.activity import Activity
-from tracs.config import ApplicationContext, KEY_CLASSIFER
+from tracs.config import ApplicationContext
 from tracs.core import Keyword, Normalizer, VirtualField, VirtualFields
-from tracs.protocols import Handler, Importer, Service
+from tracs.handlers import ResourceHandler
+from tracs.protocols import Importer, Service
 from tracs.resources import ResourceType
 from tracs.uid import UID
-from tracs.utils import unchain
 
 log = getLogger( __name__ )
-
-NS_PLUGINS = 'tracs.plugins'
-_ARGS, _KWARGS = (), {} # helpers ...
 
 class EventTypes( Enum ):
 
@@ -35,146 +30,283 @@ class EventTypes( Enum ):
 	service_created = 'service_created'
 	virtual_field_registered = 'virtual_field_registered'
 
+@define( init=False )
 class Registry:
 
-	classifier: str = KEY_CLASSIFER
-	ctx: ApplicationContext = None
-	event_listeners = {}
-	handlers: Dict[str, List[Handler]] = {}
-	importers: Dict[str, List[Importer]] = {}
-	resource_types: Dict[str, ResourceType] = {}
-	rule_keywords: Dict[str, Keyword] = {}
-	rule_normalizers: Dict[str, Normalizer] = {}
-	setup_functions: Dict[str, Callable] = {}
-	services: Dict[str, Service] = {}
-	service_classes: Dict[str, Type] = {}
-	virtual_fields: Dict[str, VirtualField] = Activity.__vf__.__fields__
+	_instance: ClassVar[Registry] = None
+
+	_importers: Dict[str, ResourceHandler] = field( factory=dict, alias='_importers' )
+	_keywords: Dict[str, Keyword] = field( factory=dict, alias='_keywords' )
+	_listeners: Dict[EventTypes, List[Callable]] = field( factory=dict, alias='_listeners' )
+	_normalizers: Dict[str, Normalizer] = field( factory=dict, alias='_normalizers' )
+	_resource_types: Dict[str, ResourceType] = field( factory=dict, alias='_resource_types' )
+	_services: Dict[str, Service] = field( factory=dict, alias='_services' )
+	_setups: Dict[str, Callable] = field( factory=dict, alias='_setups' )
+	_virtual_fields: VirtualFields = field( factory=VirtualFields )
+
+	_importer_cls: List[Tuple] = field( factory=list, alias='_importer_cls' )
+	_keyword_fns: List[Tuple] = field( factory=list, alias='_keyword_fns' )
+	_normalizer_fns: List[Tuple] = field( factory=list, alias='_normalizer_fns' )
+	_resource_type_cls: List[Tuple] = field( factory=list, alias='_resource_type_cls' )
+	_service_cls: List[Tuple] = field( factory=list, alias='_service_cls' )
+	_setup_fns: List[Tuple] = field( factory=list, alias='_setup_fns' )
+	_virtual_fields_fns: List[Tuple] = field( factory=list, alias='_virtual_fields_fns' )
 
 	@classmethod
-	def instantiate_services( cls, ctx: Optional[ApplicationContext] = None, **kwargs ):
-		_ctx = ctx if ctx else Registry.ctx
-		for name, service_type in Registry.service_classes.items():
-			service_base_path = Path( _ctx.db_dir_path, name )
-			service_overlay_path = Path( _ctx.db_overlay_path, name )
+	def instance( cls, *args, **kwargs ) -> Registry:
+		if cls._instance is None:
+			cls._instance = super( Registry, cls ).__new__( cls, *args, **kwargs )
+			# noinspection PyUnresolvedReferences
+			cls._instance.__attrs_init__( *args, **kwargs )
 
-			# find config/state values
-			service_cfg = ctx.plugin_config( name )
-			service_state = ctx.plugin_state( name )
+		cls._instance.setup( *args, **kwargs )
 
-			if service_cfg.get( 'enabled', True ):
-				Registry.services[name] = service_type( ctx=ctx, **{ **kwargs, **service_cfg, **service_state, **{ 'base_path': service_base_path, 'overlay_path': service_overlay_path } } )
-				# log.debug( f'created service instance {name}, with base path {service_base_path}' )
-				Registry.notify( EventTypes.service_created, Registry.services[name] )
-			else:
-				log.debug( f'skipping instance creation for disabled plugin {name}' )
+		return cls._instance
+
+	# constructor is not allowed
+	def __init__( self ):
+		raise RuntimeError( f'instance can only be created by using {self.__class__}.instance( cls ) method' )
+
+	def __setup_keywords__( self ):
+		for fn, args, kwargs in self._keyword_fns:
+			try:
+				name, modname, qname, params, rval = _fnspec( fn )
+				kw = fn()
+				if isinstance( kw, Keyword ):
+					self._keywords[kw.name] = kw
+					log.debug( f'registered keyword [orange1]{kw.name}[/orange1] from module [orange1]{modname}[/orange1] with static expression' )
+				else:
+					self._keywords[name] = Keyword( name=name, description=kwargs.get( 'description' ), fn=fn )
+					log.debug( f'registered keyword [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1] with function' )
+
+			except RuntimeError:
+				log.error( f'unable to register keyword from function {fn}' )
+
+	def __setup_normalizers__( self ):
+		for fn, args, kwargs in self._normalizer_fns:
+			try:
+				name, modname, qname, params, rval = _fnspec( fn )
+				if not params and rval == Normalizer:
+					nrm = fn()
+					self._normalizers[nrm.name] = nrm
+					log.debug( f'registered normalizer [orange1]{nrm.name}[/orange1] from module [orange1]{modname}[/orange1]' )
+				else:
+					self._normalizers[name] = Normalizer( name=name, type=kwargs.get( 'type' ), description=kwargs.get( 'description' ), fn=fn )
+					log.debug( f'registered normalizer [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1]' )
+
+			except RuntimeError:
+				log.error( f'unable to register normalizer from function {fn}' )
+
+	def __setup_resource_types__( self ):
+		for fncls, args, kwargs in self._resource_type_cls:
+			try:
+				if isfunction( fncls ):
+					self._resource_types[rt.type] = (rt := fncls())
+				elif isclass( fncls ):
+					self._resource_types[rt.type] = (rt := ResourceType( **kwargs, activity_cls=fncls ) )
+
+				# noinspection PyUnboundLocalVariable
+				log.debug( f'registered resource type [orange1]{_qname( fncls )}[/orange1] for type [orange1]{rt.type}[/orange1]' )
+
+			except (RuntimeError, UnboundLocalError):
+				log.error( f'unable to register resource type from {fncls}' )
+
+	def __setup_importers__( self ):
+		for fncls, args, kwargs in self._importer_cls:
+			try:
+				i = fncls()
+				t = i.TYPE or kwargs.get( 'type' )
+				self._importers[t] = i
+
+				log.debug( f'registered importer [orange1]{_qname( fncls )}[/orange1] for type [orange1]{t}[/orange1]' )
+
+			except RuntimeError:
+				log.error( f'unable to register importer from {fncls}' )
+
+	def __setup_virtual_fields__( self ):
+		for fncls, args, kwargs in self._virtual_fields_fns:
+			try:
+				if isfunction( fncls ):
+					params, rval = _params( fncls )
+					if not params and rval in [VirtualField, 'VirtualField']:
+						self._virtual_fields[vf.name] = (vf := fncls())
+					else:
+						self._virtual_fields[vf.name] = (vf := VirtualField( **{'name': _lname( fncls ), 'factory': fncls} | kwargs ))
+
+					log.debug( f'registered virtual field [orange1]{vf.name}[/orange1] from module [orange1]{_qname( fncls )}[/orange1]' )
+
+			except (RuntimeError, UnboundLocalError):
+				log.error( f'unable to register virtual field from {fncls}' )
+
+		# announce virtuals fields to activity class
+		for k, vf in self._virtual_fields.__fields__.items():
+			Activity.VF().set_field( k, vf )
+
+	def __setup_setup_functions__( self ):
+		for fn, args, kwargs in self._setup_fns:
+			self._setups[_fnspec( fn )[1]] = fn
+
+	def __setup_services__( self, *args, **kwargs ):
+		self.setup_services( *args, **kwargs )
+
+	def setup_services( self, *args, **kwargs ):
+		ctx: ApplicationContext = kwargs.get( 'ctx' )
+		# library: str = kwargs.get( 'library' )
+
+		for fncls, args, kwargs in self._service_cls:
+			try:
+				name, modname, qname, params, rval = _fnspec( fncls )
+
+				if ctx:
+					base_path = Path( ctx.db_dir_path, name )
+					overlay_path = Path( ctx.db_overlay_path, name )
+					cfg, state = ctx.plugin_config_state( name, as_dict=True )
+
+					self._services[s.name] = (s := fncls( ctx=ctx, **cfg, **state, base_path=base_path, overlay_path=overlay_path ))
+					# register service name as keyword
+					self._keywords[s.name] = Keyword( s.name, f'classifier "{s.name}" is contained in classifiers list', f'"{s.name}" in classifiers' )
+
+					log.debug( f'registered service [orange1]{s.name}[/orange1] from module [orange1]{modname}[/orange1]' )
+
+				else:
+					# todo: improve this later, see github #156
+					log.debug( f'skipped registering service module [orange1]{name}[/orange1] from module [orange1]{modname}[/orange1] because of missing context' )
+
+				# elif library: # this is mainly for test cases
+				# 	base_path = Path( library, name )
+				# 	overlay_path = Path( base_path.parent, 'overlay', name )
+				# 	cfg, state = {}, {}
+				# else: # fallback, also for test cases
+				# 	base_path = Path( user_config_dir( 'tracs' ), 'db', name )
+				# 	overlay_path = Path( base_path.parent.parent, 'overlay', name )
+				# 	cfg, state = {}, {}
+
+
+
+			except RuntimeError:
+				log.error( f'unable to setup service from {fncls}' )
+
+	def setup( self, *args, **kwargs ):
+		if kwargs.get( 'nosetup' ) is True:
+			return
+
+		self.__setup_keywords__()
+		self.__setup_normalizers__()
+		self.__setup_resource_types__()
+		self.__setup_importers__()
+		self.__setup_virtual_fields__()
+		self.__setup_setup_functions__()
+
+		self.__setup_services__( *args, **kwargs )
+
+	# properties
+
+	@property
+	def importers( self ) -> Mapping[str, ResourceHandler]:
+		return MappingProxyType( self._importers )
+
+	@property
+	def keywords( self ) -> Mapping[str, Keyword]:
+		return MappingProxyType( self._keywords )
+
+	@property
+	def normalizers( self ) -> Mapping[str, Normalizer]:
+		return MappingProxyType( self._normalizers )
+
+	@property
+	def services( self ) -> Mapping[str, Service]:
+		return MappingProxyType( self._services )
+
+	@property
+	def setups( self ) -> Mapping[str, Callable]:
+		return MappingProxyType( self._setups )
+
+	@property
+	def resource_types( self ) -> Mapping[str, ResourceType]:
+		return MappingProxyType( self._resource_types )
+
+	@property
+	def virtual_fields( self ) -> Mapping[str, VirtualField]:
+		return MappingProxyType( self._virtual_fields.__fields__ )
+
+	# services
+
+	@classmethod
+	def service_names( cls ) -> List[str]:
+		return sorted( list( Registry.instance().services.keys() ) )
+
+	@classmethod
+	def service_for( cls, uid: Union[str, UID] ) -> Optional[Service]:
+		uid = UID( uid ) if type( uid ) is str else uid
+		return Registry.instance().services.get( uid.classifier )
 
 	# resource types
 
 	@classmethod
 	def register_resource_type( cls, resource_type ) -> None:
-		Registry.resource_types[resource_type.type] = resource_type
+		Registry.instance()._resource_types[resource_type.type] = resource_type
 
 	# noinspection PyUnresolvedReferences
 	@classmethod
 	def resource_type_for_extension( cls, extension: str ) -> Optional[ResourceType]:
-		return next( (rt for rt in Registry.resource_types.values() if rt.extension() == extension), None )
+		return next( (rt for rt in Registry.instance().resource_types.values() if rt.extension() == extension), None )
 
 	@classmethod
 	def resource_type_for_suffix( cls, suffix: str ) -> Optional[str]:
 		# first round: prefer suffix in special part of type: 'gpx' matches 'application/xml+gpx'
-		for key in Registry.importers.keys():
+		for key in Registry.instance().importers.keys():
 			if m := match( f'^(\w+)/(\w+)\+{suffix}$', key ):
 				return key
 
 		# second round: suffix after slash: 'gpx' matches 'application/gpx'
-		for key in Registry.importers.keys():
+		for key in Registry.instance().importers.keys():
 			if m := match( f'^(\w+)/{suffix}(\+([\w-]+))?$', key ):
 				return key
 
 		return None
 
-	# rules and normalizing
-
-	@classmethod
-	def register_keywords( cls, *keywords: Union[Keyword, List[Keyword]] ):
-		for kw in unchain( *keywords ):
-			cls.rule_keywords[kw.name] = kw
-			cls.notify( EventTypes.keyword_registered, field=kw )
-		log.debug( f'registered keywords {[kw.name for kw in unchain( *keywords )]}' )
-
-	@classmethod
-	def register_normalizers( cls, *normalizers: Union[Normalizer, List[Normalizer]] ) -> None:
-		for n in unchain( *normalizers ):
-			cls.rule_normalizers[n.name] = n
-			cls.notify( EventTypes.rule_normalizer_registered, field=n )
-		log.debug( f'registered rule normalizers {[n.name for n in unchain( *normalizers )]}' )
+	# keywords and normalizers
 
 	@classmethod
 	def rule_normalizer_type( cls, name: str ) -> Any:
-		return n.type if ( n := cls.rule_normalizers.get( name ) ) else Activity.field_type( name )
+		return n.type if ( n := cls.instance().normalizers.get( name ) ) else Activity.field_type( name )
 
 	# field resolving
-
-	@classmethod
-	def register_virtual_fields( cls, *virtual_fields: Union[VirtualField, List[VirtualField]] ) -> None:
-		for vf in unchain( *virtual_fields ):
-			cls.virtual_fields[vf.name] = vf
-			cls.notify( EventTypes.virtual_field_registered, field=vf )
-		log.debug( f'registered virtual fields {[vf.name for vf in unchain( *virtual_fields )]}' )
 
 	@classmethod
 	def activity_field( cls, name: str ) -> Optional[Attribute]:
 		if f := next( (f for f in fields( Activity ) if f.name == name), None ):
 			return f
 		else:
-			return cls.virtual_fields.get( name )
+			return cls.instance().virtual_fields.get( name )
 
 	# event handling
 
 	@classmethod
 	def notify( cls, event_type: EventTypes, *args, **kwargs ) -> None:
-		for fn in Registry.event_listeners.get( event_type, [] ):
+		for fn in Registry.instance()._listeners.get( event_type, [] ):
 			fn( *args, **kwargs )
 
 	@classmethod
 	def register_listener( cls, event_type: EventTypes, fn: Callable ) -> None:
-		if not event_type in Registry.event_listeners.keys():
-			Registry.event_listeners[event_type] = []
-		Registry.event_listeners.get( event_type ).append( fn )
-
-	# handlers
-
-	@classmethod
-	def handler_for( cls, type: str ) -> Optional[Handler]:
-		handler_list = Registry.handlers.get( type ) or []
-		return handler_list[0] if len( handler_list ) > 0 else None
-
-	@classmethod
-	def handlers_for( cls, type: str ) -> List[Handler]:
-		return Registry.handlers.get( type ) or []
-
-	@classmethod
-	def register_handler( cls, handler: Handler, type: str ) -> None:
-		handler_list = Registry.handlers.get( type ) or []
-		if handler not in handler_list:
-			handler_list.append( handler )
-			Registry.handlers[type] = handler_list
-			log.debug( f'registered handler {handler.__class__} for type {type}' )
+		if not event_type in Registry.instance()._listeners.keys():
+			Registry.instance()._listeners[event_type] = []
+		Registry.instance()._listeners.get( event_type ).append( fn )
 
 	# importers
 
 	@classmethod
 	def importer_for( cls, type: str ) -> Optional[Importer]:
-		return next( iter( Registry.importers.get( type, [] ) ), None )
+		return Registry.instance().importers.get( type )
 
 	@classmethod
 	def importers_for( cls, type: str ) -> List[Importer]:
-		return Registry.importers.get( type, [] )
+		return Registry.instance().importers.get( type, [] )
 
 	@classmethod
 	def importers_for_suffix( cls, suffix: str ) -> List[Importer]:
 		importers = []
-		for key, value in Registry.importers.items():
+		for key, value in Registry.instance().importers.items():
 			if m := match( f'^(\w+)/{suffix}(\+([\w-]+))?$', key ) or match( f'^(\w+)/(\w+)\+{suffix}$', key ):
 				# g1, g2, g3 = m.groups()
 				if '+' in key:
@@ -183,268 +315,76 @@ class Registry:
 					importers.extend( value )
 		return importers
 
-	@classmethod
-	def register_importer( cls, importer: Importer, type: str ):
-		if not type:
-			raise ValueError( f'unable to register {importer}: missing type' )
+def _lname( fncls: Union[Callable, Type] ) -> str:
+	return fncls.__name__.lower()
 
-		importer_list = Registry.importers.get( type ) or []
-		if importer not in importer_list:
-			importer_list.append( importer )
-			Registry.importers[type] = importer_list
-			log.debug( f'registered importer {importer.__class__} for type {type}' )
+def _qname( fncls: Union[Callable, Type] ) -> str:
+	return f'{fncls.__module__}.{fncls.__name__}'
 
-	@classmethod
-	def register_functions( cls, functions: Dict[Union[str, Tuple[str, str]], Callable], dictionary: Dict ) -> None:
-		for item_key, item_value in functions.items():
-			dictionary[item_key] = item_value
+def _params( fncls: Union[Callable, Type] ) -> Tuple[Mapping, Any]:
+	return getsignature( fncls ).parameters, next( (m[1].get( 'return' ) for m in getmembers( fncls ) if m[0] == '__annotations__'), None )
 
-	@classmethod
-	def register_function( cls, key: str or Tuple[str, str], fn: Callable, dictionary: Mapping ) -> Callable:
-		if not key or not fn:
-			log.warning( 'unable to register function with an empty key and/or function' )
-		else:
-			if type( key ) is tuple and key[0] is None: # allow (None, 'field') as key and treat it as 'field'
-				key = key[1]
-			dictionary[key] = fn
-
-		return fn
-
-	@classmethod
-	def unregister_function( cls, key: str or Tuple[str, str], dictionary: Dict ) -> None:
-		del dictionary[key]
-
-	@classmethod
-	def function_for( cls, key: str or Tuple[str, str], dictionary: Mapping ) -> Optional[Callable]:
-		return dictionary.get( key )
-
-	@classmethod
-	def functions_for( cls, key: Optional[str], dictionary: Mapping ) -> Dict[str, Callable]:
-		rval = {}
-		for item_key, item_fn in dictionary.items():
-			if key and type( item_key ) is tuple and key == item_key[0]:
-				rval[item_key[1]] = item_fn
-			elif not key and type( item_key ) is str:
-				rval[item_key] = item_fn
-		return rval
-
-# helpers to access registry information
-
-def service_names() -> List[str]:
-	return sorted( list( Registry.services.keys() ) )
-
-def service_for( uid: Union[str, UID] ) -> Optional[Service]:
-	uid = UID( uid ) if type( uid ) is str else uid
-	return Registry.services.get( uid.classifier )
-
-# decorators
-
-def _spec( func: Callable ) -> Tuple[str, str]:
-	"""
-	Helper for examining a provided function. Returns the module name and the name of the function as a tuple.
-	The module only contains the name of the module alone, not the fully qualified name.
-
-	:param func: function to be examined
-	:return: module + name as a tuple
-	"""
-	name = None
-	module = None
-	#members = getmembers( func )
-	for k, v in getmembers( func ):
-		if k == '__name__':
-			name = v
-		elif k == '__module__':
-			module = v.rsplit( '.', 1 )[1]
-
-	#print( getfullargspec( fn ) )
-
-	return module, name
-
-def _fnspec( func: Callable ) -> Tuple[str, str, str, Any]:
+def _fnspec( fncls: Union[Callable, Type] ) -> Tuple[str, str, str, Mapping, Any]:
 	"""
 	Helper for examining a provided function. Returns a tuple containing
 	(function name, module name, qualified name, return value type)
 
-	:param func: function to be examined
+	:param fncls: function to be examined
 	:return: tuple
 	"""
-	members = getmembers( func )
-	name = next( m[1] for m in members if m[0] == '__name__' )
-	module = next( m[1] for m in members if m[0] == '__module__' )
-	qname = next( m[1] for m in members if m[0] == '__qualname__' )
-	return_type = next( m[1].get( 'return' ) for m in members if m[0] == '__annotations__' )
-	return name, module, qname, return_type
+	members, signature = getmembers( fncls ), getsignature( fncls )
+	name = fncls.__name__
+	module = fncls.__module__
+	qname = f'{fncls.__module__}.{fncls.__name__}'
+	params = signature.parameters
+	rval = next( (m[1].get( 'return' ) for m in members if m[0] == '__annotations__'), None )
+	return name, module, qname, params, rval
 
-def _register( args, kwargs, dictionary, callable_fn = False ) -> Union[Type, Callable]:
-	"""
-	Helper for registering mappings returned from the provided decorated function to the provided dictionary.
+# decorators
 
-	:param args:
-	:param kwargs:
-	:param dictionary:
-	:param callable_fn:
-	:return: returns the provided callable (as convenience for callers)
-	"""
-	def decorated_fn( fn ):
-		dec_ns, dec_name = _spec( fn )
-		if callable_fn:
-			dec_call_result = fn()
-			for dec_fn_name, dec_fn_value in dec_call_result.items():
-				if kwargs['classifier']:
-					Registry.register_function( (kwargs['classifier'], dec_fn_name), dec_fn_value, dictionary )
-				else:
-					Registry.register_function( dec_fn_name, dec_fn_value, dictionary )
+def _register( *args, **kwargs ) -> Callable:
+	_fncls_list = kwargs.pop( '__fncls_list__' )
+	_decorator_name = kwargs.pop( '__decorator_name__' )
+
+	def _inner( fncls ):
+		# def _wrapper( *wrapper_args, **wrapper_kwargs ):
+		#	fn( *wrapper_args, **wrapper_kwargs )
+
+		if fncls is not None:
+			_fncls_list.append( (fncls, args, kwargs) )
+			log.debug( f'registered {_decorator_name} function/class from {fncls} in module {_fnspec( fncls )[1]}' )
+			return fncls
 		else:
-			if kwargs['classifier']:
-				Registry.register_function( (kwargs['classifier'], dec_name), fn, dictionary )
-			else:
-				Registry.register_function( dec_name, fn, dictionary )
+			return args[0]()
 
-		return fn
+	if args and not kwargs and callable( args[0] ):
+		_fncls_list.append( (args[0], (), {}) )
+		log.debug( f'registered {_decorator_name} function from {args[0]} in module {_fnspec( args[0] )[1]}' )
 
-	# call via standard decorator, no namespace argument is provided, namespace is taken from module containing the function
-	if len( args ) == 1:
-		ns, name = _spec( args[0] )
-		if callable_fn:
-			call_result = args[0]()
-			for fn_name, fn_value in call_result.items():
-				Registry.register_function( (ns, fn_name), fn_value, dictionary )
-		else:
-			Registry.register_function( (ns, name), args[0], dictionary )
-		return args[0]
-	# call via decorator with arguments, namespace argument is provided
-	elif len( args ) == 0 and 'classifier' in kwargs:
-		return decorated_fn
-	else:
-		raise RuntimeError( 'unable to register function -> this needs to be reported' )
+		if isclass( args[0] ):
+			return args[0]
 
-def _register_function( *args, **kwargs ) -> Callable:
-	"""
-	Used for registering a function in a provided dictionary with a provided name. Valid examples:
-	@decorator, @decorator( 'name' ) or @decorator( name = 'name' )
-	"""
-	_decorator_name = kwargs.get( '_decorator_name', 'None' ) # name of the decorator, only used for logging
-	_mapping = kwargs.get( '_mapping' ) # mapping to use for registering the function
-	_parameter = None
+	return _inner
 
-	def _inner( *inner_args ):
-		inner_module, inner_name = _spec( inner_args[0] )
-		_mapping[_parameter] = inner_args[0]
-		log.debug( f'registered {_decorator_name} function from {inner_module}#{inner_name} with parameter {_parameter}' )
-		return _parameter
-
-	if len( args ) == 1 and isfunction( args[0] ): # case: decorated function without arguments
-		module, name = _spec( args[0] )
-		_mapping[name] = args[0]
-		log.debug( f'registered {_decorator_name} function from {module}#{name}' )
-		return args[0]
-	elif len( args ) == 1 and type( args[0] ) is str: # case: decorated function with single parameter, args[0] contains the sole parameter
-		_parameter = args[0]
-		return _inner
-	elif 'name' in kwargs:
-		_parameter = kwargs.get( 'name' )
-		return _inner
-
-# hm, works but doesn't feel nice, especially for using global helper variables
-def virtualfield( *args, **kwargs ):
-	global _ARGS, _KWARGS
-	_ARGS, _KWARGS = args, kwargs
-
-	def _inner( *inner_args ):
-		global _KWARGS
-		inner_name, inner_mod, inner_qname, inner_rtype = _fnspec( inner_args[0] )
-		Registry.register_virtual_fields( VirtualField( **{ 'name': inner_name, 'type': inner_rtype, 'factory': inner_args[0], **_KWARGS } ) )
-		return inner_args[0]
-
-	if len( args ) == 1 and isfunction( args[0] ): # case: decorated function without arguments
-		name, mod, qname, rtype = _fnspec( args[0] )
-		Registry.register_virtual_fields( VirtualField( name=name, type=rtype, factory=args[0] ) )
-		return args[0]
-	elif len( args ) == 0 and len( kwargs ) > 0:
-		_ARGS, _KWARGS = args, kwargs
-		return _inner
-
-# maybe we should go this way for decorators ... lots of copy and paste, but cleaner code ...
-# maybe we should go this way for decorators ... lots of copy and paste, but cleaner code ...
+# actual real-world decorators below
 
 def keyword( *args, **kwargs ):
-	def _inner( *inner_args ):
-		kw = Keyword( name=_fnspec( inner_args[0] )[0], description=kwargs.get( 'description' ), fn=inner_args[0] )
-		Registry.register_keywords( kw )
-		return inner_args[0]
-
-	if args and isfunction( args[0] ): # case: decorated function without arguments
-		Registry.register_keywords( Keyword( name=_fnspec( args[0] )[0], fn=args[0] ) )
-		return args[0]
-	elif kwargs and 'description' in kwargs:
-		return _inner
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._keyword_fns, __decorator_name__='keyword' )
 
 def normalizer( *args, **kwargs ):
-	def _inner( *inner_args ):
-		Registry.register_normalizers( Normalizer( name=_fnspec( inner_args[0] )[0], type=kwargs.get( 'type' ), description=kwargs.get( 'description' ), fn=inner_args[0] ) )
-		return inner_args[0]
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._normalizer_fns, __decorator_name__='normalizer' )
 
-	if args and isfunction( args[0] ): # case: decorated function without arguments
-		Registry.register_normalizers( Normalizer( name=_fnspec( args[0] )[0], fn=args[0] ) )
-		return args[0]
-	elif kwargs and 'description' in kwargs:
-		return _inner
-
-def resourcetype( *args, **kwargs ):
-	def reg_resource_type( cls ):
-		Registry.register_resource_type( ResourceType( **{'activity_cls': cls} | kwargs ) )
-		return cls
-	return reg_resource_type if len( args ) == 0 else args[0]
-
-def service( cls: Type ):
-	if isclass( cls ):
-		module, name = _spec( cls )
-		Registry.service_classes[module] = cls
-		log.debug( f'registered service class {cls}' )
-		return cls
-	else:
-		raise RuntimeError( 'only classes can be used with the @service decorator' )
-
-def setup( fn: Callable ):
-	if isfunction( fn ):
-		module, name = _spec( fn )
-		Registry.setup_functions[module] = fn
-		log.debug( f'registered setup function {module}#{name}' )
-		return fn
-	else:
-		raise RuntimeError( 'only functions can be used with the @setup decorator' )
+def virtualfield( *args, **kwargs ):
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._virtual_fields_fns, __decorator_name__='virtualfield' )
 
 def importer( *args, **kwargs ):
-	def importer_cls( cls ):
-		Registry.register_importer( cls(), cls.TYPE or kwargs.get( 'type' ) )
-		return cls
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._importer_cls, __decorator_name__='importer' )
 
-	# return importer_cls if (not args and kwargs) else importer_cls( args[0] )
-	if not args and kwargs:
-		return importer_cls
-	elif args:
-		return importer_cls( args[0] )
-	else:
-		raise RuntimeError( f'error in decorator @importer: {args}, {kwargs} (this should not happen!)' ) # should not happen
+def resourcetype( *args, **kwargs ):
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._resource_type_cls, __decorator_name__='resourcetype' )
 
-def load( plugin_pkgs: List[str] = None, disabled: List[str] = None, ctx: ApplicationContext = None ):
-	plugin_pkgs = plugin_pkgs if plugin_pkgs else [NS_PLUGINS]
-	disabled = disabled if disabled else []
+def service( *args, **kwargs ):
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._service_cls, __decorator_name__='service' )
 
-	for plugin_pkg in plugin_pkgs:
-		plugins_module = import_module( plugin_pkg )
-		for finder, name, ispkg in walk_packages( plugins_module.__path__ ):
-			try:
-				if not ctx.config['plugins'][name]['enabled'].get() or name in disabled:
-					log.debug( f'skipping import of disabled plugin {name} in package {plugin_pkg}' )
-					continue
-			except NotFoundError:
-				pass
-
-			qname = f'{plugin_pkg}.{name}'
-			try:
-				log.debug( f'importing plugin {qname}' )
-				plugin = import_module( qname )
-				Registry.notify( EventTypes.plugin_loaded, plugin )
-			except ModuleNotFoundError:
-				log.error( f'error imporing module {qname}', exc_info=True )
+def setup( *args, **kwargs ):
+	return _register( *args, **kwargs, __fncls_list__ = Registry.instance()._setup_fns, __decorator_name__='setup' )

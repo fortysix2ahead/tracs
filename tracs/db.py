@@ -24,7 +24,7 @@ from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
 from tracs.fsio import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
-from tracs.registry import Registry, service_names
+from tracs.registry import Registry
 from tracs.resources import Resource, Resources, ResourceType
 from tracs.rules import parse_rules
 
@@ -303,7 +303,7 @@ class ActivityDb:
 		"""
 		Returns all resource of type summary.
 		"""
-		return [r for r in self.resources if (rt := cast( ResourceType, Registry.resource_types.get( r.type ) )) and rt.summary]
+		return [r for r in self.resources if (rt := cast( ResourceType, Registry.instance().resource_types.get( r.type ) )) and rt.summary]
 
 	@property
 	def uids( self, classifier: str = None ) -> List[str]:
@@ -443,19 +443,19 @@ class ActivityDb:
 		Finds all recording resources, restricts itself to the provided resource list if given.
 		"""
 		resources = self.resources if resources is None else resources
-		return [r for r in resources if (rt := Registry.resource_types.get( r.type )) and rt.recording ]
+		return [r for r in resources if (rt := Registry.instance().resource_types.get( r.type )) and rt.recording ]
 
 	def find_summaries( self, uid: str ) -> List[Resource]:
 		"""
 		Finds all summary resources having the provided uid.
 		"""
-		return [r for r in self.find_resources( uid ) if (rt := Registry.resource_types.get( r.type )) and rt.summary ]
+		return [r for r in self.find_resources( uid ) if (rt := Registry.instance().resource_types.get( r.type )) and rt.summary ]
 
 	def find_all_summaries( self, uids: List[str] ) -> List[Resource]:
 		"""
 		Finds all summary resources having an uid contained in the provided list.
 		"""
-		return [r for r in self.find_all_resources( uids ) if (rt := Registry.resource_types.get( r.type ) ) and rt.summary]
+		return [r for r in self.find_all_resources( uids ) if (rt := Registry.instance().resource_types.get( r.type ) ) and rt.summary]
 
 	def find_all_resources_for( self, activities: Union[Activity, List[Activity]] ) -> List[Resource]:
 		activities = [activities] if type( activities ) is Activity else activities
@@ -483,7 +483,7 @@ def restore_db( ctx: ApplicationContext ) -> None:
 def status_db( ctx: ApplicationContext ) -> None:
 	table = RichTable( box=box.MINIMAL, show_header=False, show_footer=False )
 	table.add_row( 'activities', pp( len( ctx.db.activity_map ) ) )
-	for s in service_names():
+	for s in Registry.instance().service_names():
 		table.add_row( f'activities ({s})', pp( len( list( ctx.db.find_by_classifier( s ) ) ) ) )
 
 	table.add_row( 'resources', pp( len( ctx.db.resource_map ) ) )

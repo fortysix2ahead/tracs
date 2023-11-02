@@ -141,7 +141,7 @@ def test_resource():
 	assert r.as_text() == some_string
 	assert r.text == some_string
 
-def test_fields():
+def test_fields( registry ):
 	fields = Activity.fields()
 	assert next( f for f in fields if f.name == 'name' )
 	field_names = Activity.field_names()
@@ -158,7 +158,7 @@ def test_fields():
 	assert Activity.field_type( 'weekday' ) == int
 	assert Activity.field_type( 'noexist' ) is None
 
-def test_virtual_activity_fields():
+def test_virtual_activity_fields( registry ):
 
 	@virtualfield
 	def lower_name( a: Activity ) -> str:
@@ -175,6 +175,9 @@ def test_virtual_activity_fields():
 	@virtualfield( name='cap_name', description='capitalized activity name', type=str, display_name='Cap Name' )
 	def capitalized_name( a: Activity ):
 		return a.name.capitalize()
+
+	# need to re-setup virtual fields, otherwise the fields will not be registered in Activity
+	registry.__setup_virtual_fields__()
 
 	assert 'lower_name' in Activity.__vf__.__fields__.keys()
 	assert 'upper_name' in Activity.__vf__.__fields__.keys()
@@ -209,13 +212,16 @@ def test_virtual_activity_fields():
 		assert a.getattr( 'does_not_exist' ) is None
 
 # don't allow overriding fields
-def test_virtual_activity_field_override():
+def test_virtual_activity_field_override( registry ):
 
 	a = Activity( id = 100, name='Run', type=ActivityTypes.run )
 
 	@virtualfield
 	def name( a: Activity ) -> str:
 		return 'override attempt for run'
+
+	# re-setup virtual fields
+	registry.__setup_virtual_fields__()
 
 	assert 'name' in Activity.__vf__.__fields__
 	assert a.name == 'Run' and a.getattr( 'name' ) == 'Run'

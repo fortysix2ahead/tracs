@@ -1,7 +1,8 @@
-
+from importlib import import_module
 from importlib.resources import path as resource_path
 from logging import getLogger
 from pathlib import Path
+from pkgutil import iter_modules
 from typing import Any, Dict, List
 from typing import Optional
 from typing import Tuple
@@ -115,6 +116,16 @@ def ctx( request ) -> Optional[ApplicationContext]:
 		log.error( 'unable to run fixture context', exc_info=True )
 
 @fixture
+def registry( request ) -> Registry:
+	# load all plugins first
+	import tracs.plugins
+	for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
+		import_module( f'tracs.plugins.{name}' )
+		log.debug( f'imported plugin {name} from {finder.path}' )
+
+	yield Registry.instance()
+
+@fixture
 def fs( request ) -> FS:
 	cfg_name = marker( request, 'context', 'config', None )
 	lib_name = marker( request, 'context', 'lib', None )
@@ -203,8 +214,8 @@ def service( request, ctx ) -> Optional[Service]:
 		service_class_name = service_class.__name__.lower()
 		base_path = Path( ctx.db_dir, service_class_name )
 
-		Registry.services[service_class_name] = service_class( ctx=ctx, **{ 'base_path': base_path, **marker.kwargs} )
-		return Registry.services[service_class_name]
+		Registry.instance()._services[service_class_name] = service_class( ctx=ctx, **{ 'base_path': base_path, **marker.kwargs} )
+		return Registry.instance().services[service_class_name]
 
 	except ValueError:
 		log.error( 'unable to run fixture service', exc_info=True )
@@ -269,4 +280,4 @@ def strava_server() -> Bottle:
 def keywords() -> List[str]:
 	# load keywords plugin
 	from tracs.plugins.rule_extensions import TIME_FRAMES
-	return list( Registry.virtual_fields.keys() )
+	return list( Registry.instance().virtual_fields.keys() )

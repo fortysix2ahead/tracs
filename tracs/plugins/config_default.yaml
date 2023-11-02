@@ -6,9 +6,6 @@ plugins:
     username:
     password:
 
-  empty:
-    enabled: false
-
   icons:
     enabled: false
 

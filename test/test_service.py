@@ -60,7 +60,7 @@ def test_fetch( service ):
 @mark.context( config='empty', library='empty', cleanup=False )
 @mark.service( cls=Mock )
 def test_download( service ):
-	Registry.resource_types[MOCK_TYPE] = ResourceType( type=MOCK_TYPE, activity_cls=MockActivity ) # register mock type manually
+	Registry.instance().resource_types[MOCK_TYPE] = ResourceType( type=MOCK_TYPE, activity_cls=MockActivity ) # register mock type manually
 
 	service.import_activities( skip_download=False, skip_link=True )
 

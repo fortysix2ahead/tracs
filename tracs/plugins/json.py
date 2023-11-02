@@ -7,15 +7,16 @@ from cattrs.preconf.orjson import make_converter
 from orjson import dumps as save_json, loads as load_json, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 
 from tracs.handlers import ResourceHandler
-from tracs.registry import importer, Registry
+from tracs.registry import importer, Registry, resourcetype
 from tracs.resources import ResourceType
 
 log = getLogger( __name__ )
 
 JSON_TYPE = 'application/json'
 
-# register GPX type
-Registry.register_resource_type( ResourceType( type=JSON_TYPE, activity_cls=dict ) )
+@resourcetype
+def json_resource_type() -> ResourceType:
+	return ResourceType( type=JSON_TYPE, activity_cls=dict )
 
 @importer( type=JSON_TYPE )
 class JSONHandler( ResourceHandler ):

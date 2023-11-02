@@ -30,7 +30,7 @@ class ResourceType:
 	suffix: str = field( default=None )
 	vendor: str = field( default=None )
 
-	activity_cls: Type = field( default=None )
+	activity_cls: Type = field( default=None ) # todo: field is probably obsolete
 	name: str = field( default=None )
 
 	summary: bool = field( default=False )

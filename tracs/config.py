@@ -8,7 +8,7 @@ from logging import getLogger
 from os.path import join as os_path_join
 from pathlib import Path
 from pkgutil import extend_path, iter_modules
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from attrs import define, field
 from confuse import ConfigReadError, ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, NotFoundError, YamlSource
@@ -165,7 +165,7 @@ class ApplicationContext:
 			user_configuration = fs.getsyspath( basename( user_configuration ) )
 			self.configuration = dirname( user_configuration )
 			self.config.set_file( user_configuration, base_for_paths=True )
-		except (AttributeError, KeyError):
+		except (AttributeError, KeyError, TypeError):
 			# self.configuration = self.config.config_dir() # this returns ~/.config/tracs on Mac OS X -> wrong
 			self.configuration = user_config_dir( APPNAME )
 		except ConfigReadError:
@@ -229,7 +229,7 @@ class ApplicationContext:
 		import tracs.plugins
 
 		try:
-			pluginpath = self.config['pluginpath'].get().split( ' ' )
+			pluginpath = (self.config['pluginpath'].get() or '').split( ' ' )
 			for pp in pluginpath:
 				plugin_path = OSFS( root_path=pp, expand_vars=True ).getsyspath( '/tracs/plugins' )
 				tracs.plugins.__path__ = extend_path( [plugin_path], 'tracs.plugins' )
@@ -378,6 +378,22 @@ class ApplicationContext:
 			self.apptime = datetime.now()
 
 	# plugin configuration helpers
+
+	def plugin_config_state( self, name, as_dict: bool = False ) -> Tuple:
+		name = name.lower()
+		cfg, state = self.config['plugins'][name], self.state['plugins'][name]
+		if as_dict:
+			try:
+				cfg = cfg.get()
+			except NotFoundError:
+				cfg = dict()
+
+			try:
+				state = state.get()
+			except NotFoundError:
+				cfg = dict()
+
+		return cfg, state
 
 	def plugin_config( self, plugin_name ) -> Dict:
 		if not self.config['plugins'][plugin_name].get():

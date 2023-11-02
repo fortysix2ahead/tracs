@@ -21,15 +21,27 @@ def floor_ceil_str( a1: Arrow, a2: Optional[Arrow] = None, frame: TIME_FRAMES = 
 	a2 = a1 if a2 is None else a2
 	return tuple( f'd"{t.isoformat()}"' for t in floor_ceil( a1, a2, frame ) )
 
-# noinspection PyTypeChecker
-Registry.register_keywords(
-	# time related keywords
-	Keyword( 'morning', 'time between 6:00 and 11:00', 'hour >= 6 and hour < 11' ),
-	Keyword( 'noon', 'time between 11:00 and 13:00', 'hour >= 11 and hour < 13' ),
-	Keyword( 'afternoon', 'time between 13:00 and 18:00', 'hour >= 13 and hour < 18' ),
-	Keyword( 'evening', 'time between 18:00 and 22:00', 'hour >= 18 and hour < 22' ),
-	Keyword( 'night', 'time between 22:00 and 6:00', 'hour >= 22 or hour < 6' ),
-)
+# static keywords for periods of day
+
+@keyword
+def morning():
+	return Keyword( 'morning', 'time between 6:00 and 11:00', 'hour >= 6 and hour < 11' )
+
+@keyword
+def noon():
+	return Keyword( 'noon', 'time between 11:00 and 13:00', 'hour >= 11 and hour < 13' )
+
+@keyword
+def afternoon():
+	return Keyword( 'afternoon', 'time between 13:00 and 18:00', 'hour >= 13 and hour < 18' )
+
+@keyword
+def evening():
+	return Keyword( 'evening', 'time between 18:00 and 22:00', 'hour >= 18 and hour < 22' )
+
+@keyword
+def night():
+	return Keyword( 'night', 'time between 22:00 and 6:00', 'hour >= 22 or hour < 6' )
 
 # keywords for 'within last X days'
 
@@ -106,12 +118,22 @@ def lastyear():
 # normalizers transform a field/value pair into a valid normalized expression
 # this enables operations like 'list classifier:polar' where ':' does not evaluate to '=='
 # the normalizer is called like function( left, operator, right, normalized_rule )
-Registry.register_normalizers(
-	Normalizer( 'classifier', str, 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda l, o, r, nr: f'"{r}" in classifiers' ),
-	Normalizer( 'service', str, 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' ),
-	Normalizer( 'source', str, 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' ),
-	Normalizer( 'type', str, 'normalizer to support filtering for type names', lambda l, o, r, nr: f'type.name == "{r.lower()}"' ),
-)
+
+@normalizer
+def classifier() -> Normalizer:
+	return Normalizer( 'classifier', str, 'tests if a provided classifier is contained in the list of classifiers of an activity', lambda l, o, r, nr: f'"{r}" in classifiers' )
+
+@normalizer
+def service() -> Normalizer:
+	return Normalizer( 'service', str, 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' )
+
+@normalizer
+def source() -> Normalizer:
+	return Normalizer( 'source', str, 'alias for classifier', lambda l, o, r, nr: f'"{r}" in classifiers' )
+
+@normalizer
+def type() -> Normalizer:
+	return Normalizer( 'type', str, 'normalizer to support filtering for type names', lambda l, o, r, nr: f'type.name == "{r.lower()}"' )
 
 @normalizer( type=int, description='treat ids from 2000 to current year as years rather than ids' )
 def id( left, op, right, rule ) -> str:
@@ -137,29 +159,3 @@ def time( left, op, right, rule ) -> str:
 		return '__time__ >= d"{}" and __time__ <= d"{}"'.format( *parse_time_range( right, as_str=True ) )
 	else:
 		return rule
-
-Registry.register_virtual_fields(
-	VirtualField( 'classifiers', List[str], display_name='Classifiers', description='list of classifiers of an activity',
-	            factory=lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ) ),
-	# date/time fields
-	VirtualField( 'weekday', int, display_name='Weekday', description='day of week at which the activity has taken place (as number)',
-	              factory=lambda a: a.starttime_local.year ),
-	VirtualField( 'hour', int, display_name='Hour of Day', description='hour in which the activity has been started',
-	              factory=lambda a: a.starttime_local.hour ),
-	VirtualField( 'day', int, display_name='Day of Month', description='day on which the activity has taken place',
-	              factory=lambda a: a.starttime_local.day ),
-	VirtualField( 'month', int, display_name='Month', description='month in which the activity has taken place',
-	              factory=lambda a: a.starttime_local.month ),
-	VirtualField( 'year', int, display_name='Year', description='year in which the activity has taken place',
-	              factory=lambda a: a.starttime_local.year ),
-	# date/time helpers
-	VirtualField( 'date', timedelta, display_name='Date', description='Date without date',
-	              factory=lambda a: timedelta( days=a.starttime_local.timetuple().tm_yday ) ),
-	VirtualField( 'time', timedelta, display_name='Time', description='Local time without date',
-	              factory= lambda a: timedelta( hours=a.starttime_local.hour, minutes=a.starttime_local.minute, seconds=a.starttime_local.second ) ),
-	# time helper
-	VirtualField( '__time__', datetime, display_name='__time__', description='local time without a date and tz',
-						# rules does not care about timezones -> that's why we need to return time without tz information
-	              # lambda a: datetime( 1, 1, 1, a.localtime.hour, a.localtime.minute, a.localtime.second, tzinfo=UTC ),
-	              factory=lambda a: datetime( 1, 1, 1, a.starttime_local.hour, a.starttime_local.minute, a.starttime_local.second ) ),
-)

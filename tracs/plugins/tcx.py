@@ -11,7 +11,7 @@ from lxml.objectify import Element, fromstring, ObjectifiedElement, ObjectPath, 
 
 from tracs.activity import Activity as TracsActivity
 from tracs.plugins.xml import XMLHandler
-from ..registry import importer, Registry
+from ..registry import importer, Registry, resourcetype
 from ..resources import Resource, ResourceType
 from ..utils import fromisoformat
 
@@ -311,7 +311,9 @@ class TrainingCenterDatabase:
 			author=Author.from_xml( root ),
 		)
 
-Registry.register_resource_type( ResourceType( type=TCX_TYPE, activity_cls=Activity, recording=True ) )
+@resourcetype
+def tcx_resource_type() -> ResourceType:
+	return ResourceType( type=TCX_TYPE, activity_cls=Activity, recording=True )
 
 @importer
 class TCXImporter( XMLHandler ):

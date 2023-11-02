@@ -8,15 +8,16 @@ from gpxpy.gpx import GPX
 
 from tracs.activity import Activity
 from tracs.handlers import ResourceHandler
-from tracs.registry import importer, Registry
+from tracs.registry import importer, Registry, resourcetype
 from tracs.resources import Resource, ResourceType
 
 log = getLogger( __name__ )
 
 GPX_TYPE = 'application/gpx+xml'
 
-# register GPX type
-Registry.register_resource_type( ResourceType( type=GPX_TYPE, activity_cls=GPX, recording=True ) )
+@resourcetype
+def gpx_resource_type() -> ResourceType:
+	return ResourceType( type=GPX_TYPE, activity_cls=GPX, recording=True )
 
 @importer( type=GPX_TYPE )
 class GPXImporter( ResourceHandler ):

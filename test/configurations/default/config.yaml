@@ -3,6 +3,7 @@ library:
 debug: no
 verbose: no
 force: no
+pluginpath:
 
 db:
   cache_size: 0

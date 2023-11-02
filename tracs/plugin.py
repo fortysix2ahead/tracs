@@ -5,7 +5,6 @@ from confuse import Configuration
 from confuse import NotFoundError
 
 from tracs.config import ApplicationContext
-from tracs.config import KEY_PLUGINS
 
 log = getLogger( __name__ )
 

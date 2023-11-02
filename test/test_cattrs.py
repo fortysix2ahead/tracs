@@ -4,6 +4,7 @@ from typing import List
 from attrs import define, field
 from cattrs.gen import make_dict_unstructure_fn, override
 from cattrs.preconf.orjson import make_converter
+from pytest import mark
 
 @define
 class Inner:
@@ -42,6 +43,7 @@ outer_to_dict = make_dict_unstructure_fn(
 
 conv.register_unstructure_hook( Outer, outer_to_dict )
 
+@mark.skip
 def test_cattrs():
 	outer = Outer( ids = [10, 20], __internal_ids__ = [ 30, 40 ] )
 

@@ -19,7 +19,6 @@ from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.registry import Registry
 from tracs.resources import Resource
-from tracs.core import Keyword
 
 log = getLogger( __name__ )
 
@@ -45,10 +44,6 @@ class Service( Plugin ):
 		for p in getmembers( self.__class__, lambda p: type( p ) is property and p.fset is not None ):
 			if p[0] in kwargs.keys() and not p[0].startswith( '_' ):
 				setattr( self, p[0], kwargs.get( p[0] ) )
-
-		# register service name as rule keyword
-		# noinspection PyTypeChecker
-		Registry.register_keywords( Keyword( self.name, f'classifier "{self.name}" is contained in classifiers list', f'"{self.name}" in classifiers' ) )
 
 		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
 
@@ -110,14 +105,14 @@ class Service( Plugin ):
 		A service with the classifier of the uid has to exist, otherwise None will be returned.
 		"""
 		classifier, local_id = uid.split( ':', 1 )
-		if service := Registry.services.get( classifier ):
+		if service := Registry.instance().services.get( classifier ):
 			return service.path_for_id( local_id, Path( service.name ) )
 		else:
 			return path_for_id( local_id, Path( classifier ) )
 
 	@classmethod
 	def path_for_resource( cls, resource: Resource ) -> Optional[Path]:
-		if service := Registry.services.get( resource.classifier ):
+		if service := Registry.instance().services.get( resource.classifier ):
 			return service.path_for( resource=resource ).resolve()
 		else:
 			return None
@@ -125,7 +120,7 @@ class Service( Plugin ):
 	@classmethod
 	def url_for_uid( cls, uid: str ) -> Optional[str]:
 		classifier, local_id = uid.split( ':', 1 )
-		if service := Registry.services.get( classifier ):
+		if service := Registry.instance().services.get( classifier ):
 			return service.url_for( local_id=local_id )
 		else:
 			return None
@@ -162,7 +157,7 @@ class Service( Plugin ):
 		if resource.classifier == self.name:
 			path = Path( self.path_for_id( resource.local_id, base_path=Path( self.name ) ), resource.path )
 		else:
-			if s := Registry.services.get( resource.classifier ):
+			if s := Registry.instance().services.get( resource.classifier ):
 				path = s.path_for_id( resource.local_id, Path( resource.classifier ), Path( resource.path ) )
 			else:
 				return None

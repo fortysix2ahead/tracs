@@ -1,8 +1,12 @@
+from datetime import datetime
 from importlib import import_module
+from importlib.resources import path as pkgpath
 from importlib.resources import path as resource_path
 from logging import getLogger
+from os.path import dirname
 from pathlib import Path
 from pkgutil import iter_modules
+from shutil import copytree, rmtree
 from typing import Any, Dict, List
 from typing import Optional
 from typing import Tuple
@@ -49,8 +53,8 @@ PERSISTANCE_NAME = 'persistance_layer'
 
 def marker( request, name, key, default ):
 	try:
-		return request.node.get_closest_marker( name ).kwargs.get( key )
-	except (AttributeError, TypeError):
+		return request.node.get_closest_marker( name ).kwargs[key]
+	except (AttributeError, KeyError, TypeError):
 		log.error( f'unable to access marker {name}.{key}', exc_info=True )
 		return default
 
@@ -124,11 +128,7 @@ def registry( request ) -> Registry:
 
 @fixture
 def varfs( request ) -> FS:
-	fs = OSFS( str( var_run_path() ) )
-
-	yield fs
-
-
+	yield OSFS( str( var_run_path() ) )
 
 @fixture
 def fs( request ) -> FS:
@@ -177,6 +177,52 @@ def fs( request ) -> FS:
 			syspath = pl.getsyspath( '/' )
 			cleanup_path( Path( syspath ) )
 			log.info( f'cleaned up temporary persistance dir {syspath}' )
+
+@fixture
+def fs2( request ) -> FS:
+	env = marker( request, 'context', 'env', 'empty' )
+	persist = marker( request, 'context', 'persist', 'mem' )
+	cleanup = marker( request, 'context', 'cleanup', True )
+
+	root_fs = MultiFS()
+
+	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
+		tp = test_pkg_path.parent
+		ep = Path( tp, f'environments/{env}' )
+		vrp = Path( tp, f'../var/run/{datetime.now().strftime( "%H%M%S_%f" )}' ).resolve()
+
+		if persist in ['disk', 'clone']:
+			vrp.mkdir( parents=True, exist_ok=True )
+			root_fs.add_fs( PERSISTANCE_NAME, OSFS( str( vrp ), expand_vars=True ), write=True )
+			log.info( f'created new temporary persistance dir in {str( vrp )}' )
+
+			if persist == 'clone':
+				copytree( ep, vrp, dirs_exist_ok=True )
+
+		elif persist == 'mem':
+			root_fs.add_fs( PERSISTANCE_NAME, MemoryFS(), write=True )
+
+		else:
+			raise ValueError( 'value of key persist needs to be one of [mem, disk, clone]' )
+
+	yield root_fs
+
+	if cleanup:
+		if (pl := root_fs.get_fs( PERSISTANCE_NAME )) and isinstance( pl, OSFS ):
+			sp = pl.getsyspath( '/' )
+			if dirname( dirname( sp ) ).endswith( 'var/run' ):  # sanity check: only remove when in var/run
+				rmtree( sp, ignore_errors=True )
+				log.info( f'cleaned up temporary persistance dir {sp}' )
+
+@fixture
+def ctx2( request, fs2: MultiFS ) -> ApplicationContext:
+	env_fs = fs2.get_fs( PERSISTANCE_NAME )
+	context: ApplicationContext = ApplicationContext( configuration=env_fs.getsyspath( '/' ), verbose=True )
+
+	yield context
+
+	if context.db is not None:
+		context.db.close()
 
 @fixture
 def json( request ) -> Optional[Dict]:

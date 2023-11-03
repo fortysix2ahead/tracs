@@ -11,12 +11,9 @@ from typing import Any, List, Optional, Tuple, Union
 from dateutil.tz import UTC
 from fs.base import FS
 from fs.errors import ResourceNotFound
-from fs.multifs import MultiFS
-from fs.osfs import OSFS
 from fs.path import combine
 
 from tracs.activity import Activity
-from tracs.config import DEFAULT_DB_DIR, OVERLAY_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.registry import Registry
@@ -52,27 +49,15 @@ class Service( Plugin ):
 
 	@property
 	def base_path( self ) -> Path:
-		return self._base_path
-
-	@base_path.setter
-	def base_path( self, path: Path ) -> None:
-		self._base_path = path
+		return Path( self.fs.getsyspath( '/' ) )
 
 	@property
 	def overlay_path( self ) -> Path:
-		return self._overlay_path
-
-	@overlay_path.setter
-	def overlay_path( self, path: Path ) -> None:
-		self._overlay_path = path
+		return Path( self.fs.getsyspath( '/' ) ) # todo: this is not yet correct
 
 	@property
 	def base_url( self ) -> str:
 		return self._base_url
-
-	@base_url.setter
-	def base_url( self, url: str ) -> None:
-		self._base_url = url
 
 	# todo: still needed?
 	@property

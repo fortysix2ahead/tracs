@@ -11,6 +11,7 @@ from typing import Optional
 from typing import Tuple
 
 from bottle import Bottle
+from confuse import Configuration
 from fs.base import FS
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
@@ -182,11 +183,24 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 	return config_dict, state_dict
 
 @fixture
-def service( request, varfs ) -> Optional[Service]:
+def service( request, fs: MultiFS ) -> Optional[Service]:
 	service_class = marker( request, 'service', 'cls', None )
 	register = marker( request, 'service', 'register', False )
+	init = marker( request, 'service', 'init', False )
+
 	service_class_name = service_class.__name__.lower()
-	service = service_class( fs=varfs )
+
+	if init:
+		env_fs = fs.get_fs( PERSISTANCE_NAME )
+		cfg, state = Configuration( 'config', read=False ), Configuration( 'state', read=False )
+		cfg.set_file( env_fs.getsyspath( '/config.yaml' ) )
+		state.set_file( env_fs.getsyspath( '/state.yaml' ) )
+
+		service = service_class( fs=fs, _configuration=cfg['plugins'][service_class_name], _state=state['plugins'][service_class_name] )
+
+	else:
+		service = service_class( fs=fs )
+
 	if register:
 		# noinspection PyProtectedMember
 		Registry.instance()._services[service_class_name] = service

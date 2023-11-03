@@ -2,7 +2,6 @@
 from pathlib import Path
 from typing import cast
 
-from fs.errors import ResourceNotFound
 from pytest import mark, raises
 
 from test.mock import Mock, MOCK_TYPE, MockActivity
@@ -70,12 +69,9 @@ def test_path_for_cls( service ):
 	with raises( AttributeError ):
 		assert Service.path_for_uid( 'unknown:1001' ) == Path( 'unknown/1/0/0/1001' )
 
-@mark.context( env='empty', persist='clone', cleanup=True )
+@mark.context( env='empty', persist='clone', cleanup=False )
 @mark.service( cls=Mock )
-def test_fetch( ctx2 ):
-
-	return
-
+def test_fetch( ctx ):
 	db = cast( ActivityDb, service.ctx.db )
 	service.import_activities( skip_download=True, skip_link=True )
 	assert len( db.activities ) == 3

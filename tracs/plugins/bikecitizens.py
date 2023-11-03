@@ -146,13 +146,14 @@ class Bikecitizens( Service ):
 
 		self._saved_session = kwargs.get( 'session' )
 		self._user_id = kwargs.get( 'user_id' )
+		self._base_url = kwargs.get( 'base_url', BASE_URL )
 		self._api_url = kwargs.get( 'api_url', API_URL )
 
 		self._api_key = None
 		self._session = None
 
-		self.importer: BikecitizensImporter = Registry.importer_for( BIKECITIZENS_TYPE )
-		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
+		self.importer: BikecitizensImporter = BikecitizensImporter()
+		self.json_handler: JSONHandler = JSONHandler()
 
 	@property
 	def api_url( self ) -> str:
@@ -207,15 +208,15 @@ class Bikecitizens( Service ):
 		else:
 			log.debug( f"Found authenticity token for {self.name}: {token}" )
 
-		if not self.cfg_value( 'username' ) and not self.cfg_value( 'password' ):
+		if not self.config_value( 'username' ) and not self.cfg_value( 'password' ):
 			log.error( f'setup not complete for {self.display_name}, consider running {APPNAME} setup' )
 			sysexit( -1 )
 
 		data = {
 			'utf8': '✓',
 			'authenticity_token': token,
-			'user[login]': self.cfg_value( 'username' ),
-			'user[password]': self.cfg_value( 'password' ),
+			'user[login]': self.config_value( 'username' ),
+			'user[password]': self.config_value( 'password' ),
 			'commit': 'Login'
 		}
 

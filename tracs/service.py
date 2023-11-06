@@ -6,11 +6,12 @@ from datetime import datetime, timedelta
 from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, cast, List, Optional, Tuple, Union
 
 from dateutil.tz import UTC
 from fs.base import FS
 from fs.errors import ResourceNotFound
+from fs.multifs import MultiFS
 from fs.path import combine
 
 from tracs.activity import Activity
@@ -39,7 +40,7 @@ class Service( Plugin ):
 			if p[0] in kwargs.keys() and not p[0].startswith( '_' ):
 				setattr( self, p[0], kwargs.get( p[0] ) )
 
-		log.debug( f'service instance {self._name} created, with plugin fs = {self._fs}' )
+		log.debug( f'service instance {self._name} created, with plugin fs = {cast( MultiFS, self._fs ).get_fs( "db" )}' )
 
 	# properties
 

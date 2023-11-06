@@ -23,7 +23,7 @@ def test_service_creation( service: Bikecitizens ):
 
 @skip_live
 @mark.context( env='live', persist='clone', cleanup=False )
-@mark.service( cls=Bikecitizens, init=True )
+@mark.service( cls=Bikecitizens, init=True, register=True )
 def test_live_workflow( service: Service ):
 	assert service.login()
 

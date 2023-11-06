@@ -145,7 +145,8 @@ class ActivityDb:
 	# noinspection PyMethodMayBeStatic
 	def _init_existing_fs( self, fs: FS ) -> FS:
 		for file, content in DB_FILES.items():
-			fs.writetext( f'/{file}', content )
+			if not fs.exists( file ):
+				fs.writetext( file, content )
 		return fs
 
 	# for development only ...

@@ -6,13 +6,15 @@ from os.path import dirname
 from pathlib import Path
 from pkgutil import iter_modules
 from shutil import copytree, rmtree
-from typing import Dict, List
+from typing import cast, Dict, List
 from typing import Optional
 from typing import Tuple
 
 from fs.base import FS
+from fs.errors import NoSysPath
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
+from fs.subfs import SubFS
 from fs.osfs import OSFS
 from pytest import fixture
 from yaml import load as load_yaml
@@ -76,8 +78,6 @@ def fs( request ) -> FS:
 	persist = marker( request, 'context', 'persist', 'mem' )
 	cleanup = marker( request, 'context', 'cleanup', True )
 
-	root_fs = MultiFS()
-
 	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
 		tp = test_pkg_path.parent
 		ep = Path( tp, f'environments/{env}' )
@@ -85,14 +85,14 @@ def fs( request ) -> FS:
 
 		if persist in ['disk', 'clone']:
 			vrp.mkdir( parents=True, exist_ok=True )
-			root_fs.add_fs( PERSISTANCE_NAME, OSFS( str( vrp ), expand_vars=True ), write=True )
+			root_fs = OSFS( str( vrp ), expand_vars=True )
 			log.info( f'created new temporary persistance dir in {str( vrp )}' )
 
 			if persist == 'clone':
 				copytree( ep, vrp, dirs_exist_ok=True )
 
 		elif persist == 'mem':
-			root_fs.add_fs( PERSISTANCE_NAME, MemoryFS(), write=True )
+			root_fs = MemoryFS()
 
 		else:
 			raise ValueError( 'value of key persist needs to be one of [mem, disk, clone]' )
@@ -100,34 +100,44 @@ def fs( request ) -> FS:
 	yield root_fs
 
 	if cleanup:
-		if (pl := root_fs.get_fs( PERSISTANCE_NAME )) and isinstance( pl, OSFS ):
-			sp = pl.getsyspath( '/' )
+		if isinstance( root_fs, OSFS ):
+			sp = root_fs.getsyspath( '/' )
 			if dirname( dirname( sp ) ).endswith( 'var/run' ):  # sanity check: only remove when in var/run
 				rmtree( sp, ignore_errors=True )
 				log.info( f'cleaned up temporary persistance dir {sp}' )
 
 @fixture
-def db_path( request, fs: MultiFS ) -> Path:
-	env_fs = fs.get_fs( PERSISTANCE_NAME )
-	env_fs.makedir( DB_DIRNAME, recreate=True )
-	yield Path( env_fs.getsyspath( '/' ), DB_DIRNAME )
+def db_path( request, fs: FS ) -> Path:
+	if isinstance( fs, OSFS ):
+		path = Path( fs.getsyspath( DB_DIRNAME ) )
+		path.mkdir( parents=True, exist_ok=True )
+		yield path
+	else:
+		raise ValueError
 	#env = marker( request, 'context', 'env', 'empty' )
 	#with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
 	#	yield Path( test_pkg_path.parent, f'environments/{env}/db' )
 
 @fixture
-def db( request, fs: MultiFS ) -> ActivityDb:
-	env_fs = fs.get_fs( PERSISTANCE_NAME )
-	env_fs.makedir( DB_DIRNAME, recreate=True )
-	db_path = Path( env_fs.getsyspath( '/' ), DB_DIRNAME )
-	yield ActivityDb( path=db_path, read_only=False )
+def db( request, fs: FS ) -> ActivityDb:
+	if isinstance( fs, OSFS ):
+		db_fs = OSFS( root_path=fs.getsyspath( DB_DIRNAME ), create=True )
+	elif isinstance( fs, MemoryFS ):
+		db_fs = MemoryFS()
+	else:
+		raise ValueError
+	yield ActivityDb( fs=db_fs )
+	#db_path = Path( env_fs.getsyspath( '/' ), DB_DIRNAME )
+	#yield ActivityDb( path=db_path, read_only=False )
 
 @fixture
 def ctx( request, db ) -> ApplicationContext:
-	db_fs = db.dbfs.get_fs( 'underlay' )
-	cfg_file = f'{dirname( dirname( db_fs.getsyspath( "/" ) ) )}/config.yaml'
-	context: ApplicationContext = ApplicationContext( config_file=cfg_file, verbose=True )
-	context.db = db # attach db to ctx
+	try:
+		db_path = db.underlay_fs.getsyspath( '' )
+		context = ApplicationContext( config_dir=dirname( db_path ), verbose=True )
+		context.db = db # attach db to ctx
+	except NoSysPath:
+		raise NotImplementedError
 
 	yield context
 

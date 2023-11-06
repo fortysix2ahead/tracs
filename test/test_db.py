@@ -55,7 +55,7 @@ def test_new_db_with_readonly_path( db_path ):
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_open_db( db ):
-	assert db.schema.version == 12
+	assert db.schema.version == 13
 
 	assert len( db.activities ) > 1
 	assert db.activities[0] == Activity(

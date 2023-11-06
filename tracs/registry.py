@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from enum import Enum
 from inspect import getmembers, isclass, isfunction, signature as getsignature
-from logging import getLogger
+from logging import getLogger, INFO
 from pathlib import Path
 from re import match
 from types import MappingProxyType
@@ -20,6 +20,9 @@ from tracs.resources import ResourceType
 from tracs.uid import UID
 
 log = getLogger( __name__ )
+
+# todo: mute this logger
+log.setLevel( INFO )
 
 class EventTypes( Enum ):
 

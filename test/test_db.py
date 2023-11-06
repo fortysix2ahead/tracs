@@ -14,39 +14,44 @@ from tracs.plugins.strava import STRAVA_TYPE
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import Registry
 from tracs.resources import Resource, ResourceType
-from .helpers import get_db_path
 
 def test_new_db_without_path():
 	db = ActivityDb( path=None )
-	assert db.dbfs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
-	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
-	assert db.schema.version == 12
+	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
 
 	# read_only is ignored in this case
 	db = ActivityDb( path=None, read_only=True )
-	assert db.dbfs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
-	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
-	assert db.schema.version == 12
+	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
 
 	# same as above
 	db = ActivityDb( path=None, read_only=False )
-	assert db.dbfs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
-	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
-	assert db.schema.version == 12
+	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
+
+def test_new_db_with_fs():
+	db = ActivityDb( fs=MemoryFS() )
+	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
 
 @mark.context( env='empty', persist='clone', cleanup=True )
 def test_new_db_with_writable_path( db_path ):
 	db = ActivityDb( path=db_path, read_only=False )
-	assert db.dbfs is not None and type( db.underlay_fs ) is OSFS and type( db.overlay_fs ) is MemoryFS
-	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
-	assert db.schema.version == 12
+	assert db.fs is not None and type( db.underlay_fs ) is OSFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
 
 @mark.context( env='empty', persist='clone', cleanup=True )
 def test_new_db_with_readonly_path( db_path ):
 	db = ActivityDb( path=db_path, read_only=True )
-	assert db.dbfs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
-	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
-	assert db.schema.version == 12
+	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_open_db( db ):

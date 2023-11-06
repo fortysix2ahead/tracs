@@ -40,7 +40,9 @@ class Service( Plugin ):
 			if p[0] in kwargs.keys() and not p[0].startswith( '_' ):
 				setattr( self, p[0], kwargs.get( p[0] ) )
 
-		log.debug( f'service instance {self._name} created, with plugin fs = {cast( MultiFS, self._fs ).get_fs( "db" )}' )
+		log.debug( f'service instance {self._name} created' )
+		if self._fs:
+			log.debug( f'associated fs {cast( MultiFS, self._fs ).get_fs( "db" )} with service plugin {self.name}' )
 
 	# properties
 

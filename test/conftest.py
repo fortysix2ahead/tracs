@@ -134,7 +134,7 @@ def db( request, fs: FS ) -> ActivityDb:
 def ctx( request, db ) -> ApplicationContext:
 	try:
 		db_path = db.underlay_fs.getsyspath( '' )
-		context = ApplicationContext( config_dir=dirname( db_path ), verbose=True )
+		context = ApplicationContext( config_dir=dirname( dirname( db_path ) ), verbose=True )
 		context.db = db # attach db to ctx
 	except NoSysPath:
 		raise NotImplementedError

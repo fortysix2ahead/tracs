@@ -12,12 +12,9 @@ from tracs.application import Application
 from tracs.config import ApplicationContext, APPNAME
 from tracs.registry import Registry
 
-from test.conftest import PERSISTANCE_NAME
-
 @mark.context( env='empty', persist='clone', cleanup=True )
-def test_context( fs: MultiFS ):
-	vrfs = fs.get_fs( PERSISTANCE_NAME )
-	vrp = vrfs.getsyspath( '' )
+def test_context( fs: FS ):
+	vrp = fs.getsyspath( '' )
 
 	ctx = ApplicationContext()
 	assert ctx.config_fs
@@ -28,8 +25,8 @@ def test_context( fs: MultiFS ):
 	ctx = ApplicationContext( config_dir=vrp )
 	assert ctx.config_fs
 	assert ctx.config_dir == vrp
-	assert ctx.config_file == vrfs.getsyspath( '/config.yaml' )
-	assert ctx.state_file == vrfs.getsyspath( '/state.yaml' )
+	assert ctx.config_file == fs.getsyspath( '/config.yaml' )
+	assert ctx.state_file == fs.getsyspath( '/state.yaml' )
 	assert ctx.lib_dir == vrp
 	assert ctx.db_dir == f'{vrp}db/'
 	assert ctx.overlay_dir == f'{vrp}overlay/'
@@ -41,7 +38,7 @@ def test_context( fs: MultiFS ):
 	ctx = ApplicationContext( config_file=f'{vrp}/config.yaml' )
 	assert ctx.config_fs
 	assert ctx.config_dir == vrp
-	assert ctx.config_file == vrfs.getsyspath( '/config.yaml' )
+	assert ctx.config_file == fs.getsyspath( '/config.yaml' )
 	assert ctx.lib_dir == vrp
 	assert ctx.db_dir == f'{vrp}db/'
 

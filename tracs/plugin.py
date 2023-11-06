@@ -4,6 +4,7 @@ from typing import Any, Tuple
 from confuse import Configuration, ConfigView, NotFoundError
 
 from tracs.config import ApplicationContext
+from tracs.db import ActivityDb
 
 log = getLogger( __name__ )
 
@@ -83,6 +84,15 @@ class Plugin:
 		:return: application context object
 		"""
 		return self._ctx
+
+	@property
+	def db( self ) -> ActivityDb:
+		"""
+		Returns the db associated with the context.
+
+		:return: db
+		"""
+		return self._ctx.db if self._ctx else None
 
 	@property
 	def name( self ) -> str:

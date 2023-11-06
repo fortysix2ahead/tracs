@@ -8,7 +8,7 @@ from logging import getLogger
 from os.path import join as os_path_join
 from pathlib import Path
 from pkgutil import extend_path, iter_modules
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, cast, Dict, List, Optional, Tuple
 
 from attrs import define, field
 from confuse import ConfigReadError, ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, NotFoundError, YamlSource
@@ -40,13 +40,10 @@ VAR_DIRNAME = 'var'
 
 CONFIG_FILENAME = 'config.yaml'
 STATE_FILENAME = 'state.yaml'
+DEFAULT_CONFIG_FILENAME = 'config_default.yaml'
 DEFAULT_STATE_FILENAME = 'state_default.yaml'
 
-DEFAULT_CFG_DIR = Path( user_config_dir( APPNAME ) )
-DEFAULT_DB_DIR = Path( DEFAULT_CFG_DIR, DB_DIRNAME )
-
-TABLE_NAME_DEFAULT = '_default'
-TABLE_NAME_ACTIVITIES = 'activities'
+EXTRA_KWARGS = ['debug', 'force', 'verbose', 'pretend']
 
 CLASSIFIER = 'classifier'
 CLASSIFIERS = 'classifiers'
@@ -90,41 +87,33 @@ def default_resources_path() -> Path:
 @define( init=False )
 class ApplicationContext:
 
+	# config/state files / fs
 	config: Configuration = field( default=None )
+	config_dir: str = field( default=None )
+	config_file: str = field( default=None )
+	state_file: str = field( default=None )
+	config_fs: FS = field( default=None )
 
-	# configuration + library are absolute paths, library points to configuration by default
-	configuration: str = field( default=None )
-	library: str = field( default=None )
+	# library fs
+	lib_dir: str = field( default=None )
+	lib_fs: FS = field( default=None )
 
-	# global configuration flags, can be set externally
-	force: Optional[bool] = field( default=None )
-	verbose: Optional[bool] = field( default=None )
-	debug: Optional[bool] = field( default=None )
-	pretend: Optional[bool] = field( default=None )
-
-	# everything below here is calculated and will be set up in post_init
-
-	# filesystems
-	config_fs: Optional[FS] = field( default=None )
-	lib_fs: Optional[FS] = field( default=None )
-
-	# config/state files
-	config_file: str = field( default=CONFIG_FILENAME )
-	state_file: str = field( default=STATE_FILENAME )
-
-	log_dir: str = field( default=LOG_DIRNAME )
-	log_file: str = field( default=os_path_join( LOG_DIRNAME, LOG_FILENAME ) )
-	overlay_dir: str = field( default=OVERLAY_DIRNAME )
-	takeout_dir: str = field( default=TAKEOUT_DIRNAME )
-	var_dir: str = field( default=VAR_DIRNAME )
-	backup_dir: str = field( default=os_path_join( VAR_DIRNAME, BACKUP_DIRNAME ) )
-	cache_dir: str = field( default=os_path_join( VAR_DIRNAME, CACHE_DIRNAME ) )
-	tmp_dir: str = field( default=os_path_join( VAR_DIRNAME, TMP_DIRNAME ) )
-
-	# database
+	# database / fs
 	db: Any = field( default=None )
-	db_dir: str = field( default=DB_DIRNAME )
+	db_fs: FS = field( default=None )
+	overlay_fs: FS = field( default=None )
 
+	# takeouts
+	takeouts_fs: FS = field( default=None )
+
+	# logs
+	log_fs: FS = field( default=None )
+	var_fs: FS = field( default=None )
+	backup_fs: FS = field( default=None )
+	cache_fs: FS = field( default=None )
+	tmp_fs: FS = field( default=None )
+
+	# needed?
 	instance: Any = field( default=None )
 
 	# app configuration + state
@@ -133,10 +122,10 @@ class ApplicationContext:
 
 	# plugins
 	plugins: Dict[str, Any] = field( factory=dict )
-	plugin_fs: FS = field( factory=MultiFS )
-	plugins_dir: List[Path] = field( factory=list )
 
-	# todo: remove the console from here
+	# kwargs fields, not used, but needed for
+
+	# todo: move this stuff away, as it does not belong here
 	console: Console = field( default=CONSOLE )
 	progress: Progress = field( default=None )
 	task_id: Any = field( default=None )
@@ -144,7 +133,22 @@ class ApplicationContext:
 	# internal fields
 
 	__kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )
+	__init_fs__: bool = field( default=True, alias='__init_fs__' )
+	__apptime__: datetime = field( default=datetime.utcnow(), alias='__apptime__' )
+
 	apptime: datetime = field( default=None )
+
+	def __setup_config_fs__( self ):
+		if self.config_file:
+			self.config_fs = OSFS( root_path=dirname( self.config_file ), expand_vars=True )
+		elif self.config_dir:
+			self.config_fs = OSFS( root_path=self.config_dir, expand_vars=True )
+
+		if not self.config_fs:
+			self.config_fs = OSFS( root_path=user_config_dir( APPNAME ) )
+
+		self.config_dir = self.config_fs.getsyspath( '/' )
+		self.config_file = self.config_fs.getsyspath( f'/{CONFIG_FILENAME}' )
 
 	def __setup_configuration__( self ):
 		# create configuration -> this reads the default config files automatically
@@ -152,27 +156,16 @@ class ApplicationContext:
 
 		# read default plugin configuration
 		plugins_pkg_path = find_package_path( f'{APP_PKG_NAME}.{PLUGINS_PKG_NAME}' )
-		self.config.set_file( f'{plugins_pkg_path}/{DEFAULT_CFG_FILENAME}' )
-
-		if not self.configuration:
-			self.configuration = user_config_dir( APPNAME )
+		self.config.set_file( f'{plugins_pkg_path}/{DEFAULT_CONFIG_FILENAME}' )
 
 		# add user configuration file provided via -c option
+		file = self.config_fs.getsyspath( CONFIG_FILENAME )
 		try:
-			user_configuration = self.__kwargs__.pop( 'configuration' )
-			# todo: is it possible to expand relative paths without creating a FS?
-			fs = OSFS( root_path=dirname( user_configuration ), expand_vars=True )
-			user_configuration = fs.getsyspath( basename( user_configuration ) )
-			self.configuration = dirname( user_configuration )
-			self.config.set_file( user_configuration, base_for_paths=True )
+			self.config.set_file( file, base_for_paths=True )
 		except (AttributeError, KeyError, TypeError):
-			# self.configuration = self.config.config_dir() # this returns ~/.config/tracs on Mac OS X -> wrong
-			self.configuration = user_config_dir( APPNAME )
+			pass
 		except ConfigReadError:
-			# noinspection PyUnboundLocalVariable
-			log.error( f'error reading configuration from {user_configuration}' )
-		finally:
-			self.config_fs = OSFS( root_path=self.configuration, create=True )
+			log.error( f'error reading configuration from {file}' )
 
 		# add configuration from command line arguments
 		# todo: there might be other kwargs apart from config-related -> remove first
@@ -192,37 +185,41 @@ class ApplicationContext:
 		self.state.set_file( f'{plugins_pkg_path}/{DEFAULT_STATE_FILENAME}' )
 
 		# user state
+		self.state_file = self.config_fs.getsyspath( f'/{STATE_FILENAME}' )
 		try:
-			self.state.set_file( f'{self.configuration}/{STATE_FILENAME}', base_for_paths=True )
+			self.state.set_file( self.state_file, base_for_paths=True )
 		except ConfigReadError:
-			log.error( f'error reading application state from {self.configuration}/{STATE_FILENAME}' )
+			log.error( f'error reading application state from {self.state_file}' )
 
 		self.state.read( user=False, defaults=False )
 
 	def __setup_library__( self ):
-		try:
-			self.library = self.config['library'].get()
-		except NotFoundError:
-			pass
-		finally:
-			if self.library is None:
-				self.library = self.configuration
-			self.lib_fs = OSFS( root_path=self.library, create=True )
+		if self.lib_dir:
+			library = self.lib_dir
+		else:
+			try:
+				library = self.config['library'].get()
+			except NotFoundError:
+				library = self.config_dir
 
-	def __create_default_directories__( self ):
-		# create directories depending on config_dir
-		self.config_fs.makedir( self.log_dir, recreate=True )
+		if not library:
+			library = self.config_dir
 
-		# create directories depending on lib_dir
-		self.lib_fs.makedir( self.db_dir, recreate=True )
-		self.lib_fs.makedir( self.overlay_dir, recreate=True )
-		self.lib_fs.makedir( self.takeout_dir, recreate=True )
+		self.lib_fs = OSFS( root_path=library, expand_vars=True, create=True )
+		self.lib_dir = self.lib_fs.getsyspath( '' )
+		self.db_fs = OSFS( root_path=f'{self.lib_fs.getsyspath( "" )}/{DB_DIRNAME}', create=True )
+		self.overlay_fs = OSFS( root_path=f'{self.lib_fs.getsyspath( "" )}/{OVERLAY_DIRNAME}', create=True )
 
-		# var and its children
-		self.lib_fs.makedir( self.var_dir, recreate=True )
-		self.lib_fs.makedir( self.backup_dir, recreate=True )
-		self.lib_fs.makedir( self.cache_dir, recreate=True )
-		self.lib_fs.makedir( self.tmp_dir, recreate=True )
+	def __setup_aux__( self ):
+		# takeouts
+		self.takeouts_fs = OSFS( root_path=self.config_fs.getsyspath( f'{TAKEOUT_DIRNAME}' ), create=True )
+
+		# logs, var etc.
+		self.log_fs = OSFS( root_path=self.config_fs.getsyspath( f'{LOG_DIRNAME}' ), create=True )
+		self.var_fs = OSFS( root_path=self.config_fs.getsyspath( f'{VAR_DIRNAME}' ), create=True )
+		self.backup_fs = OSFS( root_path=self.config_fs.getsyspath( f'{BACKUP_DIRNAME}' ), create=True )
+		self.cache_fs = OSFS( root_path=self.config_fs.getsyspath( f'{CACHE_DIRNAME}' ), create=True )
+		self.tmp_fs = OSFS( root_path=self.config_fs.getsyspath( f'{TMP_DIRNAME}' ), create=True )
 
 	def __setup_plugins__( self ):
 		# noinspection PyUnresolvedReferences
@@ -241,77 +238,139 @@ class ApplicationContext:
 			log.debug( f'imported plugin {name} from {finder.path}' )
 
 	def __init__( self, *args, **kwargs ):
+		extra_kwargs = { k: kwargs.pop( k, False ) for k in EXTRA_KWARGS }
 		# noinspection PyUnresolvedReferences
-		self.__attrs_init__( *args, **kwargs, __kwargs__={ **kwargs } )
+		self.__attrs_init__( *args, **kwargs, __kwargs__ = extra_kwargs  )
 
 	def __attrs_post_init__( self ):
+		# create config fs
+		self.__setup_config_fs__()
+
+		# read configuration/state
 		self.__setup_configuration__()
 		self.__setup_state__()
 
-		# update global options fields from config -> todo: this should be removed in the future, access should be like cfg.debug
-		self.debug = self.config['debug'].get()
-		self.verbose = self.config['verbose'].get()
-		self.force = self.config['force'].get()
-		self.pretend = self.config['pretend'].get()
-
+		# set up library structure
 		self.__setup_library__()
 
-		self.__create_default_directories__()
+		# create default directories
+		self.__setup_aux__()
 
 		# load/manage plugins
 		self.__setup_plugins__()
 
-	@property
-	def config_dir( self ) -> str:
-		return self.configuration
+	# main properties
 
 	@property
-	def lib_dir( self ) -> str:
-		return self.library
+	def debug( self ) -> bool:
+		return self.config['debug'].get()
 
 	@property
-	def config_file_path( self ) -> Path:
-		return Path( self.config_fs.getsyspath( str( self.config_file ) ) )
+	def verbose( self ) -> bool:
+		return self.config['verbose'].get()
 
 	@property
-	def state_file_path( self ) -> Path:
-		return Path( self.config_fs.getsyspath( str( self.state_file ) ) )
+	def pretend( self ) -> bool:
+		return self.config['pretend'].get()
 
 	@property
-	def db_path( self ) -> Path:
-		return Path( self.lib_fs.getsyspath( str( self.db_dir ) ) )
+	def force( self ) -> bool:
+		return self.config['force'].get()
 
-	@property
-	def db_dir_path( self ) -> Path:
-		return Path( self.lib_fs.getsyspath( str( self.db_dir ) ) )
-
-	@property
-	def db_overlay_path( self ) -> Path:
-		return Path( self.lib_fs.getsyspath( str( self.overlay_dir ) ) )
+	# lib/config related properties
 
 	@property
 	def lib_dir_path( self ) -> Path:
-		return Path( self.lib_fs.getsyspath( '/' ) )
+		return Path( self.lib_dir )
+
+	@property
+	def config_file_path( self ) -> Path:
+		return Path( self.config_fs.getsyspath( CONFIG_FILENAME ) )
+
+	@property
+	def state_file_path( self ) -> Path:
+		return Path( self.config_fs.getsyspath( STATE_FILENAME ) )
+
+	# db related fs/dirs
+
+	@property
+	def db_dir( self ) -> str:
+		return self.db_fs.getsyspath( '/' )
+
+	@property
+	def db_dir_path( self ) -> Path:
+		return Path( self.db_dir )
+
+	def plugin_fs( self, name: str ) -> FS:
+		fs = MultiFS()
+		fs.add_fs( name=OVERLAY_DIRNAME, fs=OSFS( root_path=self.overlay_fs.getsyspath( f'{name}' ), create=True ), write=False )
+		fs.add_fs( name=DB_DIRNAME, fs=OSFS( root_path=self.db_fs.getsyspath( f'{name}' ), create=True ), write=True )
+		return fs
+
+	def plugin_dir( self, name: str ) -> str:
+		return cast( MultiFS, self.plugin_fs( name ) ).get_fs( DB_DIRNAME ).getsyspath( '' )
+
+	def plugin_dir_path( self, name ) -> Path:
+		return Path( self.plugin_dir( name ) )
+
+	@property
+	def overlay_dir( self ) -> str:
+		return self.overlay_fs.getsyspath( '' )
+
+	@property
+	def db_overlay_path( self ) -> Path:
+		return Path( self.overlay_dir )
+
+	# takeouts
+
+	@property
+	def takeouts_dir( self ) -> str:
+		return self.takeouts_fs.getsyspath( '/' )
+
+	@property
+	def takeouts_dir_path( self ) -> Path:
+		return Path( self.takeouts_dir )
+
+	def takeout_fs( self, name: str ) -> FS:
+		return OSFS( root_path=self.takeouts_fs.getsyspath( f'{name}' ), create=True )
+
+	def takeout_dir( self, name: str ) -> str:
+		return self.takeout_fs( name ).getsyspath( '' )
+
+	def takeout_dir_path( self, name ) -> Path:
+		return Path( self.takeout_dir( name ) )
+
+	# var/log/etc.
+
+	@property
+	def log_dir( self ) -> str:
+		return self.log_fs.getsyspath( '' )
+
+	@property
+	def log_file( self ) -> str:
+		return self.log_fs.getsyspath( LOG_FILENAME )
 
 	@property
 	def log_file_path( self ) -> Path:
-		return Path( self.config_fs.getsyspath( str( self.log_file ) ) )
+		return Path( self.log_file )
+
+	@property
+	def var_dir( self ) -> str:
+		return self.var_fs.getsyspath( '' )
 
 	@property
 	def var_path( self ) -> Path:
-		return Path( self.lib_fs.getsyspath( '/' ), self.var_dir )
+		return Path( self.var_dir )
+
+	@property
+	def backup_dir( self ) -> str:
+		return self.backup_fs.getsyspath( '' )
 
 	@property
 	def backup_path( self ) -> Path:
-		return Path( self.lib_fs.getsyspath( '/' ), self.backup_dir )
+		return Path( self.backup_dir )
 
-	# path helpers
-
-	def db_dir_for( self, service_name: str ) -> Path:
-		return Path( self.db_dir_path, service_name )
-
-	def takeouts_dir_for( self, service_name: str ) -> Path:
-		return Path( self.lib_dir, self.takeout_dir, service_name )
+	# other helpers -> these need to be removed!
 
 	def pp( self, *objects ):
 		self.console.print( *objects )

@@ -10,8 +10,6 @@ from typing import Dict, List
 from typing import Optional
 from typing import Tuple
 
-from bottle import Bottle
-from confuse import Configuration
 from fs.base import FS
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
@@ -23,25 +21,12 @@ from yaml import SafeLoader
 from tracs.config import ApplicationConfig as cfg, DB_DIRNAME
 from tracs.config import ApplicationConfig as state
 from tracs.config import ApplicationContext
-from tracs.config import KEY_PLUGINS
 from tracs.db import ActivityDb
-from tracs.plugins.bikecitizens import Bikecitizens
-from tracs.plugins.polar import Polar
 from tracs.registry import Registry
 from tracs.service import Service
-from .bikecitizens_server import bikecitizens_server
-from .bikecitizens_server import bikecitizens_server_thread
-from .helpers import cleanup as cleanup_path
-from .helpers import get_db
 from .helpers import get_db_as_json
 from .helpers import get_file_as_json
 from .helpers import get_file_path
-from .polar_server import LIVE_BASE_URL as POLAR_LIVE_BASE_URL
-from .polar_server import polar_server
-from .polar_server import polar_server_thread
-from .polar_server import TEST_BASE_URL as POLAR_TEST_BASE_URL
-from .strava_server import strava_server
-from .strava_server import strava_server_thread
 
 log = getLogger( __name__ )
 
@@ -141,7 +126,7 @@ def db( request, fs: MultiFS ) -> ActivityDb:
 def ctx( request, db ) -> ApplicationContext:
 	db_fs = db.dbfs.get_fs( 'underlay' )
 	cfg_file = f'{dirname( dirname( db_fs.getsyspath( "/" ) ) )}/config.yaml'
-	context: ApplicationContext = ApplicationContext( configuration=cfg_file, verbose=True )
+	context: ApplicationContext = ApplicationContext( config_file=cfg_file, verbose=True )
 	context.db = db # attach db to ctx
 
 	yield context
@@ -183,7 +168,7 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 	return config_dict, state_dict
 
 @fixture
-def service( request, fs: MultiFS ) -> Optional[Service]:
+def service( request, ctx: ApplicationContext ) -> Optional[Service]:
 	service_class = marker( request, 'service', 'cls', None )
 	register = marker( request, 'service', 'register', False )
 	init = marker( request, 'service', 'init', False )
@@ -191,13 +176,8 @@ def service( request, fs: MultiFS ) -> Optional[Service]:
 	service_class_name = service_class.__name__.lower()
 
 	if init:
-		env_fs = fs.get_fs( PERSISTANCE_NAME )
-		cfg, state = Configuration( 'config', read=False ), Configuration( 'state', read=False )
-		cfg.set_file( env_fs.getsyspath( '/config.yaml' ) )
-		state.set_file( env_fs.getsyspath( '/state.yaml' ) )
-
-		service = service_class( fs=fs, _configuration=cfg['plugins'][service_class_name], _state=state['plugins'][service_class_name] )
-
+		# service = service_class( fs=ctx.config_fs, _configuration=ctx.config['plugins'][service_class_name], _state=ctx.state['plugins'][service_class_name] )
+		service = service_class( ctx=ctx )
 	else:
 		service = service_class( fs=fs )
 
@@ -206,62 +186,6 @@ def service( request, fs: MultiFS ) -> Optional[Service]:
 		Registry.instance()._services[service_class_name] = service
 
 	yield service
-
-# bikecitizens specific fixtures
-
-@fixture
-def bikecitizens_server() -> Bottle:
-	if not bikecitizens_server_thread.is_alive():
-		bikecitizens_server_thread.start()
-	return bikecitizens_server
-
-@fixture
-def bikecitizens_service( request ) -> Optional[Bikecitizens]:
-	if marker := request.node.get_closest_marker( 'base_url' ):
-		service = Bikecitizens()
-		service.base_url = marker.args[0]
-		return service
-	return None
-
-# polar specific fixtures
-
-@fixture
-def polar_server() -> Bottle:
-	if not polar_server_thread.is_alive():
-		polar_server_thread.start()
-	return polar_server
-
-@fixture
-def polar_service( request ) -> Optional[Polar]:
-	if marker := request.node.get_closest_marker( 'base_url' ):
-		service = Polar()
-		service.base_url = marker.args[0]
-		return service
-	return None
-
-@fixture
-def polar_test_service() -> Polar:
-	polar = Polar()
-	polar.base_url = POLAR_TEST_BASE_URL
-
-	cfg[KEY_PLUGINS]['polar']['username'] = 'sample user'
-	cfg[KEY_PLUGINS]['polar']['password'] = 'sample password'
-
-	return polar
-
-@fixture
-def polar_live_service() -> Polar:
-	polar = Polar()
-	polar.base_url = POLAR_LIVE_BASE_URL
-	return polar
-
-# strava specific fixtures
-
-@fixture
-def strava_server() -> Bottle:
-	if not strava_server_thread.is_alive():
-		strava_server_thread.start()
-	return strava_server
 
 @fixture
 def keywords() -> List[str]:

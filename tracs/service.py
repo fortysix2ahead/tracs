@@ -30,7 +30,7 @@ class Service( Plugin ):
 		super().__init__( *args, **kwargs )
 
 		# paths + plugin filesystem area
-		self._fs: FS = kwargs.get( 'fs' )
+		self._fs: FS = (self.ctx.plugin_fs( self.name ) if self.ctx else None) or  kwargs.get( 'fs' )
 		self._base_url = None
 		self._logged_in: bool = False
 
@@ -59,10 +59,9 @@ class Service( Plugin ):
 	def base_url( self ) -> str:
 		return self._base_url
 
-	# todo: still needed?
-	@property
+	@property # todo: remove later for self.db
 	def _db( self ) -> ActivityDb:
-		return self.ctx.db
+		return self.db
 
 	# fs properties (read-only)
 

@@ -1,0 +1,37 @@
+
+debug: yes
+locale: de
+force: no
+library:
+pretend: no
+verbose: no
+
+db:
+  cache_size: 100
+  cache: yes
+
+plugins:
+
+  bikecitizens:
+    password: wz8nYjvGMQnVNcw7!tH#
+    username: fortysix2ahead
+    enabled: true
+
+  local:
+    enabled: true
+
+  polar:
+    password: WrZa8WE6*9agKJkXd3uq
+    username: fortysix2ahead@gmail.com
+
+  strava:
+    password: qG4RbV98ZopfPLgqAhLg
+    username: fortysix2ahead@gmail.com
+    client_id: 65972
+    client_secret: d47b6ed720236120849ea141876046b7fd6d0cff
+
+  stravaweb:
+    enabled: false
+
+  waze:
+    field_size_limit: 500000

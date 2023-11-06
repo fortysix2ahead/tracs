@@ -1,0 +1,23 @@
+
+library:
+debug: no
+verbose: no
+force: no
+pluginpath:
+
+db:
+  cache_size: 0
+
+plugins:
+  polar:
+      password: some_polar_password
+      username: polar@example.com
+
+  strava:
+      client_id: 1000
+      client_secret: 1000000000000000000000000000000000000000
+      username: strava@example.com
+      password: some_strava_password
+
+  waze:
+    field_size_limit: 512000

@@ -1,0 +1,4 @@
+library:
+debug: yes
+verbose: yes
+force: no

@@ -478,7 +478,7 @@ class Waze( Service ):
 		if not kwargs.get( 'from_takeouts', False ):
 			return []
 
-		takeouts_dir = self.ctx.takeouts_dir_for( self.name )
+		takeouts_dir = self.ctx.takeout_dir_path( self.name )
 		log.debug( f"fetching Waze activities from {takeouts_dir}" )
 
 		takeout_files = sorted( takeouts_dir.rglob( ACTIVITY_FILE ) )

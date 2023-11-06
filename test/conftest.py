@@ -135,9 +135,10 @@ def ctx( request, db ) -> ApplicationContext:
 	try:
 		db_path = db.underlay_fs.getsyspath( '' )
 		context = ApplicationContext( config_dir=dirname( dirname( db_path ) ), verbose=True )
-		context.db = db # attach db to ctx
 	except NoSysPath:
-		raise NotImplementedError
+		context = ApplicationContext( config_fs=MemoryFS(), lib_fs=MemoryFS(), db_fs=db.underlay_fs, verbose=True )
+
+	context.db = db  # attach db to ctx
 
 	yield context
 

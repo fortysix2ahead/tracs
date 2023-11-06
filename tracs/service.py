@@ -12,7 +12,7 @@ from dateutil.tz import UTC
 from fs.base import FS
 from fs.errors import ResourceNotFound
 from fs.multifs import MultiFS
-from fs.path import combine
+from fs.path import combine, frombase
 
 from tracs.activity import Activity
 from tracs.db import ActivityDb
@@ -40,9 +40,7 @@ class Service( Plugin ):
 			if p[0] in kwargs.keys() and not p[0].startswith( '_' ):
 				setattr( self, p[0], kwargs.get( p[0] ) )
 
-		log.debug( f'service instance {self._name} created' )
-		if self._fs:
-			log.debug( f'associated fs {cast( MultiFS, self._fs ).get_fs( "db" )} with service plugin {self.name}' )
+		log.debug( f'service instance {self._name} created with fs = {self._fs}' )
 
 	# properties
 
@@ -160,7 +158,7 @@ class Service( Plugin ):
 			try:
 				path = self.fs.getsyspath( path )
 			except (AttributeError, ResourceNotFound):
-				return None
+				path = f'/{path}' if not omit_classifier else f'{frombase( uid.classifier, path )}'
 
 		return Path( path ) if as_path else path
 

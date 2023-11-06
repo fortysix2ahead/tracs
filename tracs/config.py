@@ -5,17 +5,17 @@ from datetime import datetime
 from importlib import import_module
 from importlib.resources import path as pkg_path
 from logging import getLogger
-from os.path import join as os_path_join
 from pathlib import Path
 from pkgutil import extend_path, iter_modules
-from typing import Any, cast, Dict, List, Optional, Tuple
+from typing import Any, cast, Dict, Optional, Tuple
 
 from attrs import define, field
-from confuse import ConfigReadError, ConfigSource, Configuration, DEFAULT_FILENAME as DEFAULT_CFG_FILENAME, find_package_path, NotFoundError, YamlSource
+from confuse import ConfigReadError, Configuration, find_package_path, NotFoundError
 from fs.base import FS
+from fs.errors import NoSysPath
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from fs.path import abspath, basename, dirname, normpath
+from fs.path import dirname
 from platformdirs import user_config_dir
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
@@ -147,8 +147,11 @@ class ApplicationContext:
 		if not self.config_fs:
 			self.config_fs = OSFS( root_path=user_config_dir( APPNAME ) )
 
-		self.config_dir = self.config_fs.getsyspath( '/' )
-		self.config_file = self.config_fs.getsyspath( f'/{CONFIG_FILENAME}' )
+		try:
+			self.config_dir = self.config_fs.getsyspath( '/' )
+			self.config_file = self.config_fs.getsyspath( f'/{CONFIG_FILENAME}' )
+		except NoSysPath:
+			pass
 
 	def __setup_configuration__( self ):
 		# create configuration -> this reads the default config files automatically
@@ -159,13 +162,12 @@ class ApplicationContext:
 		self.config.set_file( f'{plugins_pkg_path}/{DEFAULT_CONFIG_FILENAME}' )
 
 		# add user configuration file provided via -c option
-		file = self.config_fs.getsyspath( CONFIG_FILENAME )
 		try:
-			self.config.set_file( file, base_for_paths=True )
+			self.config.set_file( self.config_fs.getsyspath( CONFIG_FILENAME ), base_for_paths=True )
 		except (AttributeError, KeyError, TypeError):
 			pass
-		except ConfigReadError:
-			log.error( f'error reading configuration from {file}' )
+		except (ConfigReadError, NoSysPath):
+			log.error( f'error reading configuration from {self.config_fs}' )
 
 		# add configuration from command line arguments
 		# todo: there might be other kwargs apart from config-related -> remove first
@@ -185,11 +187,11 @@ class ApplicationContext:
 		self.state.set_file( f'{plugins_pkg_path}/{DEFAULT_STATE_FILENAME}' )
 
 		# user state
-		self.state_file = self.config_fs.getsyspath( f'/{STATE_FILENAME}' )
 		try:
+			self.state_file = self.config_fs.getsyspath( f'/{STATE_FILENAME}' )
 			self.state.set_file( self.state_file, base_for_paths=True )
-		except ConfigReadError:
-			log.error( f'error reading application state from {self.state_file}' )
+		except (ConfigReadError, NoSysPath):
+			log.error( f'error reading application state from {self.config_fs}' )
 
 		self.state.read( user=False, defaults=False )
 
@@ -205,21 +207,27 @@ class ApplicationContext:
 		if not library:
 			library = self.config_dir
 
-		self.lib_fs = OSFS( root_path=library, expand_vars=True, create=True )
-		self.lib_dir = self.lib_fs.getsyspath( '' )
-		self.db_fs = OSFS( root_path=f'{self.lib_fs.getsyspath( "" )}/{DB_DIRNAME}', create=True )
-		self.overlay_fs = OSFS( root_path=f'{self.lib_fs.getsyspath( "" )}/{OVERLAY_DIRNAME}', create=True )
+		try:
+			self.lib_fs = OSFS( root_path=library, expand_vars=True, create=True )
+			self.lib_dir = self.lib_fs.getsyspath( '' )
+			self.db_fs = OSFS( root_path=f'{self.lib_fs.getsyspath( "" )}/{DB_DIRNAME}', create=True )
+			self.overlay_fs = OSFS( root_path=f'{self.lib_fs.getsyspath( "" )}/{OVERLAY_DIRNAME}', create=True )
+		except (NoSysPath, TypeError):
+			pass
 
 	def __setup_aux__( self ):
-		# takeouts
-		self.takeouts_fs = OSFS( root_path=self.config_fs.getsyspath( f'{TAKEOUT_DIRNAME}' ), create=True )
+		try:
+			# takeouts
+			self.takeouts_fs = OSFS( root_path=self.config_fs.getsyspath( f'{TAKEOUT_DIRNAME}' ), create=True )
 
-		# logs, var etc.
-		self.log_fs = OSFS( root_path=self.config_fs.getsyspath( f'{LOG_DIRNAME}' ), create=True )
-		self.var_fs = OSFS( root_path=self.config_fs.getsyspath( f'{VAR_DIRNAME}' ), create=True )
-		self.backup_fs = OSFS( root_path=self.config_fs.getsyspath( f'{BACKUP_DIRNAME}' ), create=True )
-		self.cache_fs = OSFS( root_path=self.config_fs.getsyspath( f'{CACHE_DIRNAME}' ), create=True )
-		self.tmp_fs = OSFS( root_path=self.config_fs.getsyspath( f'{TMP_DIRNAME}' ), create=True )
+			# logs, var etc.
+			self.log_fs = OSFS( root_path=self.config_fs.getsyspath( f'{LOG_DIRNAME}' ), create=True )
+			self.var_fs = OSFS( root_path=self.config_fs.getsyspath( f'{VAR_DIRNAME}' ), create=True )
+			self.backup_fs = OSFS( root_path=self.config_fs.getsyspath( f'{BACKUP_DIRNAME}' ), create=True )
+			self.cache_fs = OSFS( root_path=self.config_fs.getsyspath( f'{CACHE_DIRNAME}' ), create=True )
+			self.tmp_fs = OSFS( root_path=self.config_fs.getsyspath( f'{TMP_DIRNAME}' ), create=True )
+		except (NoSysPath, TypeError):
+			pass
 
 	def __setup_plugins__( self ):
 		# noinspection PyUnresolvedReferences

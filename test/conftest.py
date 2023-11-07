@@ -37,7 +37,11 @@ PERSISTANCE_NAME = 'persistance_layer'
 
 def marker( request, name, key, default ):
 	try:
-		return request.node.get_closest_marker( name ).kwargs[key]
+		m = request.node.get_closest_marker( name )
+		if key:
+			return m.kwargs[key]
+		elif not key:
+			return m.args[0]
 	except (AttributeError, KeyError, TypeError):
 		log.error( f'unable to access marker {name}.{key}', exc_info=True )
 		return default
@@ -155,8 +159,8 @@ def json( request ) -> Optional[Dict]:
 
 @fixture
 def path( request ) -> Optional[Path]:
-	if marker := request.node.get_closest_marker( 'file' ):
-		return get_file_path( marker.args[0] )
+	with pkgpath( 'test', '__init__.py' ) as test_path:
+		return Path( test_path.parent, marker( request, 'file', None, None ) )
 
 @fixture
 def config_state( request ) -> Optional[Tuple[Dict, Dict]]:

@@ -37,7 +37,7 @@ def test_activity_uid():
 	a = Activity( uid='polar:200', __uid__=UID( 'strava:300' ) )
 	assert a.uid == 'polar:200' and a.__uid__ == UID( classifier='polar', local_id=200 )
 
-@mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
+@mark.file( 'environments/default/db/polar/1/0/0/100001/100001.json' )
 def test_union( json ):
 	src1 = Activity( id=1, name='One', uids=[ 'a1' ] )
 	src2 = Activity( id=2, distance=10, calories=20, uids=['a2'] )

@@ -11,7 +11,7 @@ from tracs.plugins.polar import PolarFlowImporter
 
 importer = PolarFlowImporter()
 
-@mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
+@mark.file( 'environments/default/db/polar/1/0/0/100001/100001.json' )
 def test_exercise( path ):
 	resource = importer.load( path )
 	pfe = resource.data
@@ -27,20 +27,20 @@ def test_exercise( path ):
 	assert pa.starttime_local == datetime( 2011, 4, 28, 17, 48, 10, tzinfo=tzlocal() )
 	assert pa.duration == timedelta(hours=0, minutes=25, seconds=34, microseconds=900000 )
 
-@mark.file( 'libraries/default/polar/1/0/0/100012/100012.json' )
+@mark.file( 'environments/default/db/polar/1/0/0/100012/100012.json' )
 def test_fitnessdata( path ):
 	r = importer.load( path )
 	assert r.data.local_id == 100012
 	assert r.data.index == 46
 
-@mark.file( 'libraries/default/polar/1/0/0/100013/100013.json' )
+@mark.file( 'environments/default/db/polar/1/0/0/100013/100013.json' )
 def test_orthostatic( path ):
 	r = importer.load( path )
 	assert r.data.title == 'title'
 	assert r.data.local_id == 100013
 	assert r.data.datetime == '2016-09-28T21:11:04.000'
 
-@mark.file( 'libraries/default/polar/1/0/0/100014/100014.json' )
+@mark.file( 'environments/default/db/polar/1/0/0/100014/100014.json' )
 def test_rrrecording( path ):
 	r = importer.load( path )
 	assert r.data.title == 'title'

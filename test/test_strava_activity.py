@@ -10,7 +10,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.plugins.strava import StravaActivity
 from tracs.plugins.strava import StravaHandler
 
-@mark.file( 'libraries/default/strava/2/0/0/200002/200002.json' )
+@mark.file( 'environments/default/db/strava/2/0/0/200002/200002.json' )
 def test_init_from_raw( path ):
 	importer = StravaHandler( activity_cls=StravaActivity )
 	resource = importer.load( path )

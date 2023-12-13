@@ -309,10 +309,13 @@ class ApplicationContext:
 	def db_dir_path( self ) -> Path:
 		return Path( self.db_dir )
 
+	def db_fs_for( self, name: str ) -> FS:
+		return OSFS( root_path=self.db_fs.getsyspath( name ), create=True )
+
 	def plugin_fs( self, name: str ) -> FS:
 		fs = MultiFS()
-		fs.add_fs( name=OVERLAY_DIRNAME, fs=OSFS( root_path=self.overlay_fs.getsyspath( f'{name}' ), create=True ), write=False )
-		fs.add_fs( name=DB_DIRNAME, fs=OSFS( root_path=self.db_fs.getsyspath( f'{name}' ), create=True ), write=True )
+		fs.add_fs( name=OVERLAY_DIRNAME, fs=self.overlay_fs_for( name ), write=False )
+		fs.add_fs( name=DB_DIRNAME, fs=self.db_fs_for( name ), write=True )
 		return fs
 
 	def plugin_dir( self, name: str ) -> str:
@@ -324,6 +327,9 @@ class ApplicationContext:
 	@property
 	def overlay_dir( self ) -> str:
 		return self.overlay_fs.getsyspath( '' )
+
+	def overlay_fs_for( self, name: str ) -> FS:
+		return OSFS( root_path=self.overlay_fs.getsyspath( name ), create=True )
 
 	@property
 	def db_overlay_path( self ) -> Path:

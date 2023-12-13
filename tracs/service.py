@@ -32,6 +32,7 @@ class Service( Plugin ):
 
 		# paths + plugin filesystem area
 		self._fs: FS = ( self.ctx.plugin_fs( self.name ) if self.ctx else None ) or kwargs.get( 'fs' )
+		self._dbfs = self.ctx.db_fs if self.ctx else None
 		self._base_url = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
 
@@ -69,6 +70,10 @@ class Service( Plugin ):
 	@property
 	def fs( self ) -> FS:
 		return self._fs
+
+	@property
+	def dbfs( self ) -> FS:
+		return self._dbfs
 
 	@property
 	def base_fs( self ) -> FS:
@@ -267,7 +272,7 @@ class Service( Plugin ):
 			log.debug( f'unable to calculate path for resource {resource.uidpath}' )
 			return
 
-		if self.fs.exists( path ) and not force:
+		if self.dbfs.exists( path ) and not force:
 			log.debug( f'not persisting resource {resource.uidpath}, path already exists: {path}' )
 			return
 
@@ -276,8 +281,8 @@ class Service( Plugin ):
 			return
 
 		try:
-			self.fs.makedirs( dirname( path ), recreate=True )
-			self.fs.writebytes( path, resource.content )
+			self.dbfs.makedirs( dirname( path ), recreate=True )
+			self.dbfs.writebytes( path, resource.content )
 			self.ctx.db.upsert_resources( resource )
 		except TypeError:
 			log.error( f'error writing resource data for resource {resource.uidpath}', exc_info=True )

@@ -79,6 +79,9 @@ class Mock( Service ):
 	def url_for_resource_type( self, local_id: Union[int, str], type: str ):
 		pass
 
+	def login( self ) -> bool:
+		return True
+
 	def setup( self, ctx: ApplicationContext ) -> None:
 		pass
 

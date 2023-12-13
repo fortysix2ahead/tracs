@@ -135,7 +135,7 @@ def db( request, fs: FS ) -> ActivityDb:
 	#yield ActivityDb( path=db_path, read_only=False )
 
 @fixture
-def ctx( request, db ) -> ApplicationContext:
+def ctx( request, db: ActivityDb ) -> ApplicationContext:
 	try:
 		db_path = db.underlay_fs.getsyspath( '' )
 		context = ApplicationContext( config_dir=dirname( dirname( db_path ) ), verbose=True )

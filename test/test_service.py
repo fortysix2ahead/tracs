@@ -69,47 +69,46 @@ def test_path_for_cls( service ):
 	with raises( AttributeError ):
 		assert Service.path_for_uid( 'unknown:1001' ) == Path( 'unknown/1/0/0/1001' )
 
-@mark.context( env='empty', persist='clone', cleanup=False )
-@mark.service( cls=Mock )
-def test_fetch( ctx ):
-	db = cast( ActivityDb, service.ctx.db )
+@mark.context( env='empty', persist='clone', cleanup=True )
+@mark.service( cls=Mock, init=True, register=True )
+def test_fetch( service: Mock ):
 	service.import_activities( skip_download=True, skip_link=True )
-	assert len( db.activities ) == 3
+	assert len( service.ctx.db.activities ) == 3
 
-	p = Path( service.ctx.db_dir_for( service.name ), '1/0/0/1001/1001.json' )
-	assert p.exists() and not Path( service.ctx.db_dir_for( service.name ), '1/0/0/1001/1001.gpx' ).exists()
+	mfs = service.ctx.db_fs_for( service.name )
+	assert mfs.exists( '1/0/0/1001/1001.json' )
+	assert not mfs.exists( '1/0/0/1001/1001.gpx' )
 
 	# test force flag
-	mtime = p.stat().st_mtime
+	mtime = mfs.getmodified( '1/0/0/1001/1001.json' )
 	service.import_activities( skip_download=True, skip_link=True )
-	assert p.stat().st_mtime == mtime
+	assert mfs.getmodified( '1/0/0/1001/1001.json' ) == mtime
 	service.import_activities( force=True, skip_download=True, skip_link=True )
-	assert p.stat().st_mtime > mtime
+	assert mfs.getmodified( '1/0/0/1001/1001.json' ) > mtime
 
 	# test pretend flag
-	mtime = p.stat().st_mtime
+	mtime = mfs.getmodified( '1/0/0/1001/1001.json' )
 	service.import_activities( force=True, pretend=True, skip_download=True, skip_link=True )
-	assert p.stat().st_mtime == mtime
+	assert mfs.getmodified( '1/0/0/1001/1001.json' ) == mtime
 
-@mark.context( config='empty', library='empty', cleanup=False )
-@mark.service( cls=Mock )
+@mark.context( env='empty', persist='clone', cleanup=True )
+@mark.service( cls=Mock, init=True, register=True )
 def test_download( service ):
-	Registry.instance().resource_types[MOCK_TYPE] = ResourceType( type=MOCK_TYPE, activity_cls=MockActivity ) # register mock type manually
-
 	service.import_activities( skip_download=False, skip_link=True )
 
 	assert len( service.ctx.db.resources ) == 6
 	assert len( service.ctx.db.activities ) == 3
 
-	p = Path( service.ctx.db_dir_for( service.name ), '1/0/0/1001/1001.gpx' )
-	assert p.exists()
+	mfs = service.ctx.db_fs_for( service.name )
+	assert mfs.exists( '1/0/0/1001/1001.gpx' )
 
-@mark.service( cls=Mock )
+@mark.context( env='empty', persist='clone', cleanup=True )
+@mark.service( cls=Mock, init=True, register=True )
 def test_filter_fetched( service ):
 	resources = [
-		Resource( uid='polar:10' ),
-		Resource( uid='polar:20' ),
-		Resource( uid='polar:30' ),
+		Resource( uid='polar:10', path='10.gpx' ),
+		Resource( uid='polar:20', path='20.gpx' ),
+		Resource( uid='polar:30', path='30.gpx' ),
 	]
 
 	assert service.filter_fetched( resources, 'polar:20' ) == [resources[1]]

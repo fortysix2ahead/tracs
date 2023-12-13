@@ -12,7 +12,7 @@ from dateutil.tz import UTC
 from fs.base import FS
 from fs.errors import ResourceNotFound
 from fs.multifs import MultiFS
-from fs.path import combine, frombase
+from fs.path import combine, dirname, frombase
 
 from tracs.activity import Activity
 from tracs.db import ActivityDb
@@ -97,8 +97,12 @@ class Service( Plugin ):
 		return Path( path ) if as_path else path
 
 	@classmethod
-	def path_for_resource( cls, resource: Resource ) -> Optional[Path]:
-		return Registry.instance().services.get( resource.classifier ).path_for( resource=resource ).resolve()
+	def path_for_resource( cls, resource: Resource, as_path: bool = True ) -> Union[Path, str]:
+		service = Registry.instance().services.get( resource.classifier )
+		if as_path:
+			return service.path_for( resource=resource, as_path=True ).resolve()
+		else:
+			return service.path_for( resource=resource, as_path=False )
 
 	@classmethod
 	def url_for_uid( cls, uid: str ) -> Optional[str]:
@@ -254,7 +258,7 @@ class Service( Plugin ):
 		[ self.persist_resource( r, force, pretend, **kwargs ) for r in resources ]
 
 	def persist_resource( self, resource: Resource, force: bool, pretend: bool, **kwargs ) -> None:
-		path = self.path_for_resource( resource )
+		path = self.path_for_resource( resource, as_path=False )
 		if pretend:
 			log.info( f'pretending to write resource {resource.uidpath}' )
 			return
@@ -263,16 +267,17 @@ class Service( Plugin ):
 			log.debug( f'unable to calculate path for resource {resource.uidpath}' )
 			return
 
-		if path.exists() and not force:
+		if self.fs.exists( path ) and not force:
 			log.debug( f'not persisting resource {resource.uidpath}, path already exists: {path}' )
 			return
 
 		if not resource.content or not len( resource.content ) > 0:
 			log.debug( f'not persisting resource {resource.uidpath} as content missing (0 bytes)' )
+			return
 
 		try:
-			path.parent.mkdir( parents=True, exist_ok=True )
-			path.write_bytes( resource.content )
+			self.fs.makedirs( dirname( path ), recreate=True )
+			self.fs.writebytes( path, resource.content )
 			self.ctx.db.upsert_resources( resource )
 		except TypeError:
 			log.error( f'error writing resource data for resource {resource.uidpath}', exc_info=True )

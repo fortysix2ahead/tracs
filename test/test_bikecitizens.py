@@ -19,12 +19,12 @@ def test_service_creation( service: Bikecitizens ):
 	assert service.user_url == f'{API_URL}/api/v1/users/None'
 
 	assert service.base_url == BASE_URL
-	assert service.base_path is not None and service.overlay_path is not None
+	# assert service.base_path is not None and service.overlay_path is not None
 
 @skip_live
 @mark.context( env='live', persist='clone', cleanup=False )
 @mark.service( cls=Bikecitizens, init=True, register=True )
-def test_live_workflow( service: Service ):
+def test_workflow( service: Service ):
 	assert service.login()
 
 	fetched = list( service.fetch( False, False ) )

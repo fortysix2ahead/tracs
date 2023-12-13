@@ -56,7 +56,7 @@ class Service( Protocol ):
 		"""
 		pass
 
-	def path_for( self, activity: Activity = None, resource: Resource = None, ignore_overlay: bool = True ) -> Optional[Path]:
+	def path_for( self, resource: Resource, ignore_overlay: bool = True, absolute: bool = True, omit_classifier: bool = False, as_path: bool = True ) -> Union[Path, str]:
 		pass
 
 	def link_for( self, activity: Optional[Activity], resource: Optional[Resource], ext: Optional[str] = None ) -> Optional[Path]:

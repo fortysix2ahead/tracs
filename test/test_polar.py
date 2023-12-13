@@ -5,8 +5,10 @@ from datetime import timezone
 from dateutil.tz import tzlocal
 from pytest import mark
 
+from test.helpers import skip_live
 from tracs.activity_types import ActivityTypes
-from tracs.plugins.polar import PolarFlowExercise
+from tracs.plugins.polar import BASE_URL
+from tracs.plugins.polar import Polar, PolarFlowExercise
 from tracs.plugins.polar import PolarFlowImporter
 
 importer = PolarFlowImporter()
@@ -46,3 +48,22 @@ def test_rrrecording( path ):
 	assert r.data.title == 'title'
 	assert r.data.local_id == 100014
 	assert r.data.datetime == '2017-01-16T21:34:58.000'
+
+@mark.context( env='live', persist='clone', cleanup=False )
+@mark.service( cls=Polar, init=True, register=True )
+def test_constructor( service: Polar ):
+	assert service.base_url == f'{BASE_URL}'
+	assert service.login_url == f'{BASE_URL}/login'
+	assert service.ajax_login_url.startswith( f'{BASE_URL}/ajaxLogin?_=' )
+	assert service.events_url == f'{BASE_URL}/training/getCalendarEvents'
+	assert service.export_url == f'{BASE_URL}/api/export/training'
+
+@skip_live
+@mark.context( env='live', persist='clone', cleanup=False )
+@mark.service( cls=Polar, init=True, register=True )
+def test_live_workflow( service ):
+	service.login()
+	assert service.logged_in
+
+	fetched = service.fetch( force=False, pretend=False )
+	assert len( fetched ) > 0

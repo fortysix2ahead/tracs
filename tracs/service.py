@@ -31,11 +31,11 @@ class Service( Plugin ):
 		super().__init__( *args, **kwargs )
 
 		# paths + plugin filesystem area
-		self._fs: FS = (self.ctx.plugin_fs( self.name ) if self.ctx else None) or  kwargs.get( 'fs' )
-		self._base_url = None
+		self._fs: FS = ( self.ctx.plugin_fs( self.name ) if self.ctx else None ) or kwargs.get( 'fs' )
+		self._base_url = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
 
-		# set service properties from kwargs, if a setter exists
+		# set service properties from kwargs, if a setter exists # todo: is this really needed?
 		for p in getmembers( self.__class__, lambda p: type( p ) is property and p.fset is not None ):
 			if p[0] in kwargs.keys() and not p[0].startswith( '_' ):
 				setattr( self, p[0], kwargs.get( p[0] ) )

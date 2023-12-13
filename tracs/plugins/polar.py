@@ -248,13 +248,13 @@ class PersonalTrainerImporter( XMLHandler ):
 class Polar( Service ):
 
 	def __init__( self, **kwargs ):
-		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
+		super().__init__( **kwargs, display_name=DISPLAY_NAME, base_url=BASE_URL )
 
 		self._session = None
 		self._logged_in = False
 
-		self.importer: PolarFlowImporter = Registry.importer_for( POLAR_FLOW_TYPE )
-		self.json_handler: JSONHandler = Registry.importer_for( JSON_TYPE )
+		self.importer: PolarFlowImporter = PolarFlowImporter()
+		self.json_handler: JSONHandler = JSONHandler()
 
 	def _link_path( self, pa: Activity, ext: str ) -> Path or None:
 		if pa.id:

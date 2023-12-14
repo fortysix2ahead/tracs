@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from atexit import register as register_atexit
 from logging import getLogger
+from os.path import expanduser, expandvars
+from pathlib import Path
 from typing import ClassVar, Tuple
 
 from attrs import define, field
@@ -47,6 +49,26 @@ class Application:
 	def __setup__( self, *args, **kwargs ):
 		# console logging setup --
 		setup_console_logging( kwargs.get( 'verbose' ), kwargs.get( 'debug' ) )
+
+		try:
+			configuration = expanduser( expandvars( kwargs.pop( 'configuration', None ) ) )
+			if configuration and Path( configuration ).is_dir():
+				kwargs['config_dir'] = configuration
+			elif configuration and Path( configuration ).is_file():
+				kwargs['config_file'] = configuration
+			else:
+				pass
+		except TypeError:
+			pass
+
+		try:
+			library = expanduser( expandvars( kwargs.pop( 'library', None ) ) )
+			if library and Path( library ).is_dir():
+				kwargs['lib_dir'] = library
+			else:
+				pass
+		except TypeError:
+			pass
 
 		# create context, based on cfg_dir
 		self._ctx = ApplicationContext( *args, **kwargs )

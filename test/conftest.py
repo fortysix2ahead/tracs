@@ -1,46 +1,34 @@
+from datetime import datetime
 from importlib import import_module
-from importlib.resources import path as resource_path
+from importlib.resources import path as pkgpath
 from logging import getLogger
+from os.path import dirname
 from pathlib import Path
 from pkgutil import iter_modules
-from typing import Any, Dict, List
+from shutil import copytree, rmtree
+from typing import cast, Dict, List
 from typing import Optional
 from typing import Tuple
 
-from bottle import Bottle
 from fs.base import FS
+from fs.errors import NoSysPath
 from fs.memoryfs import MemoryFS
-from fs.mountfs import MountFS
 from fs.multifs import MultiFS
+from fs.subfs import SubFS
 from fs.osfs import OSFS
 from pytest import fixture
 from yaml import load as load_yaml
 from yaml import SafeLoader
 
-from tracs.config import ApplicationConfig as cfg
+from tracs.config import ApplicationConfig as cfg, DB_DIRNAME
 from tracs.config import ApplicationConfig as state
 from tracs.config import ApplicationContext
-from tracs.config import KEY_PLUGINS
 from tracs.db import ActivityDb
-from tracs.plugins.bikecitizens import Bikecitizens
-from tracs.plugins.polar import Polar
 from tracs.registry import Registry
 from tracs.service import Service
-from .bikecitizens_server import bikecitizens_server
-from .bikecitizens_server import bikecitizens_server_thread
-from .helpers import cleanup as cleanup_path
-from .helpers import get_db
 from .helpers import get_db_as_json
 from .helpers import get_file_as_json
 from .helpers import get_file_path
-from .helpers import prepare_context
-from .helpers import var_run_path
-from .polar_server import LIVE_BASE_URL as POLAR_LIVE_BASE_URL
-from .polar_server import polar_server
-from .polar_server import polar_server_thread
-from .polar_server import TEST_BASE_URL as POLAR_TEST_BASE_URL
-from .strava_server import strava_server
-from .strava_server import strava_server_thread
 
 log = getLogger( __name__ )
 
@@ -49,35 +37,16 @@ PERSISTANCE_NAME = 'persistance_layer'
 
 def marker( request, name, key, default ):
 	try:
-		return request.node.get_closest_marker( name ).kwargs.get( key )
-	except (AttributeError, TypeError):
+		m = request.node.get_closest_marker( name )
+		if key:
+			return m.kwargs[key]
+		elif not key:
+			return m.args[0]
+	except (AttributeError, KeyError, TypeError):
 		log.error( f'unable to access marker {name}.{key}', exc_info=True )
 		return default
 
 # shared fixtures
-
-@fixture
-def db( request ) -> ActivityDb:
-	if marker := request.node.get_closest_marker( 'db' ):
-		template = marker.kwargs.get( 'template' )
-		library_template = marker.kwargs.get( 'library' )
-		read_only = marker.kwargs.get( 'read_only', True )
-		cleanup = marker.kwargs.get( 'cleanup', True )
-	else:
-		return None
-
-	db = get_db( template=template, read_only=read_only )
-
-	# set base path in services
-	if library_template:
-		for name, instance in Registry.services.items():
-			# noinspection PyPropertyAccess
-			instance.base_path = Path( db.path, name )
-
-	yield db
-
-	if cleanup and not read_only:
-		cleanup_path( db.path )
 
 @fixture
 def config( request ) -> None:
@@ -87,33 +56,6 @@ def config( request ) -> None:
 		cleanup = marker.kwargs.get( 'cleanup', True )
 	else:
 		return None
-
-@fixture
-def ctx( request ) -> Optional[ApplicationContext]:
-	try:
-		marker = request.node.get_closest_marker( 'context' )
-
-		if marker:
-			config = marker.kwargs.get( 'config' )
-			lib = marker.kwargs.get( 'library' )
-			takeout = marker.kwargs.get( 'takeout' )
-			do_cleanup = marker.kwargs.get( 'cleanup' )
-
-			context: ApplicationContext = prepare_context( config, lib, takeout )
-		else:
-			do_cleanup = True
-			context: ApplicationContext = ApplicationContext( config_dir=str( var_run_path() ), verbose=True )
-
-		yield context
-
-		if context.db is not None:
-			context.db.close()
-
-		if do_cleanup:
-			cleanup_path( Path( context.config_dir ) )
-
-	except ValueError:
-		log.error( 'unable to run fixture context', exc_info=True )
 
 @fixture
 def registry( request ) -> Registry:
@@ -126,52 +68,86 @@ def registry( request ) -> Registry:
 	yield Registry.instance()
 
 @fixture
+def varfs( request ) -> FS:
+	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
+		tp = test_pkg_path.parent
+		vrp = Path( tp, f'../var/run/{datetime.now().strftime( "%H%M%S_%f" )}' ).resolve()
+		vrp.mkdir( parents=True, exist_ok=True )
+		log.info( f'created new temporary persistance dir in {str( vrp )}' )
+		yield OSFS( str( vrp ) )
+
+@fixture
 def fs( request ) -> FS:
-	cfg_name = marker( request, 'context', 'config', None )
-	lib_name = marker( request, 'context', 'lib', None )
-	overlay_name = marker( request, 'context', 'overlay', None )
-	takeout_name = marker( request, 'context', 'takeout', None )
-	var_name = marker( request, 'context', 'var', None )
-	persist = marker( request, 'context', 'persist', False )
+	env = marker( request, 'context', 'env', 'empty' )
+	persist = marker( request, 'context', 'persist', 'mem' )
 	cleanup = marker( request, 'context', 'cleanup', True )
 
-	root_fs = MultiFS()
-	mount_fs = MountFS()
+	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
+		tp = test_pkg_path.parent
+		ep = Path( tp, f'environments/{env}' )
+		vrp = Path( tp, f'../var/run/{datetime.now().strftime( "%H%M%S_%f" )}' ).resolve()
 
-	if persist == 'disk':
-		vrp = var_run_path().absolute()
-		root_fs.add_fs( PERSISTANCE_NAME, OSFS( str( vrp ) ), write=True )
-		log.info( f'created new temporary persistance dir in {str( vrp )}' )
+		if persist in ['disk', 'clone']:
+			vrp.mkdir( parents=True, exist_ok=True )
+			root_fs = OSFS( str( vrp ), expand_vars=True )
+			log.info( f'created new temporary persistance dir in {str( vrp )}' )
 
-	elif persist == 'mem':
-		root_fs.add_fs( PERSISTANCE_NAME, MemoryFS(), write=True )
+			if persist == 'clone':
+				copytree( ep, vrp, dirs_exist_ok=True )
 
-	root_fs.add_fs( 'mount', mount_fs )
+		elif persist == 'mem':
+			root_fs = MemoryFS()
 
-	with resource_path( 'test', '__init__.py' ) as rp:
-		tp = str( rp.parent.resolve().absolute() )
-		if cfg_name:
-			root_fs.add_fs( 'cfg', OSFS( f'{tp}/configurations/{cfg_name}' ) )
-
-		if lib_name:
-			mount_fs.mount( '/db', OSFS( f'{tp}/libraries/{lib_name}' ) )
-
-		if overlay_name:
-			mount_fs.mount( '/overlay', OSFS( f'{tp}/overlays/{overlay_name}' ) )
-
-		if takeout_name:
-			mount_fs.mount( '/takeouts', OSFS( f'{tp}/takeouts/{takeout_name}' ) )
-
-		if var_name:
-			mount_fs.mount( '/var', OSFS( f'{tp}/var/{var_name}' ) )
+		else:
+			raise ValueError( 'value of key persist needs to be one of [mem, disk, clone]' )
 
 	yield root_fs
 
 	if cleanup:
-		if (pl := root_fs.get_fs( PERSISTANCE_NAME )) and isinstance( pl, OSFS ):
-			syspath = pl.getsyspath( '/' )
-			cleanup_path( Path( syspath ) )
-			log.info( f'cleaned up temporary persistance dir {syspath}' )
+		if isinstance( root_fs, OSFS ):
+			sp = root_fs.getsyspath( '/' )
+			if dirname( dirname( sp ) ).endswith( 'var/run' ):  # sanity check: only remove when in var/run
+				rmtree( sp, ignore_errors=True )
+				log.info( f'cleaned up temporary persistance dir {sp}' )
+
+@fixture
+def db_path( request, fs: FS ) -> Path:
+	if isinstance( fs, OSFS ):
+		path = Path( fs.getsyspath( DB_DIRNAME ) )
+		path.mkdir( parents=True, exist_ok=True )
+		yield path
+	else:
+		raise ValueError
+	#env = marker( request, 'context', 'env', 'empty' )
+	#with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
+	#	yield Path( test_pkg_path.parent, f'environments/{env}/db' )
+
+@fixture
+def db( request, fs: FS ) -> ActivityDb:
+	if isinstance( fs, OSFS ):
+		db_fs = OSFS( root_path=fs.getsyspath( DB_DIRNAME ), create=True )
+	elif isinstance( fs, MemoryFS ):
+		db_fs = MemoryFS()
+	else:
+		raise ValueError
+	yield ActivityDb( fs=db_fs )
+	#db_path = Path( env_fs.getsyspath( '/' ), DB_DIRNAME )
+	#yield ActivityDb( path=db_path, read_only=False )
+
+@fixture
+def ctx( request, db: ActivityDb ) -> ApplicationContext:
+	try:
+		db_path = db.underlay_fs.getsyspath( '' )
+		context = ApplicationContext( config_dir=dirname( dirname( db_path ) ), verbose=True )
+	except NoSysPath:
+		context = ApplicationContext( config_fs=MemoryFS(), lib_fs=MemoryFS(), db_fs=db.underlay_fs, verbose=True )
+
+	context.db = db  # attach db to ctx
+
+	yield context
+
+	if context.db is not None:
+		context.db.close()
 
 @fixture
 def json( request ) -> Optional[Dict]:
@@ -183,8 +159,8 @@ def json( request ) -> Optional[Dict]:
 
 @fixture
 def path( request ) -> Optional[Path]:
-	if marker := request.node.get_closest_marker( 'file' ):
-		return get_file_path( marker.args[0] )
+	with pkgpath( 'test', '__init__.py' ) as test_path:
+		return Path( test_path.parent, marker( request, 'file', None, None ) )
 
 @fixture
 def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
@@ -207,74 +183,24 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 	return config_dict, state_dict
 
 @fixture
-def service( request, ctx ) -> Optional[Service]:
-	try:
-		marker = request.node.get_closest_marker( 'service' )
-		service_class = marker.kwargs.get( 'cls' )
-		service_class_name = service_class.__name__.lower()
-		base_path = Path( ctx.db_dir, service_class_name )
+def service( request, ctx: ApplicationContext ) -> Optional[Service]:
+	service_class = marker( request, 'service', 'cls', None )
+	register = marker( request, 'service', 'register', False )
+	init = marker( request, 'service', 'init', False )
 
-		Registry.instance()._services[service_class_name] = service_class( ctx=ctx, **{ 'base_path': base_path, **marker.kwargs} )
-		return Registry.instance().services[service_class_name]
+	service_class_name = service_class.__name__.lower()
 
-	except ValueError:
-		log.error( 'unable to run fixture service', exc_info=True )
+	if init:
+		# service = service_class( fs=ctx.config_fs, _configuration=ctx.config['plugins'][service_class_name], _state=ctx.state['plugins'][service_class_name] )
+		service = service_class( ctx=ctx )
+	else:
+		service = service_class( fs=fs )
 
-# bikecitizens specific fixtures
+	if register:
+		# noinspection PyProtectedMember
+		Registry.instance()._services[service_class_name] = service
 
-@fixture
-def bikecitizens_server() -> Bottle:
-	if not bikecitizens_server_thread.is_alive():
-		bikecitizens_server_thread.start()
-	return bikecitizens_server
-
-@fixture
-def bikecitizens_service( request ) -> Optional[Bikecitizens]:
-	if marker := request.node.get_closest_marker( 'base_url' ):
-		service = Bikecitizens()
-		service.base_url = marker.args[0]
-		return service
-	return None
-
-# polar specific fixtures
-
-@fixture
-def polar_server() -> Bottle:
-	if not polar_server_thread.is_alive():
-		polar_server_thread.start()
-	return polar_server
-
-@fixture
-def polar_service( request ) -> Optional[Polar]:
-	if marker := request.node.get_closest_marker( 'base_url' ):
-		service = Polar()
-		service.base_url = marker.args[0]
-		return service
-	return None
-
-@fixture
-def polar_test_service() -> Polar:
-	polar = Polar()
-	polar.base_url = POLAR_TEST_BASE_URL
-
-	cfg[KEY_PLUGINS]['polar']['username'] = 'sample user'
-	cfg[KEY_PLUGINS]['polar']['password'] = 'sample password'
-
-	return polar
-
-@fixture
-def polar_live_service() -> Polar:
-	polar = Polar()
-	polar.base_url = POLAR_LIVE_BASE_URL
-	return polar
-
-# strava specific fixtures
-
-@fixture
-def strava_server() -> Bottle:
-	if not strava_server_thread.is_alive():
-		strava_server_thread.start()
-	return strava_server
+	yield service
 
 @fixture
 def keywords() -> List[str]:

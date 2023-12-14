@@ -66,7 +66,7 @@ def test_strava( ctx ):
 	runner, result, stdout = invoke( ctx, cmd = cmd_inspect_1, log = True )
 
 @skip_live
-@mark.context( library='empty', config='live', cleanup=True )
+@mark.context( env='empty', persist='clone', cleanup=False )
 def test_config( ctx ):
 	runner, result, stdout = invoke( ctx, cmd=cmd_config, log=True )
 	assert result.exit_code == 0
@@ -84,7 +84,7 @@ def invoke( ctx: ApplicationContext, options: str = None, cmd: str = None, cmd_o
 
 	full_cmd = []
 	full_cmd.extend( options.split( ' ' ) if options else [] )
-	full_cmd.extend( [ '-c', str( ctx.config_dir ) ] )
+	full_cmd.extend( [ '-c', f'"{ctx.config_file}"' ] )
 	full_cmd.extend( cmd.split( ' ' ) if cmd else [] )
 	full_cmd.extend( cmd_options.split( ' ' ) if cmd_options else [] )
 

@@ -22,7 +22,7 @@ from tracs.plugins.tcx import Activity as TCXActivity
 from tracs.plugins.waze import WAZE_TYPE, WazeImporter
 from tracs.plugins.waze import WazeActivity
 
-@mark.file( 'takeouts/waze/waze/2020-09/account_activity_3.csv' )
+@mark.file( 'environments/default/takeouts/waze/2020-09/account_activity_3.csv' )
 def test_csv_handler( path ):
 	handler = CSVHandler()
 	assert handler.TYPE == CSV_TYPE
@@ -133,7 +133,7 @@ def test_tcx_export():
 	print()
 	print( tostring( tcx.as_xml(), pretty_print=True ).decode( 'UTF-8' ) )
 
-@mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
+@mark.file( 'environments/default/db/polar/1/0/0/100001/100001.json' )
 def test_polar_flow_importer( path ):
 	importer = PolarFlowImporter()
 	assert importer.TYPE == POLAR_FLOW_TYPE
@@ -156,7 +156,7 @@ def test_polar_ped_importer( path ):
 	activity = importer.load_as_activity( path=path )
 	assert type( activity ) is PolarExerciseDataActivity and activity.uid == 'polar:160904124614'
 
-@mark.file( 'libraries/default/strava/2/0/0/200002/200002.json' )
+@mark.file( 'environments/default/db/strava/2/0/0/200002/200002.json' )
 def test_strava_importer( path ):
 	importer = StravaHandler()
 	assert importer.TYPE == STRAVA_TYPE
@@ -169,7 +169,7 @@ def test_strava_importer( path ):
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2018-12-16T13:15:12+00:00'
 
-@mark.file( 'libraries/default/bikecitizens/1/0/0/1000001/1000001.json' )
+@mark.file( 'environments/default/db/bikecitizens/1/0/0/1000001/1000001.json' )
 def test_bikecitizens_importer( path ):
 	importer = BikecitizensImporter()
 	assert importer.TYPE == BIKECITIZENS_TYPE
@@ -182,7 +182,7 @@ def test_bikecitizens_importer( path ):
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2020-05-09T05:03:11+00:00'
 
-@mark.file( 'libraries/default/waze/20/07/12/200712074743/200712074743.txt' )
+@mark.file( 'environments/default/db/waze/20/07/12/200712074743/200712074743.txt' )
 def test_waze_importer( path ):
 	importer = WazeImporter()
 	assert importer.TYPE == WAZE_TYPE

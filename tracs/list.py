@@ -140,13 +140,13 @@ def show_config( ctx: ApplicationContext ):
 
 	table.add_section()
 
-	for s in Registry.services.values():
-		table.add_row( f'{s.display_name} activities:', pp( Path( ctx.db_dir, s.name ) ) )
+	for s in Registry.instance().services.values():
+		table.add_row( f'{s.name} activities:', pp( Path( ctx.db_dir, s.name ) ) )
 
 	table.add_section()
 
-	table.add_row( 'plugins dir', pp( ctx.plugins_dir ) )
-	table.add_row( 'overlay dir', pp( ctx.overlay_dir ) )
+	#table.add_row( 'plugins dir', pp( ctx.plugins_dir ) )
+	#table.add_row( 'overlay dir', pp( ctx.overlay_dir ) )
 
 	console.print( 'Locations', style='bold' )
 	console.print( table )

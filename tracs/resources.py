@@ -131,6 +131,10 @@ class Resource:
 	def local_id_str( self ) -> str:
 		return str( self.local_id )
 
+	@property
+	def uid_obj( self ) -> UID:
+		return self.__uid__
+
 	# todo: rename, that's not a good name
 	@property
 	def uidpath( self ) -> str:

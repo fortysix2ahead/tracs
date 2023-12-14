@@ -1,0 +1,23 @@
+plugins:
+    strava:
+        expires_in: 21600
+        expires_at: 1666974723
+        token_type: Bearer
+        refresh_token: 4df4b76b3f907721ed6e83d4f61ff9787099da40
+        access_token: 5323d18c512e412517306517e128b2532294dc62
+        last_fetch:
+        last_download:
+    bikecitizens:
+        user_id: 201279
+        api_key: 6a9eacd9077c51ce5bb77cac28b39b48a54f93d53a156321b667b65f4e2d29bf
+        session: S2x4ZjE4U3czdyswdFgxYnY2U3NNaksxQk95YmJrQnFvQitkOWhRRTJtTE1iejlHcnJuRXR0cHk1MnlaY0l1OFlGTy9SUXJtRUhNaDZueE9YTnN3MEsxZnY5ajdxWkUraWpNbjVpbFFYK2wwQTcxdVlKMHBSL1FlWmNXK1l0SlF0SVY0UHNkWUlBNkdQNHIySnVXTklDQmNQY29HeW1wWFNRUTN0ZG5NWWNwbUVMTEJCcXBHbjNCVGptamVBa2ppdW9vRW5uUysrUUpYQVl6aGhkWUdkSDY0K1JzZ0xpT3VTZFJNUldlZjVpZXFzVWtSdGtVcVB2c0RWUjFpSkhFVi0tTjIzdzlaWXRkVHB1cTQ1ZVlYckZFQT09--53f06d3e7a900b01fc2a43b2a759fff7f104ac48
+        last_fetch:
+        last_download:
+    polar:
+        last_fetch:
+        last_download:
+    waze:
+        fetch:
+            takeouts:
+        last_fetch:
+        last_download:

@@ -459,11 +459,12 @@ class Waze( Service ):
 		if hasattr( self, '_takeout_importer' ):
 			self._takeout_importer.field_size_limit = field_size_limit
 
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
-		path = Path( str( local_id )[0:2], str( local_id )[2:4], str( local_id )[4:6], str( local_id ) )
-		path = Path( base_path, path ) if base_path else path
-		path = Path( path, resource_path ) if resource_path else path
-		return path
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = True ) -> Union[Path, str]:
+		id = str( local_id ).rjust( 6, '0' )
+		path = f'{id[0:2]}/{id[2:4]}/{id[4:6]}/{id}'
+		path = f'{base_path}/{path}' if base_path else path
+		path = f'{path}/{resource_path}' if resource_path else path
+		return Path( path ) if as_path else path
 
 	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
 		return None
@@ -478,7 +479,7 @@ class Waze( Service ):
 		if not kwargs.get( 'from_takeouts', False ):
 			return []
 
-		takeouts_dir = self.ctx.takeouts_dir_for( self.name )
+		takeouts_dir = self.ctx.takeout_dir_path( self.name )
 		log.debug( f"fetching Waze activities from {takeouts_dir}" )
 
 		takeout_files = sorted( takeouts_dir.rglob( ACTIVITY_FILE ) )
@@ -516,14 +517,13 @@ class Waze( Service ):
 		return summaries
 
 	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
-		if not summary.get_child( GPX_TYPE ) or force: # todo: not sure if this can be false any longer?
-			try:
-				gpx_resource = Resource( type=GPX_TYPE, path=f'{summary.local_id}.gpx', uid=summary.uid )
-				self.download_resource( gpx_resource, summary=summary )
-				return [gpx_resource]
-			except RuntimeError:
-				log.error( f'error fetching resource from {summary.uid}', exc_info=True )
-		return []
+		try:
+			gpx_resource = Resource( type=GPX_TYPE, path=f'{summary.local_id}.gpx', uid=summary.uid )
+			self.download_resource( gpx_resource, summary=summary )
+			return [gpx_resource]
+		except RuntimeError:
+			log.error( f'error fetching resource from {summary.uid}', exc_info=True )
+			return []
 
 	def download_resource( self, resource: Resource, **kwargs ) -> Tuple[Any, int]:
 		if (summary := kwargs.get( 'summary' )) and summary.raw:

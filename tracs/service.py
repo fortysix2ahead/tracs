@@ -6,19 +6,20 @@ from datetime import datetime, timedelta
 from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, cast, List, Optional, Tuple, Union
 
 from dateutil.tz import UTC
 from fs.base import FS
+from fs.errors import ResourceNotFound
 from fs.multifs import MultiFS
-from fs.osfs import OSFS
+from fs.path import combine, dirname, frombase
 
 from tracs.activity import Activity
-from tracs.config import DEFAULT_DB_DIR, OVERLAY_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.registry import Registry
 from tracs.resources import Resource
+from tracs.uid import UID
 
 log = getLogger( __name__ )
 
@@ -26,26 +27,21 @@ log = getLogger( __name__ )
 
 class Service( Plugin ):
 
-	def __init__( self, **kwargs ):
-		super().__init__( **kwargs )
+	def __init__( self, *args, **kwargs ):
+		super().__init__( *args, **kwargs )
 
 		# paths + plugin filesystem area
-		self._base_path: Path = kwargs.get( 'base_path', Path( DEFAULT_DB_DIR, self.name ) )
-		self._overlay_path: Path = kwargs.get( 'overlay_path', Path( self._base_path.parent, OVERLAY_DIRNAME, self.name ) )
-		self._base_url = None
-
-		self._fs: MultiFS = MultiFS()
-		self._fs.add_fs( 'base', OSFS( str( self._base_path ), create=True ), write=True )
-		self._fs.add_fs( 'overlay', OSFS( str( self._overlay_path ), create=True ), write=False )
-
+		self._fs: FS = ( self.ctx.plugin_fs( self.name ) if self.ctx else None ) or kwargs.get( 'fs' )
+		self._dbfs = self.ctx.db_fs if self.ctx else None
+		self._base_url = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
 
-		# set service properties from kwargs, if a setter exists
+		# set service properties from kwargs, if a setter exists # todo: is this really needed?
 		for p in getmembers( self.__class__, lambda p: type( p ) is property and p.fset is not None ):
 			if p[0] in kwargs.keys() and not p[0].startswith( '_' ):
 				setattr( self, p[0], kwargs.get( p[0] ) )
 
-		log.debug( f'service instance {self._name} created, with base path = {self._base_path} and overlay_path = {self._overlay_path} ' )
+		log.debug( f'service instance {self._name} created with fs = {self._fs}' )
 
 	# properties
 
@@ -55,38 +51,29 @@ class Service( Plugin ):
 
 	@property
 	def base_path( self ) -> Path:
-		return self._base_path
-
-	@base_path.setter
-	def base_path( self, path: Path ) -> None:
-		self._base_path = path
+		return Path( self.fs.getsyspath( '/' ) )
 
 	@property
 	def overlay_path( self ) -> Path:
-		return self._overlay_path
-
-	@overlay_path.setter
-	def overlay_path( self, path: Path ) -> None:
-		self._overlay_path = path
+		return Path( self.fs.getsyspath( '/' ) ) # todo: this is not yet correct
 
 	@property
 	def base_url( self ) -> str:
 		return self._base_url
 
-	@base_url.setter
-	def base_url( self, url: str ) -> None:
-		self._base_url = url
-
-	# todo: still needed?
-	@property
+	@property # todo: remove later for self.db
 	def _db( self ) -> ActivityDb:
-		return self.ctx.db
+		return self.db
 
 	# fs properties (read-only)
 
 	@property
 	def fs( self ) -> FS:
 		return self._fs
+
+	@property
+	def dbfs( self ) -> FS:
+		return self._dbfs
 
 	@property
 	def base_fs( self ) -> FS:
@@ -99,23 +86,28 @@ class Service( Plugin ):
 	# class methods for helping with various things
 
 	@classmethod
-	def path_for_uid( cls, uid: str ) -> Optional[Path]:
+	def path_for_uid( cls, uid: str, absolute: bool = False, as_path=True ) -> Union[Path, str]:
 		"""
 		Returns the relative path for a given uid.
 		A service with the classifier of the uid has to exist, otherwise None will be returned.
 		"""
-		classifier, local_id = uid.split( ':', 1 )
-		if service := Registry.instance().services.get( classifier ):
-			return service.path_for_id( local_id, Path( service.name ) )
-		else:
-			return path_for_id( local_id, Path( classifier ) )
+		uid = UID( uid )
+		# todo: what to do with unknown services?
+		service = Registry.instance().services.get( uid.classifier )
+		path = service.path_for_id( uid.local_id, service.name, uid.path )
+
+		if absolute:
+			path = service.path_for_id(  )
+
+		return Path( path ) if as_path else path
 
 	@classmethod
-	def path_for_resource( cls, resource: Resource ) -> Optional[Path]:
-		if service := Registry.instance().services.get( resource.classifier ):
-			return service.path_for( resource=resource ).resolve()
+	def path_for_resource( cls, resource: Resource, as_path: bool = True ) -> Union[Path, str]:
+		service = Registry.instance().services.get( resource.classifier )
+		if as_path:
+			return service.path_for( resource=resource, as_path=True ).resolve()
 		else:
-			return None
+			return service.path_for( resource=resource, as_path=False )
 
 	@classmethod
 	def url_for_uid( cls, uid: str ) -> Optional[str]:
@@ -141,10 +133,15 @@ class Service( Plugin ):
 
 	# service methods
 
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
-		return path_for_id( local_id, base_path, resource_path ) # use the default path calculation
+	# todo: set as_path to a default of False
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = True ) -> Union[Path, str]:
+		local_id_rjust = str( local_id ).rjust( 3, '0' )
+		path = f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
+		path = combine( base_path, path ) if base_path else path
+		path = combine( path, resource_path ) if resource_path else path
+		return Path( path ) if as_path else path
 
-	def path_for( self, resource: Resource, ignore_overlay: bool = True, absolute: bool = True, omit_classifier: bool = False ) -> Optional[Path]:
+	def path_for( self, resource: Resource, ignore_overlay: bool = True, absolute: bool = True, omit_classifier: bool = False, as_path: bool = True ) -> Optional[Path]:
 		"""
 		Returns the path in the local file system where all artefacts of a provided activity are located.
 
@@ -152,21 +149,27 @@ class Service( Plugin ):
 		:param ignore_overlay: if True ignores the overlay
 		:param absolute: if True returns an absolute path
 		:param omit_classifier: if True, the relative path will not include the leading name of the service
+		:param as_path: if True, return the result as Path
 		:return: path of the resource in the local file system
 		"""
-		if resource.classifier == self.name:
-			path = Path( self.path_for_id( resource.local_id, base_path=Path( self.name ) ), resource.path )
+		uid = resource.uid_obj
+
+		if uid.classifier != self.name:
+			# this should not happen, if it does, something's wrong
+			log.warning( f'called path_for() on service {self.name} for a foreign resource with UID {resource.uidpath}' )
+
+		if omit_classifier and not absolute:
+			path = self.path_for_id( uid.local_id, None, resource_path=uid.path, as_path=False )
 		else:
-			if s := Registry.instance().services.get( resource.classifier ):
-				path = s.path_for_id( resource.local_id, Path( resource.classifier ), Path( resource.path ) )
-			else:
-				return None
+			path = self.path_for_id( uid.local_id, uid.classifier, resource_path=uid.path, as_path=False )
 
-		if not absolute and omit_classifier:
-			path = path.relative_to( path.parts[0] )
+		if absolute:
+			try:
+				path = self.fs.getsyspath( path )
+			except (AttributeError, ResourceNotFound):
+				path = f'/{path}' if not omit_classifier else f'{frombase( uid.classifier, path )}'
 
-		# return Path( self.base_fs.getsyspath( str( path ) ) ) if absolute else path
-		return Path( Path( self.ctx.db_dir_path ), path ) if absolute else path
+		return Path( path ) if as_path else path
 
 	def url_for( self, activity: Optional[Activity] = None, resource: Optional[Resource] = None, local_id: Optional[int] = None ) -> Optional[str]:
 		url = None
@@ -260,7 +263,7 @@ class Service( Plugin ):
 		[ self.persist_resource( r, force, pretend, **kwargs ) for r in resources ]
 
 	def persist_resource( self, resource: Resource, force: bool, pretend: bool, **kwargs ) -> None:
-		path = self.path_for_resource( resource )
+		path = self.path_for_resource( resource, as_path=False )
 		if pretend:
 			log.info( f'pretending to write resource {resource.uidpath}' )
 			return
@@ -269,16 +272,17 @@ class Service( Plugin ):
 			log.debug( f'unable to calculate path for resource {resource.uidpath}' )
 			return
 
-		if path.exists() and not force:
+		if self.dbfs.exists( path ) and not force:
 			log.debug( f'not persisting resource {resource.uidpath}, path already exists: {path}' )
 			return
 
 		if not resource.content or not len( resource.content ) > 0:
 			log.debug( f'not persisting resource {resource.uidpath} as content missing (0 bytes)' )
+			return
 
 		try:
-			path.parent.mkdir( parents=True, exist_ok=True )
-			path.write_bytes( resource.content )
+			self.dbfs.makedirs( dirname( path ), recreate=True )
+			self.dbfs.writebytes( path, resource.content )
 			self.ctx.db.upsert_resources( resource )
 		except TypeError:
 			log.error( f'error writing resource data for resource {resource.uidpath}', exc_info=True )

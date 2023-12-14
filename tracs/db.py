@@ -12,6 +12,7 @@ from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
 from click import confirm
 from fs.base import FS
 from fs.copy import copy_file, copy_file_if
+from fs.errors import ResourceNotFound
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
@@ -43,7 +44,7 @@ DB_FILES = {
 	INDEX_NAME: '{}',
 	METADATA_NAME: '{}',
 	RESOURCES_NAME: '{}',
-	SCHEMA_NAME: '{"version": 12}'
+	SCHEMA_NAME: '{"version": 13}'
 }
 
 UNDERLAY = 'underlay'
@@ -70,7 +71,7 @@ class ActivityDbIndex:
 
 class ActivityDb:
 
-	def __init__( self, path: Optional[Path] = None, read_only: bool = False, enable_index: bool = False ):
+	def __init__( self, path: Optional[Union[Path, str]] = None, fs: Optional[FS] = None, read_only: bool = False, enable_index: bool = False ):
 		"""
 		Creates an activity db, consisting of tiny db instances (meta + activities + resources + schema).
 
@@ -78,74 +79,85 @@ class ActivityDb:
 		:param read_only: read-only mode - does not allow write operations
 		"""
 
-		self._db_path = path
+		self._path = path
+		self._fs = fs
 		self._read_only = read_only
 
 		# initialize db file system(s)
-		self._init_db_filesystem()
+		self._fs = self._init_fs()
 
 		# load content from disk
 		self._load_db()
 
-		# experimental: create index and setup relations between resources and activities
+		# experimental: create index and setup relations between resources and activities, turned off for now
 		if enable_index:
-			log.debug( f'creating db index' )
-			self._index = ActivityDbIndex( self.activity_map, self.resource_map )
+			pass
+			# log.debug( f'creating db index' )
+			# self._index = ActivityDbIndex( self.activity_map, self.resource_map )
 
-	def _init_db_filesystem( self ):
-		log.debug( f'initializing db file system from db path = {self._db_path} and ready_only = {self._read_only}' )
-
-		self.dbfs = MultiFS() # multi fs composed of os/memory + memory
+	def _init_fs( self ):
+		log.debug( f'initializing db file system from path = {self._path} and ready_only = {self._read_only}' )
 
 		# operating system fs as underlay (resp. memory when no path is provided)
-		if self._db_path:
+		if self._path:
 			if self._read_only:
-				self._init_readonly_filesystem( self.dbfs, self._db_path )
+				return self._init_readonly_filesystem( self._path )
 			else:
-				self._init_filesystem( self.dbfs, self._db_path )
-
+				return self._init_filesystem( self._path )
 		else:
-			self._init_inmemory_filesystem( self.dbfs )
+			if self._fs:
+				return self._init_existing_fs( self._fs )
+			else:
+				return self._init_inmemory_filesystem()
 
-	def _init_filesystem( self, dbfs: MultiFS, os_path: Path ):
-		self._db_path.mkdir( parents=True, exist_ok=True )
-		self.osfs = OSFS( root_path=str( self._db_path ) )
-		dbfs.add_fs( UNDERLAY, OSFS( root_path=str( self._db_path ) ), write=False )
-		dbfs.add_fs( OVERLAY, MemoryFS(), write=True )
+	def _init_filesystem( self, path: Path ) -> FS:
+		fs = MultiFS()
+		fs.add_fs( UNDERLAY, OSFS( root_path=str( self._path ), create=True ), write=False )
+		fs.add_fs( OVERLAY, MemoryFS(), write=True )
 
 		for file, content in DB_FILES.items():
-			if not self.underlay_fs.exists( f'/{file}' ):
-				self.underlay_fs.writetext( f'/{file}', content )
+			if not fs.get_fs( UNDERLAY ).exists( f'/{file}' ):
+				fs.get_fs( UNDERLAY ).writetext( f'/{file}', content )
 			# copy_file_if( self.pkgfs, f'/{f}', self.underlay_fs, f'/{f}', 'not_exists', preserve_time=True )
 
 		# todo: this is probably not needed?
 		for f in DB_FILES.keys():
-			copy_file( self.underlay_fs, f'/{f}', self.overlay_fs, f'/{f}', preserve_time=True )
+			copy_file( fs.get_fs( UNDERLAY ), f'/{f}', fs.get_fs( OVERLAY ), f'/{f}', preserve_time=True )
 
-	def _init_readonly_filesystem( self, dbfs: MultiFS, os_path: Path ):
-		if not os_path.exists():
-			log.error( f'error opening db from {self._db_path} in read-only mode: path does not exist' )
-			sysexit( -1 )
+		return fs
 
-		self.osfs = OSFS( root_path=str( self._db_path ) )
-		dbfs.add_fs( UNDERLAY, MemoryFS(), write=False )
-		dbfs.add_fs( OVERLAY, MemoryFS(), write=True )
+	def _init_readonly_filesystem( self, path: Path ) -> FS:
+		if not path.exists():
+			log.error( f'error opening db from {self._path} in read-only mode: path does not exist' )
+			raise ResourceNotFound( str( path ) )
+
+		osfs = OSFS( root_path=str( self._path ) )
+		fs = MemoryFS()
 
 		for f in DB_FILES.keys():
-			copy_file( self.osfs, f'/{f}', self.underlay_fs, f'/{f}', preserve_time=True )
+			try:
+				copy_file( osfs, f'/{f}', fs, f'/{f}', preserve_time=True )
+			except ResourceNotFound:
+				fs.writetext( f, DB_FILES.get( f ) )
+
+		return fs
+
+	# noinspection PyMethodMayBeStatic
+	def _init_existing_fs( self, fs: FS ) -> FS:
+		for file, content in DB_FILES.items():
+			if not fs.exists( file ):
+				fs.writetext( file, content )
+		return fs
 
 	# for development only ...
-	def _init_inmemory_filesystem( self, dbfs: MultiFS ):
-		dbfs.add_fs( UNDERLAY, MemoryFS(), write=False )
-		dbfs.add_fs( OVERLAY, MemoryFS(), write=True )
-
-		for file, content in DB_FILES.items():
-			self.underlay_fs.writetext( f'/{file}', content )
+	# noinspection PyMethodMayBeStatic
+	def _init_inmemory_filesystem( self ) -> FS:
+		return self._init_existing_fs( MemoryFS() )
 
 	def _load_db( self ):
-		self._schema = load_schema( self.dbfs )
-		self._resources: Resources = load_resources( self.dbfs )
-		self._activities: Activities = load_activities( self.dbfs )
+		self._schema = load_schema( self.fs )
+		self._resources: Resources = load_resources( self.fs )
+		self._activities: Activities = load_activities( self.fs )
 
 	def commit( self, do_commit: bool = True ):
 		if do_commit:
@@ -171,12 +183,22 @@ class ActivityDb:
 	# ---- DB Properties --------------------------------------------------------
 
 	@property
+	def fs( self ) -> FS:
+		return self._fs
+
+	@property
 	def underlay_fs( self ) -> FS:
-		return self.dbfs.get_fs( UNDERLAY )
+		if isinstance( self.fs, MultiFS ):
+			return cast( MultiFS, self.fs ).get_fs( UNDERLAY )
+		else:
+			return self._fs
 
 	@property
 	def overlay_fs( self ) -> FS:
-		return self.dbfs.get_fs( OVERLAY )
+		if isinstance( self.fs, MultiFS ):
+			return cast( MultiFS, self.fs ).get_fs( OVERLAY )
+		else:
+			return self._fs
 
 	@property
 	def schema( self ) -> Schema:

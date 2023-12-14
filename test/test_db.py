@@ -14,42 +14,48 @@ from tracs.plugins.strava import STRAVA_TYPE
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.registry import Registry
 from tracs.resources import Resource, ResourceType
-from .helpers import get_db_path
 
 def test_new_db_without_path():
 	db = ActivityDb( path=None )
-	assert db.dbfs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
-	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
-	assert db.schema.version == 12
+	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
 
 	# read_only is ignored in this case
 	db = ActivityDb( path=None, read_only=True )
-	assert db.dbfs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
-	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
-	assert db.schema.version == 12
+	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
 
 	# same as above
 	db = ActivityDb( path=None, read_only=False )
-	assert db.dbfs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
-	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
-	assert db.schema.version == 12
+	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
 
-def test_new_db_with_path():
-	db_path = get_db_path( 'empty', read_only=False )
-	db = ActivityDb( path=db_path.parent, read_only=False )
-	assert db.dbfs is not None and type( db.underlay_fs ) is OSFS and type( db.overlay_fs ) is MemoryFS
-	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
-	assert db.schema.version == 12
+def test_new_db_with_fs():
+	db = ActivityDb( fs=MemoryFS() )
+	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
 
-	db_path = get_db_path( 'empty', read_only=True )
-	db = ActivityDb( path=db_path.parent, read_only=True )
-	assert db.dbfs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
-	assert db.dbfs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
-	assert db.schema.version == 12
+@mark.context( env='empty', persist='clone', cleanup=True )
+def test_new_db_with_writable_path( db_path ):
+	db = ActivityDb( path=db_path, read_only=False )
+	assert db.fs is not None and type( db.underlay_fs ) is OSFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
 
-@mark.db( template='default', read_only=True )
+@mark.context( env='empty', persist='clone', cleanup=True )
+def test_new_db_with_readonly_path( db_path ):
+	db = ActivityDb( path=db_path, read_only=True )
+	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
+	assert db.fs.listdir( '/' ) == ['activities.json', 'index.json', 'metadata.json', 'resources.json', 'schema.json']
+	assert db.schema.version == 13
+
+@mark.context( env='default', persist='clone', cleanup=True )
 def test_open_db( db ):
-	assert db.schema.version == 12
+	assert db.schema.version == 13
 
 	assert len( db.activities ) > 1
 	assert db.activities[0] == Activity(
@@ -62,7 +68,7 @@ def test_open_db( db ):
 		uids=['polar:1234567890', 'strava:12345678', 'waze:20210101010101'],
 	)
 
-@mark.db( template='empty', read_only=True )
+@mark.context( env='empty', persist='clone', cleanup=True )
 def test_insert( db ):
 	assert len( db.activities ) == 0
 	id = db.insert( Activity() )
@@ -71,7 +77,7 @@ def test_insert( db ):
 	assert len( db.activities ) == 3 and ids == [2, 3]
 	assert db.activity_keys == [1, 2, 3]
 
-@mark.db( template='empty', read_only=True )
+@mark.context( env='empty', persist='clone', cleanup=True )
 def test_insert_resources( db ):
 	assert len( db.resources ) == 0
 
@@ -80,13 +86,13 @@ def test_insert_resources( db ):
 
 	assert db.insert_resources( r1, r2 ) == [1, 2]
 
-@mark.db( template='default', read_only=True )
+@mark.context( env='default', persist='clone', cleanup=True )
 def test_contains( db ):
 	# check activity table
 	assert db.contains_activity( uid='polar:1234567890' ) is True
 	assert db.contains_activity( uid='polar:9999' ) is False
 
-@mark.db( template='default', read_only=True )
+@mark.context( env='default', persist='clone', cleanup=True )
 def test_get( db ):
 	assert (a := db.get_by_id( 1 )) and a.id == 1 and isinstance( a, Activity )
 	assert (a := db.get_by_id( 4 )) and a.id == 4 and isinstance( a, Activity )
@@ -107,7 +113,7 @@ def test_get( db ):
 	# get with id=0
 	assert db.get_by_id( 0 ) is None
 
-@mark.db( template='parts', read_only=True )
+@mark.context( env='parts', persist='clone', cleanup=True )
 def test_find_resources( db ):
 	assert ids( db.find_resources( 'strava:1001' ) ) == [ 7, 8, 9 ]
 	assert ids( db.find_resources( 'strava:1001', '1001.gpx' ) ) == [ 7 ]
@@ -128,7 +134,7 @@ def test_find_resources( db ):
 	assert ids( db.find_recordings() ) == [3, 4, 5, 6, 7, 8, 10, 11]
 	assert ids( db.find_recordings( db.find_resources( 'strava:1001' ) ) ) == [7, 8]
 
-@mark.db( template='parts', read_only=True )
+@mark.context( env='parts', persist='clone', cleanup=True )
 def test_find_multipart( db ):
 	assert ids( db.find_by_classifier( 'strava' ) ) == [ 2, 4, 6 ]
 	assert ids( db.find_by_classifier( 'polar' ) ) == [ 1, 3, 5, 6 ]
@@ -152,7 +158,7 @@ def test_find_multipart( db ):
 	a = db.get_by_id( 6 )
 	assert ids( db.find_resources_for( a ) ) == [ 4, 6, 10, 11, 12 ]
 
-@mark.db( template='default', read_only=True )
+@mark.context( env='default', persist='clone', cleanup=True )
 def test_remove( db ):
 	assert ( a := db.get_by_id( 4 ) ) and a is not None
 	db.remove_activity( a )

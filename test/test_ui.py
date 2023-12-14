@@ -5,10 +5,9 @@ from time import sleep
 
 from rich.console import Console
 
-from tracs.config import ApplicationContext
 from tracs.ui import diff_table
 
-@mark.file( 'libraries/default/polar/1/0/0/100001/100001.json' )
+@mark.file( 'environments/default/db/polar/1/0/0/100001/100001.json' )
 def test_diff_dict( json ):
 	json1, json2 = deepcopy( json ), deepcopy( json )
 	json1['country'] = 'Germany'
@@ -17,9 +16,7 @@ def test_diff_dict( json ):
 
 	Console().print( diff_table( json1, json2 ) )
 
-def test_progress_bar():
-	ctx = ApplicationContext()
-
+def test_progress_bar( ctx ):
 	# test with number of steps
 	ctx.start( 'task description', 1000 )
 	for i in range( 1000 ):
@@ -34,7 +31,7 @@ def test_progress_bar():
 		sleep( 0.0008 )
 	ctx.complete()
 
-	ctx.verbose = True
+	ctx.config['verbose'] = True
 	# test with number of steps
 	ctx.start( 'task description', 10 )
 	for i in range( 10 ):

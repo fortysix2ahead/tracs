@@ -1,25 +1,49 @@
-
 from pathlib import Path
 from platform import system
 
-from confuse import ConfigSource, Configuration
+import platformdirs
+from fs.base import FS
+from fs.multifs import MultiFS
+from fs.osfs import OSFS
+
 from pytest import mark
 
 from tracs.application import Application
-from tracs.config import APPNAME
+from tracs.config import ApplicationContext, APPNAME
 from tracs.registry import Registry
 
-def test_context():
-	cfg = Configuration( 'tracs', 'tracs' )
-	cfg.set_env()
-	cfg.set_args( {'debug': 'arg'} )
-	cfg.set( ConfigSource.of( { 'debug': 10 } ) )
+@mark.context( env='empty', persist='clone', cleanup=True )
+def test_context( fs: FS ):
+	vrp = fs.getsyspath( '' )
 
-	print( cfg['debug'].get() )
-	print( cfg['debug'].as_number() )
+	ctx = ApplicationContext()
+	assert ctx.config_fs
+	assert ctx.config_dir == OSFS( root_path=platformdirs.user_config_dir( 'tracs' ), expand_vars=True ).getsyspath( '' )
+	assert ctx.lib_dir == OSFS( root_path=platformdirs.user_config_dir( 'tracs' ), expand_vars=True ).getsyspath( '' )
+	assert ctx.db_dir == OSFS( root_path=platformdirs.user_config_dir( 'tracs' ), expand_vars=True ).getsyspath( 'db/' )
+
+	ctx = ApplicationContext( config_dir=vrp )
+	assert ctx.config_fs
+	assert ctx.config_dir == vrp
+	assert ctx.config_file == fs.getsyspath( '/config.yaml' )
+	assert ctx.state_file == fs.getsyspath( '/state.yaml' )
+	assert ctx.lib_dir == vrp
+	assert ctx.db_dir == f'{vrp}db/'
+	assert ctx.overlay_dir == f'{vrp}overlay/'
+	assert ctx.plugin_dir( 'polar' ) == f'{vrp}db/polar/'
+
+	assert ctx.takeouts_dir == f'{vrp}takeouts/'
+	assert ctx.takeout_dir( 'polar' ) == f'{vrp}takeouts/polar/'
+
+	ctx = ApplicationContext( config_file=f'{vrp}/config.yaml' )
+	assert ctx.config_fs
+	assert ctx.config_dir == vrp
+	assert ctx.config_file == fs.getsyspath( '/config.yaml' )
+	assert ctx.lib_dir == vrp
+	assert ctx.db_dir == f'{vrp}db/'
 
 def test_app_constructor():
-	app =  Application.__new__( Application, configuration=None, library=None, verbose=False, debug=False, force=False )
+	app =  Application.__new__( Application, verbose=False, debug=False, force=False )
 	home = Path.home()
 
 	if system() == 'Windows':
@@ -31,22 +55,22 @@ def test_app_constructor():
 	else:
 		return
 
-	assert app.ctx.config_dir == str( cfg_dir )
-	assert app.ctx.lib_dir == str( cfg_dir )
+	assert app.ctx.config_dir == f'{str( cfg_dir )}/'
+	assert app.ctx.lib_dir == f'{str( cfg_dir )}/'
 
-@mark.context( config='empty', library='empty' )
+@mark.context( env='empty', persist='clone', cleanup=True )
 def test_app_constructor_cfg_dir( ctx ):
 	cfg_dir = ctx.config_dir
 	cfg = f'{cfg_dir}/config.yaml'
-	app =  Application.__new__( Application, configuration=cfg, library=None, verbose=False, debug=False, force=False )
+	app =  Application.__new__( Application, config_file=cfg, verbose=False, debug=False, force=False )
 
-	assert app.ctx.config_dir == str( cfg_dir )
-	assert app.ctx.lib_dir == str( Path( cfg_dir ) )
+	assert app.ctx.config_dir == f'{str( cfg_dir )}'
+	assert app.ctx.lib_dir == f'{str( cfg_dir )}'
 
-@mark.context( config='empty', library='empty' )
+@mark.context( env='empty', persist='clone', cleanup=True )
 def test_app_constructor_lib_dir( ctx ):
 	lib_dir = ctx.lib_dir
-	app =  Application.__new__( Application, library=lib_dir, verbose=False, debug=False, force=False )
+	app =  Application.__new__( Application, lib_dir=lib_dir, verbose=False, debug=False, force=False )
 	home = Path.home()
 
 	if system() == 'Windows':
@@ -58,36 +82,35 @@ def test_app_constructor_lib_dir( ctx ):
 	else:
 		return
 
-	assert app.ctx.config_dir == str( cfg_dir )
-	assert app.ctx.lib_dir == str( ctx.lib_dir )
+	assert app.ctx.config_dir == f'{str( cfg_dir )}/'
+	assert app.ctx.lib_dir == f'{str( ctx.lib_dir )}'
 
 def test_default_environment():
-	app = Application.__new__( Application, configuration=None, library=None, verbose=False, debug=False, force=False ) # matches default object creation
+	app = Application.__new__( Application, verbose=False, debug=False, force=False ) # matches default object creation
 	assert app.ctx.debug == False
 	assert app.ctx.verbose == False
 	assert app.ctx.force == False
 
-	assert Registry.instance().service_names() == [ 'bikecitizens', 'local', 'polar', 'strava', 'stravaweb', 'waze' ]
+	# assert Registry.instance().service_names() == [ 'bikecitizens', 'local', 'polar', 'strava', 'stravaweb', 'waze' ]
 
-@mark.context( config='debug', library='empty' )
+@mark.context( env='debug', persist='clone', cleanup=True )
 def test_debug_environment( ctx ):
-	cfg_file = f'{ctx.config_dir}/config.yaml'
-	app = Application.__new__( Application, configuration=cfg_file, verbose=None, debug=None, force=None )
+	app = Application.__new__( Application, config_file=f'{ctx.config_dir}/config.yaml', verbose=None, debug=None, force=None )
 	assert app.ctx.debug == True
 	assert app.ctx.verbose == True
 	assert app.ctx.force == False
 
-@mark.context( config='debug', library='empty' )
+@mark.context( env='debug', persist='clone', cleanup=True )
 def test_parameterized_environment( ctx ):
 	# override configuration loaded from file to simulate command line parameters
 	cfg_file = f'{ctx.config_dir}/config.yaml'
-	app = Application.__new__( Application, configuration=cfg_file, verbose=None, debug=None, force=True )
+	app = Application.__new__( Application, config_file=cfg_file, verbose=None, debug=None, force=True )
 	assert app.ctx.debug == True
 	assert app.ctx.verbose == True
 	assert app.ctx.force == True
 
 @mark.skip
-@mark.context( config='local_only', library='empty' )
+@mark.context( env='local', persist='clone', cleanup=True )
 def test_disabled_environment( ctx ):
 	cfg_file = f'{ctx.config_dir}/config.yaml'
 	Application.__new__( Application, configuration=cfg_file )

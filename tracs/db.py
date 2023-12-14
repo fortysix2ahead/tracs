@@ -20,7 +20,8 @@ from rule_engine import Rule
 
 from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
-from tracs.fsio import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
+from tracs.core import Metadata
+from tracs.fsio import load_activities, load_metadata, load_resources, load_schema, Schema, write_activities, write_metadata, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.resources import Resource, Resources
 
@@ -160,6 +161,7 @@ class ActivityDb:
 		self._schema = load_schema( self.fs )
 		self._resources: Resources = load_resources( self.fs )
 		self._activities: Activities = load_activities( self.fs )
+		self._metadata: List[Metadata] = load_metadata( self.dbfs )
 
 	def register_summary_types( self, *types: str ):
 		[ self._summary_types.add( t ) for t in types ]
@@ -167,16 +169,12 @@ class ActivityDb:
 	def register_recording_types( self, *types: str ):
 		[ self._recording_types.add( t ) for t in types ]
 
+	# todo: remove do_commit flag?
 	def commit( self, do_commit: bool = True ):
 		if do_commit:
-			self.commit_resources()
-			self.commit_activities()
-
-	def commit_activities( self ):
-		write_activities( self._activities, self.overlay_fs )
-
-	def commit_resources( self ):
-		write_resources( self._resources, self.overlay_fs )
+			write_resources( self._resources, self.overlay_fs )
+			write_activities( self._activities, self.overlay_fs )
+			write_metadata( [ a.metadata for a in self._activities.all() ], self.overlay_fs )
 
 	def save( self ):
 		if self._read_only or self.underlay_fs is None:

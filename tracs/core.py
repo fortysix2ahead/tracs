@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from sys import version_info
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mapping, Optional, Tuple, Type, TypeVar, Union
@@ -111,6 +112,13 @@ class Container( Generic[T] ):
 
 	def update( self, *items: Union[T, List[T]] ) -> Tuple[List[int], List[int]]:
 		pass
+
+@define
+class Metadata:
+
+	uid: str = field( default=None )
+	created: datetime = field( default=None )
+	modified: datetime = field( default=None )
 
 @define
 class VirtualField:

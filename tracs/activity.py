@@ -47,28 +47,16 @@ class ActivityPart:
 	def as_activity_uids( self ) -> List[UID]:
 		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.__uids__ ] )
 
-# helper for automatically setting uid/__uid__ - future use
-
-def on_set_uid( inst, att: Optional, val ):
-	if val:
-		object.__setattr__( inst, '__uid__', UID( val ) )
-	return val
-
-def on_set__uid__( inst, att: Optional, val ):
-	if val and val.uid:
-		object.__setattr__( inst, 'uid', val.uid )
-	return val
-
 @define( eq=True ) # todo: mark fields with proper eq attributes
 class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	# fields
 	id: int = field( default=None )
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
-	uid: str = field( default=None, on_setattr=on_set_uid ) # field will become more important (again) in the future
+	uid: str = field( default=None )
 	"""UID of this activity"""
-	uids: List[str] = field( factory=list ) # referenced list activities
-	"""List of uids of resources which belong to this activity"""
+	uids: List[str] = field( factory=list, on_setattr=lambda i, a, v: unique_sorted( v ) if v else [] ) # referenced list activities
+	"""List of uids of referenced activities"""
 
 	name: Optional[str] = field( default=None )
 	"""activity name"""
@@ -127,8 +115,6 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	other_parts = field( default=None )
 
 	## internal fields
-	__uid__: UID = field( default=None, repr=False, eq=False, on_setattr=on_set__uid__, alias='__uid__' )
-	__uids__: List[UID] = field( factory=list, repr=False, eq=False, alias='__uids__' )
 	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
 	__metadata__: Dict[str, Any] = field( init=False, factory=dict, alias='__metadata__' )
 	__parts__: List[Activity] = field( init=False, factory=list, repr=False, alias='__parts__' )
@@ -140,24 +126,21 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	@property
 	def classifiers( self ) -> List[str]:
-		return unique_sorted( [uid.classifier for uid in self.__uids__] )
+		return unique_sorted( [uid.classifier for uid in self.as_uids()] )
 
 	@property
 	def local_ids( self ) -> List[int]:
 		return sorted( list( set( [int( uid.split( ':', maxsplit=1 )[1] ) for uid in self.uids] ) ) )
 
-	@property
+	def as_uid( self ) -> UID:
+		return UID( self.uid )
+
 	def as_uids( self ) -> List[UID]:
-		return unique_sorted( self.__uids__ )
+		return [ UID( u ) for u in self.uids ]
 
 	@property
 	def activity_uids( self ) -> List[str]:
-		return unique_sorted( [ f'{uid.classifier}:{uid.local_id}' for uid in self.as_uids ] )
-
-	# dedicated setter for uids to update __uids__ as well
-	def set_uids( self, uids: List[str] ) -> None:
-		self.uids = unique_sorted( uids )
-		self.__uids__ = [UID( uid ) for uid in self.uids]
+		return unique_sorted( [ f'{uid.classifier}:{uid.local_id}' for uid in self.as_uids() ] )
 
 	@property
 	def resources( self ) -> List[Resource]:
@@ -181,22 +164,9 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	# post init, this contains mostly convenience things
 	def __attrs_post_init__( self ):
-		if self.uid or self.__uid__:
-			on_set_uid( self, None, self.uid )
-			on_set__uid__( self, None, self.__uid__ )
-
-		# convenience: if called with an uid, store it in uids list + setup __uids__
-		if self.uid:
-			self.uids = [self.uid]
-
 		# uid list handling, depending on parts
 		if self.parts:
 			self.uids = unique_sorted( uid for p in self.parts for uid in p.activity_uids )
-
-		# sort uids upfront
-		if self.uids:
-			self.uids = unique_sorted( self.uids )
-			self.__uids__ = [UID( uid ) for uid in self.uids]
 
 		# convenience: allow init from other activities
 		if self.others:

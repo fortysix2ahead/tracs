@@ -20,22 +20,15 @@ def setup_module( module ):
 	log.info( 'importing tracs.plugins.rule_extensions' )
 
 def test_activity_uid():
-	a = Activity()
-	assert a.uid is None and a.__uid__ is None
-	a.uid = 'polar:100'
-	assert a.uid == 'polar:100' and a.__uid__ == UID( classifier='polar', local_id=100 )
-	a.__uid__ = UID( 'polar:101' )
-	assert a.uid == 'polar:101' and a.__uid__ == UID( classifier='polar', local_id=101 )
+	a = Activity( uid = 'polar:100' )
+	assert a.as_uid() == UID( classifier='polar', local_id=100 )
 
-	a = Activity( uid='polar:100' )
-	assert a.uid == 'polar:100' and a.__uid__ == UID( classifier='polar', local_id=100 )
+	a = Activity( uids = ['strava:100', 'polar:100', 'polar:100'] )
+	assert a.uids == [ 'polar:100', 'strava:100' ]
+	assert a.as_uids() == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
 
-	a = Activity( __uid__=UID( 'polar:101' ) )
-	assert a.uid == 'polar:101' and a.__uid__ == UID( classifier='polar', local_id=101 )
-
-	# uid wins
-	a = Activity( uid='polar:200', __uid__=UID( 'strava:300' ) )
-	assert a.uid == 'polar:200' and a.__uid__ == UID( classifier='polar', local_id=200 )
+	a.uids = None
+	assert a.uids == []
 
 @mark.file( 'environments/default/db/polar/1/0/0/100001/100001.json' )
 def test_union( json ):
@@ -100,14 +93,14 @@ def test_activity_part():
 def test_singlepart_activity():
 	a = Activity( uids=[ 'polar:101', 'strava:101', 'polar:102' ] )
 	assert a.uids == [ 'polar:101', 'polar:102', 'strava:101' ]
-	assert a.as_uids == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:101' ) ]
+	assert a.as_uids() == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:101' ) ]
 	assert a.classifiers == [ 'polar', 'strava' ]
 
 	assert not a.multipart
 
-	a.set_uids( [ 'polar:101', 'polar:101' ] )
+	a.uids = [ 'polar:101', 'polar:101' ]
 	assert a.uids == [ 'polar:101' ]
-	assert a.as_uids == [ UID( 'polar:101' ) ]
+	assert a.as_uids() == [ UID( 'polar:101' ) ]
 	assert a.classifiers == [ 'polar' ]
 
 def test_multipart_activity():
@@ -117,7 +110,7 @@ def test_multipart_activity():
 
 	assert a.multipart
 	assert a.uids == [ 'polar:101', 'polar:102', 'strava:102' ]
-	assert a.as_uids == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:102' ) ]
+	assert a.as_uids() == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:102' ) ]
 	assert a.classifiers == [ 'polar', 'strava' ]
 
 	p1 = ActivityPart( uids=['polar:101/swim.gpx' ], gap=time( 0, 0, 0 ) )
@@ -127,7 +120,7 @@ def test_multipart_activity():
 
 	assert a.multipart
 	assert a.uids == [ 'polar:101' ]
-	assert a.as_uids == [ UID( 'polar:101' ) ]
+	assert a.as_uids() == [ UID( 'polar:101' ) ]
 	assert a.classifiers == [ 'polar' ]
 
 def test_resource():
@@ -145,16 +138,15 @@ def test_fields( registry ):
 	fields = Activity.fields()
 	assert next( f for f in fields if f.name == 'name' )
 	field_names = Activity.field_names()
-	assert 'name' in field_names and '__uids__' in field_names and 'weekday' not in field_names
+	assert 'name' in field_names and '__parent__' in field_names and 'weekday' not in field_names
 
 	field_names = Activity.field_names( include_internal=False )
-	assert 'name' in field_names and '__uids__' not in field_names and 'weekday' not in field_names
+	assert 'name' in field_names and '__parent__' not in field_names and 'weekday' not in field_names
 
 	field_names = Activity.field_names( include_virtual=True )
-	assert 'name' in field_names and '__uids__' in field_names and 'weekday' in field_names
+	assert 'name' in field_names and '__parent__' in field_names and 'weekday' in field_names
 
 	assert Activity.field_type( 'name' ) == Optional[str]
-	assert Activity.field_type( '__uids__' ) == List[UID]
 	assert Activity.field_type( 'weekday' ) == int
 	assert Activity.field_type( 'noexist' ) is None
 

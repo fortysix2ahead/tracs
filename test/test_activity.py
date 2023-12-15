@@ -26,6 +26,7 @@ def test_activity():
 	assert a.refs() == ['polar:100'] and a.refs( True ) == [UID( 'polar:100' )]
 	assert a.classifiers == ['polar']
 
+	assert not a.group
 	assert not a.multipart
 
 	# explicitely set uids to None
@@ -33,14 +34,15 @@ def test_activity():
 	assert a.uids == []
 
 def test_activity_group():
-	a = Activity( uids = ['strava:100', 'polar:100', 'polar:100'] )
-	assert a.uid is None and a.as_uid() is None
+	a = Activity( uid = 'group:101', uids = ['strava:100', 'polar:100', 'polar:100'] )
+	assert a.uid == 'group:101' and a.as_uid() == UID( 'group:101' )
 	assert a.uids == [ 'polar:100', 'strava:100' ]
 	assert a.as_uids() == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
 	assert a.refs() == [ 'polar:100', 'strava:100' ]
 	assert a.refs( True ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
 	assert a.classifiers == [ 'polar', 'strava' ]
 
+	assert a.group
 	assert not a.multipart
 
 def test_activity_part():

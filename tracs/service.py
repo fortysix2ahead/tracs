@@ -180,9 +180,9 @@ class Service( Plugin ):
 			url = self.url_for_resource_type( resource.local_id, resource.type )
 		elif activity:
 			try:
-				classifier, local_id = activity.uid.split( ':', 1 )
-				if classifier == self.name:
-					url = self.url_for_id( local_id )
+				uid = activity.as_uid()
+				if uid.classifier == self.name:
+					url = self.url_for_id( uid.local_id )
 			except KeyError:
 				pass
 

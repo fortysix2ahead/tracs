@@ -19,16 +19,64 @@ def setup_module( module ):
 	import tracs.plugins.rule_extensions
 	log.info( 'importing tracs.plugins.rule_extensions' )
 
-def test_activity_uid():
+def test_activity():
 	a = Activity( uid = 'polar:100' )
 	assert a.as_uid() == UID( classifier='polar', local_id=100 )
+	assert a.uids == [] and a.as_uids() == []
+	assert a.refs() == ['polar:100'] and a.refs( True ) == [UID( 'polar:100' )]
+	assert a.classifiers == ['polar']
 
-	a = Activity( uids = ['strava:100', 'polar:100', 'polar:100'] )
-	assert a.uids == [ 'polar:100', 'strava:100' ]
-	assert a.as_uids() == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
+	assert not a.multipart
 
+	# explicitely set uids to None
 	a.uids = None
 	assert a.uids == []
+
+def test_activity_group():
+	a = Activity( uids = ['strava:100', 'polar:100', 'polar:100'] )
+	assert a.uid is None and a.as_uid() is None
+	assert a.uids == [ 'polar:100', 'strava:100' ]
+	assert a.as_uids() == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
+	assert a.refs() == [ 'polar:100', 'strava:100' ]
+	assert a.refs( True ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
+	assert a.classifiers == [ 'polar', 'strava' ]
+
+	assert not a.multipart
+
+def test_activity_part():
+	p = ActivityPart( uids=[ 'polar:1234' ] )
+	assert p.as_uids == [ UID( classifier='polar', local_id=1234 ) ]
+	assert p.classifiers == [ 'polar' ]
+
+	p = ActivityPart( uids=['polar:2345', 'polar:1234' ] )
+	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345' ) ]
+	assert p.classifiers == [ 'polar' ]
+
+	p = ActivityPart( uids=['polar:2345/rec.gpx', 'polar:2345/rec.tcx', 'polar:1234'] )
+	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345/rec.gpx' ), UID( 'polar:2345/rec.tcx' ) ]
+	assert p.as_activity_uids == [ UID( 'polar:1234' ), UID( 'polar:2345' ) ]
+	assert p.activity_uids == [ 'polar:1234', 'polar:2345' ]
+	assert p.classifiers == [ 'polar' ]
+
+def test_multipart_activity():
+	p1 = ActivityPart( uids=['polar:101' ], gap=time( 0, 0, 0 ) )
+	p2 = ActivityPart( uids=['polar:102', 'strava:102' ], gap=time( 1, 0, 0 ) )
+	a = Activity( parts=[ p1, p2 ] )
+
+	assert a.multipart
+	assert a.uids == [ 'polar:101', 'polar:102', 'strava:102' ]
+	assert a.as_uids() == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:102' ) ]
+	assert a.classifiers == [ 'polar', 'strava' ]
+
+	p1 = ActivityPart( uids=['polar:101/swim.gpx' ], gap=time( 0, 0, 0 ) )
+	p2 = ActivityPart( uids=['polar:101/bike.gpx' ], gap=time( 1, 0, 0 ) )
+	p3 = ActivityPart( uids=['polar:101/run.gpx' ], gap=time( 1, 0, 0 ) )
+	a = Activity( parts=[ p1, p2, p3 ] )
+
+	assert a.multipart
+	assert a.uids == [ 'polar:101' ]
+	assert a.as_uids() == [ UID( 'polar:101' ) ]
+	assert a.classifiers == [ 'polar' ]
 
 @mark.file( 'environments/default/db/polar/1/0/0/100001/100001.json' )
 def test_union( json ):
@@ -74,54 +122,6 @@ def test_add():
 	assert target.duration_moving == timedelta( seconds=0 )
 	assert target.heartrate_max == 180
 	assert target.heartrate_min == 80
-
-def test_activity_part():
-	p = ActivityPart( uids=[ 'polar:1234' ] )
-	assert p.as_uids == [ UID( classifier='polar', local_id=1234 ) ]
-	assert p.classifiers == [ 'polar' ]
-
-	p = ActivityPart( uids=['polar:2345', 'polar:1234' ] )
-	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345' ) ]
-	assert p.classifiers == [ 'polar' ]
-
-	p = ActivityPart( uids=['polar:2345/rec.gpx', 'polar:2345/rec.tcx', 'polar:1234'] )
-	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345/rec.gpx' ), UID( 'polar:2345/rec.tcx' ) ]
-	assert p.as_activity_uids == [ UID( 'polar:1234' ), UID( 'polar:2345' ) ]
-	assert p.activity_uids == [ 'polar:1234', 'polar:2345' ]
-	assert p.classifiers == [ 'polar' ]
-
-def test_singlepart_activity():
-	a = Activity( uids=[ 'polar:101', 'strava:101', 'polar:102' ] )
-	assert a.uids == [ 'polar:101', 'polar:102', 'strava:101' ]
-	assert a.as_uids() == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:101' ) ]
-	assert a.classifiers == [ 'polar', 'strava' ]
-
-	assert not a.multipart
-
-	a.uids = [ 'polar:101', 'polar:101' ]
-	assert a.uids == [ 'polar:101' ]
-	assert a.as_uids() == [ UID( 'polar:101' ) ]
-	assert a.classifiers == [ 'polar' ]
-
-def test_multipart_activity():
-	p1 = ActivityPart( uids=['polar:101' ], gap=time( 0, 0, 0 ) )
-	p2 = ActivityPart( uids=['polar:102', 'strava:102' ], gap=time( 1, 0, 0 ) )
-	a = Activity( parts=[ p1, p2 ] )
-
-	assert a.multipart
-	assert a.uids == [ 'polar:101', 'polar:102', 'strava:102' ]
-	assert a.as_uids() == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:102' ) ]
-	assert a.classifiers == [ 'polar', 'strava' ]
-
-	p1 = ActivityPart( uids=['polar:101/swim.gpx' ], gap=time( 0, 0, 0 ) )
-	p2 = ActivityPart( uids=['polar:101/bike.gpx' ], gap=time( 1, 0, 0 ) )
-	p3 = ActivityPart( uids=['polar:101/run.gpx' ], gap=time( 1, 0, 0 ) )
-	a = Activity( parts=[ p1, p2, p3 ] )
-
-	assert a.multipart
-	assert a.uids == [ 'polar:101' ]
-	assert a.as_uids() == [ UID( 'polar:101' ) ]
-	assert a.classifiers == [ 'polar' ]
 
 def test_resource():
 	some_string = 'some string value'

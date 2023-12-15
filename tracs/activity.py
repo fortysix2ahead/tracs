@@ -55,7 +55,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
 	uid: str = field( default=None )
 	"""UID of this activity"""
-	uids: List[str] = field( factory=list, on_setattr=lambda i, a, v: unique_sorted( v ) if v else [] ) # referenced list activities
+	uids: List[str] = field( factory=list, on_setattr=lambda i, a, v: unique_sorted( v ) if v else [], converter=lambda v: unique_sorted( v ) ) # referenced list activities
 	"""List of uids of referenced activities"""
 
 	name: Optional[str] = field( default=None )
@@ -126,21 +126,21 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	@property
 	def classifiers( self ) -> List[str]:
-		return unique_sorted( [uid.classifier for uid in self.as_uids()] )
+		return unique_sorted( [uid.classifier for uid in self.refs( as_uid=True )] )
 
-	@property
-	def local_ids( self ) -> List[int]:
-		return sorted( list( set( [int( uid.split( ':', maxsplit=1 )[1] ) for uid in self.uids] ) ) )
+	#@property
+	#def local_ids( self ) -> List[int]:
+	#	return sorted( list( set( [int( uid.split( ':', maxsplit=1 )[1] ) for uid in self.uids] ) ) )
 
-	def as_uid( self ) -> UID:
-		return UID( self.uid )
+	def as_uid( self ) -> Optional[UID]:
+		return UID( self.uid ) if self.uid else None
 
 	def as_uids( self ) -> List[UID]:
 		return [ UID( u ) for u in self.uids ]
 
-	@property
-	def activity_uids( self ) -> List[str]:
-		return unique_sorted( [ f'{uid.classifier}:{uid.local_id}' for uid in self.as_uids() ] )
+	#@property
+	#def activity_uids( self ) -> List[str]:
+	#	return unique_sorted( [ f'{uid.classifier}:{uid.local_id}' for uid in self.as_uids() ] )
 
 	@property
 	def resources( self ) -> List[Resource]:
@@ -161,6 +161,14 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	@property
 	def multipart( self ) -> bool:
 		return len( self.parts ) > 0
+
+	def refs( self, as_uid: bool = False ) -> List[Union[str, UID]]:
+		if self.uid:
+			return [UID( self.uid )] if as_uid else [self.uid]
+		elif self.uids:
+			return self.as_uids() if as_uid else self.uids
+		else:
+			return []
 
 	# post init, this contains mostly convenience things
 	def __attrs_post_init__( self ):

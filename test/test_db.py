@@ -65,6 +65,7 @@ def test_open_db( db ):
 		starttime=datetime( 2012, 1, 7, 10, 40, 56, tzinfo=timezone.utc ),
 		starttime_local=datetime( 2012, 1, 7, 11, 40, 56, tzinfo=timezone( timedelta( seconds=3600 ) ) ),
 		location_place='Forest',
+		uid='group:1',
 		uids=['polar:1234567890', 'strava:12345678', 'waze:20210101010101'],
 	)
 

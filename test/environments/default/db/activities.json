@@ -7,6 +7,7 @@
 		"starttime_local": "2012-01-07T11:40:56+01:00",
 		"location_place": "Forest",
 		"tags": [],
+		"uid": "group:1",
 		"uids": [
 			"polar:1234567890",
 			"strava:12345678",
@@ -23,9 +24,7 @@
 		"raw_id": 1234567890,
 		"starttime": "2012-01-07T10:40:51.000+00:00",
 		"type": "run",
-		"uids": [
-			"polar:1234567890"
-		]
+		"uid": "polar:1234567890"
 	},
 	{
 		"id": 3,
@@ -35,9 +34,7 @@
 		"heartrate": 140,
 		"starttime_local": "2012-01-07T11:40:56+01:00",
 		"type": "run",
-		"uids": [
-			"strava:12345678"
-		]
+		"uid": "strava:12345678"
 	},
 	{
 		"id": 4,
@@ -46,9 +43,7 @@
 		"heartrate": 130,
 		"starttime": "2021-01-11T12:00:00+00:00",
 		"type": "drive",
-		"uids": [
-			"waze:20210101010101"
-		]
+		"uid": "waze:20210101010101"
 	},
 	{
 		"id": 100,
@@ -57,8 +52,6 @@
 		"location": "",
 		"starttime": "2021-01-11T12:00:00+00:00",
 		"type": "drive",
-		"uids": [
-			"polar:123456"
-		]
+		"uid": "polar:123456"
 	}
 ]

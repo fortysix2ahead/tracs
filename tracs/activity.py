@@ -163,7 +163,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 		return len( self.parts ) > 0
 
 	def refs( self, as_uid: bool = False ) -> List[Union[str, UID]]:
-		if self.uid:
+		if self.uid and not self.uids:
 			return [UID( self.uid )] if as_uid else [self.uid]
 		elif self.uids:
 			return self.as_uids() if as_uid else self.uids

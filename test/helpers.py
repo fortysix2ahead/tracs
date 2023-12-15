@@ -222,9 +222,16 @@ def cleanup( run_path: Path = None ) -> None:
 	if run_path and run_path.parent.name == 'run' and run_path.parent.parent.name == 'var': # sanity check: only remove when in test/var/run
 		rmtree( run_path, ignore_errors=True )
 
-skip_live = mark.skipif(
-	not ( get_var_path( 'config_live.yaml' ).exists() and get_var_path( 'state_live.yaml' ).exists() ), reason="live test not enabled as configuration is missing"
-)
+def skiplive_condition() -> bool:
+	from os import getenv
+	if getenv( 'TRACS_SKIP_LIVE_TEST' ):
+		return True
+	if not ( get_var_path( 'config_live.yaml' ).exists() and get_var_path( 'state_live.yaml' ).exists() ):
+		return True
+
+	return False
+
+skip_live = mark.skipif( skiplive_condition(), reason="live test not enabled as configuration is missing" )
 
 # mock gpx resource
 

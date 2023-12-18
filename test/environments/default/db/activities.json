@@ -53,5 +53,52 @@
 		"starttime": "2021-01-11T12:00:00+00:00",
 		"type": "drive",
 		"uid": "polar:123456"
-	}
+	},
+  {
+    "calories": 311,
+    "duration": "00:48:51",
+    "duration_moving": "00:48:51",
+    "heartrate": 113,
+    "heartrate_max": 147,
+    "id": 1998,
+    "location_country": "Germany",
+    "name": "Ungrouped Polar Activity",
+    "starttime": "2017-04-10T17:15:53+00:00",
+    "starttime_local": "2017-04-10T19:15:53+02:00",
+    "type": "gym",
+    "uid": "polar:200000"
+  },
+  {
+    "calories": 311,
+    "duration": "00:48:51",
+    "duration_moving": "00:48:51",
+    "heartrate": 113,
+    "heartrate_max": 147,
+    "id": 1999,
+    "location_country": "Germany",
+    "name": "Ungrouped Strava Activity",
+    "starttime": "2017-04-10T17:15:53+00:00",
+    "starttime_local": "2017-04-10T19:15:53+02:00",
+    "type": "gym",
+    "uid": "strava:200000"
+  },
+  {
+    "calories": 460,
+    "distance": 0.0,
+    "duration": "00:58:25",
+    "duration_moving": "00:58:25",
+    "heartrate": 127,
+    "heartrate_max": 155,
+    "id": 2001,
+    "location_country": "Germany",
+    "name": "Grouped Activity",
+    "starttime": "2017-04-18T10:14:13+00:00",
+    "starttime_local": "2017-04-18T12:14:13+02:00",
+    "type": "gym",
+    "uid": "group:170418101413",
+    "uids": [
+      "polar:200001",
+      "strava:200001"
+    ]
+  }
 ]

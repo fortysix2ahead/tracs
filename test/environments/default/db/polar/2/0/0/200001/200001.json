@@ -1,0 +1,22 @@
+{
+  "trainingLoadProInterpretation": "Very low",
+  "trainingLoadProIndex": 1,
+  "isTest": false,
+  "title": "00:41:08;0.0 km",
+  "type": "EXERCISE",
+  "listItemId": 200001,
+  "hasTrainingTarget": false,
+  "timestamp": 1492517653000,
+  "start": 1492517653,
+  "end": 1492520121,
+  "allDay": false,
+  "iconUrl": "https://platform.cdn.polar.com/ecosystem/sport/icon/d1ce94078aec226be28f6c602e6803e1-2015-10-20_13_45_19",
+  "url": "/training/analysis/200001",
+  "borderColor": "#A9D0F5",
+  "textColor": "#000",
+  "datetime": "2017-04-18T12:14:13.000Z",
+  "eventType": "exercise",
+  "duration": 2468875,
+  "distance": 0.0,
+  "calories": 460
+}

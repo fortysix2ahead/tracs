@@ -30,5 +30,29 @@
 		"type": "application/json+strava",
 		"status": 200,
 		"uid": "strava:200002"
+	},
+	{
+		"id": 2000,
+		"path": "200000.json",
+		"type": "application/json+polar",
+		"uid": "polar:200000"
+	},
+	{
+		"id": 2001,
+		"path": "200000.json",
+		"type": "application/json+strava",
+		"uid": "strava:200000"
+	},
+	{
+		"id": 2002,
+		"path": "200001.json",
+		"type": "application/json+polar",
+		"uid": "polar:200001"
+	},
+	{
+		"id": 2003,
+		"path": "200001.json",
+		"type": "application/json+strava",
+		"uid": "strava:200001"
 	}
 ]

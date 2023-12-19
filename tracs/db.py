@@ -6,7 +6,6 @@ from itertools import chain, groupby
 from logging import getLogger
 from pathlib import Path
 from shutil import copytree
-from sys import exit as sysexit
 from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
 
 from click import confirm
@@ -180,7 +179,7 @@ class ActivityDb:
 		# self.commit() # todo: really do auto-commit here?
 		self.save()
 
-	# ---- DB Properties --------------------------------------------------------
+	# ---- FS Properties ----
 
 	@property
 	def fs( self ) -> FS:
@@ -204,37 +203,11 @@ class ActivityDb:
 	def schema( self ) -> Schema:
 		return self._schema
 
-	# path properties
-
-	@property
-	def path( self ) -> Path:
-		return self._activities_path.parent
-
-	@property
-	def db_path( self ) -> Path:
-		return self._activities_path
-
-	@property
-	def activities_path( self ) -> Path:
-		return self._activities_path
-
-	@property
-	def resources_path( self ) -> Path:
-		return self._resources_path
-
-	@property
-	def metadata_path( self ) -> Path:
-		return self._metadata_path
-
-	@property
-	def schema_path( self ) -> Path:
-		return self._schema_path
-
 	# properties for content access
 
 	@property
-	def activity_map( self ) -> Dict[int, Activity]:
-		return self._activities
+	def activity_map( self ) -> Mapping[int, Activity]:
+		return self._activities.id_map()
 
 	@property
 	def activities( self ) -> List[Activity]:

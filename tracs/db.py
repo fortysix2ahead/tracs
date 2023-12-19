@@ -337,12 +337,45 @@ class ActivityDb:
 		"""
 		return self._activities.idget( id )
 
+	def get_by_ids( self, ids: List[int] ) -> List[Activity]:
+		"""
+		Returns all activities with ids contained in the provided list of ids
+		:param ids:
+		:return:
+		"""
+		return [ a for a in self.activities if a.id in ( ids or [] ) ]
+
 	def get_by_uid( self, uid: str, include_resources: bool = False ) -> Optional[Activity]:
 		"""
-		Returns the activity with the provided uid contained in its uids list.
+		Returns the activity with the uid equal to the provided uid.
 		"""
-		return next( (a for a in self.activities if uid in a.uids), None )
+		return next( (a for a in self.activities if uid == a.uid), None )
 
+	def get_by_uids( self, uids: List[str] ) -> List[Activity]:
+		"""
+		Returns all activities with uids contained in the provided list of uids
+		:param uids:
+		:return:
+		"""
+		return [ a for a in self.activities if a.uid in ( uids or [] ) ]
+
+	def get_by_ref( self, uid: str ) -> List[Activity]:
+		"""
+		Returns all activities which contain the provided uid as a reference.
+		:param uid:
+		:return:
+		"""
+		return [ a for a in self.activities if uid in a.uids ]
+
+	def get_by_refs( self, uids: List[str] ) -> List[Activity]:
+		"""
+		Returns all activities which contain the provided uids as a reference.
+		:param uids:
+		:return:
+		"""
+		return [ a for a in self.activities if any( uid in a.uids for uid in ( uids or [] ) ) ]
+
+	# todo: remove ...
 	def get_activity_by_uids( self, uids: List[str] ):
 		return next( (a for a in self.activities if any( uid in a.uids for uid in uids ) ), None )
 

@@ -95,24 +95,38 @@ def test_contains( db ):
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_get( db ):
-	assert (a := db.get_by_id( 1 )) and a.id == 1 and isinstance( a, Activity )
-	assert (a := db.get_by_id( 4 )) and a.id == 4 and isinstance( a, Activity )
+	assert (a := db.get_by_id( 1 )) and a.id == 1 and a.uid == 'group:1' and a.name == 'Unknown Location'
 
 	# non-existing id
 	assert db.get_by_id( 999 ) is None
 
 	# existing polar activity
-	assert (a := db.get_by_uid( 'polar:1234567890' )) and a.id == 1 and isinstance( a, Activity )
+	assert db.get_by_uid( 'polar:1234567890' ).id == 2
 
 	# non-existing polar activity
 	assert db.get_by_uid( 'polar:999' ) is None
 
-	# existing strava activity, same activity as above
-	assert (a := db.get_by_uid( 'strava:12345678' )) and a.id == 1 and isinstance( a, Activity )
-	assert (a := db.get_by_uid( 'waze:20210101010101' )) and a.id == 1 and isinstance( a, Activity )
+	# existing strava/waze activity
+	assert db.get_by_uid( 'strava:12345678' ).id == 3
+	assert db.get_by_uid( 'waze:20210101010101' ).id == 4
 
-	# get with id=0
+	# get with id = 0
 	assert db.get_by_id( 0 ) is None
+
+	# get by ids/uids
+	assert db.get_by_ids( [] ) == []
+	assert db.get_by_ids( None ) == []
+	assert db.get_by_ids( [ 1, 2, 300 ] ) == [ db.get_by_id( 1 ), db.get_by_id( 2 ) ]
+	assert db.get_by_uids( [] ) == []
+	assert db.get_by_uids( None ) == []
+	assert db.get_by_uids( [ 'group:1' ] ) == [ db.get_by_id( 1 ) ]
+
+	# get by reference
+	assert db.get_by_ref( None ) == []
+	assert db.get_by_ref( 'polar:1234567890' ) == [ db.get_by_id( 1 ) ]
+	assert db.get_by_refs( [] ) == []
+	assert db.get_by_refs( None ) == []
+	assert db.get_by_refs( [ 'polar:1234567890', 'strava:200001' ] ) == [ db.get_by_id( 1 ), db.get_by_id( 2001 ) ]
 
 @mark.context( env='parts', persist='clone', cleanup=True )
 def test_find_resources( db ):

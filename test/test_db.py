@@ -128,6 +128,13 @@ def test_get( db ):
 	assert db.get_by_refs( None ) == []
 	assert db.get_by_refs( [ 'polar:1234567890', 'strava:200001' ] ) == [ db.get_by_id( 1 ), db.get_by_id( 2001 ) ]
 
+	# get resources
+	assert db.get_resource_by_id( 1 ).path == '100001.gpx'
+	assert db.get_resources_by_uid( 'polar:100001' ) == [ db.get_resource_by_id( 1 ), db.get_resource( 2 ) ]
+	assert db.get_resources_by_uids( ['polar:100001', 'strava:200002' ] ) == [ db.get_resource_by_id( 1 ), db.get_resource( 2 ), db.get_resource_by_id( 3 ), db.get_resource_by_id( 4 ) ]
+
+	assert db.get_resource_by_uid_path( 'polar:100001', '100001.gpx' ) == db.get_resource_by_id( 1 )
+
 @mark.context( env='parts', persist='clone', cleanup=True )
 def test_find_resources( db ):
 	assert ids( db.find_resources( 'strava:1001' ) ) == [ 7, 8, 9 ]

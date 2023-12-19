@@ -380,17 +380,41 @@ class ActivityDb:
 		return next( (a for a in self.activities if any( uid in a.uids for uid in uids ) ), None )
 
 	def get_resource( self, id: int ) -> Optional[Resource]:
-		return self._resources.get( id )
+		return self.get_resource_by_id( id )
+
+	def get_resource_by_id( self, id: int ) -> Optional[Resource]:
+		"""
+		Returns the resource with the provided id.
+		:param id:
+		:return:
+		"""
+		return self._resources.idget( id )
 
 	def get_resources_by_uid( self, uid ) -> List[Resource]:
+		"""
+		Returns all resources with the provided uid.
+		:param uid:
+		:return:
+		"""
 		return [r for r in self.resources if r.uid == uid]
 
 	def get_resources_by_uids( self, uids: List[str] ):
+		"""
+		Returns all resources with the provided uids.
+		:param uids:
+		:return:
+		"""
 		# regular_list = [[1, 2, 3, 4], [5, 6, 7], [8, 9]]
 		# flat_list = [item for sublist in regular_list for item in sublist]
 		return list( chain( *[r for r in [self.get_resources_by_uid( uid ) for uid in uids]] ) ) # todo: revise flatten list!
 
 	def get_resource_by_uid_path( self, uid: str, path: str ) -> Optional[Resource]:
+		"""
+		Returns the resource with the provided uid and path.
+		:param uid:
+		:param path:
+		:return:
+		"""
 		return next( (r for r in self.resources if r.uid == uid and r.path == path), None )
 
 	def get_resource_of_type( self, uids: List[str], type: str ) -> Optional[Resource]:

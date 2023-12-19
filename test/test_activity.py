@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from pytest import mark, raises
 
-from tracs.activity import Activity, ActivityPart
+from tracs.activity import Activity, ActivityPart, groups
 from tracs.activity_types import ActivityTypes
 from tracs.core import VirtualField
 from tracs.registry import virtualfield
@@ -124,6 +124,13 @@ def test_add():
 	assert target.duration_moving == timedelta( seconds=0 )
 	assert target.heartrate_max == 180
 	assert target.heartrate_min == 80
+
+def test_groups():
+	g = Activity( uid='g:1', uids=[ 'p:1', 's:1' ] )
+	ng = Activity( uid='ng:1' )
+
+	assert groups( None ) == []
+	assert groups( [g, ng] ) == [g]
 
 def test_resource():
 	some_string = 'some string value'

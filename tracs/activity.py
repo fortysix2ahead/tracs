@@ -321,6 +321,9 @@ class Activities( Container[Activity] ):
 
 # helper
 
+def groups( activities: List[Activity] ) -> List[Activity]:
+	return list( filter( lambda a: a.group, activities or [] ) )
+
 def _unique( activities: List[Activity], name: str ) -> Any:
 	return s.pop() if ( len( s := set( _stream( activities, name ) ) ) == 1 ) else None
 

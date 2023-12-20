@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from pytest import mark, raises
 
-from tracs.activity import Activity, ActivityPart, groups
+from tracs.activity import Activities, Activity, ActivityPart, groups
 from tracs.activity_types import ActivityTypes
 from tracs.core import VirtualField
 from tracs.registry import virtualfield
@@ -124,6 +124,32 @@ def test_add():
 	assert target.duration_moving == timedelta( seconds=0 )
 	assert target.heartrate_max == 180
 	assert target.heartrate_min == 80
+
+def test_activities():
+	activities = Activities()
+	a = Activity( name='a1', uid='a:1' )
+	activities.add( a )
+	assert len( activities ) == 1
+
+	# replace based on old activity
+	activities.replace( Activity( name='a2', uid='a:2' ), a )
+	assert len( activities ) == 1 and activities.idget( 1 ).name == 'a2'
+
+	# replace based on id
+	activities.replace( Activity( name='a3', uid='a:3' ), id=1 )
+	assert len( activities ) == 1 and activities.idget( 1 ).name == 'a3'
+
+	# replace based on uid
+	activities.replace( Activity( name='a4', uid='a:4' ), uid='a:3' )
+	assert len( activities ) == 1 and activities.idget( 1 ).name == 'a4'
+
+	# replace based on id of new activity only
+	activities.replace( Activity( name='a5', uid='a:5', id=1 ) )
+	assert len( activities ) == 1 and activities.idget( 1 ).name == 'a5'
+
+	# replace based on uid of new activity only
+	activities.replace( Activity( name='a6', uid='a:5' ) )
+	assert len( activities ) == 1 and activities.idget( 1 ).name == 'a6'
 
 def test_groups():
 	g = Activity( uid='g:1', uids=[ 'p:1', 's:1' ] )

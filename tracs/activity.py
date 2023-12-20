@@ -311,6 +311,23 @@ class Activities( Container[Activity] ):
 
 		return [a.id for a in activities]
 
+	def replace( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
+		if not new:
+			return
+
+		old_obj = None
+		if old in self.data:
+			old_obj = old
+		elif id or new.id:
+			old_obj = self.idget( id or new.id )
+		elif uid or new.uid:
+			old_obj = self.get( uid or new.uid )
+
+		if old_obj:
+			self.data.remove( old_obj )
+			new.id = old_obj.id
+			self.data.append( new )
+
 	def remove( self, *ids: Union[int, List[int]] ) -> None:
 		for id in unchain( *ids ):
 			try:

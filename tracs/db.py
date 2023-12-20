@@ -6,7 +6,7 @@ from itertools import chain, groupby
 from logging import getLogger
 from pathlib import Path
 from shutil import copytree
-from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
+from typing import cast, Dict, List, Mapping, Optional, Set, Tuple, Union
 
 from click import confirm
 from fs.base import FS
@@ -24,7 +24,6 @@ from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
 from tracs.fsio import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
-from tracs.registry import Registry
 from tracs.resources import Resource, Resources, ResourceType
 from tracs.rules import parse_rules
 
@@ -70,12 +69,14 @@ class ActivityDbIndex:
 
 class ActivityDb:
 
-	def __init__( self, path: Optional[Union[Path, str]] = None, fs: Optional[FS] = None, read_only: bool = False, enable_index: bool = False ):
+	def __init__( self, path: Optional[Union[Path, str]] = None, fs: Optional[FS] = None, read_only: bool = False, enable_index: bool = False, **kwargs ):
 		"""
 		Creates an activity db, consisting of tiny db instances (meta + activities + resources + schema).
 
-		:param path: directory containing db files
+		:param path: directory containing db files, may be a Path or a string
+		:param fs: instead of providing a path, it's also possible to provide the internally used filesystem object
 		:param read_only: read-only mode - does not allow write operations
+		:param enable_index: experimental, not used at the moment
 		"""
 
 		self._path = path
@@ -87,6 +88,11 @@ class ActivityDb:
 
 		# load content from disk
 		self._load_db()
+
+		# sets of types in order to classify resources
+		self._summary_types, self._recording_types = set(), set()
+		self.register_summary_types( *( kwargs.get( 'summary_types' ) or set() ) )
+		self.register_recording_types( *( kwargs.get( 'recording_types') or set() ) )
 
 		# experimental: create index and setup relations between resources and activities, turned off for now
 		if enable_index:
@@ -157,6 +163,12 @@ class ActivityDb:
 		self._schema = load_schema( self.fs )
 		self._resources: Resources = load_resources( self.fs )
 		self._activities: Activities = load_activities( self.fs )
+
+	def register_summary_types( self, *types: str ):
+		[ self._summary_types.add( t ) for t in types ]
+
+	def register_recording_types( self, *types: str ):
+		[ self._recording_types.add( t ) for t in types ]
 
 	def commit( self, do_commit: bool = True ):
 		if do_commit:
@@ -297,8 +309,18 @@ class ActivityDb:
 	def summaries( self ) -> List[Resource]:
 		"""
 		Returns all resource of type summary.
+		:return: all summaries
 		"""
-		return [r for r in self.resources if (rt := cast( ResourceType, Registry.instance().resource_types.get( r.type ) )) and rt.summary]
+		# return [r for r in self.resources if (rt := cast( ResourceType, Registry.instance().resource_types.get( r.type ) )) and rt.summary]
+		return [r for r in self.resources if r.type in self._summary_types ]
+
+	@property
+	def recordings( self ) -> List[Resource]:
+		"""
+		Returns all resources of type recording.
+		:return: all recordings
+		"""
+		return [r for r in self.resources if r.type in self._recording_types]
 
 	@property
 	def uids( self, classifier: str = None ) -> List[str]:
@@ -468,13 +490,11 @@ class ActivityDb:
 			resources = [ r for r in resources if r.path == path ]
 		return resources
 
-	def find_resources_of_type( self, resource_type: str, resources: Optional[List[Resource]] = None ) -> List[Resource]:
+	def find_resources_of_type( self, resource_type: str ) -> List[Resource]:
 		"""
-		Finds all resources of the given type. If resources list is provided restricts itself to that list or uses
-		all resources otherwise.
+		Finds all resources of the given type.
 		"""
-		resources = self.resources if resources is None else resources
-		return [r for r in resources if r.type == resource_type]
+		return [r for r in self.resources if r.type == resource_type]
 
 	def find_resources_for( self, activity: Activity ) -> List[Resource]:
 		"""
@@ -490,24 +510,30 @@ class ActivityDb:
 		"""
 		return [r for r in self.resources if r.uid in uids]
 
-	def find_recordings( self, resources: Optional[List[Resource]] = None ) -> List[Resource]:
+	def find_recordings( self, uid: str ) -> List[Resource]:
 		"""
-		Finds all recording resources, restricts itself to the provided resource list if given.
+		Finds all recording resources having the provided uid.
 		"""
-		resources = self.resources if resources is None else resources
-		return [r for r in resources if (rt := Registry.instance().resource_types.get( r.type )) and rt.recording ]
+		return [r for r in self.find_resources( uid ) if r.type in self._recording_types]
+
+	def find_all_recordings( self, uids: List[str] ) -> List[Resource]:
+		"""
+		Finds all recording resources having an uid contained in the provided list.
+		"""
+		return [ r for r in self.find_all_resources( uids ) if r.type in self._recording_types ]
 
 	def find_summaries( self, uid: str ) -> List[Resource]:
 		"""
 		Finds all summary resources having the provided uid.
 		"""
-		return [r for r in self.find_resources( uid ) if (rt := Registry.instance().resource_types.get( r.type )) and rt.summary ]
+		return [r for r in self.find_resources( uid ) if r.type in self._summary_types]
 
 	def find_all_summaries( self, uids: List[str] ) -> List[Resource]:
 		"""
 		Finds all summary resources having an uid contained in the provided list.
 		"""
-		return [r for r in self.find_all_resources( uids ) if (rt := Registry.instance().resource_types.get( r.type ) ) and rt.summary]
+		# return [r for r in self.find_all_resources( uids ) if (rt := Registry.instance().resource_types.get( r.type ) ) and rt.summary]
+		return [ r for r in self.find_all_resources( uids ) if r.type in self._summary_types ]
 
 	def find_all_resources_for( self, activities: Union[Activity, List[Activity]] ) -> List[Resource]:
 		activities = [activities] if type( activities ) is Activity else activities

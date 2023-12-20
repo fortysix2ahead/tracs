@@ -100,5 +100,33 @@
       "polar:200001",
       "strava:200001"
     ]
+  },
+  {
+    "id": 2010,
+    "name": "Grouped Polar Activity",
+    "starttime": "2018-04-10T17:15:53+00:00",
+    "starttime_local": "2018-04-10T19:15:53+02:00",
+    "type": "gym",
+    "uid": "polar:200010"
+  },
+  {
+    "id": 2011,
+    "name": "Grouped Strava Activity",
+    "starttime": "2018-04-10T17:15:53+00:00",
+    "starttime_local": "2018-04-10T19:15:53+02:00",
+    "type": "gym",
+    "uid": "strava:200010"
+  },
+  {
+    "id": 2012,
+    "name": "Grouped Polar + Strava Activity",
+    "starttime": "2018-04-18T10:14:13+00:00",
+    "starttime_local": "2018-04-18T12:14:13+02:00",
+    "type": "gym",
+    "uid": "group:180418101413",
+    "uids": [
+      "polar:200010",
+      "strava:200010"
+    ]
   }
 ]

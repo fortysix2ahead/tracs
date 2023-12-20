@@ -126,6 +126,11 @@ def test_get( db ):
 	assert db.get_by_uids( None ) == []
 	assert db.get_by_uids( [ 'group:1' ] ) == [ db.get_by_id( 1 ) ]
 
+	# get for uid
+	assert db.get_for_uid( None ) == []
+	assert ids( db.get_for_uid( 'polar:200010' ) ) == [ 2010, 2012 ]
+	assert ids( db.get_for_uid( 'strava:200010' ) ) == [ 2011, 2012 ]
+
 	# get by reference
 	assert db.get_by_ref( None ) == []
 	assert db.get_by_ref( 'polar:1234567890' ) == [ db.get_by_id( 1 ) ]

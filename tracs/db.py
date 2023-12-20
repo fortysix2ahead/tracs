@@ -268,7 +268,7 @@ class ActivityDb:
 		return [ self.insert_activity( a ) for a in activities ]
 
 	def upsert_activity( self, activity: Activity ) -> int:
-		if existing := self.get_activity_by_uids( activity.uids ):
+		if existing := self.get_by_uid( activity.uid ):
 			existing.union( others=[ activity ], copy = False )
 			return existing.id
 		else:
@@ -379,6 +379,9 @@ class ActivityDb:
 		"""
 		return [ a for a in self.activities if a.uid in ( uids or [] ) ]
 
+	def get_for_uid( self, uid: str ) -> List[Activity]:
+		return [ a for a in self.activities if ( uid in [ a.uid, *a.uids ] ) ]
+
 	def get_by_ref( self, uid: str ) -> List[Activity]:
 		"""
 		Returns all activities which contain the provided uid as a reference.
@@ -394,10 +397,6 @@ class ActivityDb:
 		:return:
 		"""
 		return [ a for a in self.activities if any( uid in a.uids for uid in ( uids or [] ) ) ]
-
-	# todo: remove ...
-	def get_activity_by_uids( self, uids: List[str] ):
-		return next( (a for a in self.activities if any( uid in a.uids for uid in uids ) ), None )
 
 	def get_resource( self, id: int ) -> Optional[Resource]:
 		return self.get_resource_by_id( id )

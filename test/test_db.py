@@ -89,6 +89,15 @@ def test_insert_upsert_remove( db ):
 	with raises( KeyError ):
 		assert db.insert_resources( r1 )
 
+	# upsert
+	a = Activity( name='one', uid='one:101' )
+	id = db.upsert_activity( a )
+	assert db.get_by_id( id )
+	a = Activity( name='two', uid='one:101', calories=100 )
+	id = db.upsert_activity( a )
+	a = db.get_by_id( id )
+	assert a.name == 'one' and a.uid == 'one:101' and a.calories == 100
+
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_contains( db ):
 	assert db.contains_activity( uid='polar:1234567890' ) is True

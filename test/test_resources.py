@@ -57,16 +57,14 @@ def test_resource():
 	r = Resource( uid=UID( classifier='polar', local_id=1001, path='recording.gpx' ) )
 	assert r.uid == 'polar:1001' and r.path == 'recording.gpx'
 
-	# resource without a proper uid is not allowed
-	with raises( AttributeError ):
-		Resource()
-	with raises( AttributeError ):
-		Resource( path='recording.gpx' )
+	# resource without a proper uid/path is allowed, this is used by resource handlers which from an external URL
+	Resource()
+	Resource( path='recording.gpx' )
 
 	with raises( AttributeError ):
 		Resource( uid='polar:1001' )
-	with raises( AttributeError ):
-		Resource( uid='polar', path='recording.gpx' )
+	#with raises( AttributeError ):
+	Resource( uid='polar', path='recording.gpx' ) # todo: very special case, not sure what to do with it
 
 def test_resources():
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )

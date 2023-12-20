@@ -88,10 +88,10 @@ class Resource:
 		if self.uid_obj.denotes_resource():
 			self.uid, self.path = self.uid_obj.clspath, self.uid_obj.path
 
-		if not self.path:
-			raise AttributeError( 'resource creation without path parameter is not allowed' )
+		if self.uid_obj.denotes_activity():
+			raise AttributeError( 'resource UID may not denote an activity without a proper path' )
 
-		if self.uid_obj.denotes_service() or not self.uid_obj.local_id:
+		if self.uid_obj.denotes_service():
 			raise AttributeError( 'resource UID may not denote a service' )
 
 		# todo: really needed?

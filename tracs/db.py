@@ -272,7 +272,10 @@ class ActivityDb:
 			existing.union( others=[ activity ], copy = False )
 			return existing.id
 		else:
-			self.insert_activity( activity )
+			return self.insert_activity( activity )
+
+	def replace_activity( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
+		self._activities.replace( new, old, id, uid )
 
 	# insert resources
 

@@ -488,5 +488,19 @@ class ApplicationContext:
 	def dump_state( self ) -> None:
 		self.config_fs.writetext( STATE_FILENAME, self.state.dump( full=True ) )
 
+# convenience helper
+
+CURRENT_CONTEXT: Optional[ApplicationContext] = None
+
+def current_ctx() -> ApplicationContext:
+	global CURRENT_CONTEXT
+	return CURRENT_CONTEXT
+
+def set_current_ctx( ctx: ApplicationContext ) -> None:
+	global CURRENT_CONTEXT
+	CURRENT_CONTEXT = ctx if ctx else CURRENT_CONTEXT
+
+#
+
 ApplicationConfig = Configuration( APPNAME, __name__, read=False )
 ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )

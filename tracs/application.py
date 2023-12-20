@@ -10,7 +10,7 @@ from attrs import define, field
 from confuse import Configuration
 
 from tracs import setup_console_logging, setup_file_logging
-from .config import ApplicationContext
+from .config import ApplicationContext, set_current_ctx
 from .db import ActivityDb
 from .registry import Registry
 from .utils import UCFG
@@ -74,6 +74,7 @@ class Application:
 		self._ctx = ApplicationContext( *args, **kwargs )
 		self._config = self._ctx.config
 		self._state = self._ctx.state
+		set_current_ctx( self._ctx )
 
 		# file logging setup after configuration has been loaded --
 		setup_file_logging( self._ctx.verbose, self._ctx.debug, self._ctx.log_file_path )

@@ -18,8 +18,6 @@ log = getLogger( __name__ )
 
 T = TypeVar('T')
 
-PROTECTED_FIELDS = [ 'id' ]
-
 @define( eq=True )
 class ActivityPart:
 
@@ -51,11 +49,11 @@ class ActivityPart:
 class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	# fields
-	id: int = field( default=None )
+	id: int = field( default=None, metadata={ 'protected': True } )
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
-	uid: str = field( default=None )
+	uid: str = field( default=None, metadata={ 'protected': True } )
 	"""UID of this activity"""
-	uids: List[str] = field( factory=list, on_setattr=lambda i, a, v: unique_sorted( v ) if v else [], converter=lambda v: unique_sorted( v ) ) # referenced list activities
+	uids: List[str] = field( factory=list, on_setattr=lambda i, a, v: unique_sorted( v ) if v else [], converter=lambda v: unique_sorted( v ), metadata={ 'protected': True } ) # referenced list activities
 	"""List of uids of referenced activities"""
 
 	name: Optional[str] = field( default=None )
@@ -205,7 +203,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 			if f.name.startswith( '__' ) or f.name in ignore: # never touch internal or ignored fields
 				continue
 
-			if not force and f.name in PROTECTED_FIELDS: # only overwrite protected fields when forced
+			if not force and f.metadata.get( 'protected', False ): # only overwrite protected fields when forced
 				continue
 
 			value = getattr( this, f.name )

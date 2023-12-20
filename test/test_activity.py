@@ -80,32 +80,38 @@ def test_multipart_activity():
 	assert a.as_uids() == [ UID( 'polar:101' ) ]
 	assert a.classifiers == [ 'polar' ]
 
-@mark.file( 'environments/default/db/polar/1/0/0/100001/100001.json' )
-def test_union( json ):
-	src1 = Activity( id=1, name='One', uids=[ 'a1' ] )
-	src2 = Activity( id=2, distance=10, calories=20, uids=['a2'] )
-	src3 = Activity( id=3, calories=100, heartrate= 100, uids=[ 'a2', 'a3' ] )
+def test_union():
+	src1 = Activity( id=1, name='One', uid='a1' )
+	src2 = Activity( id=2, distance=10, calories=20, uid='a2' )
+	src3 = Activity( id=3, calories=100, heartrate= 100, uid='g1', uids=[ 'a1', 'a2' ] )
 
 	target = src1.union( [src2, src3], copy=True )
 	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
 	assert target.id == 1
-	assert target.uids == [ 'a1', 'a2', 'a3' ]
+	assert target.uid == 'a1'
+	assert target.uids == []
 	assert src1.distance is None # source should be untouched
 
 	target = src1.union( others=[src2, src3], force=True, copy=True )
 	assert target.name == 'One' and target.distance == 10 and target.calories == 100 and target.heartrate == 100
 	assert target.id == 3
+	assert target.uid == 'g1'
+	assert target.uids == [ 'a1', 'a2' ]
 	assert src1.distance is None # source should be untouched
 
 	src1.union( [src2, src3], copy=False )
 	assert src1.name == 'One' and src1.distance == 10 and src1.calories == 20 and src1.heartrate == 100
 	assert src1.id == 1
+	assert src1.uid == 'a1'
+	assert src1.uids == []
 
 	# test constructor
 	src1 = Activity( id=1, name='One' )
 	target = Activity( others=[src1, src2, src3] )
 	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
 	assert target.id is None
+	assert target.uid is None
+	assert target.uids == []
 
 def test_add():
 	src1 = Activity( starttime=datetime( 2022, 2, 22, 7 ), distance=10, duration=timedelta( hours=1 ), heartrate_max=180, heartrate_min=100 )

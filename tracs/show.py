@@ -113,22 +113,22 @@ def show_verbose_activity( a: Activity, ctx: ApplicationContext, show_fields: Li
 
 	# attached resources
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False, title='Resources:', **TITLE_STYLE )
-	table.add_row( '[blue]id[/blue]', '[blue]path[/blue]', '[blue]absolute path[/blue]', '[blue]type[/blue]' )
-	# table.add_row( '[blue]id[/blue]', '[blue]path[/blue]', '[blue]absolute path[/blue]', '[blue]type[/blue]', '[blue]URL[/blue]' )
+	table.add_row( '[blue]id[/blue]', '[blue]name[/blue]', '[blue]path[/blue]', '[blue]type[/blue]', '[blue]exists[/blue]', '[blue]overlayed[/blue]' )
 	for uid in a.uids:
 		resources = ctx.db.find_resources( uid ) if ctx else []
 		for r in resources:
-			resource_path = Registry.services.get( r.classifier ).path_for( resource=r )
-			path_exists = '[bright_green]\u2713[/bright_green]' if resource_path.exists() else '[bright_red]\u2716[/bright_red]'
+			service = Registry.instance().services.get( r.classifier )
+			resource_path = service.path_for( resource=r, as_path=False )
 
-			overlay_path = Registry.services.get( r.classifier ).path_for( resource=r, ignore_overlay=False )
+			abs_path = service.path_for( resource=r, absolute=True, as_path=False )
+			abs_path_exists = '[bright_green]\u2713[/bright_green]' if ctx.db_fs.exists( abs_path ) else '[bright_red]\u2716[/bright_red]'
+
 			# overlay_sign = ' \u29c9'
 			# overlay_sign = '\u2a39'
 			overlay_sign = '\u2a01'
-			overlay_path_exists = f'[bright_green] {overlay_sign}[/bright_green]' if overlay_path.exists() else ''
+			overlay_exists = f'[bright_green] {overlay_sign}[/bright_green]' if ctx.overlay_fs.exists( abs_path ) else '[bright_red]\u2716[/bright_red]'
 
-			absolute_path = str( overlay_path ) if overlay_path.exists() else str( resource_path )
-			table.add_row( pp( r.id ), f'{r.path} {path_exists}{overlay_path_exists}', absolute_path, r.type )
+			table.add_row( pp( r.id ), r.path, resource_path, r.type, abs_path_exists, overlay_exists )
 
 	# resource_url = Registry.services.get( r.classifier ).url_for( resource=r )
 	# table.add_row( pp( r.doc_id ), f'{r.path} {path_exists}{overlay_path_exists}', absolute_path, r.type, resource_url )

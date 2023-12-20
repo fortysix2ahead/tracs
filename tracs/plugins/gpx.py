@@ -42,6 +42,5 @@ class GPXImporter( ResourceHandler ):
 			location_longitude_start=gpx.get_points_data()[0].point.longitude,
 			location_latitude_end=gpx.get_points_data()[-1].point.latitude,
 			location_longitude_end=gpx.get_points_data()[-1].point.longitude,
-			# todo: don't add a gpx id as this field is currently of no use, maybe we can activate it later
-			# uid = f'gpx:{gpx.get_time_bounds().start_time.astimezone( UTC ).strftime( "%y%m%d%H%M%S" )}',
+			uid = f'gpx:{gpx.get_time_bounds().start_time.astimezone( UTC ).strftime( "%y%m%d%H%M%S" )}',
 		)

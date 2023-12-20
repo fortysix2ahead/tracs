@@ -10,10 +10,10 @@ from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.db import ActivityDb
 from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugins.polar import POLAR_FLOW_TYPE
 from tracs.plugins.strava import STRAVA_TYPE
 from tracs.plugins.tcx import TCX_TYPE
-from tracs.registry import Registry
-from tracs.resources import Resource, ResourceType
+from tracs.resources import Resource
 
 def test_new_db_without_path():
 	db = ActivityDb( path=None )
@@ -89,9 +89,12 @@ def test_insert_resources( db ):
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_contains( db ):
-	# check activity table
 	assert db.contains_activity( uid='polar:1234567890' ) is True
 	assert db.contains_activity( uid='polar:9999' ) is False
+
+	assert db.contains_resource( uid='polar:100001', path='100001.gpx' )
+	assert not db.contains_resource( uid='polar:100011', path='100001.gpx' )
+	assert not db.contains_resource( uid='polar:100001', path='100001a.gpx' )
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_get( db ):
@@ -131,30 +134,26 @@ def test_get( db ):
 	# get resources
 	assert db.get_resource_by_id( 1 ).path == '100001.gpx'
 	assert db.get_resources_by_uid( 'polar:100001' ) == [ db.get_resource_by_id( 1 ), db.get_resource( 2 ) ]
-	assert db.get_resources_by_uids( ['polar:100001', 'strava:200002' ] ) == [ db.get_resource_by_id( 1 ), db.get_resource( 2 ), db.get_resource_by_id( 3 ), db.get_resource_by_id( 4 ) ]
+	lst = [ db.get_resource_by_id( 1 ), db.get_resource( 2 ), db.get_resource_by_id( 3 ), db.get_resource_by_id( 4 ) ]
+	assert db.get_resources_by_uids( ['polar:100001', 'strava:200002' ] ) == lst
 
 	assert db.get_resource_by_uid_path( 'polar:100001', '100001.gpx' ) == db.get_resource_by_id( 1 )
 
-@mark.context( env='parts', persist='clone', cleanup=True )
-def test_find_resources( db ):
-	assert ids( db.find_resources( 'strava:1001' ) ) == [ 7, 8, 9 ]
-	assert ids( db.find_resources( 'strava:1001', '1001.gpx' ) ) == [ 7 ]
+@mark.context( env='default', persist='clone', cleanup=True )
+@mark.db( summary_types=[POLAR_FLOW_TYPE, STRAVA_TYPE], recording_types=[GPX_TYPE, TCX_TYPE] )
+def test_find( db ):
+	assert ids( db.find_resources( 'polar:100001' ) ) == [ 1, 2 ]
+	assert ids( db.find_resources( 'polar:100001', '100001.json' ) ) == [ 2 ]
 
-	assert ids( db.find_all_resources( ['strava:1001', 'strava:1002' ] ) ) == [ 7, 8, 9, 10, 11, 12 ]
+	assert ids( db.find_all_resources( ['polar:100001', 'strava:200002' ] ) ) == [ 1, 2, 3, 4 ]
 
-	assert ids( db.find_resources_of_type( GPX_TYPE ) ) == [3, 4, 7, 10]
-	assert ids( db.find_resources_of_type( GPX_TYPE, db.find_resources( 'strava:1001' ) ) ) == [7]
+	assert ids( db.find_resources_of_type( GPX_TYPE ) ) == [1, 3]
 
-	# register strava summary type first, otherwise the test case will fail
-	Registry.register_resource_type( ResourceType( type=STRAVA_TYPE, summary=True ) )
-	Registry.register_resource_type( ResourceType( type=GPX_TYPE, recording=True ) )
-	Registry.register_resource_type( ResourceType( type=TCX_TYPE, recording=True ) )
+	assert ids( db.find_summaries( 'polar:100001' ) ) == [ 2 ]
+	assert ids( db.find_all_summaries( ['polar:100001', 'strava:200002'] ) ) == [ 2, 4 ]
 
-	assert ids( db.find_summaries( 'strava:1001' ) ) == [ 9 ]
-	assert ids( db.find_all_summaries( ['strava:1001'] ) ) == [ 9 ]
-
-	assert ids( db.find_recordings() ) == [3, 4, 5, 6, 7, 8, 10, 11]
-	assert ids( db.find_recordings( db.find_resources( 'strava:1001' ) ) ) == [7, 8]
+	assert ids( db.find_recordings( 'polar:100001' ) ) == [ 1 ]
+	assert ids( db.find_all_recordings( ['polar:100001', 'strava:200002'] ) ) == [ 1, 3 ]
 
 @mark.context( env='parts', persist='clone', cleanup=True )
 def test_find_multipart( db ):

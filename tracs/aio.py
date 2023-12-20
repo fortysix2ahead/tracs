@@ -3,6 +3,7 @@ from logging import getLogger
 from os import system
 from pathlib import Path
 from re import compile
+from shlex import quote
 from typing import List, Optional, Union
 
 from dateutil.tz import gettz
@@ -46,15 +47,17 @@ def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **
 		else:
 			log.error( f'skipping import from service {src}, either service is unknown or disabled' )
 
-def open_activities( activities: List[Activity], db: ActivityDb ) -> None:
+def open_activities( ctx: ApplicationContext, activities: List[Activity] ) -> None:
 	if len( activities ) > MAXIMUM_OPEN:
 		log.warning( f'limit of number of activities to open is {MAXIMUM_OPEN}, ignoring the rest of provided {len( activities )} activities' )
 		activities = activities[:MAXIMUM_OPEN]
 
 	resource_type = GPX_TYPE # todo: make this configurable
 
-	resources = [ db.get_resource_of_type_for( a, resource_type ) for a in activities ]
-	paths = [ str( Service.path_for_resource( r ) ) for r in resources ]
+	resources = [ ctx.db.get_resource_of_type_for( a, resource_type ) for a in activities ]
+	paths = [ Service.path_for_resource( r, as_path=False ) for r in resources ]
+	paths = list( filter( lambda p: p, paths ) )
+	paths = [ quote( ctx.db_fs.getsyspath( p ) ) for p in paths ]
 
 	if paths:
 		system( 'open ' + ' '.join( paths ) )

@@ -133,7 +133,7 @@ class BikecitizensImporter( DataclassFactoryHandler ):
 			starttime_local= time.astimezone( tzlocal() ),
 			endtime_local=time.astimezone( tzlocal() ) + duration,
 			tags = activity.tags,
-			uids=[f'{SERVICE_NAME}:{activity.local_id}'],
+			uid=f'{SERVICE_NAME}:{activity.local_id}',
 		)
 
 # service

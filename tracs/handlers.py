@@ -69,6 +69,7 @@ class ResourceHandler:
 		else:
 			return self.as_activity( self.load( path, url, **kwargs ) )
 
+	# todo: leave this method empty?
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		return self._factory.load( resource.raw, self.activity_cls ) if self.activity_cls else None
 

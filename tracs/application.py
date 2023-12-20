@@ -86,7 +86,13 @@ class Application:
 		self._registry = Registry.instance( ctx=self._ctx )
 
 		# open db from config_dir
-		self._db = ActivityDb( path=self._ctx.db_dir_path, read_only=self._ctx.pretend, enable_index=self.ctx.config['db']['index'].get() )
+		self._db = ActivityDb(
+			path=self._ctx.db_dir_path,
+			read_only=self._ctx.pretend,
+			enable_index=self.ctx.config['db']['index'].get(),
+			summary_types=[ v.type for v in self._registry.resource_types.values() if v.summary ],
+			recording_types=[ v.type for v in self._registry.resource_types.values() if v.recording ],
+		)
 		self._ctx.db = self._db # todo: really put db into ctx? or keep it here?
 
 		# ---- create service instances ----

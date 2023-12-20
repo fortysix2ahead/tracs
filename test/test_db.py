@@ -4,7 +4,7 @@ from typing import List, Union
 
 from fs.memoryfs import MemoryFS
 from fs.osfs import OSFS
-from pytest import mark
+from pytest import mark, raises
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
@@ -70,22 +70,24 @@ def test_open_db( db ):
 	)
 
 @mark.context( env='empty', persist='clone', cleanup=True )
-def test_insert( db ):
-	assert len( db.activities ) == 0
+def test_insert_upsert_remove( db ):
+	assert len( db.activities ) == 0 and len( db.resources ) == 0
+
+	# insert activities and check keys
 	id = db.insert( Activity() )
 	assert len( db.activities ) == 1 and id == [1]
 	ids = db.insert( Activity(), Activity() )
 	assert len( db.activities ) == 3 and ids == [2, 3]
 	assert db.activity_keys == [1, 2, 3]
 
-@mark.context( env='empty', persist='clone', cleanup=True )
-def test_insert_resources( db ):
-	assert len( db.resources ) == 0
-
+	# test insert resources
 	r1 = Resource( uid='polar:101/recording.gpx' )
 	r2 = Resource( uid='polar:102/recording.gpx' )
-
 	assert db.insert_resources( r1, r2 ) == [1, 2]
+
+	# insert r1 again
+	with raises( KeyError ):
+		assert db.insert_resources( r1 )
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_contains( db ):
@@ -178,12 +180,6 @@ def test_find_multipart( db ):
 	# test for run 2
 	a = db.get_by_id( 6 )
 	assert ids( db.find_resources_for( a ) ) == [ 4, 6, 10, 11, 12 ]
-
-@mark.context( env='default', persist='clone', cleanup=True )
-def test_remove( db ):
-	assert ( a := db.get_by_id( 4 ) ) and a is not None
-	db.remove_activity( a )
-	assert db.get_by_id( 4 ) is None
 
 # helper
 

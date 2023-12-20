@@ -277,9 +277,7 @@ class ActivityDb:
 	# insert resources
 
 	def insert_resource( self, resource: Resource ) -> int:
-		resource.id = self._next_id( self._resources )
-		self._resources[resource.id] = resource
-		return resource.id
+		return self.insert_resources( resource )[0]
 
 	def insert_resources( self, *resources: Union[Resource, List[Resource]] ) -> List[int]:
 		return self.resources.add( *resources )
@@ -532,7 +530,6 @@ class ActivityDb:
 		"""
 		Finds all summary resources having an uid contained in the provided list.
 		"""
-		# return [r for r in self.find_all_resources( uids ) if (rt := Registry.instance().resource_types.get( r.type ) ) and rt.summary]
 		return [ r for r in self.find_all_resources( uids ) if r.type in self._summary_types ]
 
 	def find_all_resources_for( self, activities: Union[Activity, List[Activity]] ) -> List[Resource]:

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from enum import Enum
+from functools import cached_property
 from re import compile, Pattern
-from typing import Any, cast, List, Optional, Tuple, Type, Union
+from typing import Any, cast, Dict, List, Optional, Tuple, Type, Union
 
 from attrs import Attribute, define, field, fields
 
@@ -78,24 +79,20 @@ class Resource:
 	"""Secondary field as companion to raw, might contain another form of structured data, i.e. a dataclass in parallel to a json"""
 
 	__parents__: List = field( factory=list, repr=False, init=False, alias='__parents__' )
-	__uid__: UID = field( default=None, kw_only=True, alias='__uid__' )
+	__dict__: Dict = field( factory=dict, repr=False, init=False ) # property cache
 
 	def __attrs_post_init__( self ):
-		if self.__uid__:
-			self.uid, self.path = self.__uid__.clspath, self.__uid__.path
+		if type( self.uid ) is UID:  # uid of type UID is allowed
+			self.uid, self.path = self.uid.clspath, self.uid.path
 
-		elif self.uid and type( self.uid ) is UID:  # uid of type UID is allowed, treat it like self.__uid__
-			self.__uid__ = cast( UID, self.uid )
-			self.uid, self.path = self.__uid__.clspath, self.__uid__.path
+		if self.uid_obj.denotes_resource():
+			self.uid, self.path = self.uid_obj.clspath, self.uid_obj.path
 
-		elif self.uid and type( self.uid ) is str:
-			self.__uid__ = UID( uid=self.uid )
-			if self.__uid__.denotes_activity() and self.path:
-				self.__uid__ = UID( uid=f'{self.uid}/{self.path}' )
-			elif self.__uid__.denotes_resource():
-				self.uid, self.path = self.__uid__.clspath, self.__uid__.path
-			else:
-				raise AttributeError( f'uid = {self.uid} and path = {self.path} are not supported as valid arguments' )
+		if self.uid_obj.denotes_activity():
+			raise AttributeError( 'resource UID may not denote an activity without a proper path' )
+
+		if self.uid_obj.denotes_service():
+			raise AttributeError( 'resource UID may not denote a service' )
 
 		# todo: really needed?
 		self.content = self.text.encode( encoding='UTF-8' ) if self.text else self.content
@@ -121,24 +118,24 @@ class Resource:
 
 	@property
 	def classifier( self ) -> str:
-		return self.__uid__.classifier
+		return self.uid_obj.classifier
 
 	@property
 	def local_id( self ) -> int:
-		return self.__uid__.local_id
+		return self.uid_obj.local_id
 
 	@property
 	def local_id_str( self ) -> str:
 		return str( self.local_id )
 
-	@property
+	@cached_property
 	def uid_obj( self ) -> UID:
-		return self.__uid__
+		return UID( uid=self.uid, path=self.path )
 
 	# todo: rename, that's not a good name
 	@property
 	def uidpath( self ) -> str:
-		return self.__uid__.uid
+		return self.uid_obj.uid
 
 	def as_text( self, encoding: str = 'UTF-8' ) -> Optional[str]:
 		return self.content.decode( encoding )

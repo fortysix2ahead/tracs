@@ -5,6 +5,8 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, Optional, Type, Union
 
+from fs.base import FS
+from fs.path import basename
 from requests import Response, Session
 
 from tracs.activity import Activity
@@ -30,12 +32,15 @@ class ResourceHandler:
 		self.raw: Any = None
 		self.data: Any = None
 
-	def load( self, path: Optional[Path] = None, url: Optional[str] = None, content: Optional[bytes] = None, **kwargs ) -> Optional[Resource]:
+	def load( self, path: Optional[Union[Path, str]] = None, url: Optional[str] = None, content: Optional[bytes] = None, fs: Optional[FS] = None, **kwargs ) -> Optional[Resource]:
 		# load from either from path, url or provided content
 		if content:
 			self.content = self.load_from_content( content, **kwargs )
 		elif path:
-			self.content = self.load_from_path( path, **kwargs )
+			if fs:
+				self.content = self.load_from_fs( fs, path, **kwargs )
+			else:
+				self.content = self.load_from_path( path, **kwargs )
 		elif url:
 			self.content = self.load_from_url( url, **kwargs )
 
@@ -52,7 +57,7 @@ class ResourceHandler:
 		# return the result
 		return self.load_resource( path, url, **kwargs )
 
-	def load_as_activity( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Activity]:
+	def load_as_activity( self, path: Optional[Union[Path, str]] = None, url: Optional[str] = None, fs: Optional[FS] = None, **kwargs ) -> Optional[Activity]:
 		if resource := kwargs.get( 'resource' ):
 			# lazy (re-)loading of an existing resource
 			if resource.content and resource.raw is None and resource.data is None:
@@ -67,8 +72,9 @@ class ResourceHandler:
 				return None
 
 		else:
-			return self.as_activity( self.load( path, url, **kwargs ) )
+			return self.as_activity( self.load( path=path, url=url, fs=fs, **kwargs ) )
 
+	# todo: leave this method empty?
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		return self._factory.load( resource.raw, self.activity_cls ) if self.activity_cls else None
 
@@ -87,6 +93,10 @@ class ResourceHandler:
 		Reads from the provided path and returns the files content as bytes.
 		"""
 		return path.read_bytes()
+
+	# noinspection PyMethodMayBeStatic
+	def load_from_fs( self, fs: FS, path: str, **kwargs ) -> Optional[bytes]:
+		return fs.readbytes( path )
 
 	# noinspection PyMethodMayBeStatic
 	def load_from_url( self, url: str, **kwargs ) -> Optional[bytes]:
@@ -123,11 +133,18 @@ class ResourceHandler:
 	def transform_data( self, raw: Any, **kwargs ):
 		return raw
 
-	def load_resource( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Resource:
+	def load_resource( self, path: Optional[Union[Path,str]] = None, url: Optional[str] = None, **kwargs ) -> Resource:
+		if isinstance( path, Path ):
+			path, source = path.name, path.as_uri()
+		elif isinstance( path, str ):
+			path, source = basename( path ), None
+		else:
+			path, source = None, None
+
 		return Resource(
 			type = self.__class__.TYPE,
-			path = path.name if path else None, # todo: use url here as well?
-			source = path.as_uri() if path else url,
+			path = path,
+			source = source,
 			content = self.content,
 			raw = self.raw,
 			data = self.data

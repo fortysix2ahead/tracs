@@ -205,7 +205,7 @@ class PolarFlowImporter( DataclassFactoryHandler ):
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: PolarFlowExercise = resource.data
 		return Activity(
-			uids = [f'{SERVICE_NAME}:{activity.local_id}'],
+			uid = f'{SERVICE_NAME}:{activity.local_id}',
 			name = activity.title,
 			type = activity.get_type(),
 			starttime= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),

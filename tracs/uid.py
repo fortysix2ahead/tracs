@@ -21,7 +21,12 @@ class UID:
 
 	def __attrs_post_init__( self ):
 		if self.uid:
-			self.classifier, self.local_id, self.path, self.part = self._uidparse( self.uid )
+			classifier, local_id, path, part = self._uidparse( self.uid )
+			# allow overwrting path
+			path = self.path if self.path else path
+			# set attributes and update uid
+			self.classifier, self.local_id, self.path, self.part = classifier, local_id, path, part
+			self.uid = self._unsplit( classifier, local_id, path, part )
 		else:
 			self.uid = self._unsplit( self.classifier, self.local_id, self.path, self.part )
 

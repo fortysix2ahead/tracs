@@ -208,9 +208,9 @@ def reimport( ctx: ApplicationContext, filters, include_recordings: bool = False
 
 @cli.command( 'open', help='opens activities in an external application' )
 @argument( 'filters', nargs=-1 )
-@pass_context
-def open_cmd( ctx, filters ):
-	open_activities( list( ctx.obj.db.find( filters ) ), ctx.obj.db )
+@pass_obj
+def open_cmd( ctx: ApplicationContext, filters ):
+	open_activities( ctx, list( ctx.db.find( filters ) ) )
 
 @cli.command( help='export activities/resources' )
 @option( '-a', '--aggregate', required=False, is_flag=True )

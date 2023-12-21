@@ -99,7 +99,7 @@ class StravaHandler( JSONHandler ):
 			heartrate = self.to_int( activity.average_heartrate ),
 			heartrate_max = self.to_int( activity.max_heartrate ),
 			location_country = activity.location_country,
-			uids = [f'{SERVICE_NAME}:{activity.id}'],
+			uid = f'{SERVICE_NAME}:{activity.id}',
 		)
 
 @service

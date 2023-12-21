@@ -10,7 +10,7 @@ from attrs import define, field
 from confuse import Configuration
 
 from tracs import setup_console_logging, setup_file_logging
-from .config import ApplicationContext
+from .config import ApplicationContext, set_current_ctx
 from .db import ActivityDb
 from .registry import Registry
 from .utils import UCFG
@@ -74,6 +74,7 @@ class Application:
 		self._ctx = ApplicationContext( *args, **kwargs )
 		self._config = self._ctx.config
 		self._state = self._ctx.state
+		set_current_ctx( self._ctx )
 
 		# file logging setup after configuration has been loaded --
 		setup_file_logging( self._ctx.verbose, self._ctx.debug, self._ctx.log_file_path )
@@ -86,7 +87,13 @@ class Application:
 		self._registry = Registry.instance( ctx=self._ctx )
 
 		# open db from config_dir
-		self._db = ActivityDb( path=self._ctx.db_dir_path, read_only=self._ctx.pretend, enable_index=self.ctx.config['db']['index'].get() )
+		self._db = ActivityDb(
+			path=self._ctx.db_dir_path,
+			read_only=self._ctx.pretend,
+			enable_index=self.ctx.config['db']['index'].get(),
+			summary_types=[ v.type for v in self._registry.resource_types.values() if v.summary ],
+			recording_types=[ v.type for v in self._registry.resource_types.values() if v.recording ],
+		)
 		self._ctx.db = self._db # todo: really put db into ctx? or keep it here?
 
 		# ---- create service instances ----

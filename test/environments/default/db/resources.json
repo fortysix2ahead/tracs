@@ -1,34 +1,50 @@
 [
 	{
 		"id": 1,
-		"name": null,
 		"path": "100001.gpx",
-		"type": "application/xml+gpx",
-		"status": 200,
+		"type": "application/gpx+xml",
 		"uid": "polar:100001"
 	},
 	{
 		"id": 2,
-		"name": null,
-		"path": "100001.raw.json",
-		"type": "application/json+polar",
-		"status": 200,
+		"path": "100001.json",
+		"type": "application/vnd.polar+json",
 		"uid": "polar:100001"
 	},
 	{
 		"id": 3,
-		"name": null,
 		"path": "200002.gpx",
-		"type": "application/xml+gpx",
-		"status": 200,
+		"type": "application/gpx+xml",
 		"uid": "strava:200002"
 	},
 	{
 		"id": 4,
-		"name": null,
-		"path": "200002.raw.json",
-		"type": "application/json+strava",
-		"status": 200,
+		"path": "200002.json",
+		"type": "application/vnd.strava+json",
 		"uid": "strava:200002"
+	},
+	{
+		"id": 2000,
+		"path": "200000.json",
+		"type": "application/vnd.polar+json",
+		"uid": "polar:200000"
+	},
+	{
+		"id": 2001,
+		"path": "200000.json",
+		"type": "application/vnd.strava+json",
+		"uid": "strava:200000"
+	},
+	{
+		"id": 2002,
+		"path": "200001.json",
+		"type": "application/vnd.polar+json",
+		"uid": "polar:200001"
+	},
+	{
+		"id": 2003,
+		"path": "200001.json",
+		"type": "application/vnd.strava+json",
+		"uid": "strava:200001"
 	}
 ]

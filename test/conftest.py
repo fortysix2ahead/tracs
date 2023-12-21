@@ -130,7 +130,11 @@ def db( request, fs: FS ) -> ActivityDb:
 		db_fs = MemoryFS()
 	else:
 		raise ValueError
-	yield ActivityDb( fs=db_fs )
+
+	summary_types = marker( request, 'db', 'summary_types', [] )
+	recording_types = marker( request, 'db', 'recording_types', [] )
+
+	yield ActivityDb( fs=db_fs, summary_types=summary_types, recording_types=recording_types )
 	#db_path = Path( env_fs.getsyspath( '/' ), DB_DIRNAME )
 	#yield ActivityDb( path=db_path, read_only=False )
 

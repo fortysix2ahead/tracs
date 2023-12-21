@@ -115,12 +115,16 @@ def inspect_registry() -> None:
 
 def show_fields():
 	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
-	table.add_column( 'field (virtual=\u24e5 )' )
+	table.caption, table.caption_justify = 'Virtual fields are marked with \u24e5  and shown in yellow.', 'left'
+	table.add_column( '', justify='center' )
+	table.add_column( 'field' )
 	table.add_column( 'type' )
 
 	for f in sorted( Activity.fields( include_internal=False, include_virtual=True ), key=lambda fld: fld.name ):
-		name = f'{f.name} \u24e5' if isinstance( f, VirtualField ) else f.name
-		table.add_row( name, pp( f.type ) )
+		# name = f'{f.name} \u24e5' if isinstance( f, VirtualField ) else f.name
+		virtual = '[yellow]\u24e5[/yellow]' if isinstance( f, VirtualField ) else ''
+		name = f'[yellow]{f.name}[/yellow]' if isinstance( f, VirtualField ) else f.name
+		table.add_row( virtual, name, pp( f.type ) )
 
 	console.print( table )
 

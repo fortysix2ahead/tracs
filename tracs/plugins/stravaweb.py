@@ -129,7 +129,7 @@ class StravaWebImporter( JSONHandler ):
 			duration_moving = timedelta( seconds=activity.moving_time_raw ) if activity.moving_time_raw else None,
 			name = activity.name,
 			type = TYPES.get( activity.type, ActivityTypes.unknown ),
-			uids=[f'strava:{activity.id}'],
+			uid=f'strava:{activity.id}',
 		)
 
 @service

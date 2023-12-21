@@ -7,11 +7,11 @@ from attrs import define, field
 from rich.prompt import Confirm
 
 from tracs.service import Service
-from tracs.activity import Activity, ActivityPart
+from tracs.activity import Activity, ActivityPart, groups
 from tracs.fsio import ACTIVITIES_CONVERTER
 from tracs.config import ApplicationContext
 from tracs.ui import Choice, dict_table, diff_table_3
-from tracs.utils import seconds_to_time
+from tracs.utils import seconds_to_time, unique_sorted as usort
 
 log = getLogger( __name__ )
 
@@ -35,12 +35,8 @@ class ActivityGroup:
 
 	def execute( self ):
 		self.head.union( self.tail )
-		for a in self.tail:
-			self.head.uids.extend( a.uids )
-			self.head.resources.extend( a.resources )
-			for r in a.resources:
-				r.__parent_activity__ = self.head
-		self.head.uids = sorted( list( set( self.head.uids ) ) )
+		self.head.uids = usort( [ a.uid for a in self.members ] )
+		self.head.uid = sorted( [ a.starttime for a in self.members ] )[0].strftime( 'group:%y%m%d%H%M%S' )
 
 def group_activities( ctx: ApplicationContext, activities: List[Activity], force: bool = False ) -> None:
 	groups = group_activities2( activities )
@@ -113,23 +109,23 @@ def ungroup_activities( ctx: ApplicationContext,
 	:param pretend: when true does not persist changes to db
 	:return:
 	"""
-	all_parents, all_children = [], []
-	for a in activities:
-		if a.group:
-			if Confirm.ask( f'Ungroup activity {a.id} ({a.name})?' ) if not force else True:
-				parent, children = _ungroup( ctx, a )
-				all_parents.append( parent )
-				all_children.extend( children )
-				log.debug( f'ungrouped activity {a.id}' )
+	all_groups, all_members = [], []
+	for a in groups( activities ):
+		if force or Confirm.ask( f'Ungroup activity {a.id} ({a.name})?' ):
+			# members = [Service.as_activity( ctx.db.get_summary( uid ) ) for uid in a.uids]
+			members = [ Service.as_activity( r ) for r in ctx.db.find_all_summaries( a.uids ) ]
+			all_groups.append( a )
+			all_members.extend( members )
+			log.debug( f'ungrouped activity {a.uid}, containing members {a.uids}' )
 
 	# persist changes
 	if not pretend:
 		if not keep:
-			ctx.db.remove_activities( all_parents )
-		ctx.db.insert_activities( all_children )
+			ctx.db.remove_activities( all_groups )
+		ctx.db.insert_activities( all_members )
 		ctx.db.commit()
 
-	return all_parents, all_children
+	return all_groups, all_members
 
 # parting / unparting
 
@@ -187,9 +183,3 @@ def _delta( target_time: datetime, src_time: datetime ) -> Tuple[bool, float]:
 		return True, delta
 	else:
 		return False, delta
-
-def _ungroup( ctx: ApplicationContext, activity: Activity ) -> Tuple[Activity, List[Activity]]:
-	children = []
-	for uid in activity.uids:
-		children.append( Service.as_activity( ctx.db.get_summary( uid ) ) )
-	return activity, children

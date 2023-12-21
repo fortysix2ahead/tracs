@@ -11,10 +11,10 @@ from typing import Any, cast, List, Optional, Tuple, Union
 from dateutil.tz import UTC
 from fs.base import FS
 from fs.errors import ResourceNotFound
-from fs.multifs import MultiFS
 from fs.path import combine, dirname, frombase
 
 from tracs.activity import Activity
+from tracs.config import current_ctx
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.registry import Registry
@@ -102,12 +102,12 @@ class Service( Plugin ):
 		return Path( path ) if as_path else path
 
 	@classmethod
-	def path_for_resource( cls, resource: Resource, as_path: bool = True ) -> Union[Path, str]:
-		service = Registry.instance().services.get( resource.classifier )
-		if as_path:
-			return service.path_for( resource=resource, as_path=True ).resolve()
-		else:
-			return service.path_for( resource=resource, as_path=False )
+	def path_for_resource( cls, resource: Resource, absolute: bool = True, as_path: bool = True, ignore_overlay: bool = True ) -> Union[Path, str]:
+		try:
+			service = Registry.instance().services.get( resource.classifier )
+			return service.path_for( resource=resource, absolute=absolute, as_path=as_path, ignore_overlay=ignore_overlay )
+		except AttributeError:
+			log.error( f'unable to calculate resource path for {resource}', exc_info=True )
 
 	@classmethod
 	def url_for_uid( cls, uid: str ) -> Optional[str]:
@@ -122,7 +122,8 @@ class Service( Plugin ):
 		"""
 		Loads a resource and transforms it into an activity by using the importer indicated by the resource type.
 		"""
-		return Registry.importer_for( resource.type ).load_as_activity( Service.path_for_resource( resource ), **kwargs )
+		fs, path = current_ctx().db_fs, Service.path_for_resource( resource, as_path=False )
+		return Registry.importer_for( resource.type ).load_as_activity( path=path, fs=fs, **kwargs )
 
 	@classmethod
 	def as_activity_from( cls, resource: Resource, **kwargs ) -> Optional[Activity]:

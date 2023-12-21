@@ -170,10 +170,6 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	# post init, this contains mostly convenience things
 	def __attrs_post_init__( self ):
-		# uid list handling, depending on parts
-		if self.parts:
-			self.uids = unique_sorted( uid for p in self.parts for uid in p.activity_uids )
-
 		# convenience: allow init from other activities
 		if self.others:
 			self.union( self.others )

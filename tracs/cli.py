@@ -10,10 +10,10 @@ from rule_engine import RuleSyntaxError
 from tracs.aio import export_activities, import_activities, open_activities, reimport_activities
 from tracs.application import Application
 from tracs.config import ApplicationContext, APPNAME
-from tracs.db import maintain_db, restore_db, status_db
+from tracs.db import maintain_db, status_db
 from tracs.edit import edit_activities, equip_activities, modify_activities, rename_activities, set_activity_type, tag_activities, unequip_activities, \
 	untag_activities
-from tracs.fsio import backup_db
+from tracs.fsio import backup_db, restore_db
 from tracs.group import group_activities, part_activities, ungroup_activities, unpart_activities
 from tracs.link import link_activities
 from tracs.list import inspect_activities, inspect_plugins, inspect_registry, inspect_resources, list_activities, show_config, show_fields
@@ -63,7 +63,7 @@ def db( ctx: ApplicationContext, backup: bool, maintenance: str, restore: bool, 
 	elif maintenance:
 		maintain_db( ctx, maintenance=maintenance if maintenance != '__show_maintenance_functions__' else None )
 	elif restore:
-		restore_db( ctx )
+		restore_db( ctx.db_fs, ctx.backup_fs, ctx.force )
 	elif status:
 		status_db( ctx )
 

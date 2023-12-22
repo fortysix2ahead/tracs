@@ -540,17 +540,6 @@ class ActivityDb:
 
 # ---- DB Operations ----
 
-def restore_db( ctx: ApplicationContext ) -> None:
-	target = ctx.db_path
-	try:
-		source = sorted( list( ctx.backup_path.glob( '[0-9]*_[0-9]*' ) ), key=lambda p: p.name )[-1]
-		if ctx.force or confirm( f'Restore database from {source}? The current state will be overwritten.' ):
-			copytree( source, target, ignore=lambda root, content: [c for c in content if c not in DB_FILES.keys()], dirs_exist_ok=True )
-			log.info( f"database restored from {source}" )
-	except RuntimeError:
-		log.error( 'failed to restore backup', exc_info=True )
-		ctx.console.print( f'no backups found in {ctx.backup_path}' )
-
 def status_db( ctx: ApplicationContext ) -> None:
 	table = RichTable( box=box.MINIMAL, show_header=False, show_footer=False )
 	table.add_row( 'activities', pp( len( ctx.db.activity_map ) ) )
@@ -565,5 +554,4 @@ def maintain_db( ctx: ApplicationContext, maintenance: str, **kwargs ) -> None:
 	if not maintenance:
 		[ctx.console.print( f ) for f in migrate_db_functions( ctx )]
 	else:
-		backup_db( ctx )
 		migrate_db( ctx, maintenance, **kwargs )

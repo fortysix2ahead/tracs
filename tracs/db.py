@@ -542,11 +542,18 @@ class ActivityDb:
 
 def status_db( ctx: ApplicationContext ) -> None:
 	table = RichTable( box=box.MINIMAL, show_header=False, show_footer=False )
-	table.add_row( 'activities', pp( len( ctx.db.activity_map ) ) )
-	for s in Registry.instance().service_names():
-		table.add_row( f'activities ({s})', pp( len( list( ctx.db.find_by_classifier( s ) ) ) ) )
+	table.add_row( 'activities', pp( len( ctx.db.activities ) ) )
 
-	table.add_row( 'resources', pp( len( ctx.db.resource_map ) ) )
+	activity_map = {}
+	for a in ctx.db.activities:
+		if a.as_uid().classifier not in activity_map.keys():
+			activity_map[a.as_uid().classifier] = 1
+		else:
+			activity_map[a.as_uid().classifier] = activity_map[a.as_uid().classifier] + 1
+
+	for k in sorted( activity_map.keys() ):
+		table.add_row( f' - {k}', pp( activity_map[k] ) )
+	table.add_row( 'resources', pp( len( ctx.db.resources ) ) )
 
 	ctx.console.print( table )
 

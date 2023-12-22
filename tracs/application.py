@@ -50,7 +50,7 @@ class Application:
 		# console logging setup --
 		setup_console_logging( kwargs.get( 'verbose' ), kwargs.get( 'debug' ) )
 
-		log.debug( f'triggered CLI with flags debug={kwargs}' )
+		log.debug( f'triggered CLI with flags {kwargs}' )
 
 		try:
 			configuration = expanduser( expandvars( kwargs.pop( 'configuration', None ) ) )

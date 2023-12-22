@@ -22,7 +22,7 @@ from tracs.uid import UID
 log = getLogger( __name__ )
 
 # todo: mute this logger
-log.setLevel( INFO )
+#log.setLevel( INFO )
 
 class EventTypes( Enum ):
 
@@ -55,6 +55,8 @@ class Registry:
 	_setup_fns: List[Tuple] = field( factory=list, alias='_setup_fns' )
 	_virtual_fields_fns: List[Tuple] = field( factory=list, alias='_virtual_fields_fns' )
 
+	_needs_setup: bool = field( default=True, alias='_needs_setup' )
+
 	@classmethod
 	def instance( cls, *args, **kwargs ) -> Registry:
 		if cls._instance is None:
@@ -62,7 +64,9 @@ class Registry:
 			# noinspection PyUnresolvedReferences
 			cls._instance.__attrs_init__( *args, **kwargs )
 
-		cls._instance.setup( *args, **kwargs )
+		if cls._instance._needs_setup and kwargs.get( 'ctx' ):
+			cls._instance.setup( *args, **kwargs )
+			cls._instance._needs_setup = False
 
 		return cls._instance
 

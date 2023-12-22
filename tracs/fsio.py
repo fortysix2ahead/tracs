@@ -1,4 +1,4 @@
-from datetime import time, timedelta
+from datetime import datetime, time, timedelta
 from logging import getLogger
 from typing import List, Union
 
@@ -6,10 +6,13 @@ from attrs import define, field
 from cattrs.gen import make_dict_structure_fn, make_dict_unstructure_fn, override
 from cattrs.preconf.orjson import make_converter
 from fs.base import FS
+from fs.copy import copy_dir
+from fs.walk import Walker
 from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 
 from tracs.activity import Activities, Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
+from tracs.config import current_ctx as ctx
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
 from tracs.utils import fromisoformat, str_to_timedelta, timedelta_to_str
@@ -143,3 +146,11 @@ def load_schema( fs: FS ) -> Schema:
 	schema = SCHEMA_CONVERTER.loads( fs.readbytes( SCHEMA_PATH ), Schema )
 	log.debug( f'loaded database schema from {SCHEMA_PATH}, schema version = {schema.version}' )
 	return schema
+
+# backup & restore
+
+def backup_db( db_fs: FS, backup_fs: FS ) -> None:
+	backup_folder = datetime.utcnow().strftime( '%y%m%d_%H%M%S' )
+	walker = Walker( filter=[ '*.json' ], exclude_dirs=[ '*' ], max_depth=0 )
+	copy_dir( db_fs, '/', backup_fs, backup_folder, walker=walker, preserve_time=True )
+	ctx().console.print( f'created database backup in {backup_fs.getsyspath( backup_folder )}' )

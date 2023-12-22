@@ -540,12 +540,6 @@ class ActivityDb:
 
 # ---- DB Operations ----
 
-def backup_db( ctx: ApplicationContext ) -> None:
-	source = ctx.db_path
-	target = Path( ctx.backup_path, f"{datetime.now( timezone.utc ).strftime( '%Y%m%d_%H%M%S' )}" )
-	copytree( source, target, ignore=lambda root, content: [c for c in content if c not in DB_FILES.keys()] )
-	ctx.console.print( f'created database backup in {target}' )
-
 def restore_db( ctx: ApplicationContext ) -> None:
 	target = ctx.db_path
 	try:

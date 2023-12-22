@@ -50,6 +50,8 @@ class Application:
 		# console logging setup --
 		setup_console_logging( kwargs.get( 'verbose' ), kwargs.get( 'debug' ) )
 
+		log.debug( f'triggered CLI with flags debug={kwargs}' )
+
 		try:
 			configuration = expanduser( expandvars( kwargs.pop( 'configuration', None ) ) )
 			if configuration and Path( configuration ).is_dir():
@@ -79,9 +81,8 @@ class Application:
 		# file logging setup after configuration has been loaded --
 		setup_file_logging( self._ctx.verbose, self._ctx.debug, self._ctx.log_file_path )
 
-		# print CLI configuration
-		log.debug( f'triggered CLI with flags debug={kwargs}' )
-		log.debug( f'using config dir: {self._ctx.config_dir} and library dir: {self._ctx.lib_dir}' )
+		# print context configuration
+		log.debug( f'using configuration from {self._ctx.config_dir} and library inw {self._ctx.lib_dir}' )
 
 		# create registry
 		self._registry = Registry.instance( ctx=self._ctx )

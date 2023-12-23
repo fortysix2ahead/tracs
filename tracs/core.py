@@ -170,6 +170,9 @@ class VirtualFields:
 	def set_field( self, name: str, vf: VirtualField ) -> None:
 		self.__fields__[name] = vf
 
+	def items( self ):
+		return self.__fields__.items()
+
 @define
 class VirtualFieldsBase( AttrsInstance ):
 

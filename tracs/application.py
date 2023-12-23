@@ -96,6 +96,7 @@ class Application:
 			importers=PluginManager.importers,
 			virtual_fields=PluginManager.virtual_fields,
 			setups=PluginManager.setups,
+			services=PluginManager.services,
 			ctx=self._ctx,
 		)
 

@@ -42,6 +42,13 @@ class Registry:
 	virtual_fields: VirtualFields = field( factory=VirtualFields )
 
 	@classmethod
+	def instance( cls ) -> Registry:
+		log.warning( 'call to deprecated class method Registry.instance()', stack_info=True )
+
+		from tracs.config import current_ctx
+		return current_ctx().registry
+
+	@classmethod
 	def create( cls, **kwargs ) -> Registry:
 		instance = Registry()
 

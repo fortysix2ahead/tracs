@@ -229,22 +229,6 @@ class ApplicationContext:
 		except (NoSysPath, TypeError):
 			pass
 
-	def __setup_plugins__( self ):
-		# noinspection PyUnresolvedReferences
-		import tracs.plugins
-
-		try:
-			pluginpath = (self.config['pluginpath'].get() or '').split( ' ' )
-			for pp in pluginpath:
-				plugin_path = OSFS( root_path=pp, expand_vars=True ).getsyspath( '/tracs/plugins' )
-				tracs.plugins.__path__ = extend_path( [plugin_path], 'tracs.plugins' )
-		except NotFoundError:
-			log.error( 'error loading value from configuration key pluginpath' )
-
-		for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
-			log.debug( f'importing plugin [bold green]{name}[/bold green] from {finder.path}' )
-			self.plugins[f'{name}'] = import_module( f'tracs.plugins.{name}' )
-
 	def __init__( self, *args, **kwargs ):
 		extra_kwargs = { k: kwargs.pop( k, False ) for k in EXTRA_KWARGS }
 		# noinspection PyUnresolvedReferences
@@ -263,9 +247,6 @@ class ApplicationContext:
 
 		# create default directories
 		self.__setup_aux__()
-
-		# load/manage plugins
-		self.__setup_plugins__()
 
 	# main properties
 

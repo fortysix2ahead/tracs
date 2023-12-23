@@ -89,20 +89,25 @@ class Application:
 		PluginManager.init( (self._config['pluginpath'].get() or '').split( ' ' ) )
 
 		# create registry
-		self._registry = Registry.instance( ctx=self._ctx )
+		self._registry = Registry.create(
+			keywords=PluginManager.keywords,
+			normalizers=PluginManager.normalizers,
+			resource_types=PluginManager.resource_types,
+			importers=PluginManager.importers,
+			virtual_fields=PluginManager.virtual_fields,
+			setups=PluginManager.setups,
+			ctx=self._ctx,
+		)
 
 		# open db from config_dir
 		self._db = ActivityDb(
 			path=self._ctx.db_dir_path,
 			read_only=self._ctx.pretend,
 			enable_index=self.ctx.config['db']['index'].get(),
-			summary_types=[ v.type for v in self._registry.resource_types.values() if v.summary ],
-			recording_types=[ v.type for v in self._registry.resource_types.values() if v.recording ],
+			summary_types=self._registry.summary_types(),
+			recording_types=self._registry.recording_types(),
 		)
 		self._ctx.db = self._db # todo: really put db into ctx? or keep it here?
-
-		# ---- create service instances ----
-		self._registry.setup_services( self._ctx )
 
 		# ---- announce context/configuration to utils module ----
 		UCFG.reconfigure( self._ctx.config )

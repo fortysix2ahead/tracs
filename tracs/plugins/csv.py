@@ -1,9 +1,9 @@
 
 from csv import field_size_limit, reader as csv_reader
-from typing import Any, List, Optional, Type, Union
+from typing import Any, Union
 
 from tracs.handlers import ResourceHandler
-from tracs.registry import importer, Registry, resourcetype
+from tracs.pluginmgr import importer, resourcetype
 from tracs.resources import ResourceType
 
 CSV_TYPE = 'text/csv'

@@ -10,10 +10,10 @@ from dateutil.tz import tzlocal
 from lxml.objectify import Element, fromstring, ObjectifiedElement, ObjectPath, SubElement
 
 from tracs.activity import Activity as TracsActivity
+from tracs.pluginmgr import importer, resourcetype
 from tracs.plugins.xml import XMLHandler
-from ..registry import importer, Registry, resourcetype
-from ..resources import Resource, ResourceType
-from ..utils import fromisoformat
+from tracs.resources import Resource, ResourceType
+from tracs.utils import fromisoformat
 
 log = getLogger( __name__ )
 

@@ -2,7 +2,6 @@ from datetime import datetime, time, timedelta
 from logging import getLogger
 from os import system
 from pathlib import Path
-from re import compile
 from shlex import quote
 from typing import List, Optional, Union
 
@@ -31,11 +30,9 @@ MAXIMUM_OPEN = 8
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
 
-uid_pattern = compile( f'^({"|".join( Registry.instance().service_names() )}):(\d+)$' )
-
-def import_activities( ctx: Optional[ApplicationContext], sources: List[str], **kwargs ):
-	for src in (sources or Registry.instance().service_names() ):
-		if service := Registry.instance().services.get( src ):
+def import_activities( ctx: ApplicationContext, sources: List[str], **kwargs ):
+	for src in (sources or ctx.registry.service_names() ):
+		if service := ctx.registry.services.get( src ):
 			log.debug( f'importing activities from service {src}' )
 			service.import_activities(
 				ctx=ctx,

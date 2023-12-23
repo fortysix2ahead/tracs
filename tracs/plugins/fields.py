@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import List
 
 from tracs.core import VirtualField
-from tracs.registry import virtualfield
+from tracs.pluginmgr import virtualfield
 
 # virtual fields
 

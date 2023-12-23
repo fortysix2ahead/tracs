@@ -15,15 +15,15 @@ from rich.prompt import Prompt
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME
+from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.fit import FIT_TYPE
 from tracs.plugins.gpx import GPX_TYPE
-from tracs.plugins.json import JSON_TYPE, JSONHandler
+from tracs.plugins.json import JSONHandler
 from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
-from tracs.registry import importer, Registry, resourcetype, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
-from tracs.utils import seconds_to_time as stt, to_isotime
+from tracs.utils import to_isotime
 
 log = getLogger( __name__ )
 
@@ -138,8 +138,8 @@ class Strava( Service ):
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL }, **kwargs } )
 		self._session: Optional[Session] = None
-		self._importer: StravaWebImporter = Registry.importer_for( STRAVA_WEB_TYPE )
-		self._json_handler: JSONHandler = Registry.importer_for( JSON_TYPE )
+		self._importer: StravaWebImporter = StravaWebImporter()
+		self._json_handler: JSONHandler = JSONHandler()
 
 	@property
 	def login_url( self ) -> str:
@@ -315,7 +315,7 @@ class Strava( Service ):
 			else:
 				ext = findall( r'^.*filename=\".+\.(\w+)\".*$', content_disposition )[0]
 				resource.content = response.content
-				resource.type = Registry.resource_type_for_suffix( ext )
+				resource.type = self.ctx.registry.resource_type_for_suffix( ext )
 				resource.path = f'{resource.local_id}.{ext}'
 				resource.status = response.status_code
 

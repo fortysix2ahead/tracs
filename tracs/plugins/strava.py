@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from itertools import zip_longest
@@ -7,7 +6,7 @@ from pathlib import Path
 from re import compile, match
 from sys import exit as sysexit
 from time import time
-from typing import Any, cast, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from webbrowser import open as open_url
 
 from dateutil.parser import parse as dtparse
@@ -20,11 +19,11 @@ from stravalib.model import Activity as StravaActivity
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME
+from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.gpx import GPX_TYPE
-from tracs.plugins.json import JSON_TYPE, JSONHandler
+from tracs.plugins.json import JSONHandler
 from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
-from tracs.registry import importer, Registry, resourcetype, service, setup
 from tracs.resources import Resource, ResourceType
 from tracs.service import Service
 from tracs.streams import Point, Stream
@@ -112,8 +111,8 @@ class Strava( Service ):
 		self._session = None
 		self._oauth_session = None
 
-		self.importer: StravaHandler = cast( StravaHandler, Registry.importer_for( STRAVA_TYPE ) )
-		self.json_handler: JSONHandler = cast( JSONHandler, Registry.importer_for( JSON_TYPE ) )
+		self.importer: StravaHandler = StravaHandler()
+		self.json_handler: JSONHandler = JSONHandler()
 
 	@property
 	def activities_url( self ) -> str:

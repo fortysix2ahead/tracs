@@ -144,7 +144,7 @@ def show_config( ctx: ApplicationContext ):
 
 	table.add_section()
 
-	for s in Registry.instance().services.values():
+	for s in ctx.registry.services.values():
 		table.add_row( f'{s.name} activities:', pp( Path( ctx.db_dir, s.name ) ) )
 
 	table.add_section()

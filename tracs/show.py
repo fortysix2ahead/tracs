@@ -117,7 +117,7 @@ def show_verbose_activity( a: Activity, ctx: ApplicationContext, show_fields: Li
 	for uid in a.uids:
 		resources = ctx.db.find_resources( uid ) if ctx else []
 		for r in resources:
-			service = Registry.instance().services.get( r.classifier )
+			service = ctx.registry.services.get( r.classifier )
 			resource_path = service.path_for( resource=r, as_path=False )
 
 			abs_path = service.path_for( resource=r, absolute=True, as_path=False )
@@ -147,11 +147,11 @@ def show_aggregate( activities: [Activity], ctx: ApplicationContext ) -> None:
 	console.print( table )
 
 def show_keywords( ctx: ApplicationContext ) -> None:
-	keywords = sorted( Registry.instance().keywords.keys() )
+	keywords = sorted( ctx.registry.keywords.keys() )
 	if ctx.verbose:
 		table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
 		[ table.add_column( f'[blue]{c}[/blue]' ) for c in [ 'keyword', 'description' ] ]
-		[ table.add_row( k, Registry.instance().keywords[k].description ) for k in keywords ]
+		[ table.add_row( k, ctx.registry.keywords[k].description ) for k in keywords ]
 		ctx.console.print( table )
 	else:
 		ctx.console.print( Columns( keywords, padding=(0, 4), equal=True, column_first=True ) )

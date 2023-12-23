@@ -10,10 +10,11 @@ from attrs import define, field
 from confuse import Configuration
 
 from tracs import setup_console_logging, setup_file_logging
-from .config import ApplicationContext, set_current_ctx
-from .db import ActivityDb
-from .registry import Registry
-from .utils import UCFG
+from tracs.config import ApplicationContext, set_current_ctx
+from tracs.db import ActivityDb
+from tracs.pluginmgr import PluginManager
+from tracs.registry import Registry
+from tracs.utils import UCFG
 
 log = getLogger( __name__ )
 
@@ -82,7 +83,10 @@ class Application:
 		setup_file_logging( self._ctx.verbose, self._ctx.debug, self._ctx.log_file_path )
 
 		# print context configuration
-		log.debug( f'using configuration from {self._ctx.config_dir} and library inw {self._ctx.lib_dir}' )
+		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
+
+		# init plugin manager/load plugins
+		PluginManager.init( (self._config['pluginpath'].get() or '').split( ' ' ) )
 
 		# create registry
 		self._registry = Registry.instance( ctx=self._ctx )

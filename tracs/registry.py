@@ -43,7 +43,9 @@ class Registry:
 
 	@classmethod
 	def instance( cls ) -> Registry:
-		log.warning( 'call to deprecated class method Registry.instance()', stack_info=True )
+		from traceback import format_stack
+		call = format_stack()[-2].splitlines()[0].strip()
+		log.warning( f'Deprecated call to Registry.instance(), from {call}' )
 
 		from tracs.config import current_ctx
 		return current_ctx().registry

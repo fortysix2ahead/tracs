@@ -21,13 +21,13 @@ from rich.prompt import Prompt
 
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes, ActivityTypes as Types
-from tracs.config import ApplicationContext, APPNAME
 from tracs.aio import load_resource
-from tracs.plugins.gpx import GPX_TYPE
-from tracs.plugins.json import DataclassFactoryHandler, JSON_TYPE, JSONHandler
+from tracs.config import ApplicationContext, APPNAME
+from tracs.pluginmgr import importer, resourcetype, service, setup
+from tracs.plugins.gpx import GPX_TYPE, GPXImporter
+from tracs.plugins.json import DataclassFactoryHandler, JSONHandler
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.plugins.xml import XMLHandler
-from tracs.registry import importer, Registry, resourcetype, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
 from tracs.utils import seconds_to_time
@@ -255,6 +255,7 @@ class Polar( Service ):
 
 		self.importer: PolarFlowImporter = PolarFlowImporter()
 		self.json_handler: JSONHandler = JSONHandler()
+		self.gpx_importer = GPXImporter()
 
 	def _link_path( self, pa: Activity, ext: str ) -> Path or None:
 		if pa.id:
@@ -403,7 +404,7 @@ class Polar( Service ):
 		for r in list( resources ):
 			try:
 				self.download_resource( r )
-				resources.extend( decompress_resources( r ) )
+				resources.extend( decompress_resources( r, self.gpx_importer ) )
 			except (CreateFailed, BadZipFile):
 				log.debug( f'error fetching resource from {r.source}', exc_info=True )
 
@@ -482,7 +483,7 @@ class Polar( Service ):
 		unzipped_resources = []
 		for r in list( resources ):
 			if r.type in [POLAR_ZIP_GPX_TYPE, POLAR_ZIP_TCX_TYPE]:
-				unzipped_resources.extend( decompress_resources( r ) )
+				unzipped_resources.extend( decompress_resources( r, self.gpx_importer ) )
 		return unzipped_resources
 
 	# noinspection PyMethodMayBeStatic
@@ -560,7 +561,7 @@ def _multipart_str( self ) -> str:
 	else:
 		return '\u2716'
 
-def decompress_resources( r: Resource ) -> List[Resource]:
+def decompress_resources( r: Resource, gpx_importer: GPXImporter ) -> List[Resource]:
 	mem_fs = open_fs( 'mem://' )
 	mem_fs.writebytes( f'/{r.path}', r.content )
 	resources = []
@@ -570,7 +571,7 @@ def decompress_resources( r: Resource ) -> List[Resource]:
 			for f in zip_fs.listdir( '/' ):
 				resource = Resource( path=f, content=zip_fs.readbytes( f'/{f}' ), status=200, uid=r.uid, source=r.path )
 				resource.type = GPX_TYPE if f.endswith( '.gpx' ) else TCX_TYPE
-				Registry.importer_for( resource.type ).load_as_activity( resource=resource )
+				gpx_importer.load_as_activity( resource=resource )
 				resources.append( resource )
 
 	return resources

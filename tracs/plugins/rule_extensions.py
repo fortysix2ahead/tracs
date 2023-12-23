@@ -1,11 +1,11 @@
-from datetime import date, datetime, time as dtime, timedelta
+from datetime import datetime
 from re import fullmatch
-from typing import List, Literal, Optional, Tuple
+from typing import Literal, Optional, Tuple
 
 from arrow import Arrow, now
 
-from tracs.core import Keyword, Normalizer, VirtualField
-from tracs.registry import keyword, normalizer, Registry
+from tracs.core import Keyword, Normalizer
+from tracs.pluginmgr import keyword, normalizer
 from tracs.rules import DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, parse_date_range_as_str, parse_time_range, TIME_RANGE_PATTERN
 from tracs.utils import floor_ceil_from
 

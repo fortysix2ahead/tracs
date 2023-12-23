@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from importlib import import_module
 from importlib.resources import path as pkg_path
 from logging import getLogger
 from pathlib import Path
-from pkgutil import extend_path, iter_modules
 from typing import Any, cast, Dict, Optional, Tuple
 
 from attrs import define, field
@@ -122,6 +120,9 @@ class ApplicationContext:
 
 	# plugins
 	plugins: Dict[str, Any] = field( factory=dict )
+
+	# registry
+	registry: Any = field( default=None )
 
 	# kwargs fields, not used, but needed for
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
-from tracs.registry import virtualfield
+from tracs.pluginmgr import virtualfield
 
 DEFAULT_CLASSIFIER_ICON = '\u2bbe'
 DEFAULT_TYPE_ICON = ':running_shoe:'

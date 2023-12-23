@@ -8,7 +8,7 @@ from urllib.request import url2pathname
 
 from tracs.activity import Activity
 from tracs.plugin import Plugin
-from tracs.registry import Registry, service
+from tracs.pluginmgr import service
 from tracs.resources import Resource
 from tracs.service import Service
 

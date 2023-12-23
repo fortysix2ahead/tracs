@@ -305,7 +305,7 @@ def inspect( ctx: ApplicationContext, filters, plugins: bool, registry: bool, re
 	if plugins:
 		inspect_plugins( ctx )
 	elif registry:
-		inspect_registry()
+		inspect_registry( ctx.registry )
 	elif resource:
 		inspect_resources()
 	else:

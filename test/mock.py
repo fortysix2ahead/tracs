@@ -11,8 +11,8 @@ from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.handlers import ResourceHandler
 from tracs.plugins.gpx import GPX_TYPE
-from tracs.registry import importer, service
-from tracs.registry import resourcetype
+from tracs.pluginmgr import importer, service
+from tracs.pluginmgr import resourcetype
 from tracs.resources import Resource
 from tracs.service import Service
 

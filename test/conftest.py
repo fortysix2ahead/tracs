@@ -24,6 +24,7 @@ from tracs.config import ApplicationConfig as cfg, DB_DIRNAME
 from tracs.config import ApplicationConfig as state
 from tracs.config import ApplicationContext
 from tracs.db import ActivityDb
+from tracs.pluginmgr import PluginManager
 from tracs.registry import Registry
 from tracs.service import Service
 from .helpers import get_db_as_json
@@ -59,13 +60,19 @@ def config( request ) -> None:
 
 @fixture
 def registry( request ) -> Registry:
-	# load all plugins first
-	import tracs.plugins
-	for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
-		import_module( f'tracs.plugins.{name}' )
-		log.debug( f'imported plugin {name} from {finder.path}' )
+	resource_types = marker( request, 'resource_type', 'types', [] )
 
-	yield Registry.instance()
+	PluginManager.init( [] )
+
+	yield Registry.create(
+		keywords=PluginManager.keywords,
+		normalizers=PluginManager.normalizers,
+		resource_types=PluginManager.resource_types,
+		importers=PluginManager.importers,
+		virtual_fields=PluginManager.virtual_fields,
+		setups=PluginManager.setups,
+		services=PluginManager.services,
+	)
 
 @fixture
 def varfs( request ) -> FS:

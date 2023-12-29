@@ -62,7 +62,8 @@ class Registry:
 		instance._setup_setups( kwargs.get( 'setups', [] ) )
 		instance._setup_services( kwargs.get( 'ctx' ), kwargs.get( 'services', [] ) )
 
-		kwargs.get( 'ctx' ).registry = instance # announce instance to context
+		if ctx := kwargs.get( 'ctx' ):
+			ctx.registry = instance # announce instance to context
 
 		return instance
 

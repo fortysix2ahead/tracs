@@ -19,12 +19,12 @@ class PluginManager:
 	plugins: ClassVar[Dict[str, ModuleType]] = {}
 
 	importers: ClassVar[List[Tuple[Type, Tuple, Dict]]] = []
-	keywords: List[Tuple] = []
-	normalizers: List[Tuple] = []
-	resource_types: List[Tuple[Type, Tuple, Dict]] = []
-	services: List[Tuple[Type, Tuple, Dict]] = []
-	setups: List[Tuple] = []
-	virtual_fields: List[Tuple] = []
+	keywords: ClassVar[List[Tuple]] = []
+	normalizers: ClassVar[List[Tuple]] = []
+	resource_types: ClassVar[List[Tuple[Type, Tuple, Dict]]] = []
+	services: ClassVar[List[Tuple[Type, Tuple, Dict]]] = []
+	setups: ClassVar[List[Tuple]] = []
+	virtual_fields: ClassVar[List[Tuple]] = []
 
 	@classmethod
 	def init( cls, plugin_paths: List[str] ):

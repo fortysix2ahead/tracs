@@ -1,13 +1,10 @@
 
 from pathlib import Path
-from typing import cast
 
 from pytest import mark, raises
 
-from test.mock import Mock, MOCK_TYPE, MockActivity
-from tracs.db import ActivityDb
-from tracs.registry import Registry
-from tracs.resources import Resource, ResourceType
+from test.mock import Mock
+from tracs.resources import Resource
 from tracs.service import Service
 
 def test_constructor():

@@ -8,7 +8,7 @@ from pytest import mark, raises
 from tracs.activity import Activities, Activity, ActivityPart, groups
 from tracs.activity_types import ActivityTypes
 from tracs.core import VirtualField
-from tracs.registry import virtualfield
+from tracs.pluginmgr import virtualfield
 from tracs.resources import Resource
 from tracs.uid import UID
 
@@ -191,26 +191,23 @@ def test_fields( registry ):
 	assert Activity.field_type( 'weekday' ) == int
 	assert Activity.field_type( 'noexist' ) is None
 
+@virtualfield
+def lower_name( a: Activity ) -> str:
+	return a.name.lower()
+
+@virtualfield( name='upper_name' )
+def uppercase_name( a: Activity ) -> str:
+	return a.name.upper()
+
+@virtualfield( name='title_name', type=str, description='titled activity name' )
+def title_name( a: Activity ):
+	return a.name.title()
+
+@virtualfield( name='cap_name', description='capitalized activity name', type=str, display_name='Cap Name' )
+def capitalized_name( a: Activity ):
+	return a.name.capitalize()
+
 def test_virtual_activity_fields( registry ):
-
-	@virtualfield
-	def lower_name( a: Activity ) -> str:
-		return a.name.lower()
-
-	@virtualfield( name='upper_name' )
-	def uppercase_name( a: Activity ) -> str:
-		return a.name.upper()
-
-	@virtualfield( name='title_name', type=str, description='titled activity name' )
-	def title_name( a: Activity ):
-		return a.name.title()
-
-	@virtualfield( name='cap_name', description='capitalized activity name', type=str, display_name='Cap Name' )
-	def capitalized_name( a: Activity ):
-		return a.name.capitalize()
-
-	# need to re-setup virtual fields, otherwise the fields will not be registered in Activity
-	registry.__setup_virtual_fields__()
 
 	assert 'lower_name' in Activity.__vf__.__fields__.keys()
 	assert 'upper_name' in Activity.__vf__.__fields__.keys()
@@ -244,17 +241,14 @@ def test_virtual_activity_fields( registry ):
 	with raises( AttributeError ):
 		assert a.getattr( 'does_not_exist' ) is None
 
+@virtualfield
+def name( a: Activity ) -> str:
+	return 'override attempt for run'
+
 # don't allow overriding fields
 def test_virtual_activity_field_override( registry ):
 
 	a = Activity( id = 100, name='Run', type=ActivityTypes.run )
-
-	@virtualfield
-	def name( a: Activity ) -> str:
-		return 'override attempt for run'
-
-	# re-setup virtual fields
-	registry.__setup_virtual_fields__()
 
 	assert 'name' in Activity.__vf__.__fields__
 	assert a.name == 'Run' and a.getattr( 'name' ) == 'Run'

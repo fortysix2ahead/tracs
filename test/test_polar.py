@@ -2,14 +2,15 @@
 from datetime import datetime, timedelta
 from datetime import timezone
 
-from dateutil.tz import tzlocal
+from dateutil.tz import tzlocal, UTC
 from pytest import mark
 
 from test.helpers import skip_live
 from tracs.activity_types import ActivityTypes
-from tracs.plugins.polar import BASE_URL
+from tracs.plugins.polar import BASE_URL, PolarFitnessTestImporter
 from tracs.plugins.polar import Polar, PolarFlowExercise
 from tracs.plugins.polar import PolarFlowImporter
+from tracs.utils import FsPath
 
 importer = PolarFlowImporter()
 
@@ -30,10 +31,11 @@ def test_exercise( path ):
 	assert pa.duration == timedelta(hours=0, minutes=25, seconds=34, microseconds=900000 )
 
 @mark.file( 'environments/default/db/polar/1/0/0/100012/100012.json' )
-def test_fitnessdata( path ):
-	r = importer.load( path )
-	assert r.data.local_id == 100012
-	assert r.data.index == 46
+def test_fitness_test( fspath: FsPath ):
+	importer = PolarFitnessTestImporter()
+	test = importer.as_activity( importer.load( path=fspath.path, fs=fspath.fs ) )
+	assert test.uid == 'polar:100012'
+	assert test.starttime == datetime( 2011, 12, 25, 9, 57, 16, tzinfo=UTC )
 
 @mark.file( 'environments/default/db/polar/1/0/0/100013/100013.json' )
 def test_orthostatic( path ):

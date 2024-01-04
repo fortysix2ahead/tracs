@@ -27,6 +27,7 @@ from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager
 from tracs.registry import Registry
 from tracs.service import Service
+from tracs.utils import FsPath
 from .helpers import get_db_as_json
 from .helpers import get_file_as_json
 from .helpers import get_file_path
@@ -172,6 +173,11 @@ def json( request ) -> Optional[Dict]:
 def path( request ) -> Optional[Path]:
 	with pkgpath( 'test', '__init__.py' ) as test_path:
 		return Path( test_path.parent, marker( request, 'file', None, None ) )
+
+@fixture
+def fspath( request ) -> FsPath:
+	with pkgpath( 'test', '__init__.py' ) as test_path:
+		return FsPath( OSFS( root_path=str( test_path.parent ), create=False ), marker( request, 'file', None, None ) )
 
 @fixture
 def config_state( request ) -> Optional[Tuple[Dict, Dict]]:

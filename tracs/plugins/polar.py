@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 from logging import getLogger
 from pathlib import Path
-from re import match
+from re import compile, match
 from sys import exit as sysexit
 from time import time as current_time
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
@@ -43,6 +43,7 @@ POLAR_CSV_TYPE = 'text/vnd.polar+csv'
 POLAR_HRV_TYPE = 'text/vnd.polar.hrv+csv'
 POLAR_FLOW_TYPE = 'application/vnd.polar+json'
 POLAR_FITNESS_TEST_TYPE = 'application/vnd.polar.fitness+json'
+POLAR_ORTHOSTATIC_TEST_TYPE = 'application/vnd.polar.orthostatic+json'
 POLAR_EXERCISE_DATA_TYPE = 'application/vnd.polar.ped+xml'
 POLAR_ZIP_GPX_TYPE = 'application/vnd.polar.gpx+zip'
 POLAR_ZIP_TCX_TYPE = 'application/vnd.polar.tcx+zip'
@@ -194,6 +195,23 @@ class PolarFitnessTest:
 	type: str = field( default=None )
 	url: str = field( default=None )
 
+@resourcetype( type=POLAR_ORTHOSTATIC_TEST_TYPE )
+@define
+class PolarOrthostaticTest:
+
+	_RX_URL = compile( r'/progress/tests\?type=orthostatic_test&id=(\d+)' )
+
+	datetime: str = field( default=None ) # 2011-04-28T17:48:10.000Z
+	eventType: str = field( default=None )
+	result: str = field( default=None )
+	title: str = field( default=None )
+	type: str = field( default=None )
+	url: str = field( default=None )
+
+	@property
+	def local_id( self ) -> int:
+		return int( self.__class__._RX_URL.fullmatch( self.url ).groups()[0] )
+
 @resourcetype( type=POLAR_CSV_TYPE )
 @define
 class PolarFlowExerciseCsv:
@@ -245,6 +263,22 @@ class PolarFitnessTestImporter( DataclassFactoryHandler ):
 		activity: PolarFitnessTest = resource.data
 		return Activity(
 			uid = f'{SERVICE_NAME}:{activity.listItemId}',
+			name = activity.title,
+			type = ActivityTypes.test,
+			starttime= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
+			starttime_local= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
+		)
+
+@importer
+class PolarOrthostaticTestImporter( DataclassFactoryHandler ):
+
+	TYPE: str = POLAR_ORTHOSTATIC_TEST_TYPE
+	ACTIVITY_CLS = PolarOrthostaticTest
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		activity: PolarOrthostaticTest = resource.data
+		return Activity(
+			uid = f'{SERVICE_NAME}:{activity.local_id}',
 			name = activity.title,
 			type = ActivityTypes.test,
 			starttime= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),

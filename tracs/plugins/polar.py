@@ -42,6 +42,7 @@ DISPLAY_NAME = 'Polar Flow'
 POLAR_CSV_TYPE = 'text/vnd.polar+csv'
 POLAR_HRV_TYPE = 'text/vnd.polar.hrv+csv'
 POLAR_FLOW_TYPE = 'application/vnd.polar+json'
+POLAR_FITNESS_TEST_TYPE = 'application/vnd.polar.fitness+json'
 POLAR_EXERCISE_DATA_TYPE = 'application/vnd.polar.ped+xml'
 POLAR_ZIP_GPX_TYPE = 'application/vnd.polar.gpx+zip'
 POLAR_ZIP_TCX_TYPE = 'application/vnd.polar.tcx+zip'
@@ -174,6 +175,25 @@ class PolarFlowExercise:
 	def get_type( self ) -> ActivityTypes:
 		return TYPES.get( self.iconUrl.rsplit( '/', 1 )[1], Types.unknown ) if self.iconUrl else Types.unknown
 
+@resourcetype( type=POLAR_FITNESS_TEST_TYPE )
+@define
+class PolarFitnessTest:
+
+	allDay: bool = field( default=False )
+	backgroundColor: str = field( default=None )
+	borderColor: str = field( default=None )
+	className: str = field( default=None )
+	datetime: str = field( default=None ) # 2011-04-28T17:48:10.000Z
+	eventType: str = field( default=None )
+	index: int = field( default=None )
+	listItemId: int = field( default=None )
+	start: str = field( default=None )
+	textColor: str = field( default=None )
+	timestamp: int = field( default=None )
+	title: str = field( default=None )
+	type: str = field( default=None )
+	url: str = field( default=None )
+
 @resourcetype( type=POLAR_CSV_TYPE )
 @define
 class PolarFlowExerciseCsv:
@@ -213,6 +233,22 @@ class PolarFlowImporter( DataclassFactoryHandler ):
 			distance = activity.distance,
 			duration = timedelta( seconds = activity.duration / 1000 ) if activity.duration else None,
 			calories = activity.calories,
+		)
+
+@importer
+class PolarFitnessTestImporter( DataclassFactoryHandler ):
+
+	TYPE: str = POLAR_FITNESS_TEST_TYPE
+	ACTIVITY_CLS = PolarFitnessTest
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		activity: PolarFitnessTest = resource.data
+		return Activity(
+			uid = f'{SERVICE_NAME}:{activity.listItemId}',
+			name = activity.title,
+			type = ActivityTypes.test,
+			starttime= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
+			starttime_local= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
 		)
 
 @importer( type=POLAR_EXERCISE_DATA_TYPE )

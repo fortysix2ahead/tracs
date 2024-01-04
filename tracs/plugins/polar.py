@@ -44,6 +44,7 @@ POLAR_HRV_TYPE = 'text/vnd.polar.hrv+csv'
 POLAR_FLOW_TYPE = 'application/vnd.polar+json'
 POLAR_FITNESS_TEST_TYPE = 'application/vnd.polar.fitness+json'
 POLAR_ORTHOSTATIC_TEST_TYPE = 'application/vnd.polar.orthostatic+json'
+POLAR_RRRECORDING_TYPE = 'application/vnd.polar.rrrecording+json'
 POLAR_EXERCISE_DATA_TYPE = 'application/vnd.polar.ped+xml'
 POLAR_ZIP_GPX_TYPE = 'application/vnd.polar.gpx+zip'
 POLAR_ZIP_TCX_TYPE = 'application/vnd.polar.tcx+zip'
@@ -212,6 +213,23 @@ class PolarOrthostaticTest:
 	def local_id( self ) -> int:
 		return int( self.__class__._RX_URL.fullmatch( self.url ).groups()[0] )
 
+@resourcetype( type=POLAR_RRRECORDING_TYPE )
+@define
+class PolarRRRecording:
+
+	_RX_URL = compile( r'/training/test/rr/(\d+)' )
+
+	datetime: str = field( default=None ) # 2011-04-28T17:48:10.000Z
+	eventType: str = field( default=None )
+	result: str = field( default=None )
+	title: str = field( default=None )
+	type: str = field( default=None )
+	url: str = field( default=None )
+
+	@property
+	def local_id( self ) -> int:
+		return int( self.__class__._RX_URL.fullmatch( self.url ).groups()[0] )
+
 @resourcetype( type=POLAR_CSV_TYPE )
 @define
 class PolarFlowExerciseCsv:
@@ -277,6 +295,22 @@ class PolarOrthostaticTestImporter( DataclassFactoryHandler ):
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		activity: PolarOrthostaticTest = resource.data
+		return Activity(
+			uid = f'{SERVICE_NAME}:{activity.local_id}',
+			name = activity.title,
+			type = ActivityTypes.test,
+			starttime= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
+			starttime_local= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
+		)
+
+@importer
+class PolarRRRecordingImporter( DataclassFactoryHandler ):
+
+	TYPE: str = POLAR_RRRECORDING_TYPE
+	ACTIVITY_CLS = PolarRRRecording
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		activity: PolarRRRecording = resource.data
 		return Activity(
 			uid = f'{SERVICE_NAME}:{activity.local_id}',
 			name = activity.title,

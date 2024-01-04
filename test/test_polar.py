@@ -7,7 +7,7 @@ from pytest import mark
 
 from test.helpers import skip_live
 from tracs.activity_types import ActivityTypes
-from tracs.plugins.polar import BASE_URL, PolarFitnessTestImporter, PolarOrthostaticTestImporter
+from tracs.plugins.polar import BASE_URL, PolarFitnessTestImporter, PolarOrthostaticTestImporter, PolarRRRecordingImporter
 from tracs.plugins.polar import Polar, PolarFlowExercise
 from tracs.plugins.polar import PolarFlowImporter
 from tracs.utils import FsPath
@@ -45,11 +45,11 @@ def test_orthostatic( fspath: FsPath ):
 	assert test.starttime == datetime( 2016, 9, 28, 19, 11, 4, tzinfo=UTC )
 
 @mark.file( 'environments/default/db/polar/1/0/0/100014/100014.json' )
-def test_rrrecording( path ):
-	r = importer.load( path )
-	assert r.data.title == 'title'
-	assert r.data.local_id == 100014
-	assert r.data.datetime == '2017-01-16T21:34:58.000'
+def test_rrrecording( fspath: FsPath ):
+	importer = PolarRRRecordingImporter()
+	test = importer.as_activity( importer.load( path=fspath.path, fs=fspath.fs ) )
+	assert test.uid == 'polar:100014'
+	assert test.starttime == datetime( 2017, 1, 16, 20, 34, 58, tzinfo=UTC )
 
 @mark.context( env='live', persist='clone', cleanup=False )
 @mark.service( cls=Polar, init=True, register=True )

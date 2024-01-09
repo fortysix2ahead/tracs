@@ -194,12 +194,11 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 	return config_dict, state_dict
 
 @fixture
-def service( request, ctx: ApplicationContext ) -> Optional[Service]:
+def service( request, ctx: ApplicationContext, registry: Registry ) -> Optional[Service]:
 	service_class = marker( request, 'service', 'cls', None )
+	service_class_name = service_class.__name__.lower() if service_class else None
 	register = marker( request, 'service', 'register', False )
 	init = marker( request, 'service', 'init', False )
-
-	service_class_name = service_class.__name__.lower()
 
 	if init:
 		# service = service_class( fs=ctx.config_fs, _configuration=ctx.config['plugins'][service_class_name], _state=ctx.state['plugins'][service_class_name] )
@@ -208,8 +207,7 @@ def service( request, ctx: ApplicationContext ) -> Optional[Service]:
 		service = service_class( fs=fs )
 
 	if register:
-		# noinspection PyProtectedMember
-		Registry.instance()._services[service_class_name] = service
+		registry.services[service_class_name] = service
 
 	yield service
 

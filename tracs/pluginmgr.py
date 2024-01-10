@@ -6,7 +6,7 @@ from inspect import getmembers, isclass, signature as getsignature
 from logging import getLogger
 from pkgutil import extend_path, iter_modules
 from types import ModuleType
-from typing import Any, Callable, ClassVar, Dict, List, Mapping, Tuple, Type, Union
+from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from fs.osfs import OSFS
 
@@ -27,7 +27,7 @@ class PluginManager:
 	virtual_fields: ClassVar[List[Tuple]] = []
 
 	@classmethod
-	def init( cls, plugin_paths: List[str] ):
+	def init( cls, plugin_paths: Optional[List[str]] = None ):
 		# noinspection PyUnresolvedReferences
 		import tracs.plugins
 
@@ -37,7 +37,7 @@ class PluginManager:
 			cls.plugins[fp] = import_module( f'tracs.plugins.{fp}' )
 
 		# extend plugin path and load additional, non-optional plugins
-		for pp in plugin_paths:
+		for pp in plugin_paths or []:
 			plugin_path = OSFS( root_path=pp, expand_vars=True ).getsyspath( '/tracs/plugins' )
 			tracs.plugins.__path__ = extend_path( [plugin_path], 'tracs.plugins' )
 

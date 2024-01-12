@@ -3,42 +3,21 @@ from logging import getLogger
 from re import match
 from typing import cast
 
-from dateutil.tz import tzlocal
-from dateutil.tz import UTC
+from dateutil.tz import tzlocal, UTC
 from pytest import mark, raises
-from rule_engine import Context
-from rule_engine import EvaluationError
-from rule_engine import resolve_attribute
-from rule_engine import Rule
-from rule_engine import RuleSyntaxError
-from rule_engine import SymbolResolutionError
+from rule_engine import Context, EvaluationError, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
 
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.polar import Polar
 from tracs.plugins.rule_extensions import TIME_FRAMES as TIME_FRAMES_EXT
-from tracs.rules import DATE_PATTERN, DATE_RANGE_PATTERN, TIME_RANGE_PATTERN
-from tracs.rules import FUZZY_DATE_PATTERN
-from tracs.rules import FUZZY_TIME_PATTERN
-from tracs.rules import INT_LIST
-from tracs.rules import INT_PATTERN
-from tracs.rules import KEYWORD_PATTERN
-from tracs.rules import LIST_PATTERN
-from tracs.rules import normalize
-from tracs.rules import parse_date_range_as_str
-from tracs.rules import parse_rule
-from tracs.rules import RANGE_PATTERN
-from tracs.rules import RULE_PATTERN
-from tracs.rules import TIME_PATTERN
+from tracs.rules import DATE_PATTERN, DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, INT_LIST, INT_PATTERN, KEYWORD_PATTERN, LIST_PATTERN, \
+	parse_date_range_as_str, RANGE_PATTERN, RULE_PATTERN, TIME_PATTERN, TIME_RANGE_PATTERN, RuleParser
 
 log = getLogger( __name__ )
 
-def setup_module( module ):
-	import tracs.plugins.rule_extensions
-	log.info( 'importing tracs.plugins.rule_extensions' )
-
 NOW = datetime.utcnow()
-ATTRIBUTE_CONTEXT = Context(resolver=resolve_attribute)
+ATTRIBUTE_CONTEXT = Context( resolver=resolve_attribute )
 
 TIME_FRAMES_EXT_FROM_PLUGIN = TIME_FRAMES_EXT # this is to make sure the rule_extensions plugin is loaded
 
@@ -62,7 +41,7 @@ d2 = {
 
 a2 = Activity(
 	heartrate=180,
-	starttime=datetime.utcnow(),
+	starttime=datetime( 2023, 11, 11, 10, 0, 42, tzinfo=UTC ),
 	tags=['morning', 'salomon', 'tired'],
 	uids=['polar:1234', 'strava:3456']
 )
@@ -214,74 +193,78 @@ def test_rule_pattern():
 # 	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx' )
 # 	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx-polar' )
 
-@mark.context( library='empty', config='empty', cleanup=True )
-@mark.service( cls=Polar )
-def test_normalize( service ):
+def test_normalize( rule_parser ):
+	p = rule_parser
+
 	# numbers from 2000 to current year are treated as years, otherwise
 	current_year = datetime.now().year
-	assert normalize( '1000' ) == 'id == 1000'
-	assert normalize( '1999' ) == 'id == 1999'
-	assert normalize( '2000' ) == 'year == 2000'
-	assert normalize( str( current_year ) ) == f'year == {current_year}'
-	assert normalize( str( current_year + 1 ) ) == f'id == {current_year + 1}'
+	assert p.normalize( '1000' ) == 'id == 1000'
+	assert p.normalize( '1999' ) == 'id == 1999'
+	assert p.normalize( '2000' ) == 'year == 2000'
+	assert p.normalize( str( current_year ) ) == f'year == {current_year}'
+	assert p.normalize( str( current_year + 1 ) ) == f'id == {current_year + 1}'
 
 	# integer ranges can contain missing bounds and are treated as ids, bounds are inclusive
-	assert normalize( '1000..1003' ) == 'id >= 1000 and id <= 1003'
-	assert normalize( '1000..' ) == 'id >= 1000'
-	assert normalize( '..1003' ) == 'id <= 1003'
+	assert p.normalize( '1000..1003' ) == 'id >= 1000 and id <= 1003'
+	assert p.normalize( '1000..' ) == 'id >= 1000'
+	assert p.normalize( '..1003' ) == 'id <= 1003'
 
 	# integer lists are treated as id lists
-	assert normalize( '100,101,102' ) == 'id in [100,101,102]'
+	assert p.normalize( '100,101,102' ) == 'id in [100,101,102]'
 
 	# there should be keywords for each registered service (and others)
-	assert isinstance( service, Polar ) # after creating a polar service instance there should be a polar keyword registered
-	assert normalize( 'polar' ) == f'"polar" in classifiers'
+	assert 'polar' in p.keywords
+	assert p.normalize( 'polar' ) == f'"polar" in classifiers'
 	# unknown keywords result in an error
 	with raises( RuleSyntaxError ):
-		normalize( 'unknown_keyword' )
+		p.normalize( 'unknown_keyword' )
 
 	# todo: more tests with the normal rule engine syntax need to go in here
 	# single equal is allowed and will be expanded to double
-	assert normalize( 'id=1000' ) == 'id == 1000'
+	assert p.normalize( 'id=1000' ) == 'id == 1000'
 
 	# normal expressions are just passed through
-	assert normalize( 'id!=1000' ) == 'id != 1000'
+	assert p.normalize( 'id!=1000' ) == 'id != 1000'
 
 	# colon expressions
-	assert normalize( 'id:' ) == 'id == null' # missing values is treated as null
-	assert normalize( 'id:1000' ) == 'id == 1000' # normal case: expand to equals
-	assert normalize( 'flag:true' ) == 'flag == true' and normalize( 'flag:false' ) == 'flag == false' # boolean flags
-	assert normalize( 'name:"afternoon run"' ) == 'name != null and "afternoon run" in name.as_lower' # allow search-like string values
-	assert normalize( 'name:afternoon' ) == 'name != null and "afternoon" in name.as_lower' # same for unquoted strings
+	assert p.normalize( 'id:' ) == 'id == null' # missing values is treated as null
+	assert p.normalize( 'id:1000' ) == 'id == 1000' # normal case: expand to equals
+	assert p.normalize( 'flag:true' ) == 'flag == true' and p.normalize( 'flag:false' ) == 'flag == false' # boolean flags
+	assert p.normalize( 'name:"afternoon run"' ) == 'name != null and "afternoon run" in name.as_lower' # allow search-like string values
+	assert p.normalize( 'name:afternoon' ) == 'name != null and "afternoon" in name.as_lower' # same for unquoted strings
 
 	# custom normalizer handling
-	assert normalize( 'type:run' ) == 'type.name == "run"'
+	assert p.normalize( 'type:run' ) == 'type.name == "run"'
 
 	# date + time normalizing
-	assert normalize( 'date:2020' ) == 'starttime_local >= d"2020-01-01T00:00:00+00:00" and starttime_local <= d"2020-12-31T23:59:59.999999+00:00"'
-	assert normalize( 'date:2020-05' ) == 'starttime_local >= d"2020-05-01T00:00:00+00:00" and starttime_local <= d"2020-05-31T23:59:59.999999+00:00"'
-	assert normalize( 'date:2020-05-13' ) == 'starttime_local >= d"2020-05-13T00:00:00+00:00" and starttime_local <= d"2020-05-13T23:59:59.999999+00:00"'
+	assert p.normalize( 'date:2020' ) == 'starttime_local >= d"2020-01-01T00:00:00+00:00" and starttime_local <= d"2020-12-31T23:59:59.999999+00:00"'
+	assert p.normalize( 'date:2020-05' ) == 'starttime_local >= d"2020-05-01T00:00:00+00:00" and starttime_local <= d"2020-05-31T23:59:59.999999+00:00"'
+	assert p.normalize( 'date:2020-05-13' ) == 'starttime_local >= d"2020-05-13T00:00:00+00:00" and starttime_local <= d"2020-05-13T23:59:59.999999+00:00"'
 
-	assert normalize( 'time:10' ) == '__time__ >= d"0001-01-01T10:00:00+00:00" and __time__ <= d"0001-01-01T10:59:59.999999+00:00"'
-	assert normalize( 'time:10:30' ) == '__time__ >= d"0001-01-01T10:30:00+00:00" and __time__ <= d"0001-01-01T10:30:59.999999+00:00"'
-	assert normalize( 'time:10:30:50' ) == '__time__ >= d"0001-01-01T10:30:50+00:00" and __time__ <= d"0001-01-01T10:30:50.999999+00:00"'
+	assert p.normalize( 'time:10' ) == '__time__ >= d"0001-01-01T10:00:00+00:00" and __time__ <= d"0001-01-01T10:59:59.999999+00:00"'
+	assert p.normalize( 'time:10:30' ) == '__time__ >= d"0001-01-01T10:30:00+00:00" and __time__ <= d"0001-01-01T10:30:59.999999+00:00"'
+	assert p.normalize( 'time:10:30:50' ) == '__time__ >= d"0001-01-01T10:30:50+00:00" and __time__ <= d"0001-01-01T10:30:50.999999+00:00"'
 
-def test_parse():
-	assert (r := parse_rule( 'id=1000' ))
+def test_parse( rule_parser ):
+	p = rule_parser
+
+	assert (r := p.parse_rule( 'id=1000' ))
 	assert r.evaluate( Activity( id=1000 ) )
 
-	assert (r := parse_rule( 'id!=1000' ))
+	assert (r := p.parse_rule( 'id!=1000' ))
 	assert r.evaluate( Activity( id=1001 ) )
 
 	with raises( EvaluationError ):
-		assert (r := parse_rule( 'id=~1000' )) # wrong operator, parsing fails
+		assert (r := p.parse_rule( 'id=~1000' )) # wrong operator, parsing fails
 		r.evaluate( Activity( id=1000 ) )
 
-	assert (r := parse_rule( 'unknown:1000' )) # parsing unknown fields is ok
+	assert (r := p.parse_rule( 'unknown:1000' )) # parsing unknown fields is ok
 	with raises( SymbolResolutionError ):
 		assert r.evaluate( Activity( id=1000 ) ) # evaluating is not ok -> error
 
-def test_evaluate():
+def test_evaluate( rule_parser ):
+	p = rule_parser
+
 	al = [
 		Activity(
 			id = 1000,
@@ -292,90 +275,98 @@ def test_evaluate():
 		)
 	]
 
-	assert parse_rule( 'id=1000' ).evaluate( A1 )
-	assert parse_rule( f'year={NOW.year}' ).evaluate( A1 )
-	assert parse_rule( 'classifier:polar' ).evaluate( A1 )
-	assert parse_rule( 'thisyear' ).evaluate( A1 )
+	assert p.parse_rule( 'id=1000' ).evaluate( A1 )
+	assert p.parse_rule( f'year=2023' ).evaluate( A1 )
+	assert p.parse_rule( 'classifier:polar' ).evaluate( A1 )
+	assert p.parse_rule( 'lastyear' ).evaluate( A1 )
 
-	assert parse_rule( 'name=Berlin' ).evaluate( A1 )
-	assert not parse_rule( 'name=berlin' ).evaluate( A1 )
+	assert p.parse_rule( 'name=Berlin' ).evaluate( A1 )
+	assert not p.parse_rule( 'name=berlin' ).evaluate( A1 )
 
-	assert parse_rule( 'description="Morning Run in Berlin"' ).evaluate( A1 )
-	assert not parse_rule( 'description="morning run in berlin"' ).evaluate( A1 )
+	assert p.parse_rule( 'description="Morning Run in Berlin"' ).evaluate( A1 )
+	assert not p.parse_rule( 'description="morning run in berlin"' ).evaluate( A1 )
 
-	assert parse_rule( 'name:berlin' ).evaluate( A1 )
-	assert not parse_rule( 'name:hamburg' ).evaluate( A1 )
-	assert parse_rule( 'description:"morning run"' ).evaluate( A1 )
+	assert p.parse_rule( 'name:berlin' ).evaluate( A1 )
+	assert not p.parse_rule( 'name:hamburg' ).evaluate( A1 )
+	assert p.parse_rule( 'description:"morning run"' ).evaluate( A1 )
 
-	assert list( parse_rule( 'name:berlin' ).filter( al ) ) == [ al[0] ]
-	assert not parse_rule( 'location_place:hamburg' ).evaluate( A1 )
+	assert list( p.parse_rule( 'name:berlin' ).filter( al ) ) == [ al[0] ]
+	assert not p.parse_rule( 'location_place:hamburg' ).evaluate( A1 )
 
-	assert list( parse_rule( 'name:' ).filter( al ) ) == [ al[1] ]
+	assert list( p.parse_rule( 'name:' ).filter( al ) ) == [ al[1] ]
 
 	with raises( SymbolResolutionError ):
-		parse_rule( 'invalid=1000' ).evaluate( A1 )
+		p.parse_rule( 'invalid=1000' ).evaluate( A1 )
 
 	# RuleSyntaxError should never happen ...
 
-def test_evaluate_multipart():
+def test_evaluate_multipart( rule_parser ):
+	p = rule_parser
+
 	p1 = ActivityPart( uids=['polar:101' ], gap=time( 0, 0, 0 ) )
 	p2 = ActivityPart( uids=['polar:102', 'strava:102' ], gap=time( 1, 0, 0 ) )
 	a = Activity( parts=[ p1, p2 ] )
 
 	assert a.multipart
-	assert parse_eval( 'multipart=true', a )
-	assert not parse_eval( 'multipart=false', a )
-	assert parse_eval( 'multipart:true', a )
-	assert not parse_eval( 'multipart:false', a )
+	assert p.parse_rule( 'multipart=true' ).evaluate( a )
+	assert not p.parse_rule( 'multipart=false' ).evaluate( a )
+	assert p.parse_rule( 'multipart:true' ).evaluate( a )
+	assert not p.parse_rule( 'multipart:false' ).evaluate( a )
 
-def test_type():
+def test_type( rule_parser ):
+	p = rule_parser
 	# assert parse_eval( 'type=run', A1 ) # todo: support this?
-	assert parse_eval( 'type:run', A1 )
-	assert parse_eval( 'type:Run', A1 )
+	assert p.parse_rule( 'type:run' ).evaluate( A1 )
+	assert p.parse_rule( 'type:Run' ).evaluate( A1 )
 
-def test_list():
-	assert parse_eval( '1000,1001,1002', A1 )
-	assert not parse_eval( '100,101,102', A1 )
+def test_list( rule_parser ):
+	p = rule_parser
+	assert p.parse_rule( '1000,1001,1002' ).evaluate( A1 )
+	assert not p.parse_rule( '100,101,102' ).evaluate( A1 )
 
-def test_range():
-	assert not parse_eval( 'id=999..1001', A1 )
-	assert parse_eval( 'id:999..1001', A1 )
-	assert parse_eval( 'id:999.0..1001', A1 ) # mixed int/float works as well
-	assert parse_eval( 'id:999..', A1 )
-	assert parse_eval( 'id:..1001', A1 )
+def test_range( rule_parser ):
+	p = rule_parser
 
-	assert not parse_eval( 'id:800..900', A1 )
-	assert not parse_eval( 'id:..900', A1 )
-	assert not parse_eval( 'id:1001..', A1 )
+	assert not p.parse_rule( 'id=999..1001' ).evaluate( A1 )
+	assert p.parse_rule( 'id:999..1001' ).evaluate( A1 )
+	assert p.parse_rule( 'id:999.0..1001' ).evaluate( A1 ) # mixed int/float works as well
+	assert p.parse_rule( 'id:999..' ).evaluate( A1 )
+	assert p.parse_rule( 'id:..1001' ).evaluate( A1 )
 
-	assert parse_eval( 'heartrate:100.0..200.0', A1 )
+	assert not p.parse_rule( 'id:800..900' ).evaluate( A1 )
+	assert not p.parse_rule( 'id:..900' ).evaluate( A1 )
+	assert not p.parse_rule( 'id:1001..' ).evaluate( A1 )
 
-def test_date_time():
-	assert parse_eval( 'date:2023', A1 )
-	assert parse_eval( 'date:2023-01', A1 )
-	assert parse_eval( 'date:2023-01-13', A1 )
+	assert p.parse_rule( 'heartrate:100.0..200.0' ).evaluate( A1 )
 
-	assert not parse_eval( 'date:2022', A1 )
-	assert not parse_eval( 'date:2022-01', A1 )
-	assert not parse_eval( 'date:2022-01-13', A1 )
+def test_date_time( rule_parser ):
+	p = rule_parser
 
-	#	assert parse_eval( 'date=2023-01-13', A1 )
+	assert p.parse_rule( 'date:2023' ).evaluate( A1 )
+	assert p.parse_rule( 'date:2023-01' ).evaluate( A1 )
+	assert p.parse_rule( 'date:2023-01-13' ).evaluate( A1 )
 
-	assert parse_eval( 'date:2022..2023', A1 )
-	assert parse_eval( 'date:2022..', A1 )
-	assert parse_eval( 'date:..2023', A1 )
-	assert parse_eval( 'date:2023-01-12..2023-02', A1 )
+	assert not p.parse_rule( 'date:2022' ).evaluate( A1 )
+	assert not p.parse_rule( 'date:2022-01' ).evaluate( A1 )
+	assert not p.parse_rule( 'date:2022-01-13' ).evaluate( A1 )
 
-	# assert parse_eval( 'time=10:00:42', A1 )
-	assert parse_eval( 'time:10', A1 )
-	assert parse_eval( 'time:10:00', A1 )
-	assert parse_eval( 'time:10:00:42', A1 )
+	#	assert p.parse_rule( 'date=2023-01-13' ).evaluate( A1 )
 
-	assert parse_eval( 'time:09..11', A1 )
-	assert parse_eval( 'time:09..', A1 )
-	assert parse_eval( 'time:..11', A1 )
-	assert parse_eval( 'time:09:00..11:00', A1 )
-	assert parse_eval( 'time:09:00:05..10:00:50', A1 )
+	assert p.parse_rule( 'date:2022..2023' ).evaluate( A1 )
+	assert p.parse_rule( 'date:2022..' ).evaluate( A1 )
+	assert p.parse_rule( 'date:..2023' ).evaluate( A1 )
+	assert p.parse_rule( 'date:2023-01-12..2023-02' ).evaluate( A1 )
+
+	# assert p.parse_rule( 'time=10:00:42' ).evaluate( A1 )
+	assert p.parse_rule( 'time:10' ).evaluate( A1 )
+	assert p.parse_rule( 'time:10:00' ).evaluate( A1 )
+	assert p.parse_rule( 'time:10:00:42' ).evaluate( A1 )
+
+	assert p.parse_rule( 'time:09..11' ).evaluate( A1 )
+	assert p.parse_rule( 'time:09..' ).evaluate( A1 )
+	assert p.parse_rule( 'time:..11' ).evaluate( A1 )
+	assert p.parse_rule( 'time:09:00..11:00' ).evaluate( A1 )
+	assert p.parse_rule( 'time:09:00:05..10:00:50' ).evaluate( A1 )
 
 def test_parse_date_range():
 
@@ -390,9 +381,3 @@ def test_parse_date_range():
 	assert parse_date_range_as_str( '2022-03-15..2022-03-16' ) == ('2022-03-15T00:00:00+00:00', '2022-03-16T23:59:59.999999+00:00')
 	assert parse_date_range_as_str( '..2022-03-16' ) == ('0001-01-01T00:00:00+00:00', '2022-03-16T23:59:59.999999+00:00')
 	assert parse_date_range_as_str( '2022-03-15..' ) == ('2022-03-15T00:00:00+00:00', '9999-12-31T00:00:00+00:00')
-
-# helper
-
-def parse_eval( rule: str, thing: Activity ) -> bool:
-	r = parse_rule( rule )
-	return r.evaluate( thing )

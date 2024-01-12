@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+from attrs import define, field
 from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 from logging import getLogger
@@ -12,7 +13,8 @@ from arrow import Arrow, get as getarrow
 from dateutil.tz import UTC
 from rule_engine import Context, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
 
-from tracs.registry import Registry
+from tracs.activity import Activity
+from tracs.core import Keyword, Normalizer
 from tracs.utils import floor_ceil_from
 
 log = getLogger( __name__ )
@@ -80,140 +82,149 @@ CONTEXT = Context( resolver=resolve_custom_attribute )
 
 # rules parser
 
-def parse_rules( *rules: str ) -> List[Rule]:
-	return [parse_rule( r ) for r in rules]
+@define
+class RuleParser:
 
-def parse_rule( rule: str ) -> Rule:
+	keywords: Dict[str, Keyword] = field( factory=dict )
+	normalizers: Dict[str, Normalizer] = field( factory=dict )
 
-	rule: str = normalize( rule ) # normalize rule, used for preprocessing special cases
-	rule: str = preprocess( rule ) # preprocess, not used at the moment
-	rule: Rule = process( rule )
-	rule: Rule = postprocess( rule ) # create and postprocess parsed rule
+	def _rule_normalizer_type( self, name: str ) -> Any:
+		return n.type if ( n := self.normalizers.get( name ) ) else Activity.field_type( name )
 
-	return rule
+	def parse_rules( self, *rules: str ) -> List[Rule]:
+		return [self.parse_rule( r ) for r in rules]
 
-def normalize( rule: str ) -> str:
+	def parse_rule( self, rule: str ) -> Rule:
 
-	left, op, right, normalized_rule = None, None, None, None
+		rule: str = self.normalize( rule ) # normalize rule, used for preprocessing special cases
+		rule: str = self.preprocess( rule ) # preprocess, not used at the moment
+		rule: Rule = self.process( rule )
+		rule: Rule = self.postprocess( rule ) # create and postprocess parsed rule
 
-	if INT_PATTERN.fullmatch( rule ): # integer number only
-		left, right, normalized_rule = 'id', rule, f'id == {rule}'
+		return rule
 
-	elif m := INT_RANGE_PATTERN.fullmatch( rule ):
-		left, right = 'id', rule
-		range_from, range_to = m.groups()
-		if range_from and not range_to:
-			normalized_rule = f'id >= {range_from}'
-		elif not range_from and range_to:
-			normalized_rule = f'id <= {range_to}'
-		else:
-			normalized_rule = f'id >= {range_from} and id <= {range_to}'
+	def normalize( self, rule: str ) -> str:
 
-	elif INT_LIST.fullmatch( rule ):
-		left, right, normalized_rule = 'id', rule, f'id in [{rule}]'
+		left, op, right, normalized_rule = None, None, None, None
 
-	elif match( KEYWORD_PATTERN, rule ):  # keywords
-		if rule in Registry.instance().keywords.keys():
-			right, normalized_rule = rule, Registry.instance().keywords[rule]( rule )
-		else:
-			raise RuleSyntaxError( f'syntax error: unsupported keyword "{rule}"' )
+		if INT_PATTERN.fullmatch( rule ): # integer number only
+			left, right, normalized_rule = 'id', rule, f'id == {rule}'
 
-	elif m := match( RULE_PATTERN, rule ): #
-		left, op, right = m.groups()
-		if op == '=':
-			if match( NUMBER_PATTERN, right ) or match( QUOTED_STRING_PATTERN, right ):
-				normalized_rule = f'{left} == {right}'
-			elif match( DATE_PATTERN, right ) and RESOLVER_TYPES.get( left ) is datetime:
-				normalized_rule = f'{left} == d"{right}"'
-			elif match( TIME_PATTERN, right ) and RESOLVER_TYPES.get( left ) is time:
-				normalized_rule = f'{left} == t"{right}"'
-			elif TRUE_FALSE.match( right ):
-				normalized_rule = f'{left} == {right}'
+		elif m := INT_RANGE_PATTERN.fullmatch( rule ):
+			left, right = 'id', rule
+			range_from, range_to = m.groups()
+			if range_from and not range_to:
+				normalized_rule = f'id >= {range_from}'
+			elif not range_from and range_to:
+				normalized_rule = f'id <= {range_to}'
 			else:
-				normalized_rule = f'{left} == "{right}"'
+				normalized_rule = f'id >= {range_from} and id <= {range_to}'
 
-		elif op == ':':
-			if right is None:
-				normalized_rule = f'{left} == null'
+		elif INT_LIST.fullmatch( rule ):
+			left, right, normalized_rule = 'id', rule, f'id in [{rule}]'
 
-			elif match( NUMBER_PATTERN, right ):
-				normalized_rule = f'{left} == {right}'
+		elif match( KEYWORD_PATTERN, rule ):  # keywords
+			if rule in self.keywords.keys():
+				right, normalized_rule = rule, self.keywords[rule]( rule )
+			else:
+				raise RuleSyntaxError( f'syntax error: unsupported keyword "{rule}"' )
 
-			elif TRUE_FALSE.match( right ):
-				normalized_rule = f'{left} == {right}'
+		elif m := match( RULE_PATTERN, rule ): #
+			left, op, right = m.groups()
+			if op == '=':
+				if match( NUMBER_PATTERN, right ) or match( QUOTED_STRING_PATTERN, right ):
+					normalized_rule = f'{left} == {right}'
+				elif match( DATE_PATTERN, right ) and RESOLVER_TYPES.get( left ) is datetime:
+					normalized_rule = f'{left} == d"{right}"'
+				elif match( TIME_PATTERN, right ) and RESOLVER_TYPES.get( left ) is time:
+					normalized_rule = f'{left} == t"{right}"'
+				elif TRUE_FALSE.match( right ):
+					normalized_rule = f'{left} == {right}'
+				else:
+					normalized_rule = f'{left} == "{right}"'
 
-			elif match (QUOTED_STRING_PATTERN, right):
-				normalized_rule = f'{left} != null and {right.lower()} in {left}.as_lower'
+			elif op == ':':
+				if right is None:
+					normalized_rule = f'{left} == null'
 
-			elif match( FUZZY_DATE_PATTERN, right ) and Registry.rule_normalizer_type( left ) in [datetime, 'datetime', 'Optional[datetime]']:
-				normalized_rule = f'{left} >= d"{parse_floor_str( right )}" and {left} <= d"{parse_ceil_str( right )}"'
+				elif match( NUMBER_PATTERN, right ):
+					normalized_rule = f'{left} == {right}'
 
-			elif DATE_RANGE_PATTERN.fullmatch( right ) and Registry.rule_normalizer_type( left ) is datetime:
-				range_from, range_to = parse_date_range_as_str( right )
-				normalized_rule = f'{left} >= d"{range_from}" and {left} <= d"{range_to}"'
+				elif TRUE_FALSE.match( right ):
+					normalized_rule = f'{left} == {right}'
 
-			elif TIME_RANGE_PATTERN.fullmatch( right ) and Registry.rule_normalizer_type( left ) is datetime:
-				normalized_rule = '{0} >= d"{1}" and {0} <= d"{2}"'.format( left, *parse_time_range( right, as_str=True ) )
+				elif match (QUOTED_STRING_PATTERN, right):
+					normalized_rule = f'{left} != null and {right.lower()} in {left}.as_lower'
 
-			elif match( RANGE_PATTERN, right ):
-				range_from, range_to = parse_number_range( right )
-				normalized_rule = f'{left} >= {range_from} and {left} <= {range_to}'
+				elif match( FUZZY_DATE_PATTERN, right ) and self._rule_normalizer_type( left ) in [datetime, 'datetime', 'Optional[datetime]']:
+					normalized_rule = f'{left} >= d"{parse_floor_str( right )}" and {left} <= d"{parse_ceil_str( right )}"'
+
+				elif DATE_RANGE_PATTERN.fullmatch( right ) and self._rule_normalizer_type( left ) is datetime:
+					range_from, range_to = parse_date_range_as_str( right )
+					normalized_rule = f'{left} >= d"{range_from}" and {left} <= d"{range_to}"'
+
+				elif TIME_RANGE_PATTERN.fullmatch( right ) and self._rule_normalizer_type( left ) is datetime:
+					normalized_rule = '{0} >= d"{1}" and {0} <= d"{2}"'.format( left, *parse_time_range( right, as_str=True ) )
+
+				elif match( RANGE_PATTERN, right ):
+					range_from, range_to = parse_number_range( right )
+					normalized_rule = f'{left} >= {range_from} and {left} <= {range_to}'
+
+				else:
+					normalized_rule = f'{left} != null and "{right.lower()}" in {left}.as_lower'
 
 			else:
-				normalized_rule = f'{left} != null and "{right.lower()}" in {left}.as_lower'
+				normalized_rule = f'{left} {op} {right}'
 
-		else:
-			normalized_rule = f'{left} {op} {right}'
+		# apply normalizer, if a normalizer for the left side of the expression exists
+		if left in self.normalizers.keys():
+			normalized_rule = self.normalizers[left]( left, op, right, normalized_rule )  # pass the already normalized rule, just in case a normalizer is interested
 
-	# apply normalizer, if a normalizer for the left side of the expression exists
-	if left in Registry.instance().normalizers:
-		normalized_rule = Registry.instance().normalizers[left]( left, op, right, normalized_rule )  # pass the already normalized rule, just in case a normalizer is interested
+		# log rule
+		log.debug( f'normalized rule {rule} to {normalized_rule}' )
 
-	# log rule
-	log.debug( f'normalized rule {rule} to {normalized_rule}' )
+		# error if no rule was created
+		if not normalized_rule:
+			raise RuleSyntaxError( f'syntax error in expression "{rule}"' )
 
-	# error if no rule was created
-	if not normalized_rule:
-		raise RuleSyntaxError( f'syntax error in expression "{rule}"' )
+		return normalized_rule
 
-	return normalized_rule
+	def preprocess( self, rule: str ) -> str:
+		"""
+		Reserved for future use, does nothing at the moment.
 
-def preprocess( rule: str ) -> str:
-	"""
-	Reserved for future use, does nothing at the moment.
+		:param rule: rule string to preprocess
+		:return: preprocessed rule
+		"""
+		preprocessed_rule = rule
 
-	:param rule: rule string to preprocess
-	:return: preprocessed rule
-	"""
-	preprocessed_rule = rule
+		if rule != preprocessed_rule:
+			log.debug( f'preprocessed rule {rule} to {preprocessed_rule}' )
 
-	if rule != preprocessed_rule:
-		log.debug( f'preprocessed rule {rule} to {preprocessed_rule}' )
+		return preprocessed_rule
 
-	return preprocessed_rule
+	def process( self, rule: str ) -> Rule:
+		"""
+		Creates a rule from a normalized and preprocessed rule string.
 
-def process( rule: str ) -> Rule:
-	"""
-	Creates a rule from a normalized and preprocessed rule string.
+		:param rule: rule string to use for rule creation
+		:return: newly created rule
+		"""
+		return Rule( rule, CONTEXT )
 
-	:param rule: rule string to use for rule creation
-	:return: newly created rule
-	"""
-	return Rule( rule, CONTEXT )
+	def postprocess( self, rule: Rule ) -> Rule:
+		"""
+		Reserved for future use, does nothing at the moment.
 
-def postprocess( rule: Rule ) -> Rule:
-	"""
-	Reserved for future use, does nothing at the moment.
+		:param rule: rule to postprocess
+		:return: postprocessed rule
+		"""
+		postprocessed_rule = rule
 
-	:param rule: rule to postprocess
-	:return: postprocessed rule
-	"""
-	postprocessed_rule = rule
+		if rule != postprocessed_rule:
+			log.debug( f'postprocessed rule {rule} to {postprocessed_rule}' )
 
-	if rule != postprocessed_rule:
-		log.debug( f'postprocessed rule {rule} to {postprocessed_rule}' )
-
-	return postprocessed_rule
+		return postprocessed_rule
 
 # helper
 

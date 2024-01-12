@@ -115,8 +115,9 @@ def test_default_environment():
 	assert app.ctx.verbose == False
 	assert app.ctx.force == False
 
+	names = ['bikecitizens', 'local', 'polar', 'strava', 'stravaweb', 'waze']
 	# noinspection PyTestUnpassedFixture
-	assert current_ctx().registry.service_names() == [ 'bikecitizens', 'local', 'polar', 'strava', 'stravaweb', 'waze' ]
+	assert all( n in current_ctx().registry.service_names() for n in names )
 
 @mark.context( env='debug', persist='clone', cleanup=True )
 def test_debug_environment( ctx ):

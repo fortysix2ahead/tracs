@@ -152,11 +152,8 @@ class Registry:
 				name, modname, qname, params, rval = _fnspec( fncls )
 
 				if ctx:
-					base_path = Path( ctx.db_dir_path, name )
-					overlay_path = Path( ctx.db_overlay_path, name )
 					cfg, state = ctx.plugin_config_state( name, as_dict=True )
-
-					self.services[s.name] = (s := fncls( ctx=ctx, **cfg, **state, base_path=base_path, overlay_path=overlay_path ))
+					self.services[s.name] = (s := fncls( ctx=ctx, **cfg, **state ))
 					# register service name as keyword
 					self.keywords[s.name] = Keyword( s.name, f'classifier "{s.name}" is contained in classifiers list', f'"{s.name}" in classifiers' )
 

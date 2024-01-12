@@ -1,14 +1,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from itertools import chain, groupby
 from logging import getLogger
 from pathlib import Path
-from shutil import copytree
-from typing import cast, Dict, List, Mapping, Optional, Set, Tuple, Union
+from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
 
-from click import confirm
 from fs.base import FS
 from fs.copy import copy_file, copy_file_if
 from fs.errors import ResourceNotFound
@@ -24,8 +21,7 @@ from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
 from tracs.fsio import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
-from tracs.resources import Resource, Resources, ResourceType
-from tracs.rules import parse_rules
+from tracs.resources import Resource, Resources
 
 log = getLogger( __name__ )
 

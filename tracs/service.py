@@ -11,6 +11,7 @@ from typing import Any, cast, List, Optional, Tuple, Union
 from dateutil.tz import UTC
 from fs.base import FS
 from fs.errors import ResourceNotFound
+from fs.multifs import MultiFS
 from fs.path import combine, dirname, frombase
 
 from tracs.activity import Activity
@@ -31,8 +32,8 @@ class Service( Plugin ):
 		super().__init__( *args, **kwargs )
 
 		# paths + plugin filesystem area
-		self._fs: FS = ( self.ctx.plugin_fs( self.name ) if self.ctx else None ) or kwargs.get( 'fs' )
-		self._dbfs = self.ctx.db_fs if self.ctx else None
+		self._fs: FS = kwargs.get( 'fs' ) or self.ctx.plugin_fs( self.name )
+		self._dbfs = kwargs.get( 'dbfs' ) or self.ctx.db_fs
 		self._base_url = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
 
@@ -77,11 +78,11 @@ class Service( Plugin ):
 
 	@property
 	def base_fs( self ) -> FS:
-		return self._fs.get_fs( 'base' )
+		return cast( MultiFS, self._fs ).get_fs( 'base' )
 
 	@property
 	def overlay_fs( self ) -> FS:
-		return self._fs.get_fs( 'overlay' )
+		return cast( MultiFS, self._fs ).get_fs( 'overlay' )
 
 	# class methods for helping with various things
 

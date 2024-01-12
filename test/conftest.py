@@ -1,3 +1,4 @@
+from collections import namedtuple
 from datetime import datetime
 from importlib import import_module
 from importlib.resources import path as pkgpath
@@ -6,11 +7,12 @@ from os.path import dirname
 from pathlib import Path
 from pkgutil import iter_modules
 from shutil import copytree, rmtree
-from typing import cast, Dict, List
+from typing import cast, Dict, List, NamedTuple
 from typing import Optional
 from typing import Tuple
 
 from fs.base import FS
+from fs.copy import copy_fs
 from fs.errors import NoSysPath
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
@@ -26,6 +28,7 @@ from tracs.config import ApplicationContext
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager
 from tracs.registry import Registry
+from tracs.rules import RuleParser
 from tracs.service import Service
 from tracs.utils import FsPath
 from .helpers import get_db_as_json
@@ -36,6 +39,11 @@ log = getLogger( __name__ )
 
 ENABLE_LIVE_TESTS = 'ENABLE_LIVE_TESTS'
 PERSISTANCE_NAME = 'persistance_layer'
+
+class Environment( NamedTuple ):
+	ctx: ApplicationContext
+	db: ActivityDb
+	registry: Registry
 
 def marker( request, name, key, default ):
 	try:
@@ -60,22 +68,6 @@ def config( request ) -> None:
 		return None
 
 @fixture
-def registry( request ) -> Registry:
-	resource_types = marker( request, 'resource_type', 'types', [] )
-
-	PluginManager.init( [] )
-
-	yield Registry.create(
-		keywords=PluginManager.keywords,
-		normalizers=PluginManager.normalizers,
-		resource_types=PluginManager.resource_types,
-		importers=PluginManager.importers,
-		virtual_fields=PluginManager.virtual_fields,
-		setups=PluginManager.setups,
-		services=PluginManager.services,
-	)
-
-@fixture
 def varfs( request ) -> FS:
 	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
 		tp = test_pkg_path.parent
@@ -84,6 +76,7 @@ def varfs( request ) -> FS:
 		log.info( f'created new temporary persistance dir in {str( vrp )}' )
 		yield OSFS( str( vrp ) )
 
+# noinspection PyTestUnpassedFixture
 @fixture
 def fs( request ) -> FS:
 	env = marker( request, 'context', 'env', 'empty' )
@@ -92,6 +85,7 @@ def fs( request ) -> FS:
 
 	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
 		tp = test_pkg_path.parent
+		env_fs = OSFS( root_path=f'{str( tp )}/environments/{env}' )
 		ep = Path( tp, f'environments/{env}' )
 		vrp = Path( tp, f'../var/run/{datetime.now().strftime( "%H%M%S_%f" )}' ).resolve()
 
@@ -105,6 +99,9 @@ def fs( request ) -> FS:
 
 		elif persist == 'mem':
 			root_fs = MemoryFS()
+			log.info( f'using memory as root fs backend' )
+
+			copy_fs( env_fs, root_fs, preserve_time=True )
 
 		else:
 			raise ValueError( 'value of key persist needs to be one of [mem, disk, clone]' )
@@ -147,19 +144,44 @@ def db( request, fs: FS ) -> ActivityDb:
 	#yield ActivityDb( path=db_path, read_only=False )
 
 @fixture
-def ctx( request, db: ActivityDb ) -> ApplicationContext:
-	try:
-		db_path = db.underlay_fs.getsyspath( '' )
-		context = ApplicationContext( config_dir=dirname( dirname( db_path ) ), verbose=True )
-	except NoSysPath:
-		context = ApplicationContext( config_fs=MemoryFS(), lib_fs=MemoryFS(), db_fs=db.underlay_fs, verbose=True )
+def ctx( request, fs: FS ) -> ApplicationContext:
 
-	context.db = db  # attach db to ctx
-
+	context = ApplicationContext( config_fs=fs, verbose=True )
 	yield context
 
-	if context.db is not None:
-		context.db.close()
+#	try:
+#		db_path = db.underlay_fs.getsyspath( '' )
+#		context = ApplicationContext( config_dir=dirname( dirname( db_path ) ), verbose=True )
+#	except NoSysPath:
+#		context = ApplicationContext( config_fs=MemoryFS(), lib_fs=MemoryFS(), db_fs=db.underlay_fs, verbose=True )
+
+#	context.db = db  # attach db to ctx
+
+#	yield context
+
+#	if context.db is not None:
+#		context.db.close()
+
+@fixture
+def registry( request, ctx: ApplicationContext ) -> Registry:
+	resource_types = marker( request, 'resource_type', 'types', [] )
+
+	PluginManager.init()
+
+	yield Registry.create(
+		ctx=ctx,
+		keywords=PluginManager.keywords,
+		normalizers=PluginManager.normalizers,
+		resource_types=PluginManager.resource_types,
+		importers=PluginManager.importers,
+		virtual_fields=PluginManager.virtual_fields,
+		setups=PluginManager.setups,
+		services=PluginManager.services,
+	)
+
+@fixture
+def env( request, ctx: ApplicationContext, db: ActivityDb, registry: Registry ) -> Environment:
+	return Environment( ctx, db, registry )
 
 @fixture
 def json( request ) -> Optional[Dict]:
@@ -222,3 +244,8 @@ def keywords() -> List[str]:
 	# load keywords plugin
 	from tracs.plugins.rule_extensions import TIME_FRAMES
 	return list( Registry.instance().virtual_fields.keys() )
+
+@fixture
+def rule_parser( request, ctx: ApplicationContext, registry: Registry ) -> RuleParser:
+
+	yield RuleParser( keywords=registry.keywords, normalizers=registry.normalizers )

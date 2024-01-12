@@ -32,8 +32,8 @@ class Service( Plugin ):
 		super().__init__( *args, **kwargs )
 
 		# paths + plugin filesystem area
-		self._fs: FS = kwargs.get( 'fs' ) or self.ctx.plugin_fs( self.name )
-		self._dbfs = kwargs.get( 'dbfs' ) or self.ctx.db_fs
+		self._fs: FS = kwargs.get( 'fs' ) or ( self.ctx.plugin_fs( self.name ) if self.ctx else None )
+		self._dbfs = kwargs.get( 'dbfs' ) or ( self.ctx.db_fs if self.ctx else None )
 		self._base_url = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
 

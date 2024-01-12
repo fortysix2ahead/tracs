@@ -11,9 +11,11 @@ from attrs import define, field
 from confuse import ConfigReadError, Configuration, find_package_path, NotFoundError
 from fs.base import FS
 from fs.errors import NoSysPath
+from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
 from fs.path import dirname
+from fs.subfs import SubFS
 from platformdirs import user_config_dir
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
@@ -140,9 +142,9 @@ class ApplicationContext:
 	apptime: datetime = field( default=None )
 
 	def __setup_config_fs__( self ):
-		if self.config_file:
+		if self.config_file and not self.config_fs:
 			self.config_fs = OSFS( root_path=dirname( self.config_file ), expand_vars=True )
-		elif self.config_dir:
+		elif self.config_dir and not self.config_fs:
 			self.config_fs = OSFS( root_path=self.config_dir, expand_vars=True )
 
 		if not self.config_fs:
@@ -152,6 +154,7 @@ class ApplicationContext:
 			self.config_dir = self.config_fs.getsyspath( '/' )
 			self.config_file = self.config_fs.getsyspath( f'/{CONFIG_FILENAME}' )
 		except NoSysPath:
+			log.debug( f'config dir/file not set as fs does not support getsyspath()' )
 			pass
 
 	def __setup_configuration__( self ):
@@ -208,27 +211,32 @@ class ApplicationContext:
 		if not library:
 			library = self.config_dir
 
-		try:
-			self.lib_fs = OSFS( root_path=library, expand_vars=True, create=True )
-			self.lib_dir = self.lib_fs.getsyspath( '' )
-			self.db_fs = OSFS( root_path=f'{self.lib_fs.getsyspath( "" )}/{DB_DIRNAME}', create=True )
-			self.overlay_fs = OSFS( root_path=f'{self.lib_fs.getsyspath( "" )}/{OVERLAY_DIRNAME}', create=True )
-		except (NoSysPath, TypeError):
-			pass
+		# only try to create lib_fs if not already provided (this happens when running test cases)
+		if not self.lib_fs:
+			try:
+				self.lib_fs = OSFS( root_path=library, expand_vars=True, create=True )
+				self.lib_dir = self.lib_fs.getsyspath( '' )
+				# self.db_fs = OSFS( root_path=f'{self.lib_fs.getsyspath( "" )}/{DB_DIRNAME}', create=True )
+				# self.overlay_fs = OSFS( root_path=f'{self.lib_fs.getsyspath( "" )}/{OVERLAY_DIRNAME}', create=True )
+			except (NoSysPath, TypeError):
+				# lib fs creation by using library fails, create it as child of config fs
+				self.lib_fs = _subfs( self.config_fs, '/' )
+				# self.lib_fs = MemoryFS() if isinstance( self.config_fs, MemoryFS ) else _subfs( self.config_fs, '/' )
+
+		# create db/overlay fs as child of lib_fs
+		self.db_fs = _subfs( self.lib_fs, DB_DIRNAME )
+		self.overlay_fs = _subfs( self.lib_fs, OVERLAY_DIRNAME )
 
 	def __setup_aux__( self ):
-		try:
-			# takeouts
-			self.takeouts_fs = OSFS( root_path=self.config_fs.getsyspath( f'{TAKEOUT_DIRNAME}' ), create=True )
+		# takeouts
+		self.takeouts_fs = _subfs( self.config_fs, TAKEOUT_DIRNAME )
 
-			# logs, var etc.
-			self.log_fs = OSFS( root_path=self.config_fs.getsyspath( f'{LOG_DIRNAME}' ), create=True )
-			self.var_fs = OSFS( root_path=self.config_fs.getsyspath( f'{VAR_DIRNAME}' ), create=True )
-			self.backup_fs = OSFS( root_path=self.config_fs.getsyspath( f'{BACKUP_DIRNAME}' ), create=True )
-			self.cache_fs = OSFS( root_path=self.config_fs.getsyspath( f'{CACHE_DIRNAME}' ), create=True )
-			self.tmp_fs = OSFS( root_path=self.config_fs.getsyspath( f'{TMP_DIRNAME}' ), create=True )
-		except (NoSysPath, TypeError):
-			pass
+		# logs, var etc.
+		self.log_fs = _subfs( self.config_fs, LOG_DIRNAME )
+		self.var_fs = _subfs( self.config_fs, VAR_DIRNAME )
+		self.backup_fs = _subfs( self.config_fs, BACKUP_DIRNAME )
+		self.cache_fs = _subfs( self.config_fs, CACHE_DIRNAME )
+		self.tmp_fs = _subfs( self.config_fs, TMP_DIRNAME )
 
 	def __init__( self, *args, **kwargs ):
 		extra_kwargs = { k: kwargs.pop( k, False ) for k in EXTRA_KWARGS }
@@ -311,7 +319,10 @@ class ApplicationContext:
 		return self.overlay_fs.getsyspath( '' )
 
 	def overlay_fs_for( self, name: str ) -> FS:
-		return OSFS( root_path=self.overlay_fs.getsyspath( name ), create=True )
+		try:
+			return OSFS( root_path=self.overlay_fs.getsyspath( name ), create=True )
+		except AttributeError:
+			return SubFS( self.overlay_fs, f'/{name}' )
 
 	@property
 	def db_overlay_path( self ) -> Path:
@@ -471,6 +482,10 @@ class ApplicationContext:
 		self.config_fs.writetext( STATE_FILENAME, self.state.dump( full=True ) )
 
 # convenience helper
+
+def _subfs( parent: FS, path: str ) -> SubFS:
+	parent.makedirs( path, recreate=True )
+	return SubFS( parent_fs=parent, path=path )
 
 CURRENT_CONTEXT: Optional[ApplicationContext] = None
 

@@ -11,6 +11,6 @@ def test_environment( fs ):
 		print( f )
 
 @mark.context( env='default', persist='clone', cleanup=True )
-def test_load_resource( ctx ):
-	resources = ctx.db.find_resources( uid='polar:100001' )
+def test_load_resource( env ):
+	resources = env.db.find_resources( uid='polar:100001' )
 	assert len( resources ) == 2

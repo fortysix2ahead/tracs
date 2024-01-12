@@ -300,7 +300,10 @@ class ApplicationContext:
 		return Path( self.db_dir )
 
 	def db_fs_for( self, name: str ) -> FS:
-		return OSFS( root_path=self.db_fs.getsyspath( name ), create=True )
+		try:
+			return OSFS( root_path=self.db_fs.getsyspath( name ), create=True )
+		except (AttributeError, NoSysPath):
+			return SubFS( self.db_fs, f'/{name}' )
 
 	def plugin_fs( self, name: str ) -> FS:
 		fs = MultiFS()
@@ -321,7 +324,7 @@ class ApplicationContext:
 	def overlay_fs_for( self, name: str ) -> FS:
 		try:
 			return OSFS( root_path=self.overlay_fs.getsyspath( name ), create=True )
-		except AttributeError:
+		except (AttributeError, NoSysPath):
 			return SubFS( self.overlay_fs, f'/{name}' )
 
 	@property

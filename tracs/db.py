@@ -16,6 +16,7 @@ from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
+from rule_engine import Rule
 
 from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
@@ -448,9 +449,9 @@ class ActivityDb:
 
 	# find activities
 
-	def find( self, filters: List[str] = None ) -> List[Activity]:
+	def find( self, rules: List[Rule] = None ) -> List[Activity]:
 		all_activities = self.activities
-		for r in parse_rules( *filters ):
+		for r in rules:
 			# all_activities = filter( r.evaluate, all_activities )
 			all_activities = r.filter( all_activities )
 		return list( all_activities )

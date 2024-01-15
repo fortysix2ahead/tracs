@@ -14,6 +14,7 @@ from tracs.config import ApplicationContext, set_current_ctx
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager
 from tracs.registry import Registry
+from tracs.rules import RuleParser
 from tracs.utils import UCFG
 
 log = getLogger( __name__ )
@@ -26,6 +27,7 @@ class Application:
 	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
 	_db: ActivityDb = field( default=None, alias='_db' )
 	_registry: Registry = field( default=None, alias='_registry' )
+	_parser: RuleParser = field( default=None, alias='_parser' )
 
 	_config: Configuration = field( default=None, alias='_config' )
 	_state: Configuration = field( default=None, alias='_state' )
@@ -110,6 +112,12 @@ class Application:
 		)
 		self._ctx.db = self._db # todo: really put db into ctx? or keep it here?
 
+		# create parser
+		self._parser = RuleParser(
+			keywords=self.registry.keywords,
+			normalizers=self.registry.normalizers,
+		)
+
 		# ---- announce context/configuration to utils module ----
 		UCFG.reconfigure( self._ctx.config )
 
@@ -130,6 +138,10 @@ class Application:
 	@property
 	def registry( self ) -> Registry:
 		return self._registry
+
+	@property
+	def parser( self ) -> RuleParser:
+		return self._parser
 
 	@property
 	def config( self ) -> Configuration:

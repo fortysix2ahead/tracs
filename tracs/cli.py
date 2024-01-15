@@ -7,6 +7,7 @@ from click import argument, Choice, group, option, pass_context, pass_obj, Path 
 from click_shell import make_click_shell
 from rule_engine import RuleSyntaxError
 
+from tracs.activity import Activity
 from tracs.aio import export_activities, import_activities, open_activities, reimport_activities
 from tracs.application import Application
 from tracs.config import ApplicationContext, APPNAME
@@ -124,10 +125,7 @@ def link( ctx: ApplicationContext, filters ):
 @argument('filters', nargs=-1)
 @pass_obj
 def ls( ctx: ApplicationContext, sort, reverse, format_name, filters ):
-	try:
-		list_activities( list( ctx.db.find( filters ) ), sort=sort, reverse=reverse, format_name=format_name, ctx=ctx )
-	except RuleSyntaxError as rse:
-		ctx.console.print( rse )
+	list_activities( _flt( *filters ), sort=sort, reverse=reverse, format_name=format_name, ctx=ctx )
 
 @cli.command( help='shows details about activities and resources' )
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )
@@ -349,3 +347,17 @@ def main( args=None ):
 
 if __name__ == '__main__':
 	main()
+
+# helper
+
+def _flt( *rules: str ) -> List[Activity]:
+	try:
+		rules = APPLICATION_INSTANCE.parser.parse_rules( *rules )
+		activities = APPLICATION_INSTANCE.db.activities
+		for r in rules:
+			activities = r.filter( activities )
+		return list( activities )
+
+	except RuleSyntaxError as rse:
+		APPLICATION_INSTANCE.ctx.console.print( rse )
+		return []

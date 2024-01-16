@@ -38,13 +38,14 @@ def _mdb_groups( ctx: ApplicationContext, **kwargs ) -> None:
 	json = loads( ctx.db_fs.readbytes( 'activities.json' ) )
 	activities = []
 	for j in json:
-		uids = j.get( 'uids' )
-		if len( uids ) == 1:
-			j['uid'] = j['uids'][0]
-			del j['uids']
-		elif len( uids ) > 1:
-			dt = datetime.fromisoformat( j.get( 'starttime' ) )
-			j['uid'] = f'group:{dt.strftime( "%y%m%d%H%M%S" )}'
+		uid, uids = j.get( 'uid' ), j.get( 'uids' )
+		if not uid and uids:
+			if len( uids ) == 1:
+				j['uid'] = j['uids'][0]
+				del j['uids']
+			elif len( uids ) > 1:
+				dt = datetime.fromisoformat( j.get( 'starttime' ) )
+				j['uid'] = f'group:{dt.strftime( "%y%m%d%H%M%S" )}'
 		activities.append( j )
 
 	ctx.db_fs.writebytes( 'activities2.json', dumps( activities, option=ORJSON_OPTIONS ) )

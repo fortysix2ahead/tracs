@@ -1,39 +1,26 @@
-from collections import namedtuple
 from datetime import datetime
-from importlib import import_module
 from importlib.resources import path as pkgpath
 from logging import getLogger
 from os.path import dirname
 from pathlib import Path
-from pkgutil import iter_modules
 from shutil import copytree, rmtree
-from typing import cast, Dict, List, NamedTuple
-from typing import Optional
-from typing import Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from fs.base import FS
 from fs.copy import copy_fs
-from fs.errors import NoSysPath
 from fs.memoryfs import MemoryFS
-from fs.multifs import MultiFS
-from fs.subfs import SubFS
 from fs.osfs import OSFS
 from pytest import fixture
-from yaml import load as load_yaml
-from yaml import SafeLoader
+from yaml import load as load_yaml, SafeLoader
 
-from tracs.config import ApplicationConfig as cfg, DB_DIRNAME
-from tracs.config import ApplicationConfig as state
-from tracs.config import ApplicationContext
+from tracs.config import ApplicationConfig as cfg, ApplicationConfig as state, ApplicationContext, DB_DIRNAME, set_current_ctx
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager
 from tracs.registry import Registry
 from tracs.rules import RuleParser
 from tracs.service import Service
 from tracs.utils import FsPath
-from .helpers import get_db_as_json
-from .helpers import get_file_as_json
-from .helpers import get_file_path
+from .helpers import get_db_as_json, get_file_as_json
 
 log = getLogger( __name__ )
 
@@ -147,6 +134,8 @@ def db( request, fs: FS ) -> ActivityDb:
 def ctx( request, fs: FS ) -> ApplicationContext:
 
 	context = ApplicationContext( config_fs=fs, verbose=True )
+	set_current_ctx( context )
+
 	yield context
 
 #	try:
@@ -181,6 +170,8 @@ def registry( request, ctx: ApplicationContext ) -> Registry:
 
 @fixture
 def env( request, ctx: ApplicationContext, db: ActivityDb, registry: Registry ) -> Environment:
+	ctx.db = db
+	ctx.registry = registry
 	return Environment( ctx, db, registry )
 
 @fixture
@@ -222,27 +213,28 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 	return config_dict, state_dict
 
 @fixture
-def service( request, ctx: ApplicationContext, registry: Registry ) -> Optional[Service]:
+def service( request, env: Environment ) -> Optional[Service]:
 	service_class = marker( request, 'service', 'cls', None )
 	service_class_name = service_class.__name__.lower() if service_class else None
 	register = marker( request, 'service', 'register', False )
 	init = marker( request, 'service', 'init', False )
 
-	if init:
+	service = service_class( ctx=env.ctx )
+
+#	if init:
 		# service = service_class( fs=ctx.config_fs, _configuration=ctx.config['plugins'][service_class_name], _state=ctx.state['plugins'][service_class_name] )
-		service = service_class( ctx=ctx )
-	else:
-		service = service_class( fs=fs )
+#		service = service_class( ctx=ctx )
+#	else:
+#		service = service_class( fs=fs )
 
 	if register:
-		registry.services[service_class_name] = service
+		env.registry.services[service_class_name] = service
 
 	yield service
 
 @fixture
 def keywords() -> List[str]:
 	# load keywords plugin
-	from tracs.plugins.rule_extensions import TIME_FRAMES
 	return list( Registry.instance().virtual_fields.keys() )
 
 @fixture

@@ -35,7 +35,7 @@ class MockActivity:
 	# noinspection PyMethodMayBeStatic
 	def as_activity( self ) -> Activity:
 		return Activity(
-			uids = [self.uid],
+			uid = self.uid,
 			starttime= datetime.utcnow(),
 			starttime_local= datetime.utcnow().astimezone( tzlocal() ),
 		)
@@ -60,9 +60,9 @@ class Mock( Service ):
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		return [
-			Resource( uid='mock:1001', path='1001.json', type=MOCK_TYPE, text='mock:1001' ),
-			Resource( uid='mock:1002', path='1002.json', type=MOCK_TYPE, text='mock:1001' ),
-			Resource( uid='mock:1003', path='1003.json', type=MOCK_TYPE, text='mock:1001' ),
+			Resource( uid='mock:1001', path='1001.json', type=MOCK_TYPE, text='mock:1001 content' ),
+			Resource( uid='mock:1002', path='1002.json', type=MOCK_TYPE, text='mock:1002 content' ),
+			Resource( uid='mock:1003', path='1003.json', type=MOCK_TYPE, text='mock:1003 content' ),
 		]
 
 	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:

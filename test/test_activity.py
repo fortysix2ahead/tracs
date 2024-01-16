@@ -61,6 +61,39 @@ def test_activity_part():
 	assert p.classifiers == [ 'polar' ]
 
 def test_multipart_activity():
+	from dateutil.tz import UTC
+	swim_start = datetime( 2023, 7, 1, 10, 0, 0, tzinfo=UTC )
+	swim_end = datetime( 2023, 7, 1, 10, 30, 0, tzinfo=UTC )
+	bike_start = datetime( 2023, 7, 1, 10, 35, 0, tzinfo=UTC )
+	bike_end = datetime( 2023, 7, 1, 11, 55, 0, tzinfo=UTC )
+	run_start = datetime( 2023, 7, 1, 12, 0, 0, tzinfo=UTC )
+	run_end = datetime( 2023, 7, 1, 13, 0, 0, tzinfo=UTC )
+	a1 = Activity( uid='polar:101', name='swim', distance=1500, starttime=swim_start, endtime=swim_end )
+	a2 = Activity( uid='polar:102', name='bike', distance=40000, starttime=bike_start, endtime=bike_end )
+	a3 = Activity( uid='polar:102', name='run', distance=10000, starttime=run_start, endtime=run_end )
+
+	tri = Activity.multipart_of( a1, a2, a3 )
+
+	assert tri.multipart
+	assert [ p.gap.seconds for p in tri.parts ] == [ 0, 300, 300 ]
+	assert tri.type == ActivityTypes.multisport
+	assert tri.distance == 51500
+	assert tri.starttime == swim_start
+	assert tri.endtime == run_end
+
+	# average is a bit more complicated ...
+
+	bike_start = datetime( 2023, 7, 1, 10, 0, 0, tzinfo=UTC )
+	bike_end = datetime( 2023, 7, 1, 12, 0, 0, tzinfo=UTC )
+	run_start = datetime( 2023, 7, 1, 12, 0, 0, tzinfo=UTC )
+	run_end = datetime( 2023, 7, 1, 13, 0, 0, tzinfo=UTC )
+	a1 = Activity( uid='polar:101', name='bike', heartrate=120, starttime=bike_start, endtime=bike_end, duration=timedelta( hours=2 ) )
+	a2 = Activity( uid='polar:102', name='run', heartrate=180, starttime=run_start, endtime=run_end, duration=timedelta( hours=1 ) )
+
+	assert Activity.multipart_of( a1, a2 ).heartrate == 140
+
+@mark.skip
+def test_multipart_activity2():
 	p1 = ActivityPart( uids=['polar:101' ], gap=time( 0, 0, 0 ) )
 	p2 = ActivityPart( uids=['polar:102', 'strava:102' ], gap=time( 1, 0, 0 ) )
 	a = Activity( parts=[ p1, p2 ] )

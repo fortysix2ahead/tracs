@@ -13,9 +13,9 @@ from gpxpy.gpx import GPX, GPXTrack, GPXTrackPoint, GPXTrackSegment
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.handlers import ResourceHandler
+from tracs.pluginmgr import importer, resourcetype, service
 from tracs.plugins.csv import CSVHandler
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
-from tracs.registry import importer, resourcetype, service
 from tracs.resources import Resource
 from tracs.service import Service
 from tracs.utils import as_datetime

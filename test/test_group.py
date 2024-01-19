@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pytest import mark
 
+from test.conftest import Environment
 from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.group import group_activities2
@@ -28,7 +29,7 @@ def test_group_activities():
 	assert g1.head.heartrate_max == a1.heartrate_max and g1.head.heartrate == a2.heartrate
 
 @mark.context( env='default', persist='clone', cleanup=True )
-def test_ungroup_activities( ctx: ApplicationContext ):
-	ctx.db.register_summary_types( *[ rt.type for rt in Registry.instance().resource_types.values() if rt.summary ] )
-	g = ctx.db.get_by_id( 2001 )
-	result = ungroup_activities( ctx, [g], force=True )
+def test_ungroup_activities( env: Environment ):
+	env.db.register_summary_types( *[ rt.type for rt in Registry.instance().resource_types.values() if rt.summary ] )
+	g = env.db.get_by_id( 2001 )
+	result = ungroup_activities( env.ctx, [g], force=True )

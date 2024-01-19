@@ -77,13 +77,13 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	location_longitude_end: float = field( default=None ) #
 	route: str = field( default=None ) #
 
-	starttime: datetime = field( default=None )
+	starttime: datetime = field( default=None, metadata={ 'multipart': 'min' } )
 	"""activity time (UTC)"""
-	endtime: Optional[datetime] = field( default=None )
+	endtime: Optional[datetime] = field( default=None, metadata={ 'multipart': 'max' } )
 	"""activity end time (UTC)"""
-	starttime_local: datetime = field( default=None )
+	starttime_local: datetime = field( default=None, metadata={ 'multipart': 'min' } )
 	"""activity time (local)"""
-	endtime_local: Optional[datetime] = field( default=None )
+	endtime_local: Optional[datetime] = field( default=None, metadata={ 'multipart': 'max' } )
 	"""activity end time (local)"""
 	timezone: str = field( default=get_localzone_name() )
 	"""timezone of the activity, local timezone by default"""
@@ -91,7 +91,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	duration: Optional[timedelta] = field( default=None ) #
 	duration_moving: Optional[timedelta] = field( default=None ) #
 
-	distance: Optional[float] = field( default=None ) #
+	distance: Optional[float] = field( default=None, metadata={ 'multipart': 'sum' } ) #
 	ascent: Optional[float] = field( default=None ) #
 	descent: Optional[float] = field( default=None ) #
 	elevation_max: Optional[float] = field( default=None ) #
@@ -99,7 +99,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	speed: Optional[float] = field( default=None ) #
 	speed_max: Optional[float] = field( default=None ) #
 
-	heartrate: Optional[int] = field( default=None ) #
+	heartrate: Optional[int] = field( default=None, metadata={ 'multipart': 'average' } ) #
 	heartrate_max: Optional[int] = field( default=None ) #
 	heartrate_min: Optional[int] = field( default=None ) #
 	calories: Optional[int] = field( default=None ) #
@@ -283,6 +283,53 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	def untag( self, tag: str ):
 		self.tags.remove( tag )
 
+	@classmethod
+	def multipart_of( cls, *activities: Activity ) -> Activity:
+		"""
+		Creates a new multipart activity from provided activities.
+
+		:return:
+		"""
+
+		mpa = Activity()
+
+		# aggregated fields
+		for f in Activity.fields():
+			if md := f.metadata.get( 'multipart' ):
+				_value = None
+				try:
+					if md == 'sum':
+						_value = sum( values( *activities, name=f.name, filter=True ) )
+					elif md == 'max':
+						_value = max( values( *activities, name=f.name, filter=True ) )
+					elif md == 'min':
+						_value = min( values( *activities, name=f.name, filter=True ) )
+					elif md == 'average':
+						_values = values( *activities, name=f.name, filter=False )
+						_durations = values( *activities, name='duration', filter=False )
+						_total_duration = sum( [d.seconds for d in _durations] )
+						_vd = [ ( v, d.seconds ) for v, d in zip( _values, _durations ) ]
+						_value = round( sum( [ v * d / _total_duration  for v, d in _vd ] ) )
+
+				except (AttributeError, TypeError, ValueError):
+					log.debug( f'unable to calculate multipart value for field {f.name} from activities { [a.uid for a in activities] }' )
+
+				if _value:
+					setattr( mpa, f.name, _value )
+
+		# create part objects
+		activities = sorted( [*activities], key=lambda a: a.starttime )
+		mpa.parts = [ ActivityPart( uids=[a.uid] ) for a in activities ]
+		mpa.parts[0].gap = timedelta( seconds=0 )
+		for i in range( 1, len( activities ) ):
+			mpa.parts[i].gap = activities[i].starttime - activities[i-1].endtime
+
+		# type + uid
+		mpa.type = t if (t := _unique( activities, 'type' ) ) else ActivityTypes.multisport
+		mpa.uids = list( set( a.uid for a in activities ) )
+
+		return mpa
+
 @define
 class Activities( Container[Activity] ):
 	"""
@@ -331,6 +378,10 @@ class Activities( Container[Activity] ):
 				pass
 
 # helper
+
+def values( *activities: Activity, name: str, filter: bool = False ) -> List:
+	_values = [ getattr( a, name, None ) for a in activities ]
+	return [ v for v in _values if v is not None ] if filter else _values
 
 def groups( activities: List[Activity] ) -> List[Activity]:
 	return list( filter( lambda a: a.group, activities or [] ) )

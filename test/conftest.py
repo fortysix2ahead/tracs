@@ -1,39 +1,36 @@
 from datetime import datetime
-from importlib import import_module
 from importlib.resources import path as pkgpath
 from logging import getLogger
 from os.path import dirname
 from pathlib import Path
-from pkgutil import iter_modules
 from shutil import copytree, rmtree
-from typing import cast, Dict, List
-from typing import Optional
-from typing import Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from fs.base import FS
-from fs.errors import NoSysPath
+from fs.copy import copy_fs
 from fs.memoryfs import MemoryFS
-from fs.multifs import MultiFS
-from fs.subfs import SubFS
 from fs.osfs import OSFS
 from pytest import fixture
-from yaml import load as load_yaml
-from yaml import SafeLoader
+from yaml import load as load_yaml, SafeLoader
 
-from tracs.config import ApplicationConfig as cfg, DB_DIRNAME
-from tracs.config import ApplicationConfig as state
-from tracs.config import ApplicationContext
+from tracs.config import ApplicationConfig as cfg, ApplicationConfig as state, ApplicationContext, DB_DIRNAME, set_current_ctx
 from tracs.db import ActivityDb
+from tracs.pluginmgr import PluginManager
 from tracs.registry import Registry
+from tracs.rules import RuleParser
 from tracs.service import Service
-from .helpers import get_db_as_json
-from .helpers import get_file_as_json
-from .helpers import get_file_path
+from tracs.utils import FsPath
+from .helpers import get_db_as_json, get_file_as_json
 
 log = getLogger( __name__ )
 
 ENABLE_LIVE_TESTS = 'ENABLE_LIVE_TESTS'
 PERSISTANCE_NAME = 'persistance_layer'
+
+class Environment( NamedTuple ):
+	ctx: ApplicationContext
+	db: ActivityDb
+	registry: Registry
 
 def marker( request, name, key, default ):
 	try:
@@ -58,16 +55,6 @@ def config( request ) -> None:
 		return None
 
 @fixture
-def registry( request ) -> Registry:
-	# load all plugins first
-	import tracs.plugins
-	for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
-		import_module( f'tracs.plugins.{name}' )
-		log.debug( f'imported plugin {name} from {finder.path}' )
-
-	yield Registry.instance()
-
-@fixture
 def varfs( request ) -> FS:
 	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
 		tp = test_pkg_path.parent
@@ -76,6 +63,7 @@ def varfs( request ) -> FS:
 		log.info( f'created new temporary persistance dir in {str( vrp )}' )
 		yield OSFS( str( vrp ) )
 
+# noinspection PyTestUnpassedFixture
 @fixture
 def fs( request ) -> FS:
 	env = marker( request, 'context', 'env', 'empty' )
@@ -84,6 +72,7 @@ def fs( request ) -> FS:
 
 	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
 		tp = test_pkg_path.parent
+		env_fs = OSFS( root_path=f'{str( tp )}/environments/{env}' )
 		ep = Path( tp, f'environments/{env}' )
 		vrp = Path( tp, f'../var/run/{datetime.now().strftime( "%H%M%S_%f" )}' ).resolve()
 
@@ -97,6 +86,9 @@ def fs( request ) -> FS:
 
 		elif persist == 'mem':
 			root_fs = MemoryFS()
+			log.info( f'using memory as root fs backend' )
+
+			copy_fs( env_fs, root_fs, preserve_time=True )
 
 		else:
 			raise ValueError( 'value of key persist needs to be one of [mem, disk, clone]' )
@@ -139,19 +131,48 @@ def db( request, fs: FS ) -> ActivityDb:
 	#yield ActivityDb( path=db_path, read_only=False )
 
 @fixture
-def ctx( request, db: ActivityDb ) -> ApplicationContext:
-	try:
-		db_path = db.underlay_fs.getsyspath( '' )
-		context = ApplicationContext( config_dir=dirname( dirname( db_path ) ), verbose=True )
-	except NoSysPath:
-		context = ApplicationContext( config_fs=MemoryFS(), lib_fs=MemoryFS(), db_fs=db.underlay_fs, verbose=True )
+def ctx( request, fs: FS ) -> ApplicationContext:
 
-	context.db = db  # attach db to ctx
+	context = ApplicationContext( config_fs=fs, verbose=True )
+	set_current_ctx( context )
 
 	yield context
 
-	if context.db is not None:
-		context.db.close()
+#	try:
+#		db_path = db.underlay_fs.getsyspath( '' )
+#		context = ApplicationContext( config_dir=dirname( dirname( db_path ) ), verbose=True )
+#	except NoSysPath:
+#		context = ApplicationContext( config_fs=MemoryFS(), lib_fs=MemoryFS(), db_fs=db.underlay_fs, verbose=True )
+
+#	context.db = db  # attach db to ctx
+
+#	yield context
+
+#	if context.db is not None:
+#		context.db.close()
+
+@fixture
+def registry( request, ctx: ApplicationContext ) -> Registry:
+	resource_types = marker( request, 'resource_type', 'types', [] )
+
+	PluginManager.init()
+
+	yield Registry.create(
+		ctx=ctx,
+		keywords=PluginManager.keywords,
+		normalizers=PluginManager.normalizers,
+		resource_types=PluginManager.resource_types,
+		importers=PluginManager.importers,
+		virtual_fields=PluginManager.virtual_fields,
+		setups=PluginManager.setups,
+		services=PluginManager.services,
+	)
+
+@fixture
+def env( request, ctx: ApplicationContext, db: ActivityDb, registry: Registry ) -> Environment:
+	ctx.db = db
+	ctx.registry = registry
+	return Environment( ctx, db, registry )
 
 @fixture
 def json( request ) -> Optional[Dict]:
@@ -165,6 +186,11 @@ def json( request ) -> Optional[Dict]:
 def path( request ) -> Optional[Path]:
 	with pkgpath( 'test', '__init__.py' ) as test_path:
 		return Path( test_path.parent, marker( request, 'file', None, None ) )
+
+@fixture
+def fspath( request ) -> FsPath:
+	with pkgpath( 'test', '__init__.py' ) as test_path:
+		return FsPath( OSFS( root_path=str( test_path.parent ), create=False ), marker( request, 'file', None, None ) )
 
 @fixture
 def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
@@ -187,27 +213,31 @@ def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
 	return config_dict, state_dict
 
 @fixture
-def service( request, ctx: ApplicationContext ) -> Optional[Service]:
+def service( request, env: Environment ) -> Optional[Service]:
 	service_class = marker( request, 'service', 'cls', None )
+	service_class_name = service_class.__name__.lower() if service_class else None
 	register = marker( request, 'service', 'register', False )
 	init = marker( request, 'service', 'init', False )
 
-	service_class_name = service_class.__name__.lower()
+	service = service_class( ctx=env.ctx )
 
-	if init:
+#	if init:
 		# service = service_class( fs=ctx.config_fs, _configuration=ctx.config['plugins'][service_class_name], _state=ctx.state['plugins'][service_class_name] )
-		service = service_class( ctx=ctx )
-	else:
-		service = service_class( fs=fs )
+#		service = service_class( ctx=ctx )
+#	else:
+#		service = service_class( fs=fs )
 
 	if register:
-		# noinspection PyProtectedMember
-		Registry.instance()._services[service_class_name] = service
+		env.registry.services[service_class_name] = service
 
 	yield service
 
 @fixture
 def keywords() -> List[str]:
 	# load keywords plugin
-	from tracs.plugins.rule_extensions import TIME_FRAMES
 	return list( Registry.instance().virtual_fields.keys() )
+
+@fixture
+def rule_parser( request, ctx: ApplicationContext, registry: Registry ) -> RuleParser:
+
+	yield RuleParser( keywords=registry.keywords, normalizers=registry.normalizers )

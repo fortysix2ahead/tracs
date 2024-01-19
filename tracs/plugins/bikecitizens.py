@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from logging import getLogger
 from re import DOTALL, match
 from sys import exit as sysexit
-from typing import Any, cast, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from attrs import define, field
 from bs4 import BeautifulSoup
@@ -14,8 +14,8 @@ from rich.prompt import Prompt
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME
-from tracs.plugins.json import DataclassFactoryHandler, JSON_TYPE, JSONHandler
-from tracs.registry import importer, Registry, resourcetype, service, setup
+from tracs.pluginmgr import importer, resourcetype, service, setup
+from tracs.plugins.json import DataclassFactoryHandler, JSONHandler
 from tracs.resources import Resource
 from tracs.service import Service
 from .gpx import GPX_TYPE

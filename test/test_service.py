@@ -1,13 +1,10 @@
 
 from pathlib import Path
-from typing import cast
 
 from pytest import mark, raises
 
-from test.mock import Mock, MOCK_TYPE, MockActivity
-from tracs.db import ActivityDb
-from tracs.registry import Registry
-from tracs.resources import Resource, ResourceType
+from test.mock import Mock
+from tracs.resources import Resource
 from tracs.service import Service
 
 def test_constructor():
@@ -62,14 +59,15 @@ def test_path_for( service ):
 
 @mark.service( cls=Mock, register=True )
 def test_path_for_cls( service ):
-	# path for a uid (this calls path_for_id internally)
+	# path for uid (this calls path_for_id internally)
 	assert Service.path_for_uid( 'mock:1001' ) == Path( 'mock/1/0/0/1001' )
 	assert Service.path_for_uid( 'mock:0' ) == Path( 'mock/0/0/0/0' )
 
-	with raises( AttributeError ):
-		assert Service.path_for_uid( 'unknown:1001' ) == Path( 'unknown/1/0/0/1001' )
+	# use default for unknown classifiers
+	assert Service.path_for_uid( 'unknown:1001' ) == Path( 'unknown/1/0/0/1001' )
 
-@mark.context( env='empty', persist='clone', cleanup=True )
+# noinspection PyTestUnpassedFixture
+@mark.context( env='empty', persist='mem', cleanup=True )
 @mark.service( cls=Mock, init=True, register=True )
 def test_fetch( service: Mock ):
 	service.import_activities( skip_download=True, skip_link=True )

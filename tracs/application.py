@@ -10,10 +10,12 @@ from attrs import define, field
 from confuse import Configuration
 
 from tracs import setup_console_logging, setup_file_logging
-from .config import ApplicationContext, set_current_ctx
-from .db import ActivityDb
-from .registry import Registry
-from .utils import UCFG
+from tracs.config import ApplicationContext, set_current_ctx
+from tracs.db import ActivityDb
+from tracs.pluginmgr import PluginManager
+from tracs.registry import Registry
+from tracs.rules import RuleParser
+from tracs.utils import UCFG
 
 log = getLogger( __name__ )
 
@@ -25,6 +27,7 @@ class Application:
 	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
 	_db: ActivityDb = field( default=None, alias='_db' )
 	_registry: Registry = field( default=None, alias='_registry' )
+	_parser: RuleParser = field( default=None, alias='_parser' )
 
 	_config: Configuration = field( default=None, alias='_config' )
 	_state: Configuration = field( default=None, alias='_state' )
@@ -49,6 +52,8 @@ class Application:
 	def __setup__( self, *args, **kwargs ):
 		# console logging setup --
 		setup_console_logging( kwargs.get( 'verbose' ), kwargs.get( 'debug' ) )
+
+		log.debug( f'triggered CLI with flags {kwargs}' )
 
 		try:
 			configuration = expanduser( expandvars( kwargs.pop( 'configuration', None ) ) )
@@ -79,25 +84,39 @@ class Application:
 		# file logging setup after configuration has been loaded --
 		setup_file_logging( self._ctx.verbose, self._ctx.debug, self._ctx.log_file_path )
 
-		# print CLI configuration
-		log.debug( f'triggered CLI with flags debug={kwargs}' )
-		log.debug( f'using config dir: {self._ctx.config_dir} and library dir: {self._ctx.lib_dir}' )
+		# print context configuration
+		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
+
+		# init plugin manager/load plugins
+		PluginManager.init( (self._config['pluginpath'].get() or '').split( ' ' ) )
 
 		# create registry
-		self._registry = Registry.instance( ctx=self._ctx )
+		self._registry = Registry.create(
+			keywords=PluginManager.keywords,
+			normalizers=PluginManager.normalizers,
+			resource_types=PluginManager.resource_types,
+			importers=PluginManager.importers,
+			virtual_fields=PluginManager.virtual_fields,
+			setups=PluginManager.setups,
+			services=PluginManager.services,
+			ctx=self._ctx,
+		)
 
 		# open db from config_dir
 		self._db = ActivityDb(
 			path=self._ctx.db_dir_path,
 			read_only=self._ctx.pretend,
 			enable_index=self.ctx.config['db']['index'].get(),
-			summary_types=[ v.type for v in self._registry.resource_types.values() if v.summary ],
-			recording_types=[ v.type for v in self._registry.resource_types.values() if v.recording ],
+			summary_types=[ t.type for t in self._registry.summary_types() ],
+			recording_types=[ t.type for t in self._registry.recording_types() ],
 		)
 		self._ctx.db = self._db # todo: really put db into ctx? or keep it here?
 
-		# ---- create service instances ----
-		self._registry.setup_services( self._ctx )
+		# create parser
+		self._parser = RuleParser(
+			keywords=self.registry.keywords,
+			normalizers=self.registry.normalizers,
+		)
 
 		# ---- announce context/configuration to utils module ----
 		UCFG.reconfigure( self._ctx.config )
@@ -119,6 +138,10 @@ class Application:
 	@property
 	def registry( self ) -> Registry:
 		return self._registry
+
+	@property
+	def parser( self ) -> RuleParser:
+		return self._parser
 
 	@property
 	def config( self ) -> Configuration:

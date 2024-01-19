@@ -2,8 +2,8 @@ from typing import Any, Union
 
 from lxml.objectify import fromstring, ObjectifiedElement
 
-from tracs.registry import importer, Registry, resourcetype
 from tracs.handlers import ResourceHandler
+from tracs.pluginmgr import importer, resourcetype
 from tracs.resources import ResourceType
 
 XML_TYPE = 'application/xml'

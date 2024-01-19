@@ -1,4 +1,4 @@
-
+from collections import namedtuple
 from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from difflib import SequenceMatcher
 from enum import Enum
@@ -24,6 +24,8 @@ from tracs.activity_types import ActivityTypes
 from tracs.config import CONSOLE
 
 T = TypeVar('T')
+
+FsPath = namedtuple( 'FsPath', 'fs path' )
 
 INT_COLON = rxcompile( '\d:.+' )
 TIMEDELTA = rxcompile( '((?P<days>\d\d):)?(?P<hours>\d\d):(?P<minutes>\d\d):(?P<seconds>\d\d)(\.(?P<fraction>\d{1,6}))?' )

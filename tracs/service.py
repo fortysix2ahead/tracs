@@ -11,6 +11,7 @@ from typing import Any, cast, List, Optional, Tuple, Union
 from dateutil.tz import UTC
 from fs.base import FS
 from fs.errors import ResourceNotFound
+from fs.multifs import MultiFS
 from fs.path import combine, dirname, frombase
 
 from tracs.activity import Activity
@@ -31,8 +32,8 @@ class Service( Plugin ):
 		super().__init__( *args, **kwargs )
 
 		# paths + plugin filesystem area
-		self._fs: FS = ( self.ctx.plugin_fs( self.name ) if self.ctx else None ) or kwargs.get( 'fs' )
-		self._dbfs = self.ctx.db_fs if self.ctx else None
+		self._fs: FS = kwargs.get( 'fs' ) or ( self.ctx.plugin_fs( self.name ) if self.ctx else None )
+		self._dbfs = kwargs.get( 'dbfs' ) or ( self.ctx.db_fs if self.ctx else None )
 		self._base_url = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
 
@@ -77,34 +78,40 @@ class Service( Plugin ):
 
 	@property
 	def base_fs( self ) -> FS:
-		return self._fs.get_fs( 'base' )
+		return cast( MultiFS, self._fs ).get_fs( 'base' )
 
 	@property
 	def overlay_fs( self ) -> FS:
-		return self._fs.get_fs( 'overlay' )
+		return cast( MultiFS, self._fs ).get_fs( 'overlay' )
 
 	# class methods for helping with various things
 
 	@classmethod
-	def path_for_uid( cls, uid: str, absolute: bool = False, as_path=True ) -> Union[Path, str]:
+	def default_path_for_id( cls, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = False ) -> Union[Path, str]:
+		local_id_rjust = str( local_id ).rjust( 3, '0' )
+		path = f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
+		path = combine( base_path, path ) if base_path else path
+		path = combine( path, resource_path ) if resource_path else path
+		return Path( path ) if as_path else path
+
+	@classmethod
+	def path_for_uid( cls, uid: Union[UID, str], absolute: bool = False, as_path=True, ctx=None ) -> Union[Path, str]:
 		"""
 		Returns the relative path for a given uid.
 		A service with the classifier of the uid has to exist, otherwise None will be returned.
 		"""
-		uid = UID( uid )
-		# todo: what to do with unknown services?
-		service = Registry.instance().services.get( uid.classifier )
-		path = service.path_for_id( uid.local_id, service.name, uid.path )
-
-		if absolute:
-			path = service.path_for_id(  )
-
-		return Path( path ) if as_path else path
+		uid = UID( uid ) if isinstance( uid, str ) else uid
+		ctx = ctx if ctx else current_ctx()
+		try:
+			service = ctx.registry.services.get( uid.classifier )
+			return service.path_for_id( uid.local_id, service.name, uid.path, as_path=as_path )
+		except AttributeError:
+			return Service.default_path_for_id( uid.local_id, uid.classifier, uid.path, as_path=as_path )
 
 	@classmethod
 	def path_for_resource( cls, resource: Resource, absolute: bool = True, as_path: bool = True, ignore_overlay: bool = True ) -> Union[Path, str]:
 		try:
-			service = Registry.instance().services.get( resource.classifier )
+			service = current_ctx().registry.services.get( resource.classifier )
 			return service.path_for( resource=resource, absolute=absolute, as_path=as_path, ignore_overlay=ignore_overlay )
 		except AttributeError:
 			log.error( f'unable to calculate resource path for {resource}', exc_info=True )
@@ -112,35 +119,34 @@ class Service( Plugin ):
 	@classmethod
 	def url_for_uid( cls, uid: str ) -> Optional[str]:
 		classifier, local_id = uid.split( ':', 1 )
-		if service := Registry.instance().services.get( classifier ):
+		if service := current_ctx().registry.services.get( classifier ):
 			return service.url_for( local_id=local_id )
 		else:
 			return None
 
 	@classmethod
-	def as_activity( cls, resource: Resource, **kwargs ) -> Optional[Activity]:
+	def as_activity( cls, resource: Resource, registry: Registry = None, **kwargs ) -> Optional[Activity]:
 		"""
 		Loads a resource and transforms it into an activity by using the importer indicated by the resource type.
 		"""
-		fs, path = current_ctx().db_fs, Service.path_for_resource( resource, as_path=False )
-		return Registry.importer_for( resource.type ).load_as_activity( path=path, fs=fs, **kwargs )
+		ctx = current_ctx()
+		fs, path = ctx.db_fs, Service.path_for_resource( resource, as_path=False )
+		registry = registry if registry else ctx.registry
+		return registry.importer_for( resource.type ).load_as_activity( path=path, fs=fs, **kwargs )
 
 	@classmethod
-	def as_activity_from( cls, resource: Resource, **kwargs ) -> Optional[Activity]:
+	def as_activity_from( cls, resource: Resource, registry: Registry = None, **kwargs ) -> Optional[Activity]:
 		"""
 		Loads a resource to an activity in a 'lazy' manner, reusing the existing content of the resource.
 		"""
-		return Registry.importer_for( resource.type ).load_as_activity( resource=resource, **kwargs )
+		registry = registry if registry else current_ctx().registry
+		return registry.importer_for( resource.type ).load_as_activity( resource=resource, **kwargs )
 
 	# service methods
 
 	# todo: set as_path to a default of False
 	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = True ) -> Union[Path, str]:
-		local_id_rjust = str( local_id ).rjust( 3, '0' )
-		path = f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
-		path = combine( base_path, path ) if base_path else path
-		path = combine( path, resource_path ) if resource_path else path
-		return Path( path ) if as_path else path
+		return Service.default_path_for_id( local_id, base_path, resource_path, as_path )
 
 	def path_for( self, resource: Resource, ignore_overlay: bool = True, absolute: bool = True, omit_classifier: bool = False, as_path: bool = True ) -> Optional[Path]:
 		"""

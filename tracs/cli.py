@@ -7,6 +7,7 @@ from click import argument, Choice, group, option, pass_context, pass_obj, Path 
 from click_shell import make_click_shell
 from rule_engine import RuleSyntaxError
 
+from tracs.activity import Activity
 from tracs.aio import export_activities, import_activities, open_activities, reimport_activities
 from tracs.application import Application
 from tracs.config import ApplicationContext, APPNAME
@@ -106,7 +107,7 @@ def fetch( ctx, sources: List[str] ):
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def download( ctx: ApplicationContext, filters ):
-	activities = list( ctx.db.find( filters or [] ) )
+	activities = _flt( *filters )
 	activity_uids = list( set( chain( *[a.uids for a in activities] ) ) )
 	if activity_uids:
 		import_activities( ctx, None, sources = activity_uids, skip_fetch = True )
@@ -115,7 +116,7 @@ def download( ctx: ApplicationContext, filters ):
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def link( ctx: ApplicationContext, filters ):
-	link_activities( ctx, list( ctx.db.find( filters or [] ) ) )
+	link_activities( ctx, _flt( *filters ) )
 
 @cli.command( 'list', help='lists activities' )
 @option( '-s', '--sort', is_flag=False, required=False, help='sorts the output according to an attribute' )
@@ -124,10 +125,7 @@ def link( ctx: ApplicationContext, filters ):
 @argument('filters', nargs=-1)
 @pass_obj
 def ls( ctx: ApplicationContext, sort, reverse, format_name, filters ):
-	try:
-		list_activities( list( ctx.db.find( filters ) ), sort=sort, reverse=reverse, format_name=format_name, ctx=ctx )
-	except RuleSyntaxError as rse:
-		ctx.console.print( rse )
+	list_activities( _flt( *filters ), sort=sort, reverse=reverse, format_name=format_name, ctx=ctx )
 
 @cli.command( help='shows details about activities and resources' )
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )
@@ -138,34 +136,34 @@ def ls( ctx: ApplicationContext, sort, reverse, format_name, filters ):
 @pass_obj
 def show( ctx: ApplicationContext, filters, raw, format_name, resource, verbose ):
 	if resource:
-		show_resources( list( ctx.db.find( filters ) ), ctx=ctx, display_raw=raw, verbose=verbose, format_name=format_name )
+		show_resources( _flt( *filters ), ctx=ctx, display_raw=raw, verbose=verbose, format_name=format_name )
 	else:
-		show_activities( list( ctx.db.find( filters ) ), ctx=ctx, display_raw=raw, verbose=verbose, format_name=format_name )
+		show_activities( _flt( *filters ), ctx=ctx, display_raw=raw, verbose=verbose, format_name=format_name )
 
 @cli.command( help='groups activities' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def group( ctx: ApplicationContext, filters: List[str] ):
-	group_activities( ctx, list( ctx.db.find( filters ) ), force=ctx.force )
+	group_activities( ctx, _flt( *filters ), force=ctx.force )
 
 @cli.command( help='reverts activity groupings' )
 @option( '-k', '--keep', is_flag=True, required=False, hidden=True, default=False, help='do not remove group after ungrouping' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def ungroup( ctx: ApplicationContext, filters: List[str], keep: bool = False ):
-	ungroup_activities( ctx, ctx.db.find( filters ), keep, force=ctx.force, pretend=ctx.pretend )
+	ungroup_activities( ctx, _flt( *filters ), keep, force=ctx.force, pretend=ctx.pretend )
 
 @cli.command( hidden=True, help='combines activities to multipart activities' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def part( ctx: ApplicationContext, filters: List[str] ):
-	part_activities( list( ctx.db.find( filters ) ), force=ctx.force, pretend=ctx.pretend, ctx=ctx )
+	part_activities( _flt( *filters ), force=ctx.force, pretend=ctx.pretend, ctx=ctx )
 
 @cli.command( hidden=True, help='removes multipart activities' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def unpart( ctx: ApplicationContext, filters: List[str] ):
-	unpart_activities( ctx.db.find( filters ), force=ctx.force, pretend=ctx.pretend, ctx=ctx )
+	unpart_activities( _flt( *filters ), force=ctx.force, pretend=ctx.pretend, ctx=ctx )
 
 @cli.command( help='modifies activities' )
 @option( '-f', '--field', is_flag=False, required=True, help='field to modify' )
@@ -184,7 +182,7 @@ def edit( identifier ):
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def rename( ctx: ApplicationContext, filters: str ):
-	rename_activities( list( ctx.db.find( filters ) ), ctx, ctx.force, ctx.pretend )
+	rename_activities( _flt( *filters ), ctx, ctx.force, ctx.pretend )
 	ctx.db.commit()
 
 @cli.command( help='reimports activities' )
@@ -198,7 +196,7 @@ def rename( ctx: ApplicationContext, filters: str ):
 @pass_obj
 def reimport( ctx: ApplicationContext, filters, include_recordings: bool = False, from_remote: bool = False, strategy: str = None, offset: str = None, timezone: str = None, ignore_field: Tuple = None ):
 	reimport_activities(
-		activities=list( ctx.db.find( filters ) ),
+		activities=_flt( *filters ),
 		include_recordings=include_recordings,
 		from_remote=from_remote,
 		ignore_fields=list( ignore_field ),
@@ -212,7 +210,7 @@ def reimport( ctx: ApplicationContext, filters, include_recordings: bool = False
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def open_cmd( ctx: ApplicationContext, filters ):
-	open_activities( ctx, list( ctx.db.find( filters ) ) )
+	open_activities( ctx, _flt( *filters ) )
 
 @cli.command( help='export activities/resources' )
 @option( '-a', '--aggregate', required=False, is_flag=True )
@@ -222,7 +220,7 @@ def open_cmd( ctx: ApplicationContext, filters ):
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def export( ctx: ApplicationContext, fmt: str, output: str, aggregate: bool, overlay: bool, filters ):
-	export_activities( ctx, ctx.db.find( filters ), fmt=fmt, output=output, aggregate=aggregate, overlay=overlay )
+	export_activities( ctx, _flt( *filters ), fmt=fmt, output=output, aggregate=aggregate, overlay=overlay )
 
 @cli.command( 'set', hidden=True, help='sets field values manually' )
 @argument( 'filters', nargs=-1 )
@@ -249,7 +247,7 @@ def tag( ctx: ApplicationContext, filters, tags, all_tags: bool = False ):
 		show_tags( ctx )
 	else:
 		tags = list( set( chain( *[ t.split( ',' ) for t in tags ] ) ) )
-		tag_activities( list( ctx.db.find( filters ) ), tags=tags, ctx=ctx )
+		tag_activities( _flt( *filters ), tags=tags, ctx=ctx )
 		ctx.db.commit()
 
 @cli.command( help='Removes tags from activities' )
@@ -258,7 +256,7 @@ def tag( ctx: ApplicationContext, filters, tags, all_tags: bool = False ):
 @pass_obj
 def untag( ctx: ApplicationContext, filters, tags ):
 	tags = list( set( chain( *[ t.split( ',' ) for t in tags ] ) ) )
-	untag_activities( list( ctx.db.find( filters ) ), tags=tags, ctx=ctx )
+	untag_activities( _flt( *filters ), tags=tags, ctx=ctx )
 	ctx.db.commit()
 
 @cli.command( help='Add equipment to an activity' )
@@ -271,7 +269,7 @@ def equip( ctx: ApplicationContext, filters, equipments, all_equipments: bool = 
 		show_equipments( ctx )
 	else:
 		equipments = list( set( chain( *[ e.split( ',' ) for e in equipments ] ) ) )
-		equip_activities( list( ctx.db.find( filters ) ), equipments=equipments, ctx=ctx )
+		equip_activities( _flt( *filters ), equipments=equipments, ctx=ctx )
 		ctx.db.commit()
 
 @cli.command( help='Removes equipment from activities' )
@@ -280,7 +278,7 @@ def equip( ctx: ApplicationContext, filters, equipments, all_equipments: bool = 
 @pass_obj
 def unequip( ctx: ApplicationContext, filters, equipments ):
 	equipments = list( set( chain( *[ e.split( ',' ) for e in equipments ] ) ) )
-	unequip_activities( list( ctx.db.find( filters ) ), equipments=equipments, ctx=ctx )
+	unequip_activities( _flt( *filters ), equipments=equipments, ctx=ctx )
 	ctx.db.commit()
 
 @cli.command( help='application setup' )
@@ -293,7 +291,7 @@ def setup( ctx: ApplicationContext, services: List[str] ):
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def aggregate( ctx: ApplicationContext, filters ):
-	show_aggregate( list( ctx.db.find( filters ) ), ctx=ctx )
+	show_aggregate( _flt( *filters ), ctx=ctx )
 
 @cli.command( hidden=True, help='inspects activities/resources/internal registry' )
 @option( '-g', '--registry', is_flag=True, required=False, help='inspects the internal registry (filter will be ignored)' )
@@ -305,11 +303,11 @@ def inspect( ctx: ApplicationContext, filters, plugins: bool, registry: bool, re
 	if plugins:
 		inspect_plugins( ctx )
 	elif registry:
-		inspect_registry()
+		inspect_registry( ctx.registry )
 	elif resource:
 		inspect_resources()
 	else:
-		inspect_activities( ctx.db.find( filters ) )
+		inspect_activities( _flt( *filters ) )
 
 @cli.command( hidden=True, help='Performs some validation and sanity tasks.' )
 @option( '-c', '--correct', is_flag=True, required=False, default=False, help='try to correct found problems' )
@@ -317,7 +315,7 @@ def inspect( ctx: ApplicationContext, filters, plugins: bool, registry: bool, re
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def validate( ctx: ApplicationContext, filters, function, correct ):
-	validate_activities( list( ctx.db.find( filters ) ), ctx=ctx, function=function, correct=correct )
+	validate_activities( _flt( *filters ), ctx=ctx, function=function, correct=correct )
 
 @cli.command( help='starts application in interactive mode' )
 @pass_context
@@ -331,7 +329,7 @@ def shell( ctx ):
 @argument( 'filters', nargs=-1 )
 @pass_obj
 def set_type( ctx: ApplicationContext, filters, activity_type ):
-	set_activity_type( ctx, list( ctx.db.find( filters ) ), activity_type=activity_type )
+	set_activity_type( ctx, _flt( *filters ), activity_type=activity_type )
 
 @cli.command( help='displays all available activity types' )
 @option( '-u', '--used-only', required=False, is_flag=True, default=False, help='display used types only' )
@@ -349,3 +347,17 @@ def main( args=None ):
 
 if __name__ == '__main__':
 	main()
+
+# helper
+
+def _flt( *rules: str ) -> List[Activity]:
+	try:
+		rules = APPLICATION_INSTANCE.parser.parse_rules( *rules )
+		activities = APPLICATION_INSTANCE.db.activities
+		for r in rules:
+			activities = r.filter( activities )
+		return list( activities )
+
+	except RuleSyntaxError as rse:
+		APPLICATION_INSTANCE.ctx.console.print( rse )
+		return []

@@ -7,7 +7,7 @@ from cattrs.preconf.orjson import make_converter
 from orjson import dumps as save_json, loads as load_json, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 
 from tracs.handlers import ResourceHandler
-from tracs.registry import importer, Registry, resourcetype
+from tracs.pluginmgr import importer, resourcetype
 from tracs.resources import ResourceType
 
 log = getLogger( __name__ )

@@ -3,8 +3,8 @@ from logging import getLogger
 from typing import Any
 
 from tracs.activity import Activity
-from tracs.registry import importer, resourcetype
 from tracs.handlers import ResourceHandler
+from tracs.pluginmgr import importer, resourcetype
 
 log = getLogger( __name__ )
 

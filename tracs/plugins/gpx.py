@@ -8,7 +8,7 @@ from gpxpy.gpx import GPX
 
 from tracs.activity import Activity
 from tracs.handlers import ResourceHandler
-from tracs.registry import importer, Registry, resourcetype
+from tracs.pluginmgr import importer, resourcetype
 from tracs.resources import Resource, ResourceType
 
 log = getLogger( __name__ )

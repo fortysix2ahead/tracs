@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 from logging import getLogger
 from pathlib import Path
-from re import match
+from re import compile, match
 from sys import exit as sysexit
 from time import time as current_time
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
@@ -21,13 +21,13 @@ from rich.prompt import Prompt
 
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes, ActivityTypes as Types
-from tracs.config import ApplicationContext, APPNAME
 from tracs.aio import load_resource
-from tracs.plugins.gpx import GPX_TYPE
-from tracs.plugins.json import DataclassFactoryHandler, JSON_TYPE, JSONHandler
+from tracs.config import ApplicationContext, APPNAME
+from tracs.pluginmgr import importer, resourcetype, service, setup
+from tracs.plugins.gpx import GPX_TYPE, GPXImporter
+from tracs.plugins.json import DataclassFactoryHandler, JSONHandler
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.plugins.xml import XMLHandler
-from tracs.registry import importer, Registry, resourcetype, service, setup
 from tracs.resources import Resource
 from tracs.service import Service
 from tracs.utils import seconds_to_time
@@ -42,6 +42,9 @@ DISPLAY_NAME = 'Polar Flow'
 POLAR_CSV_TYPE = 'text/vnd.polar+csv'
 POLAR_HRV_TYPE = 'text/vnd.polar.hrv+csv'
 POLAR_FLOW_TYPE = 'application/vnd.polar+json'
+POLAR_FITNESS_TEST_TYPE = 'application/vnd.polar.fitness+json'
+POLAR_ORTHOSTATIC_TEST_TYPE = 'application/vnd.polar.orthostatic+json'
+POLAR_RRRECORDING_TYPE = 'application/vnd.polar.rrrecording+json'
 POLAR_EXERCISE_DATA_TYPE = 'application/vnd.polar.ped+xml'
 POLAR_ZIP_GPX_TYPE = 'application/vnd.polar.gpx+zip'
 POLAR_ZIP_TCX_TYPE = 'application/vnd.polar.tcx+zip'
@@ -174,6 +177,59 @@ class PolarFlowExercise:
 	def get_type( self ) -> ActivityTypes:
 		return TYPES.get( self.iconUrl.rsplit( '/', 1 )[1], Types.unknown ) if self.iconUrl else Types.unknown
 
+@resourcetype( type=POLAR_FITNESS_TEST_TYPE )
+@define
+class PolarFitnessTest:
+
+	allDay: bool = field( default=False )
+	backgroundColor: str = field( default=None )
+	borderColor: str = field( default=None )
+	className: str = field( default=None )
+	datetime: str = field( default=None ) # 2011-04-28T17:48:10.000Z
+	eventType: str = field( default=None )
+	index: int = field( default=None )
+	listItemId: int = field( default=None )
+	start: str = field( default=None )
+	textColor: str = field( default=None )
+	timestamp: int = field( default=None )
+	title: str = field( default=None )
+	type: str = field( default=None )
+	url: str = field( default=None )
+
+@resourcetype( type=POLAR_ORTHOSTATIC_TEST_TYPE )
+@define
+class PolarOrthostaticTest:
+
+	_RX_URL = compile( r'/progress/tests\?type=orthostatic_test&id=(\d+)' )
+
+	datetime: str = field( default=None ) # 2011-04-28T17:48:10.000Z
+	eventType: str = field( default=None )
+	result: str = field( default=None )
+	title: str = field( default=None )
+	type: str = field( default=None )
+	url: str = field( default=None )
+
+	@property
+	def local_id( self ) -> int:
+		return int( self.__class__._RX_URL.fullmatch( self.url ).groups()[0] )
+
+@resourcetype( type=POLAR_RRRECORDING_TYPE )
+@define
+class PolarRRRecording:
+
+	_RX_URL = compile( r'/training/test/rr/(\d+)' )
+
+	datetime: str = field( default=None ) # 2011-04-28T17:48:10.000Z
+	eventType: str = field( default=None )
+	result: str = field( default=None )
+	title: str = field( default=None )
+	type: str = field( default=None )
+	url: str = field( default=None )
+
+	@property
+	def local_id( self ) -> int:
+		return int( self.__class__._RX_URL.fullmatch( self.url ).groups()[0] )
+
 @resourcetype( type=POLAR_CSV_TYPE )
 @define
 class PolarFlowExerciseCsv:
@@ -213,6 +269,54 @@ class PolarFlowImporter( DataclassFactoryHandler ):
 			distance = activity.distance,
 			duration = timedelta( seconds = activity.duration / 1000 ) if activity.duration else None,
 			calories = activity.calories,
+		)
+
+@importer
+class PolarFitnessTestImporter( DataclassFactoryHandler ):
+
+	TYPE: str = POLAR_FITNESS_TEST_TYPE
+	ACTIVITY_CLS = PolarFitnessTest
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		activity: PolarFitnessTest = resource.data
+		return Activity(
+			uid = f'{SERVICE_NAME}:{activity.listItemId}',
+			name = activity.title,
+			type = ActivityTypes.test,
+			starttime= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
+			starttime_local= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
+		)
+
+@importer
+class PolarOrthostaticTestImporter( DataclassFactoryHandler ):
+
+	TYPE: str = POLAR_ORTHOSTATIC_TEST_TYPE
+	ACTIVITY_CLS = PolarOrthostaticTest
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		activity: PolarOrthostaticTest = resource.data
+		return Activity(
+			uid = f'{SERVICE_NAME}:{activity.local_id}',
+			name = activity.title,
+			type = ActivityTypes.test,
+			starttime= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
+			starttime_local= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
+		)
+
+@importer
+class PolarRRRecordingImporter( DataclassFactoryHandler ):
+
+	TYPE: str = POLAR_RRRECORDING_TYPE
+	ACTIVITY_CLS = PolarRRRecording
+
+	def as_activity( self, resource: Resource ) -> Optional[Activity]:
+		activity: PolarRRRecording = resource.data
+		return Activity(
+			uid = f'{SERVICE_NAME}:{activity.local_id}',
+			name = activity.title,
+			type = ActivityTypes.test,
+			starttime= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ).astimezone( UTC ),
+			starttime_local= parse( activity.datetime, ignoretz=True ).replace( tzinfo=tzlocal() ),
 		)
 
 @importer( type=POLAR_EXERCISE_DATA_TYPE )
@@ -255,6 +359,7 @@ class Polar( Service ):
 
 		self.importer: PolarFlowImporter = PolarFlowImporter()
 		self.json_handler: JSONHandler = JSONHandler()
+		self.gpx_importer = GPXImporter()
 
 	def _link_path( self, pa: Activity, ext: str ) -> Path or None:
 		if pa.id:
@@ -403,7 +508,7 @@ class Polar( Service ):
 		for r in list( resources ):
 			try:
 				self.download_resource( r )
-				resources.extend( decompress_resources( r ) )
+				resources.extend( decompress_resources( r, self.gpx_importer ) )
 			except (CreateFailed, BadZipFile):
 				log.debug( f'error fetching resource from {r.source}', exc_info=True )
 
@@ -482,7 +587,7 @@ class Polar( Service ):
 		unzipped_resources = []
 		for r in list( resources ):
 			if r.type in [POLAR_ZIP_GPX_TYPE, POLAR_ZIP_TCX_TYPE]:
-				unzipped_resources.extend( decompress_resources( r ) )
+				unzipped_resources.extend( decompress_resources( r, self.gpx_importer ) )
 		return unzipped_resources
 
 	# noinspection PyMethodMayBeStatic
@@ -560,7 +665,7 @@ def _multipart_str( self ) -> str:
 	else:
 		return '\u2716'
 
-def decompress_resources( r: Resource ) -> List[Resource]:
+def decompress_resources( r: Resource, gpx_importer: GPXImporter ) -> List[Resource]:
 	mem_fs = open_fs( 'mem://' )
 	mem_fs.writebytes( f'/{r.path}', r.content )
 	resources = []
@@ -570,7 +675,7 @@ def decompress_resources( r: Resource ) -> List[Resource]:
 			for f in zip_fs.listdir( '/' ):
 				resource = Resource( path=f, content=zip_fs.readbytes( f'/{f}' ), status=200, uid=r.uid, source=r.path )
 				resource.type = GPX_TYPE if f.endswith( '.gpx' ) else TCX_TYPE
-				Registry.importer_for( resource.type ).load_as_activity( resource=resource )
+				gpx_importer.load_as_activity( resource=resource )
 				resources.append( resource )
 
 	return resources

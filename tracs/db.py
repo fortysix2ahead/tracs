@@ -1,14 +1,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from itertools import chain, groupby
 from logging import getLogger
 from pathlib import Path
-from shutil import copytree
-from typing import cast, Dict, List, Mapping, Optional, Set, Tuple, Union
+from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
 
-from click import confirm
 from fs.base import FS
 from fs.copy import copy_file, copy_file_if
 from fs.errors import ResourceNotFound
@@ -19,13 +16,13 @@ from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
+from rule_engine import Rule
 
 from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
 from tracs.fsio import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
-from tracs.resources import Resource, Resources, ResourceType
-from tracs.rules import parse_rules
+from tracs.resources import Resource, Resources
 
 log = getLogger( __name__ )
 
@@ -443,7 +440,7 @@ class ActivityDb:
 		return next( iter( [ r for r in self.find_all_resources( uids ) if r.type == type] ), None )
 
 	def get_resource_of_type_for( self, activity: Activity, resource_type: str ) -> Optional[Resource]:
-		return self.get_resource_of_type( activity.uids, resource_type )
+		return self.get_resource_of_type( activity.refs(), resource_type )
 
 	def get_summary( self, uid ) -> Resource:
 		return next( iter( self.find_summaries( uid ) ), None )
@@ -452,9 +449,9 @@ class ActivityDb:
 
 	# find activities
 
-	def find( self, filters: List[str] = None ) -> List[Activity]:
+	def find( self, rules: List[Rule] = None ) -> List[Activity]:
 		all_activities = self.activities
-		for r in parse_rules( *filters ):
+		for r in rules:
 			# all_activities = filter( r.evaluate, all_activities )
 			all_activities = r.filter( all_activities )
 		return list( all_activities )

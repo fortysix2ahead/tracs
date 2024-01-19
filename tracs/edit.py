@@ -34,7 +34,7 @@ def modify_activities( activities: List[Activity], field: str, value: Any, **kwa
 	else:
 		log.error( f'unable to set {field} to {value}: field does not exist or is protected' )
 
-def rename_activities( activities: [Activity], ctx: ApplicationContext, force: bool = False, pretend: bool = False ) -> None:
+def rename_activities( activities: List[Activity], ctx: ApplicationContext, force: bool = False, pretend: bool = False ) -> None:
 	for a in activities:
 		ctx.console.print( f'renaming activity [{a.id}]' )
 		ctx.console.print( f'  name                   : {a.name}' )
@@ -52,7 +52,7 @@ def rename_activities( activities: [Activity], ctx: ApplicationContext, force: b
 			if answer == a.name or answer is None:
 				break
 			elif answer == MSG_OPEN_APPLICATION:
-				open_activities( [a], ctx.db )
+				open_activities( ctx, [a] )
 			else:
 				a.name = answer
 				log.debug( f'renamed activity {a.id} to {answer}' )

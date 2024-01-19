@@ -1,8 +1,8 @@
 {
-        "title": "RR recording result",
-        "url": "/training/test/rr/100014",
-        "eventType": "rrTest",
-        "datetime": "2017-01-16T21:34:58.000",
-        "type": "RRRECORDING",
-        "result": ""
+	"title": "RR recording result",
+	"url": "/training/test/rr/100014",
+	"eventType": "rrTest",
+	"datetime": "2017-01-16T21:34:58.000",
+	"type": "RRRECORDING",
+	"result": ""
 }

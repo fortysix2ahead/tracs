@@ -4,16 +4,15 @@ from logging import getLogger
 from os.path import dirname
 from pathlib import Path
 from shutil import copytree, rmtree
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, NamedTuple, Optional
 
 from fs.base import FS
 from fs.copy import copy_fs
 from fs.memoryfs import MemoryFS
 from fs.osfs import OSFS
 from pytest import fixture
-from yaml import load as load_yaml, SafeLoader
 
-from tracs.config import ApplicationConfig as cfg, ApplicationConfig as state, ApplicationContext, DB_DIRNAME, set_current_ctx
+from tracs.config import ApplicationContext, DB_DIRNAME, set_current_ctx
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager
 from tracs.registry import Registry
@@ -44,24 +43,6 @@ def marker( request, name, key, default ):
 		return default
 
 # shared fixtures
-
-@fixture
-def config( request ) -> None:
-	if marker := request.node.get_closest_marker( 'config' ):
-		template = marker.kwargs.get( 'template' )
-		writable = marker.kwargs.get( 'writable', False )
-		cleanup = marker.kwargs.get( 'cleanup', True )
-	else:
-		return None
-
-@fixture
-def varfs( request ) -> FS:
-	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
-		tp = test_pkg_path.parent
-		vrp = Path( tp, f'../var/run/{datetime.now().strftime( "%H%M%S_%f" )}' ).resolve()
-		vrp.mkdir( parents=True, exist_ok=True )
-		log.info( f'created new temporary persistance dir in {str( vrp )}' )
-		yield OSFS( str( vrp ) )
 
 # noinspection PyTestUnpassedFixture
 @fixture
@@ -191,26 +172,6 @@ def path( request ) -> Optional[Path]:
 def fspath( request ) -> FsPath:
 	with pkgpath( 'test', '__init__.py' ) as test_path:
 		return FsPath( OSFS( root_path=str( test_path.parent ), create=False ), marker( request, 'file', None, None ) )
-
-@fixture
-def config_state( request ) -> Optional[Tuple[Dict, Dict]]:
-	config_dict, state_dict = None, None
-
-	if config_marker := request.node.get_closest_marker( 'config_file' ):
-		with path( 'test', '__init__.py' ) as test_pkg_path:
-			config_path = Path( test_pkg_path.parent.parent, 'var', config_marker.args[0] )
-			if config_path.exists():
-				cfg.set_file( config_path )
-				config_dict = load_yaml( config_path.read_bytes(), SafeLoader )
-
-	if state_marker := request.node.get_closest_marker( 'state_file' ):
-		with path( 'test', '__init__.py' ) as test_pkg_path:
-			state_path = Path( test_pkg_path.parent.parent, 'var', state_marker.args[0] )
-			if state_path.exists():
-				state.set_file( state_path )
-				state_dict = load_yaml( state_path.read_bytes(), SafeLoader )
-
-	return config_dict, state_dict
 
 @fixture
 def service( request, env: Environment ) -> Optional[Service]:

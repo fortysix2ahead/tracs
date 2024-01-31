@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from logging import getLogger
 from typing import Any, Union
 
@@ -9,6 +10,7 @@ from orjson import dumps as save_json, loads as load_json, OPT_APPEND_NEWLINE, O
 from tracs.handlers import ResourceHandler
 from tracs.pluginmgr import importer, resourcetype
 from tracs.resources import ResourceType
+from tracs.utils import timedelta_to_str
 
 log = getLogger( __name__ )
 
@@ -28,7 +30,7 @@ class JSONHandler( ResourceHandler ):
 		return load_json( content )
 
 	def save_raw( self, data: Any, **kwargs ) -> bytes:
-		return save_json( data, option=JSONHandler.OPTIONS )
+		return save_json( data, option=JSONHandler.OPTIONS, default=serialize )
 
 class DataclassFactoryHandler( JSONHandler ):
 
@@ -47,3 +49,8 @@ class DataclassFactoryHandler( JSONHandler ):
 		except RuntimeError:
 			log.error( f'unable to transform raw data into structured data by using the factory for {self._activity_cls}', exc_info=True )
 			return raw
+
+def serialize( obj: Any ):
+	if isinstance( obj, timedelta ):
+		return timedelta_to_str( obj )
+	raise TypeError

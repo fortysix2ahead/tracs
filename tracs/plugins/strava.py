@@ -216,7 +216,7 @@ class Strava( Service ):
 
 		tcx = stream.as_tcx(
 			average_heart_rate_bpm = summary.raw.get( 'average_heartrate' ),
-			calories = summary.raw.get( 'calories' ),
+			calories = round( summary.raw.get( 'calories' ) ),
 			distance_meters = summary.raw.get( 'distance' ),
 			id = f'{summary.raw.get( "start_date_local" )}Z',
 			intensity = 'Active', # todo: don't know where to get this from
@@ -224,7 +224,7 @@ class Strava( Service ):
 			maximum_speed = summary.raw.get( 'max_speed' ),
 			start_date = dtparse( sd ) if type( sd := summary.raw.get( 'start_date' ) ) is str else sd,
 			# trigger_method = 'Distance', # todo: this is not correct
-			total_time_seconds = summary.raw.get( 'elapsed_time' ),
+			total_time_seconds = round( summary.raw.get( 'elapsed_time' ).total_seconds() ),
 		)
 		resources = [
 			Resource( uid=summary.uid, path=f'{summary.local_id}.tcx', type=TCX_TYPE, text=tostring( tcx.as_xml(), pretty_print=True ).decode( 'UTF-8' ) )

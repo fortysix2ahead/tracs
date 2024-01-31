@@ -12,6 +12,7 @@ from webbrowser import open as open_url
 from dateutil.parser import parse as dtparse
 from dateutil.tz import tzlocal, UTC
 from lxml.etree import tostring
+from requests import get as rqget
 from rich.prompt import Prompt
 from stravalib.client import Client
 from stravalib.model import Activity as StravaActivity
@@ -21,6 +22,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME
 from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.gpx import GPX_TYPE
+from tracs.plugins.image import JPEG_TYPE
 from tracs.plugins.json import JSONHandler
 from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
@@ -39,6 +41,7 @@ OAUTH_REDIRECT_URL = 'http://localhost:40004'
 SCOPE = 'activity:read_all'
 
 FETCH_PAGE_SIZE = 30 #
+PHOTO_SIZE = 2800
 
 TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
 TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
@@ -185,9 +188,11 @@ class Strava( Service ):
 		for a in self._client.get_activities( after=after, before=before ):
 			self.ctx.advance( f'activity {a.id}' )
 
+			a = self._client.get_activity( a.id, include_all_efforts=True ) # get detailed data for activity
+
 			resources.append( self.importer.save_to_resource(
-				content=self.json_handler.save_raw( a.to_dict() ),
-				raw = a.to_dict(),
+				content=a.json( exclude_unset=True, exclude_defaults=True, exclude_none=True, sort_keys=True, indent=2 ).encode( 'UTF-8' ),
+				raw = a.dict( exclude_unset=True, exclude_defaults=True, exclude_none=True ),
 				data = a,
 				uid = f'{self.name}:{a.id}',
 				path = f'{a.id}.json',
@@ -211,7 +216,7 @@ class Strava( Service ):
 
 		tcx = stream.as_tcx(
 			average_heart_rate_bpm = summary.raw.get( 'average_heartrate' ),
-			calories = summary.raw.get( 'calories' ),
+			calories = round( summary.raw.get( 'calories' ) ),
 			distance_meters = summary.raw.get( 'distance' ),
 			id = f'{summary.raw.get( "start_date_local" )}Z',
 			intensity = 'Active', # todo: don't know where to get this from
@@ -219,7 +224,7 @@ class Strava( Service ):
 			maximum_speed = summary.raw.get( 'max_speed' ),
 			start_date = dtparse( sd ) if type( sd := summary.raw.get( 'start_date' ) ) is str else sd,
 			# trigger_method = 'Distance', # todo: this is not correct
-			total_time_seconds = summary.raw.get( 'elapsed_time' ),
+			total_time_seconds = round( summary.raw.get( 'elapsed_time' ).total_seconds() ),
 		)
 		resources = [
 			Resource( uid=summary.uid, path=f'{summary.local_id}.tcx', type=TCX_TYPE, text=tostring( tcx.as_xml(), pretty_print=True ).decode( 'UTF-8' ) )
@@ -233,6 +238,14 @@ class Strava( Service ):
 			resources.append(
 				Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, text=gpx.to_xml( prettyprint=True ) )
 			)
+
+		if summary.raw.get( 'photos' ).get( 'count' ) > 0:
+			for photo, index in zip( self._client.get_activity_photos( summary.raw.get( 'id' ), size=PHOTO_SIZE ), range( 1, 100 ) ):
+				photo_url = photo.urls.get( str( PHOTO_SIZE ) )
+				if ( response := rqget( photo_url ) ) and response.status_code == 200:
+					resources.append(
+						Resource( uid=summary.uid, path=f'{summary.local_id}.{index}.jpg', type=JPEG_TYPE, content=response.content )
+					)
 
 		return resources
 

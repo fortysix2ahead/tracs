@@ -191,8 +191,8 @@ class Strava( Service ):
 			a = self._client.get_activity( a.id, include_all_efforts=True ) # get detailed data for activity
 
 			resources.append( self.importer.save_to_resource(
-				content=self.json_handler.save_raw( a.to_dict() ),
-				raw = a.to_dict(),
+				content=a.json( exclude_unset=True, exclude_defaults=True, exclude_none=True, sort_keys=True, indent=2 ).encode( 'UTF-8' ),
+				raw = a.dict( exclude_unset=True, exclude_defaults=True, exclude_none=True ),
 				data = a,
 				uid = f'{self.name}:{a.id}',
 				path = f'{a.id}.json',

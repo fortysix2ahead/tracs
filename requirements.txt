@@ -27,5 +27,5 @@ requests-oauthlib~=1.3.1
 rich~=13.7.0
 rule-engine~=4.3.1
 stravalib~=1.6
-tcxreader~=0.4.6
+tcxreader~=0.4.9
 tzlocal~=5.2

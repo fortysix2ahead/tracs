@@ -3,7 +3,7 @@ from itertools import chain
 from logging import getLogger
 from typing import List, Optional, Tuple
 
-from click import argument, Choice, group, option, pass_context, pass_obj, Path as ClickPath
+from click import argument, Choice, Context as ClickContext, group, option, pass_context, pass_obj, Path as ClickPath
 from click_shell import make_click_shell
 from rule_engine import RuleSyntaxError
 
@@ -27,6 +27,12 @@ log = getLogger( __name__ )
 # global application instance: we probably don't need this, but it's accessible from here
 APPLICATION_INSTANCE: Optional[Application] = None
 
+def setup_context( *args, **kwargs ) -> None:
+	pass
+
+def teardown_context( *args, **kwargs ) -> None:
+	pass
+
 @group()
 # @shell( prompt=f'{APPNAME} > ', intro=f'Starting interactive shell mode, enter <exit> to leave this mode again, use <{APPNAME} --help> for help ...' )
 @option( '-c', '--configuration', is_flag=False, required=False, help='configuration area location', metavar='PATH' )
@@ -36,7 +42,9 @@ APPLICATION_INSTANCE: Optional[Application] = None
 @option( '-f', '--force', is_flag=True, default=None, required=False, help='forces operations to be carried out' )
 @option( '-p', '--pretend', is_flag=True, default=None, required=False, help='pretends to work, only simulates everything and does not persist any changes' )
 @pass_context
-def cli( ctx, configuration, library, force, verbose, pretend, debug ):
+def cli( ctx: ClickContext, configuration, library, force, verbose, pretend, debug ):
+
+	ctx.call_on_close( teardown_context )
 
 	global APPLICATION_INSTANCE
 	APPLICATION_INSTANCE = Application.instance(

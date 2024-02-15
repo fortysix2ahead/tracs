@@ -33,6 +33,10 @@ def test_activity():
 	a.uids = None
 	assert a.uids == []
 
+	# test values
+	a = Activity( uid='polar:101', heartrate=150, calories=1000 )
+	assert a.values( 'uid', 'heartrate', 'calories', 'speed', 'xyz' ) == ['polar:101', 150, 1000, None, None]
+
 def test_activity_group():
 	a = Activity( uid = 'group:101', uids = ['strava:100', 'polar:100', 'polar:100'] )
 	assert a.uid == 'group:101' and a.as_uid() == UID( 'group:101' )

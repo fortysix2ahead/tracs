@@ -194,6 +194,9 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 				else:
 					raise AttributeError
 
+	def values( self, *fields: str ) -> List[Any]:
+		return [ self.getattr( f, quiet=True ) for f in fields ]
+
 	# def union( self, others: List[Activity], strategy: Literal['first', 'last'] = 'first' ) -> Activity: # todo: are different strategies useful?
 	def union( self, others: List[Activity], ignore: List[str] = None, copy: bool = False, force: bool = False ) -> Activity:
 		this = evolve( self ) if copy else self

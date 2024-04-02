@@ -143,12 +143,12 @@ class ApplicationContext:
 
 	def __setup_config_fs__( self ):
 		if self.config_file and not self.config_fs:
-			self.config_fs = OSFS( root_path=dirname( self.config_file ), expand_vars=True )
+			self.config_fs = OSFS( root_path=dirname( self.config_file ), expand_vars=True, create=True )
 		elif self.config_dir and not self.config_fs:
-			self.config_fs = OSFS( root_path=self.config_dir, expand_vars=True )
+			self.config_fs = OSFS( root_path=self.config_dir, expand_vars=True, create=True )
 
 		if not self.config_fs:
-			self.config_fs = OSFS( root_path=user_config_dir( APPNAME ) )
+			self.config_fs = OSFS( root_path=user_config_dir( APPNAME ), create=True )
 
 		try:
 			self.config_dir = self.config_fs.getsyspath( '/' )

@@ -1,16 +1,18 @@
 
-# main keys, values can partially be overwritten via command line arguments
+# main keys, values can be overwritten via command line arguments
 
-debug: no # enables debug mode
-force: no # enable force mode, which does not ask any questions
+debug: false # enables debug mode
+force: false # enable force mode, which does not ask any questions
 library: # absolute path to the activity library
-pretend: no # pretend mode, simulates all commands, but does not persist changes
-verbose: no # verbose mode, displays more log information
+pretend: false # pretend mode, simulates all commands, but does not persist changes
+verbose: false # verbose mode, displays more log information
+
+pluginpath: # list of additional plugin paths, separated by whitespace
 
 # database configuration
 
 db:
-  index: no
+  index: false
 
 # configuration for printing activity/resource information
 
@@ -40,4 +42,38 @@ import:
 gpx:
   parser: gpxpy # allowed values: internal, gpxpy, currently ignored
 
-pluginpath: # list of additional plugin paths, separated by whitespace
+# configuration for built-in plugins
+plugins:
+
+  bikecitizens:
+    enabled: true
+    username:
+    password:
+
+  icons:
+    enabled: false
+
+  keywords:
+    enabled: true
+
+  local:
+    enabled: true
+
+  polar:
+    enabled: true
+    username:
+    password:
+
+  strava:
+    enabled: true
+    username:
+    password:
+    client_id:
+    client_secret:
+
+  stravaweb:
+    enabled: false
+
+  waze:
+    enabled: true
+    field_size_limit: 131072

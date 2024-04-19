@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import Any, cast, Dict, Optional, Tuple
 
 from attrs import define, field
-from confuse import ConfigReadError, Configuration, find_package_path, NotFoundError
+from dynaconf import Dynaconf as Configuration
+from dynaconf.utils.boxing import DynaBox
+from dynaconf.vendor.box.exceptions import BoxKeyError
 from fs.base import FS
 from fs.errors import NoSysPath
-from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from fs.path import dirname
 from fs.subfs import SubFS
 from platformdirs import user_config_dir
 from rich.console import Console
@@ -40,8 +40,8 @@ VAR_DIRNAME = 'var'
 
 CONFIG_FILENAME = 'config.yaml'
 STATE_FILENAME = 'state.yaml'
-DEFAULT_CONFIG_FILENAME = 'config_default.yaml'
-DEFAULT_STATE_FILENAME = 'state_default.yaml'
+DEFAULT_CONFIG_FILENAME = 'defaults/config.yaml'
+DEFAULT_STATE_FILENAME = 'defaults/state.yaml'
 
 EXTRA_KWARGS = ['debug', 'force', 'verbose', 'pretend']
 
@@ -84,7 +84,7 @@ def default_resources_path() -> Path:
 
 # application context
 
-@define( init=False )
+@define
 class ApplicationContext:
 
 	# config/state files / fs
@@ -116,7 +116,7 @@ class ApplicationContext:
 	# needed?
 	instance: Any = field( default=None )
 
-	# app configuration + state
+	# app state
 	state: Configuration = field( default=None )
 	meta: Any = field( default=None ) # not used yet
 
@@ -135,80 +135,71 @@ class ApplicationContext:
 
 	# internal fields
 
+	__args__: Tuple[Any, ...] = field( default=(), alias='__args__' )
 	__kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )
+
+	# __root_fs__: OSFS = field( default=OSFS( root_path='/', expand_vars=True ), alias='__root_fs__' )
 	__init_fs__: bool = field( default=True, alias='__init_fs__' )
 	__apptime__: datetime = field( default=datetime.utcnow(), alias='__apptime__' )
 
 	apptime: datetime = field( default=None )
 
 	def __setup_config_fs__( self ):
-		if self.config_file and not self.config_fs:
-			self.config_fs = OSFS( root_path=dirname( self.config_file ), expand_vars=True, create=True )
-		elif self.config_dir and not self.config_fs:
-			self.config_fs = OSFS( root_path=self.config_dir, expand_vars=True, create=True )
+		if isinstance( cfg := self.__kwargs__.get( 'configuration' ), Configuration ):
+			self.config = cfg
 
-		if not self.config_fs:
+		elif isinstance( cfg, str ):
+			pass
+
+		else:
 			self.config_fs = OSFS( root_path=user_config_dir( APPNAME ), create=True )
-
-		try:
 			self.config_dir = self.config_fs.getsyspath( '/' )
 			self.config_file = self.config_fs.getsyspath( f'/{CONFIG_FILENAME}' )
+
+		log.debug( f'config fs set to {self.config_fs}' )
+
+		# if self.config_file and not self.config_fs:
+		# 	self.config_fs = OSFS( root_path=dirname( self.config_file ), expand_vars=True, create=True )
+		# elif self.config_dir and not self.config_fs:
+		# 	self.config_fs = OSFS( root_path=self.config_dir, expand_vars=True, create=True )
+		#
+		# if not self.config_fs:
+		# 	self.config_fs = OSFS( root_path=user_config_dir( APPNAME ), create=True )
+		#
+		# try:
+		# 	self.config_dir = self.config_fs.getsyspath( '/' )
+		# 	self.config_file = self.config_fs.getsyspath( f'/{CONFIG_FILENAME}' )
+		# except NoSysPath:
+		# 	log.debug( f'config dir/file not set as fs does not support getsyspath()' )
+		# 	pass
+
+	def __setup_config_state__( self ):
+		settings_files = [ f'{APP_PKG_NAME}/{DEFAULT_CONFIG_FILENAME}' ]
+		appstate_files = [f'{APP_PKG_NAME}/{DEFAULT_STATE_FILENAME}']
+
+		try:
+			settings_files.append( self.config_fs.getsyspath( CONFIG_FILENAME ) )
 		except NoSysPath:
-			log.debug( f'config dir/file not set as fs does not support getsyspath()' )
-			pass
+			log.warning( f'no configuration file found in {self.config_fs}' )
 
-	def __setup_configuration__( self ):
-		# create configuration -> this reads the default config files automatically
-		self.config = Configuration( APPNAME, APP_PKG_NAME )
-
-		# read default plugin configuration
-		plugins_pkg_path = find_package_path( f'{APP_PKG_NAME}.{PLUGINS_PKG_NAME}' )
-		self.config.set_file( f'{plugins_pkg_path}/{DEFAULT_CONFIG_FILENAME}' )
-
-		# add user configuration file provided via -c option
 		try:
-			self.config.set_file( self.config_fs.getsyspath( CONFIG_FILENAME ), base_for_paths=True )
-		except (AttributeError, KeyError, TypeError):
-			pass
-		except (ConfigReadError, NoSysPath):
-			log.error( f'error reading configuration from {self.config_fs}' )
+			appstate_files.append( self.config_fs.getsyspath( STATE_FILENAME ) )
+		except NoSysPath:
+			log.warning( f'no appstate file found in {self.config_fs}' )
 
-		# add configuration from command line arguments
-		# todo: there might be other kwargs apart from config-related -> remove first
-		kwargs = { k: v for k, v in self.__kwargs__.items() if v is not None and v != '' and k != 'db' }
-		self.config.set( kwargs )
+		self.config = Configuration( settings_files=settings_files )
+		self.state = Configuration( settings_files=appstate_files )
 
-	def __setup_state__( self ):
-		self.state = Configuration( APPNAME, APP_PKG_NAME, read=False )
-
-		app_pkg_path = find_package_path( APP_PKG_NAME )
-		plugins_pkg_path = find_package_path( f'{APP_PKG_NAME}.{PLUGINS_PKG_NAME}' )
-
-		# default state
-		self.state.set_file( f'{app_pkg_path}/{DEFAULT_STATE_FILENAME}' )
-
-		# plugin state
-		self.state.set_file( f'{plugins_pkg_path}/{DEFAULT_STATE_FILENAME}' )
-
-		# user state
-		try:
-			self.state_file = self.config_fs.getsyspath( f'/{STATE_FILENAME}' )
-			self.state.set_file( self.state_file, base_for_paths=True )
-		except (ConfigReadError, NoSysPath):
-			log.error( f'error reading application state from {self.config_fs}' )
-
-		self.state.read( user=False, defaults=False )
+	def __setup_cmd_args__( self ):
+		self.__kwargs__.pop( 'configuration', None ) # remove configuration entry
+		self.config.update( self.__kwargs__ )
 
 	def __setup_library__( self ):
 		if self.lib_dir:
 			library = self.lib_dir
+		elif self.config.library:
+			library = self.config.library
 		else:
-			try:
-				library = self.config['library'].get()
-			except NotFoundError:
-				library = self.config_dir
-
-		if not library:
 			library = self.config_dir
 
 		# only try to create lib_fs if not already provided (this happens when running test cases)
@@ -238,18 +229,20 @@ class ApplicationContext:
 		self.cache_fs = _subfs( self.config_fs, CACHE_DIRNAME )
 		self.tmp_fs = _subfs( self.config_fs, TMP_DIRNAME )
 
-	def __init__( self, *args, **kwargs ):
-		extra_kwargs = { k: kwargs.pop( k, False ) for k in EXTRA_KWARGS }
+#	def __init__( self, *args, **kwargs ):
+#		extra_kwargs = { k: kwargs.pop( k, False ) for k in EXTRA_KWARGS }
 		# noinspection PyUnresolvedReferences
-		self.__attrs_init__( *args, **kwargs, __kwargs__ = extra_kwargs  )
+#		self.__attrs_init__( *args, **kwargs, __kwargs__ = extra_kwargs  )
 
 	def __attrs_post_init__( self ):
 		# create config fs
 		self.__setup_config_fs__()
 
-		# read configuration/state
-		self.__setup_configuration__()
-		self.__setup_state__()
+		# read configuration/appstate
+		self.__setup_config_state__()
+
+		# update configuration with command line arguments
+		self.__setup_cmd_args__()
 
 		# set up library structure
 		self.__setup_library__()
@@ -261,19 +254,19 @@ class ApplicationContext:
 
 	@property
 	def debug( self ) -> bool:
-		return self.config['debug'].get()
+		return self.config.debug
 
 	@property
 	def verbose( self ) -> bool:
-		return self.config['verbose'].get()
+		return self.config.verbose
 
 	@property
 	def pretend( self ) -> bool:
-		return self.config['pretend'].get()
+		return self.config.pretend
 
 	@property
 	def force( self ) -> bool:
-		return self.config['force'].get()
+		return self.config.force
 
 	# lib/config related properties
 
@@ -448,19 +441,19 @@ class ApplicationContext:
 
 	# plugin configuration helpers
 
-	def plugin_config_state( self, name, as_dict: bool = False ) -> Tuple:
+	def plugin_config_state( self, name, as_dict: bool = False ) -> Tuple[DynaBox, DynaBox]:
 		name = name.lower()
-		cfg, state = self.config['plugins'][name], self.state['plugins'][name]
-		if as_dict:
-			try:
-				cfg = cfg.get()
-			except NotFoundError:
-				cfg = dict()
+		try:
+			cfg = self.config.plugins[name]
+		except BoxKeyError:
+			log.error( f'unable to find configuration area for plugin {name}' )
+			cfg = DynaBox()
 
-			try:
-				state = state.get()
-			except NotFoundError:
-				cfg = dict()
+		try:
+			state = self.state.plugins[name]
+		except BoxKeyError:
+			log.error( f'unable to find app state area for plugin {name}' )
+			state = DynaBox()
 
 		return cfg, state
 
@@ -499,8 +492,3 @@ def current_ctx() -> ApplicationContext:
 def set_current_ctx( ctx: ApplicationContext ) -> None:
 	global CURRENT_CONTEXT
 	CURRENT_CONTEXT = ctx if ctx else CURRENT_CONTEXT
-
-#
-
-ApplicationConfig = Configuration( APPNAME, __name__, read=False )
-ApplicationState = Configuration( f'{APPNAME}-state', __name__, read=False )

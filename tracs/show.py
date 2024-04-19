@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import List
 from urllib.parse import urlparse
 
-from confuse.exceptions import NotFoundError
 from rich import box
 from rich.columns import Columns
 from rich.pretty import Pretty as pp

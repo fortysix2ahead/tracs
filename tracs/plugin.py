@@ -1,7 +1,7 @@
 from logging import getLogger
 from typing import Any, Tuple
 
-from confuse import Configuration, ConfigView, NotFoundError
+from dynaconf import Dynaconf as Configuration
 
 from tracs.config import ApplicationContext
 from tracs.db import ActivityDb

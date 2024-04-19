@@ -4,10 +4,10 @@ from atexit import register as register_atexit
 from logging import getLogger
 from os.path import expanduser, expandvars
 from pathlib import Path
-from typing import ClassVar, Tuple
+from typing import ClassVar, Optional, Tuple
 
 from attrs import define, field
-from confuse import Configuration
+from dynaconf import Dynaconf as Configuration
 
 from tracs import setup_console_logging, setup_file_logging
 from tracs.config import ApplicationContext, set_current_ctx
@@ -45,38 +45,41 @@ class Application:
 	@classmethod
 	def __new__( cls, *args, **kwargs ):
 		instance = super( Application, cls ).__new__( cls )
-		instance.__setup__( **kwargs )
+		instance.__setup__( *args, **kwargs )
 		return instance
 
 	# 'None' as default value means value has not been provided from the outside (via command line switch)
 	def __setup__( self, *args, **kwargs ):
 		# console logging setup --
-		setup_console_logging( kwargs.get( 'verbose' ), kwargs.get( 'debug' ) )
+		setup_console_logging( kwargs.get( 'verbose', False ), kwargs.get( 'debug', False ) )
 
+		# log command line flags
 		log.debug( f'triggered CLI with flags {kwargs}' )
 
-		try:
-			configuration = expanduser( expandvars( kwargs.pop( 'configuration', None ) ) )
-			if configuration and Path( configuration ).is_dir():
-				kwargs['config_dir'] = configuration
-			elif configuration and Path( configuration ).is_file():
-				kwargs['config_file'] = configuration
-			else:
-				pass
-		except TypeError:
-			pass
+		# config_dir, config_file = _config_dir_file( kwargs.get( 'configuration' ) )
 
-		try:
-			library = expanduser( expandvars( kwargs.pop( 'library', None ) ) )
-			if library and Path( library ).is_dir():
-				kwargs['lib_dir'] = library
-			else:
-				pass
-		except TypeError:
-			pass
+		# try:
+		# 	configuration = expanduser( expandvars( kwargs.pop( 'configuration', None ) ) )
+		# 	if configuration and Path( configuration ).is_dir():
+		# 		kwargs['config_dir'] = configuration
+		# 	elif configuration and Path( configuration ).is_file():
+		# 		kwargs['config_file'] = configuration
+		# 	else:
+		# 		pass
+		# except TypeError:
+		# 	pass
+		#
+		# try:
+		# 	library = expanduser( expandvars( kwargs.pop( 'library', None ) ) )
+		# 	if library and Path( library ).is_dir():
+		# 		kwargs['lib_dir'] = library
+		# 	else:
+		# 		pass
+		# except TypeError:
+		# 	pass
 
 		# create context, based on cfg_dir
-		self._ctx = ApplicationContext( *args, **kwargs )
+		self._ctx = ApplicationContext( __args__=args, __kwargs__=kwargs )
 		self._config = self._ctx.config
 		self._state = self._ctx.state
 		set_current_ctx( self._ctx )
@@ -88,7 +91,7 @@ class Application:
 		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
 
 		# init plugin manager/load plugins
-		PluginManager.init( (self._config['pluginpath'].get() or '').split( ' ' ) )
+		PluginManager.init( (self._config.pluginpath or '').split( ' ' ) )
 
 		# create registry
 		self._registry = Registry.create(
@@ -106,7 +109,7 @@ class Application:
 		self._db = ActivityDb(
 			path=self._ctx.db_dir_path,
 			read_only=self._ctx.pretend,
-			enable_index=self.ctx.config['db']['index'].get(),
+			enable_index=self.ctx.config.db.index,
 			summary_types=[ t.type for t in self._registry.summary_types() ],
 			recording_types=[ t.type for t in self._registry.recording_types() ],
 		)
@@ -154,3 +157,6 @@ class Application:
 	@property
 	def as_tuple( self ) -> Tuple[ApplicationContext, ActivityDb]:
 		return self.ctx, self.db
+
+def _config_dir_file( configuration: Optional[str] ) -> Tuple[Optional[str], Optional[str]]:
+	return None, None

@@ -5,7 +5,6 @@ from re import split
 from typing import List
 
 from attrs import fields
-from confuse.exceptions import NotFoundError
 from rich import box
 from rich.pretty import Pretty as pp
 from rich.table import Table

@@ -21,7 +21,7 @@ def test_context( fs: FS ):
 	assert ctx.lib_dir == OSFS( root_path=platformdirs.user_config_dir( 'tracs' ), expand_vars=True ).getsyspath( '' )
 	assert ctx.db_dir == OSFS( root_path=platformdirs.user_config_dir( 'tracs' ), expand_vars=True ).getsyspath( 'db' )
 
-	ctx = ApplicationContext( config_dir=vrp )
+	ctx = ApplicationContext( __kwargs__= { 'configuration': vrp } )
 	assert ctx.config_fs
 	assert ctx.config_dir == vrp
 	assert ctx.config_file == fs.getsyspath( '/config.yaml' )
@@ -34,7 +34,7 @@ def test_context( fs: FS ):
 	assert ctx.takeouts_dir == f'{vrp}takeouts'
 	assert ctx.takeout_dir( 'polar' ) == f'{vrp}takeouts/polar/'
 
-	ctx = ApplicationContext( config_file=f'{vrp}/config.yaml' )
+	ctx = ApplicationContext( __kwargs__= { 'configuration': f'{vrp}/config.yaml' } )
 	assert ctx.config_fs
 	assert ctx.config_dir == vrp
 	assert ctx.config_file == fs.getsyspath( '/config.yaml' )
@@ -86,7 +86,7 @@ def test_app_constructor():
 def test_app_constructor_cfg_dir( ctx ):
 	cfg_dir = ctx.config_dir
 	cfg = f'{cfg_dir}/config.yaml'
-	app =  Application.__new__( Application, config_file=cfg, verbose=False, debug=False, force=False )
+	app =  Application.__new__( Application, configuration=cfg, verbose=False, debug=False, force=False )
 
 	assert app.ctx.config_dir == f'{str( cfg_dir )}'
 	assert app.ctx.lib_dir == f'{str( cfg_dir )}'
@@ -121,7 +121,7 @@ def test_default_environment():
 
 @mark.context( env='debug', persist='clone', cleanup=True )
 def test_debug_environment( ctx ):
-	app = Application.__new__( Application, config_file=f'{ctx.config_dir}/config.yaml', verbose=None, debug=None, force=None )
+	app = Application.__new__( Application, configuration=f'{ctx.config_dir}/config.yaml', verbose=None, debug=None, force=None )
 	assert app.ctx.debug == True
 	assert app.ctx.verbose == True
 	assert app.ctx.force == False

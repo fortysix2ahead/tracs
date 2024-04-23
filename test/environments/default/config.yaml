@@ -1,8 +1,8 @@
 
 library:
-debug: no
-verbose: no
-force: no
+debug: false
+verbose: false
+force: false
 pluginpath:
 
 db:

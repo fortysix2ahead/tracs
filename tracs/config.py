@@ -20,6 +20,7 @@ from fs.subfs import SubFS
 from platformdirs import user_config_dir
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
+from yaml import safe_dump
 
 # string constants
 
@@ -476,10 +477,25 @@ class ApplicationContext:
 		self.dump_state()
 
 	def dump_config( self ) -> None:
-		self.config_fs.writetext( CONFIG_FILENAME, self.config.dump( full=True ) )
+		self._dump_settings( self.config, CONFIG_FILENAME )
 
 	def dump_state( self ) -> None:
-		self.config_fs.writetext( STATE_FILENAME, self.state.dump( full=True ) )
+		self._dump_settings( self.state, STATE_FILENAME )
+
+	def _dump_settings( self, settings: Configuration, filename: str ):
+		s = safe_dump( self._lower_dict( settings.as_dict() ), sort_keys=True, allow_unicode=True )
+		self.config_fs.writetext( filename, s )
+
+	def _lower_dict( self, d: Dict ) -> Dict:
+		for k, v in d.copy().items():
+			if isinstance( v, dict ):
+				d.pop( k )
+				d[f'{k.lower()}'] = v
+				self._lower_dict( v )
+			else:
+				d.pop( k )
+				d[f'{k.lower()}'] = v
+		return d
 
 # convenience helper
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from importlib.resources import path as pkg_path
 from logging import getLogger
+from os.path import abspath, dirname, expanduser, expandvars, isdir, isfile, split
 from pathlib import Path
 from typing import Any, cast, Dict, Optional, Tuple
 
@@ -145,33 +146,36 @@ class ApplicationContext:
 	apptime: datetime = field( default=None )
 
 	def __setup_config_fs__( self ):
-		if isinstance( cfg := self.__kwargs__.get( 'configuration' ), Configuration ):
+		if self.config_fs:
+			pass # reuse config fs, if already provided -> necessary for running test cases
+
+		elif isinstance( cfg := self.__kwargs__.get( 'configuration' ), Configuration ):
 			self.config = cfg
 
 		elif isinstance( cfg, str ):
-			pass
+			path = abspath( expandvars( expanduser( cfg ) ) )
+			if isdir( path ):
+				self.config_fs = OSFS( root_path=path, expand_vars=True, create=True )
+			elif isfile( path ):
+				self.config_fs = OSFS( root_path=dirname( path ), expand_vars=True, create=True )
+			else:
+				head, tail = split( path )
+				if tail.endswith( '.yaml' ):
+					self.config_fs = OSFS( root_path=head, expand_vars=True, create=True )
+				else:
+					self.config_fs = OSFS( root_path=path, expand_vars=True, create=True )
 
 		else:
 			self.config_fs = OSFS( root_path=user_config_dir( APPNAME ), create=True )
-			self.config_dir = self.config_fs.getsyspath( '/' )
-			self.config_file = self.config_fs.getsyspath( f'/{CONFIG_FILENAME}' )
 
 		log.debug( f'config fs set to {self.config_fs}' )
 
-		# if self.config_file and not self.config_fs:
-		# 	self.config_fs = OSFS( root_path=dirname( self.config_file ), expand_vars=True, create=True )
-		# elif self.config_dir and not self.config_fs:
-		# 	self.config_fs = OSFS( root_path=self.config_dir, expand_vars=True, create=True )
-		#
-		# if not self.config_fs:
-		# 	self.config_fs = OSFS( root_path=user_config_dir( APPNAME ), create=True )
-		#
-		# try:
-		# 	self.config_dir = self.config_fs.getsyspath( '/' )
-		# 	self.config_file = self.config_fs.getsyspath( f'/{CONFIG_FILENAME}' )
-		# except NoSysPath:
-		# 	log.debug( f'config dir/file not set as fs does not support getsyspath()' )
-		# 	pass
+		try:
+			self.config_dir = self.config_fs.getsyspath( '/' )
+			self.config_file = self.config_fs.getsyspath( f'/{CONFIG_FILENAME}' )
+			self.state_file = self.config_fs.getsyspath( f'/{STATE_FILENAME}' )
+		except NoSysPath:
+			log.debug( f'config dir/file not set as FS does not support getsyspath()' )
 
 	def __setup_config_state__( self ):
 		settings_files = [ f'{APP_PKG_NAME}/{DEFAULT_CONFIG_FILENAME}' ]
@@ -192,7 +196,7 @@ class ApplicationContext:
 
 	def __setup_cmd_args__( self ):
 		self.__kwargs__.pop( 'configuration', None ) # remove configuration entry
-		self.config.update( self.__kwargs__ )
+		self.config.update( { k: v for k, v in self.__kwargs__.items() if v is not None } ) # update settings with values being not None
 
 	def __setup_library__( self ):
 		if self.lib_dir:

@@ -119,7 +119,7 @@ def db( request, fs: FS ) -> ActivityDb:
 @fixture
 def ctx( request, fs: FS ) -> ApplicationContext:
 
-	context = ApplicationContext( config_fs=fs, verbose=True )
+	context = ApplicationContext( config_fs=fs, __kwargs__={ 'verbose': True } )
 	set_current_ctx( context )
 
 	yield context

@@ -94,7 +94,7 @@ def test_app_constructor_cfg_dir( ctx ):
 @mark.context( env='empty', persist='clone', cleanup=True )
 def test_app_constructor_lib_dir( ctx ):
 	lib_dir = ctx.lib_dir
-	app =  Application.__new__( Application, lib_dir=lib_dir, verbose=False, debug=False, force=False )
+	app =  Application.__new__( Application, library=lib_dir, verbose=False, debug=False, force=False )
 	home = Path.home()
 
 	if system() == 'Windows':
@@ -130,7 +130,7 @@ def test_debug_environment( ctx ):
 def test_parameterized_environment( ctx ):
 	# override configuration loaded from file to simulate command line parameters
 	cfg_file = f'{ctx.config_dir}/config.yaml'
-	app = Application.__new__( Application, config_file=cfg_file, verbose=None, debug=None, force=True )
+	app = Application.__new__( Application, configuration=cfg_file, verbose=None, debug=None, force=True )
 	assert app.ctx.debug == True
 	assert app.ctx.verbose == True
 	assert app.ctx.force == True

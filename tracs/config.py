@@ -448,13 +448,13 @@ class ApplicationContext:
 	def plugin_config_state( self, name, as_dict: bool = False ) -> Tuple[DynaBox, DynaBox]:
 		name = name.lower()
 		try:
-			cfg = self.config.plugins[name]
+			cfg = self.config.plugins[name] or DynaBox()
 		except BoxKeyError:
 			log.error( f'unable to find configuration area for plugin {name}' )
 			cfg = DynaBox()
 
 		try:
-			state = self.state.plugins[name]
+			state = self.state.plugins[name] or DynaBox()
 		except BoxKeyError:
 			log.error( f'unable to find app state area for plugin {name}' )
 			state = DynaBox()

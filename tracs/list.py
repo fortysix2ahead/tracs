@@ -4,7 +4,7 @@ from pathlib import Path
 from re import split
 from typing import List
 
-from attrs import fields
+from dynaconf.vendor.box.exceptions import BoxKeyError
 from rich import box
 from rich.pretty import Pretty as pp
 from rich.table import Table
@@ -32,9 +32,9 @@ def list_activities( activities: List[Activity], sort: str = False, reverse: boo
 		activities.reverse()
 
 	try:
-		list_format = ctx.config['formats']['list'][format_name].get()
-	except NotFoundError:
-		list_format = ctx.config['formats']['list']['default'].get()
+		list_format = ctx.config['formats']['list'][format_name]
+	except BoxKeyError:
+		list_format = ctx.config['formats']['list']['default']
 	list_fields = list_format.split()
 
 	headers = [ f for f in list_fields ]

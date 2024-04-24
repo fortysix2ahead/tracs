@@ -1,7 +1,6 @@
 from logging import getLogger
 from typing import Any, Tuple
 
-from dynaconf import Dynaconf as Configuration
 from dynaconf.utils.boxing import DynaBox
 
 from tracs.config import ApplicationContext
@@ -43,7 +42,7 @@ class Plugin:
 	# helpers for setting/getting plugin configuration/state values
 
 	@property
-	def cs( self ) -> Tuple[Configuration, Configuration]:
+	def cs( self ) -> Tuple[DynaBox, DynaBox]:
 		"""
 		Returns a tuple with plugin configuration and state.
 		:return: tuple with configuration and state
@@ -51,24 +50,16 @@ class Plugin:
 		return self._cfg, self._state
 
 	def cfg_value( self, key: str ) -> Any:
-		return self.config_value( key )
+		log.warning( 'call to deprecated method cfg_value() in Plugin class, method will be removed in the future' )
+		return self._cfg[key]
 
 	def config_value( self, key: str, default: Any = None ) -> Any:
-		try:
-			return self._cfg[key].get()
-		except NotFoundError:
-			log.error( f'missing configuration key {key}', exc_info=True )
-			return default
+		log.warning( 'call to deprecated method config_value() in Plugin class, method will be removed in the future' )
+		return self._cfg.get( key, default )
 
 	def state_value( self, key: str, default: Any = None ) -> Any:
-		try:
-			return self._state[key].get()
-		except NotFoundError:
-			log.error( f'missing state key {key}', exc_info=True )
-			return default
-
-	def set_cfg_value( self, key: str, value: Any ) -> None:
-		self.set_config_value( key, value )
+		log.warning( 'call to deprecated method state_value() in Plugin class, method will be removed in the future' )
+		return self._state.get( key, default )
 
 	def set_config_value( self, key: str, value: Any ) -> None:
 		self._cfg[key] = value

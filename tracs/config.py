@@ -462,16 +462,6 @@ class ApplicationContext:
 
 		return cfg, state
 
-	def plugin_config( self, plugin_name ) -> Dict:
-		if not self.config['plugins'][plugin_name].get():
-			self.config['plugins'][plugin_name] = {}
-		return self.config['plugins'][plugin_name].get()
-
-	def plugin_state( self, plugin_name ) -> Dict:
-		if not self.state['plugins'][plugin_name].get():
-			self.state['plugins'][plugin_name] = {}
-		return self.state['plugins'][plugin_name].get()
-
 	def dump_config_state( self ) -> None:
 		self.dump_config()
 		self.dump_state()

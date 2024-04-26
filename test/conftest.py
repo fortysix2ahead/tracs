@@ -10,6 +10,7 @@ from fs.base import FS
 from fs.copy import copy_fs
 from fs.memoryfs import MemoryFS
 from fs.osfs import OSFS
+from fs.subfs import SubFS
 from pytest import fixture
 
 from tracs.config import ApplicationContext, DB_DIRNAME, set_current_ctx
@@ -82,6 +83,10 @@ def fs( request ) -> FS:
 			if dirname( dirname( sp ) ).endswith( 'var/run' ):  # sanity check: only remove when in var/run
 				rmtree( sp, ignore_errors=True )
 				log.info( f'cleaned up temporary persistance dir {sp}' )
+
+@fixture
+def dbfs( request, fs: FS ) -> FS:
+	return SubFS( fs, '/db' )
 
 @fixture
 def db_path( request, fs: FS ) -> Path:

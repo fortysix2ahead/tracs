@@ -161,7 +161,7 @@ class ActivityDb:
 		self._schema = load_schema( self.fs )
 		self._resources: Resources = load_resources( self.fs )
 		self._activities: Activities = load_activities( self.fs )
-		self._metadata: List[Metadata] = load_metadata( self.dbfs )
+		self._metadata: List[Metadata] = load_metadata( self.fs )
 
 	def register_summary_types( self, *types: str ):
 		[ self._summary_types.add( t ) for t in types ]

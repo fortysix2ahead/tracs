@@ -176,7 +176,16 @@ class Metadata:
 		return [ *[( f, self.__getattr__( f ) ) for f in self.__regular_fieldnames ], *self.__fields__.items() ]
 
 	def as_dict( self ) -> Dict[str, Any]:
-		return { f: self.__getattr__( f ) for f in self.__regular_fieldnames } | self.__fields__
+		d = { f: self.__getattr__( f ) for f in self.__regular_fieldnames } | self.__fields__
+		return { k: v for k, v in d.items() if v is not None }
+
+	@classmethod
+	def from_dict( cls, data: Dict[str, Any], type: Any ) -> Metadata:
+		return Metadata( **data )
+
+	@classmethod
+	def to_dict( cls, metadata: Metadata ) -> Dict[str, Any]:
+		return metadata.as_dict()
 
 @define
 class VirtualField:

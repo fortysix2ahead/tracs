@@ -1,8 +1,10 @@
+from datetime import datetime
+
 from attrs import define, field
 from babel.numbers import format_decimal
 from pytest import raises
 
-from tracs.core import FormattedField, FormattedFields, FormattedFieldsBase, VirtualField, VirtualFields, VirtualFieldsBase
+from tracs.core import FormattedField, FormattedFields, FormattedFieldsBase, Metadata, VirtualField, VirtualFields, VirtualFieldsBase
 
 def test_virtual_field():
 
@@ -107,3 +109,46 @@ def test_formatted_fields():
 
 	assert fdc.fmf.as_list( 'name', 'age', 'speed', 'height', suppress_error=True ) == ['name', 10, '12,345.6', None]
 	assert fdc.fmf.as_list( 'name', 'age', 'speed', 'width', converter=lambda v: str( v ) ) == ['name', '10', '12,345.6', 'None']
+
+def test_metadata():
+
+	md = Metadata(
+		uid='polar:101',
+		created=datetime( 2023, 6, 1, 10, 0, 0 ),
+		modified=datetime( 2023, 7, 2, 11, 0, 0 ),
+		f1='one',
+	)
+
+	md.f2 = 'two'
+	md['f3'] = 'three'
+
+	assert len( md ) == 6
+	assert md.uid == 'polar:101'
+	assert md.f2 == 'two'
+	assert md['f3'] == 'three'
+
+	assert md.keys() == ['uid', 'created', 'modified', 'f1', 'f2', 'f3']
+	assert md.values() == [
+		'polar:101',
+		datetime( 2023, 6, 1, 10, 0, 0 ),
+		datetime( 2023, 7, 2, 11, 0, 0 ),
+		'one',
+		'two',
+		'three',
+	]
+	assert md.items() == [
+		('uid', 'polar:101'),
+		('created', datetime( 2023, 6, 1, 10, 0, 0 )),
+		('modified', datetime( 2023, 7, 2, 11, 0, 0 )),
+		('f1', 'one'),
+		('f2', 'two'),
+		('f3', 'three'),
+	]
+	assert md.as_dict() == {
+		'uid': 'polar:101',
+		'created': datetime( 2023, 6, 1, 10, 0, 0 ),
+		'modified': datetime( 2023, 7, 2, 11, 0, 0 ),
+		'f1': 'one',
+		'f2': 'two',
+		'f3': 'three',
+	}

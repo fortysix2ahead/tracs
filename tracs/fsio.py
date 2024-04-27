@@ -127,10 +127,8 @@ md_unstructure_hook = make_dict_unstructure_fn(
 	_cattrs_omit_if_default=True,
 )
 
-# CONVERTER.register_structure_hook( Metadata, md_structure_hook )
-CONVERTER.register_structure_hook( Metadata, Metadata.from_dict )
-# CONVERTER.register_unstructure_hook( Metadata, md_unstructure_hook )
-CONVERTER.register_unstructure_hook( Metadata, Metadata.to_dict )
+CONVERTER.register_structure_hook( Metadata, md_structure_hook )
+CONVERTER.register_unstructure_hook( Metadata, md_unstructure_hook )
 
 # resource handling
 

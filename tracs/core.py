@@ -121,7 +121,7 @@ class Metadata:
 	created: datetime = field( default=None )
 	modified: datetime = field( default=None )
 
-	__fields__: Dict[str, Any] = field( factory=dict, alias='__fields__' )
+	supplementary: Dict[str, Any] = field( factory=dict )
 	# __kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )
 
 	@cached_property
@@ -130,17 +130,17 @@ class Metadata:
 
 	@cached_property
 	def __regular_fieldnames( self ) -> List[str]:
-		return [f.name for f in fields( self.__class__ ) if not f.name.startswith( '__' )]
+		return [f.name for f in fields( self.__class__ ) if not f.name == 'supplementary']
 
 	# noinspection PyUnresolvedReferences
 	def __init__( self, *args, **kwargs ):
 		self.__attrs_init__( *args, **{ k: v for k, v in kwargs.items() if k in self.__fieldnames } )
-		self.__fields__ = { k: v for k, v in kwargs.items() if k not in self.__fieldnames }
+		self.supplementary = { k: v for k, v in kwargs.items() if k not in self.__fieldnames }
 
 	# len() support
 
 	def __len__( self ) -> int:
-		return len( self.__fields__ ) + len( self.__regular_fieldnames )
+		return len( self.supplementary ) + len( self.__regular_fieldnames )
 
 	# getter
 
@@ -148,7 +148,7 @@ class Metadata:
 		if key in self.__fieldnames:
 			return super().__getattribute__( key )
 		else:
-			return self.__fields__.get( key )
+			return self.supplementary.get( key )
 
 	def __getitem__( self, key: str ):
 		return self.__getattr__( key )
@@ -162,21 +162,21 @@ class Metadata:
 		if key in self.__fieldnames:
 			super().__setattr__( key, value )
 		else:
-			self.__fields__[key] = value
+			self.supplementary[key] = value
 
 	# dict-like methods
 
 	def keys( self ) -> List[str]:
-		return [ *self.__regular_fieldnames, *self.__fields__.keys() ]
+		return [*self.__regular_fieldnames, *self.supplementary.keys()]
 
 	def values( self ) -> List[Any]:
-		return [ *[self.__getattr__( f ) for f in self.__regular_fieldnames], *self.__fields__.values() ]
+		return [*[self.__getattr__( f ) for f in self.__regular_fieldnames], *self.supplementary.values()]
 
 	def items( self ) -> List[Tuple[str, Any]]:
-		return [ *[( f, self.__getattr__( f ) ) for f in self.__regular_fieldnames ], *self.__fields__.items() ]
+		return [*[( f, self.__getattr__( f ) ) for f in self.__regular_fieldnames ], *self.supplementary.items()]
 
 	def as_dict( self ) -> Dict[str, Any]:
-		d = { f: self.__getattr__( f ) for f in self.__regular_fieldnames } | self.__fields__
+		d = { f: self.__getattr__( f ) for f in self.__regular_fieldnames } | self.supplementary
 		return { k: v for k, v in d.items() if v is not None }
 
 	@classmethod

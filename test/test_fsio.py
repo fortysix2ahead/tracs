@@ -30,6 +30,8 @@ def test_write_metadata( dbfs ):
 	json = loads( dbfs.readtext( 'metadata.json' ) )
 	assert json == [ {
 		'created': '2024-01-04T10:00:00+00:00',
-		'favourite': True,
-		'uid': 'polar:101'
+		'uid': 'polar:101',
+		'supplementary': {
+			'favourite': True,
+		}
 	} ]

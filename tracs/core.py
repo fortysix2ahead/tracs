@@ -135,7 +135,7 @@ class Metadata:
 	# noinspection PyUnresolvedReferences
 	def __init__( self, *args, **kwargs ):
 		self.__attrs_init__( *args, **{ k: v for k, v in kwargs.items() if k in self.__fieldnames } )
-		self.supplementary = { k: v for k, v in kwargs.items() if k not in self.__fieldnames }
+		self.supplementary = { k: v for k, v in kwargs.items() if k not in self.__fieldnames } | self.supplementary
 
 	# len() support
 

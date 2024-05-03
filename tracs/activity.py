@@ -9,7 +9,7 @@ from attrs import define, evolve, Factory, field
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import Container, FormattedFieldsBase, VirtualFieldsBase
+from tracs.core import Container, FormattedFieldsBase, Metadata, VirtualFieldsBase
 from tracs.resources import Resource
 from tracs.uid import UID
 from tracs.utils import sum_timedeltas, unchain, unique_sorted
@@ -114,13 +114,17 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	## internal fields
 	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
-	__metadata__: Dict[str, Any] = field( init=False, factory=dict, alias='__metadata__' )
+	__metadata__: Metadata = field( init=False, factory=Metadata, alias='__metadata__' )
 	__parts__: List[Activity] = field( init=False, factory=list, repr=False, alias='__parts__' )
 	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False, alias='__resources__' )
 	__parent__: Optional[Activity] = field( init=False, default=None, alias='__parent__' )
 	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
 
 	# additional properties
+
+	@property
+	def metadata( self ) -> Metadata:
+		return self.__metadata__
 
 	@property
 	def classifiers( self ) -> List[str]:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+from functools import cached_property
 from sys import version_info
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mapping, Optional, Tuple, Type, TypeVar, Union
@@ -111,6 +113,79 @@ class Container( Generic[T] ):
 
 	def update( self, *items: Union[T, List[T]] ) -> Tuple[List[int], List[int]]:
 		pass
+
+@define( init=False )
+class Metadata:
+
+	uid: str = field( default=None )
+	created: datetime = field( default=None )
+	modified: datetime = field( default=None )
+
+	supplementary: Dict[str, Any] = field( factory=dict )
+	# __kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )
+
+	@cached_property
+	def __fieldnames( self ) -> List[str]:
+		return [f.name for f in fields( self.__class__ )]
+
+	@cached_property
+	def __regular_fieldnames( self ) -> List[str]:
+		return [f.name for f in fields( self.__class__ ) if not f.name == 'supplementary']
+
+	# noinspection PyUnresolvedReferences
+	def __init__( self, *args, **kwargs ):
+		self.__attrs_init__( *args, **{ k: v for k, v in kwargs.items() if k in self.__fieldnames } )
+		self.supplementary = { k: v for k, v in kwargs.items() if k not in self.__fieldnames } | self.supplementary
+
+	# len() support
+
+	def __len__( self ) -> int:
+		return len( self.supplementary ) + len( self.__regular_fieldnames )
+
+	# getter
+
+	def __getattr__( self, key: str ) -> Any:
+		if key in self.__fieldnames:
+			return super().__getattribute__( key )
+		else:
+			return self.supplementary.get( key )
+
+	def __getitem__( self, key: str ):
+		return self.__getattr__( key )
+
+	# setter
+
+	def __setitem__( self, key: str, value: Any ) -> None:
+		self.__setattr__( key, value )
+
+	def __setattr__( self, key, value ):
+		if key in self.__fieldnames:
+			super().__setattr__( key, value )
+		else:
+			self.supplementary[key] = value
+
+	# dict-like methods
+
+	def keys( self ) -> List[str]:
+		return [*self.__regular_fieldnames, *self.supplementary.keys()]
+
+	def values( self ) -> List[Any]:
+		return [*[self.__getattr__( f ) for f in self.__regular_fieldnames], *self.supplementary.values()]
+
+	def items( self ) -> List[Tuple[str, Any]]:
+		return [*[( f, self.__getattr__( f ) ) for f in self.__regular_fieldnames ], *self.supplementary.items()]
+
+	def as_dict( self ) -> Dict[str, Any]:
+		d = { f: self.__getattr__( f ) for f in self.__regular_fieldnames } | self.supplementary
+		return { k: v for k, v in d.items() if v is not None }
+
+	@classmethod
+	def from_dict( cls, data: Dict[str, Any], type: Any ) -> Metadata:
+		return Metadata( **data )
+
+	@classmethod
+	def to_dict( cls, metadata: Metadata ) -> Dict[str, Any]:
+		return metadata.as_dict()
 
 @define
 class VirtualField:

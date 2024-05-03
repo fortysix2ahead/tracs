@@ -30,6 +30,7 @@ class UID:
 		else:
 			self.uid = self._unsplit( self.classifier, self.local_id, self.path, self.part )
 
+	# todo: this can be removed as the minimum python version is now 3.10
 	# custom url parsing to overcome inconsistencies between python 3.8 and 3.9+:
 	# url       python 3.8    python 3.9+ (in format scheme,path)
 	# polar    ,polar         ,polar

@@ -174,7 +174,7 @@ class ActivityDb:
 		if do_commit:
 			write_resources( self._resources, self.overlay_fs )
 			write_activities( self._activities, self.overlay_fs )
-			write_metadata( [ a.metadata for a in self._activities.all() ], self.overlay_fs )
+			write_metadata( self._metadata, self.overlay_fs )
 
 	def save( self ):
 		if self._read_only or self.underlay_fs is None:

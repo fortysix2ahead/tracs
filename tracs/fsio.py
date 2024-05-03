@@ -15,6 +15,7 @@ from rich.prompt import Confirm
 from tracs.activity import Activities, Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.config import current_ctx as ctx
+from tracs.core import Metadata
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
 from tracs.utils import fromisoformat, str_to_timedelta, timedelta_to_str
@@ -27,11 +28,14 @@ ACTIVITIES_NAME = 'activities.json'
 ACTIVITIES_PATH = f'/{ACTIVITIES_NAME}'
 RESOURCES_NAME = 'resources.json'
 RESOURCES_PATH = f'/{RESOURCES_NAME}'
+METADATA_NAME = 'metadata.json'
+METADATA_PATH = f'/{METADATA_NAME}'
 SCHEMA_NAME = 'schema.json'
 SCHEMA_PATH = f'/{SCHEMA_NAME}'
 
 ACTIVITIES_CONVERTER = make_converter()
 RESOURCE_CONVERTER = make_converter()
+CONVERTER = make_converter() # todo: is it possible to use only one cattr converter?
 SCHEMA_CONVERTER = make_converter()
 
 # converter configuration
@@ -109,6 +113,23 @@ resource_unstructure_hook = make_dict_unstructure_fn(
 
 RESOURCE_CONVERTER.register_unstructure_hook( Resource, resource_unstructure_hook )
 
+# metadata
+
+md_structure_hook = make_dict_structure_fn(
+	Metadata,
+	CONVERTER,
+	_cattrs_forbid_extra_keys=False,
+)
+
+md_unstructure_hook = make_dict_unstructure_fn(
+	Metadata,
+	CONVERTER,
+	_cattrs_omit_if_default=True,
+)
+
+CONVERTER.register_structure_hook( Metadata, md_structure_hook )
+CONVERTER.register_unstructure_hook( Metadata, md_unstructure_hook )
+
 # resource handling
 
 def load_resources( fs: FS ) -> Resources:
@@ -148,6 +169,21 @@ def load_schema( fs: FS ) -> Schema:
 	schema = SCHEMA_CONVERTER.loads( fs.readbytes( SCHEMA_PATH ), Schema )
 	log.debug( f'loaded database schema from {SCHEMA_PATH}, schema version = {schema.version}' )
 	return schema
+
+# metadata handling
+
+def load_metadata( fs: FS ) -> List[Metadata]:
+	try:
+		metadata = CONVERTER.loads( fs.readbytes( METADATA_PATH ), List[Metadata] )
+		log.debug( f'loaded {len( metadata )} metadata entries from {METADATA_NAME}' )
+		return metadata
+	except RuntimeError:
+		log.error( f'error loading metadata', exc_info=True )
+
+def write_metadata( metadata: List[Metadata], fs: FS ) -> None:
+	metadata = list( filter( lambda m: False if m.uid is None else True, metadata ) ) # skip everything which does not have a uid
+	fs.writebytes( METADATA_PATH, CONVERTER.dumps( sorted( metadata, key=lambda m: m.uid ), unstructure_as=List[Metadata], option=ORJSON_OPTIONS ) )
+	log.debug( f'wrote {len( metadata )} metadata entries to {METADATA_NAME}' )
 
 # backup & restore
 

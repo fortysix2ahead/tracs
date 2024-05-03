@@ -223,19 +223,43 @@ appear strange).
 
 ## Requirements
 
-- Python 3.8
+- Python 3.10
 
 ### Required Third-Party Libraries
 
-- babel
+- arrow
+- attrs
 - beautifulsoup4
+- babel
+- bottle
+- cattrs
 - click
+- click-shell
 - confuse
+- datetimerange
+- fs
 - geojson
 - gpxpy
+- lxml
+- oauthlib
+- platformdirs
+- pytest
 - python-dateutil
-- questionary
+- pyyaml
+- orjson
 - requests
+- requests-cache
 - requests-oauthlib
-- tabulate
-- tinydb
+- rich
+- rule-engine
+- stravalib
+- tcxreader
+- tzlocal
+
+### Required Third-Party Libraries for Development
+
+- bumpver
+- flit
+- mkdocs
+- mkdocs-click
+- mkdocs-material

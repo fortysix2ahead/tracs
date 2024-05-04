@@ -1,6 +1,6 @@
-
+from enum import Enum
 from logging import getLogger
-from typing import List
+from typing import Any, List, Optional
 
 from attrs import define, field
 from click.testing import CliRunner, Result
@@ -11,35 +11,50 @@ from tracs.config import ApplicationContext
 
 log = getLogger( __name__ )
 
+@define( eq=False, repr=False )
+class Lines:
+
+	__data__: List[str] = field( default=None, alias='__data__' )
+
+	def __eq__( self, other ):
+		if isinstance( other, str ):
+			other = [] if other == '' else [other]
+		return self.__data__ == other
+
+	def __contains__( self, item ):
+		return self.__data__.__contains__( item )
+
+	def __iter__( self ):
+		return self.__data__.__iter__()
+
+	def __repr__( self ) -> str:
+		return repr( self.__data__ )
+
+	def __str__( self ) -> str:
+		return str( self.__data__ )
+
+	def contains( self, term: str ):
+		return any( term in l for l in self.__data__ )
+
+	def contains_all( self, *terms: str ):
+		return all( [ self.contains( t ) for t in terms ] )
+
 @define
 class Invocation:
 
 	result: Result = field( default=None )
-	code: int = field( default=None )
-	out: List[str] = field( factory=list )
-	err: List[str] = field( factory=list )
 
-	def __attrs_post_init__( self ):
-		self.code = self.result.exit_code
-		self.out = self.result.stdout.splitlines()
-		self.err = self.result.stderr.splitlines()
+	@property
+	def code( self ) -> int:
+		return self.result.exit_code
 
-	# certain line equals term
+	@property
+	def out( self ) -> Lines:
+		return Lines( self.result.stdout.splitlines() )
 
-	def assert_err_line_is( self, term: str, line_no: int ):
-		assert len( self.err ) >= line_no + 1
-		assert self.err[line_no] == term
-
-	def assert_out_line_is( self, term: str, line_no: int ):
-		assert len( self.out ) >= line_no + 1
-		assert self.out[line_no] == term
-
-	def assert_term_in_err_line( self, term: str, line_no: int ):
-		assert self.err and len( self.err ) > line_no + 1
-		assert term in self.err[line_no]
-
-	def assert_term_in_stdout( self, term ):
-		assert len( self.out ) > 0 and any( term in l for l in self.out )
+	@property
+	def err( self ) -> Lines:
+		return Lines( self.result.stderr.splitlines() )
 
 cmd_list = 'list'
 cmd_version = 'version'
@@ -48,19 +63,22 @@ cmd_version = 'version'
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_nocommand( ctx ):
-	invoke( ctx, '' ).assert_term_in_err_line( 'Usage', 0 )
+	i = invoke( ctx, '' )
+	assert i.out == ''
+	assert i.err.contains_all( 'Usage', 'Error: Missing command' )
 
 # list
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_list( ctx ):
-	invoke( ctx, cmd_list ).assert_term_in_stdout( 'Run at Noon' )
+	i = invoke( ctx, cmd_list )
+	assert i.out.contains( 'Run at Noon' )
 
 # version
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_version( ctx ):
-	invoke( ctx, cmd_version ).assert_out_line_is( '0.1.0', 0 )
+	assert invoke( ctx, cmd_version ).out == '0.1.0'
 
 def invoke( ctx: ApplicationContext, cmdline: str ) -> Invocation:
 	runner = CliRunner( mix_stderr=False )

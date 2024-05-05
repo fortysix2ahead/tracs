@@ -14,9 +14,9 @@ from attrs import define, field
 from babel.dates import format_date, format_datetime, format_time, format_timedelta, get_timezone
 from babel.numbers import format_decimal
 from click import style
-from confuse import Configuration
 from dateutil.parser import parse as parse_datetime, ParserError
 from dateutil.tz import gettz, tzlocal
+from dynaconf import Dynaconf as Configuration
 from rich import box
 from rich.table import Table
 
@@ -51,11 +51,11 @@ class UtilityConfiguration:
 
 	def reconfigure( self, config: Configuration ):
 		self.config = config
-		self.locale = config['formats']['locale'].get() or self.locale
-		self.date_format = config['formats']['date'].get() or self.date_format
-		self.datetime_format = config['formats']['datetime'].get() or self.datetime_format
-		self.time_format = config['formats']['time'].get() or self.time_format
-		self.timedelta_format = config['formats']['timedelta'].get() or self.timedelta_format
+		self.locale = config.formats.locale or self.locale
+		self.date_format = config.formats.date or self.date_format
+		self.datetime_format = config.formats.datetime or self.datetime_format
+		self.time_format = config.formats.time or self.time_format
+		self.timedelta_format = config.formats.timedelta or self.timedelta_format
 
 UCFG = UtilityConfiguration()
 

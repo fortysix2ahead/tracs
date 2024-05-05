@@ -1,7 +1,7 @@
 from logging import getLogger
 from typing import Any, Tuple
 
-from confuse import Configuration, ConfigView, NotFoundError
+from dynaconf.utils.boxing import DynaBox
 
 from tracs.config import ApplicationContext
 from tracs.db import ActivityDb
@@ -20,30 +20,29 @@ class Plugin:
 		if self._ctx:
 			# configure config/state views: create empty configs if context is missing
 			try:
-				self._cfg: ConfigView = self._ctx.config['plugins'][self.name]
-			except (AttributeError, NotFoundError):
-				self._cfg = Configuration( appname=self.name )
+				self._cfg: DynaBox = self._ctx.config.plugins[self.name]
+			except AttributeError:
+				self._cfg = DynaBox()
 
 			try:
-				self._state: ConfigView = self._ctx.state['plugins'][self.name]
-			except (AttributeError, NotFoundError):
-				self._state = Configuration( appname=self.name )
+				self._state: DynaBox = self._ctx.state.plugins[self.name]
+			except AttributeError:
+				self._state = DynaBox()
 
 		elif kwargs.get( '_configuration' ) and kwargs.get( '_state' ): # this is mainly for testing purposes
 			self._cfg = kwargs.get( '_configuration' )
 			self._state = kwargs.get( '_state' )
 
 		else: # fallback
-			self._cfg = Configuration( appname=self.name )
-			self._state = Configuration( appname=self.name )
+			self._cfg, self._state = DynaBox(), DynaBox()
 
 		# enable by default
-		self._cfg['enabled'] = kwargs.get( 'enabled', True )
+		self._cfg.enabled = kwargs.get( 'enabled', True )
 
 	# helpers for setting/getting plugin configuration/state values
 
 	@property
-	def cs( self ) -> Tuple[Configuration, Configuration]:
+	def cs( self ) -> Tuple[DynaBox, DynaBox]:
 		"""
 		Returns a tuple with plugin configuration and state.
 		:return: tuple with configuration and state
@@ -51,24 +50,16 @@ class Plugin:
 		return self._cfg, self._state
 
 	def cfg_value( self, key: str ) -> Any:
-		return self.config_value( key )
+		log.warning( 'call to deprecated method cfg_value() in Plugin class, method will be removed in the future' )
+		return self._cfg[key]
 
 	def config_value( self, key: str, default: Any = None ) -> Any:
-		try:
-			return self._cfg[key].get()
-		except NotFoundError:
-			log.error( f'missing configuration key {key}', exc_info=True )
-			return default
+		log.warning( 'call to deprecated method config_value() in Plugin class, method will be removed in the future' )
+		return self._cfg.get( key, default )
 
 	def state_value( self, key: str, default: Any = None ) -> Any:
-		try:
-			return self._state[key].get()
-		except NotFoundError:
-			log.error( f'missing state key {key}', exc_info=True )
-			return default
-
-	def set_cfg_value( self, key: str, value: Any ) -> None:
-		self.set_config_value( key, value )
+		log.warning( 'call to deprecated method state_value() in Plugin class, method will be removed in the future' )
+		return self._state.get( key, default )
 
 	def set_config_value( self, key: str, value: Any ) -> None:
 		self._cfg[key] = value

@@ -1,12 +1,13 @@
 
 library:
-debug: no
-verbose: no
-force: no
+debug: false
+verbose: false
+force: false
 pluginpath:
 
 db:
   cache_size: 0
+  index: false
 
 plugins:
   polar:

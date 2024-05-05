@@ -20,22 +20,30 @@ from .utils import red
 
 log = getLogger( __name__ )
 
-def list_activities( activities: List[Activity], sort: str = False, reverse: bool = False, format_name: str = False, ctx: ApplicationContext = None ) -> None:
+# noinspection PyTestUnpassedFixture
+def list_activities( activities: List[Activity], sort: str = False, reverse: bool = False, format_name: str = False, fields: str = None, ctx: ApplicationContext = None ) -> None:
 	sort = sort or 'starttime'
+	fields = fields or []
 
 	if sort in Activity.field_names():
 		activities.sort( key=lambda act: getattr( act, sort, None ) )
 	else:
-		log.warning( f'ignoring unknown sort field "{sort}", falling back to "time"' )
+		log.warning( f'ignoring unknown sort field "{sort}", falling back to "starttime"' )
 
 	if reverse:
 		activities.reverse()
 
-	try:
-		list_format = ctx.config['formats']['list'][format_name]
-	except BoxKeyError:
-		list_format = ctx.config['formats']['list']['default']
-	list_fields = list_format.split()
+	if fields:
+		list_fields = fields.split()
+
+	elif format_name:
+		try:
+			list_fields = ctx.config.formats.list[format_name].split()
+		except BoxKeyError:
+			list_fields = ctx.config.formats.list['default'].split()
+
+	else:
+		list_fields = ctx.config.formats.list['default'].split()
 
 	headers = [ f for f in list_fields ]
 	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )

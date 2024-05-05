@@ -5,6 +5,7 @@ from importlib.resources import path
 from json import load as load_json
 from logging import getLogger
 from pathlib import Path
+from re import compile
 from shutil import copy
 from shutil import copytree
 from shutil import rmtree
@@ -14,6 +15,7 @@ from typing import Tuple
 
 from attr import define, field
 from click.testing import CliRunner, Result
+from more_itertools import first_true
 from pytest import mark
 
 from tracs.cli import cli
@@ -51,11 +53,15 @@ class StringLines:
 	def __str__( self ) -> str:
 		return str( self.__data__ )
 
-	def contains( self, term: str ):
+	def contains( self, term: str ) -> bool:
 		return any( term in l for l in self.__data__ )
 
-	def contains_all( self, *terms: str ):
+	def contains_all( self, *terms: str ) -> bool:
 		return all( [ self.contains( t ) for t in terms ] )
+
+	@property
+	def table_header( self ) -> List[str]:
+		return [ l.strip() for l in first_true( self.__data__, pred=lambda s: '│' in s ).split( '│' ) ]
 
 @define
 class CliInvocation:
@@ -90,14 +96,23 @@ class DbPath:
 			self.resources = Path( self.parent, 'resources.json' )
 			self.schema = Path( self.parent, 'schema.json' )
 
-def invoke_cli( ctx: ApplicationContext, cmdline: str ) -> CliInvocation:
+def invoke_cli( ctx: ApplicationContext, cmdline: str, print_stdout: bool = False, print_stderr: bool = False ) -> CliInvocation:
 	runner = CliRunner( mix_stderr=False )
 	cmdline = f'-c {ctx.config_dir} {cmdline}'
 
 	log.info( f'invoking command line: {cmdline}' )
-	result = runner.invoke( cli, cmdline, catch_exceptions=False )
+	result: Result = runner.invoke( cli, cmdline, catch_exceptions=False )
 
-	ctx.console.print( result.exc_info )
+	if result.stdout and print_stdout:
+		ctx.console.print( result.stdout )
+
+	if print_stderr:
+		clazz, exit_, traceback = result.exc_info
+		if exit_.code != 0:
+			ctx.console.print( result.exc_info )
+
+		ctx.console.print( result.stderr )
+
 	return CliInvocation( result )
 
 def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: str = None ) -> Tuple[Path, Path]:

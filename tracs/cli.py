@@ -130,10 +130,11 @@ def link( ctx: ApplicationContext, filters ):
 @option( '-s', '--sort', is_flag=False, required=False, help='sorts the output according to an attribute' )
 @option( '-r', '--reverse', is_flag=True, required=False, help='reverses sort order' )
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, help='uses the format with the provided name when printing', metavar='FORMAT' )
+@option( '-l', '--fields', is_flag=False, required=False, type=str, help='specify the fields to be printed, cannot be used together with -f', metavar='FORMAT' )
 @argument('filters', nargs=-1)
 @pass_obj
-def ls( ctx: ApplicationContext, sort, reverse, format_name, filters ):
-	list_activities( _flt( *filters ), sort=sort, reverse=reverse, format_name=format_name, ctx=ctx )
+def ls( ctx: ApplicationContext, sort, reverse, format_name, fields, filters ):
+	list_activities( _flt( *filters ), sort=sort, reverse=reverse, format_name=format_name, fields=fields, ctx=ctx )
 
 @cli.command( help='shows details about activities and resources' )
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )

@@ -20,6 +20,8 @@ formats:
   locale: 'en'
   date: medium # allowed values: short, medium, long, full
   datetime: medium # allowed values: short, medium, long, full
+  table:
+    box: minimal # see https://rich.readthedocs.io/en/stable/appendix/box.html#appendix-box for valid box names
   time: medium # allowed values: short, medium, long, full
   timedelta: short  # allowed values: narrow, short, long
   list:

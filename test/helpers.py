@@ -1,28 +1,78 @@
 
 from dataclasses import dataclass
-from dataclasses import field
 from datetime import datetime
 from importlib.resources import path
 from json import load as load_json
+from logging import getLogger
 from pathlib import Path
 from shutil import copy
 from shutil import copytree
 from shutil import rmtree
-from typing import Dict
+from typing import Dict, List
 from typing import Optional
 from typing import Tuple
 
+from attr import define, field
+from click.testing import CliRunner, Result
 from pytest import mark
 
+from tracs.cli import cli
 from tracs.config import ApplicationContext
 from tracs.config import DB_DIRNAME
 from tracs.config import TAKEOUT_DIRNAME
 from tracs.db import ActivityDb
 
+log = getLogger( __name__ )
+
 DATABASES = 'databases'
 LIBRARIES = 'libraries'
 VAR = 'var'
 VAR_RUN = 'var/run'
+
+@define( eq=False, repr=False )
+class StringLines:
+
+	__data__: List[str] = field( default=None, alias='__data__' )
+
+	def __eq__( self, other ):
+		if isinstance( other, str ):
+			other = [] if other == '' else [other]
+		return self.__data__ == other
+
+	def __contains__( self, item ):
+		return self.__data__.__contains__( item )
+
+	def __iter__( self ):
+		return self.__data__.__iter__()
+
+	def __repr__( self ) -> str:
+		return repr( self.__data__ )
+
+	def __str__( self ) -> str:
+		return str( self.__data__ )
+
+	def contains( self, term: str ):
+		return any( term in l for l in self.__data__ )
+
+	def contains_all( self, *terms: str ):
+		return all( [ self.contains( t ) for t in terms ] )
+
+@define
+class CliInvocation:
+
+	result: Result = field( default=None )
+
+	@property
+	def code( self ) -> int:
+		return self.result.exit_code
+
+	@property
+	def out( self ) -> StringLines:
+		return StringLines( self.result.stdout.splitlines() )
+
+	@property
+	def err( self ) -> StringLines:
+		return StringLines( self.result.stderr.splitlines() )
 
 @dataclass
 class DbPath:
@@ -39,6 +89,16 @@ class DbPath:
 			self.metadata = Path( self.parent, 'metadata.json' )
 			self.resources = Path( self.parent, 'resources.json' )
 			self.schema = Path( self.parent, 'schema.json' )
+
+def invoke_cli( ctx: ApplicationContext, cmdline: str ) -> CliInvocation:
+	runner = CliRunner( mix_stderr=False )
+	cmdline = f'-c {ctx.config_dir} {cmdline}'
+
+	log.info( f'invoking command line: {cmdline}' )
+	result = runner.invoke( cli, cmdline, catch_exceptions=False )
+
+	ctx.console.print( result.exc_info )
+	return CliInvocation( result )
 
 def prepare_environment( cfg_name: str = None, lib_name: str = None, db_name: str = None ) -> Tuple[Path, Path]:
 	run_dir = _run_path()

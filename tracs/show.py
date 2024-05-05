@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import List
 from urllib.parse import urlparse
 
-from confuse.exceptions import NotFoundError
 from rich import box
 from rich.columns import Columns
 from rich.pretty import Pretty as pp
@@ -48,11 +47,7 @@ def show_activities( activities: [Activity], ctx: ApplicationContext, display_ra
 		show_fields = [ f.name for f in Activity.fields() ]
 		show_fields.sort()
 	else:
-		try:
-			show_format = ctx.config['formats']['show'][format_name].get()
-		except NotFoundError:
-			show_format = ctx.config['formats']['show']['default'].get()
-		show_fields = show_format.split()
+		show_fields = ctx.config.formats.show.get( format_name, ctx.config.formats.show.default ).split()
 
 	for a in activities:
 		if display_raw:

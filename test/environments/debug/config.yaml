@@ -1,4 +1,4 @@
 library:
-debug: yes
-verbose: yes
-force: no
+debug: true
+verbose: true
+force: false

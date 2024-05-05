@@ -4,19 +4,21 @@ from pathlib import Path
 from re import split
 from typing import List
 
+from dynaconf import inspect_settings
 from dynaconf.vendor.box.exceptions import BoxKeyError
 from rich import box
 from rich.pretty import Pretty as pp
 from rich.table import Table
 
-from .activity import Activity
-from .config import ApplicationContext
-from .config import console
-from .core import VirtualField
-from .registry import Registry
-from .ui.utils import style
-from .utils import fmt
-from .utils import red
+from tracs.activity import Activity
+from tracs.config import ApplicationContext
+from tracs.config import console
+from tracs.core import VirtualField
+from tracs.registry import Registry
+from tracs.ui.tables import create_table
+from tracs.ui.utils import style
+from tracs.utils import fmt
+from tracs.utils import red
 
 log = getLogger( __name__ )
 
@@ -45,14 +47,11 @@ def list_activities( activities: List[Activity], sort: str = False, reverse: boo
 	else:
 		list_fields = ctx.config.formats.list['default'].split()
 
-	headers = [ f for f in list_fields ]
-	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
-
-	for h in headers:
-		table.add_column( f'[blue]{h}' )
-
-	for a in activities:
-		table.add_row( *[ fmt( a.getattr( f ) ) for f in list_fields ] )
+	table = create_table(
+		box_name=ctx.config.formats.table.box,
+		headers=[ f for f in list_fields ],
+		rows=[ [fmt( a.getattr( f ) ) for f in list_fields] for a in activities ],
+	)
 
 	if len( table.rows ) > 0:
 		console.print( table )

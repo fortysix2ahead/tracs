@@ -192,8 +192,8 @@ class ApplicationContext:
 		except NoSysPath:
 			log.warning( f'no appstate file found in {self.config_fs}' )
 
-		self.config = Configuration( settings_files=settings_files )
-		self.state = Configuration( settings_files=appstate_files )
+		self.config = Configuration( settings_files=settings_files, merge_enabled=True )
+		self.state = Configuration( settings_files=appstate_files, merge_enabled=True )
 
 	def __setup_cmd_args__( self ):
 		self.__kwargs__.pop( 'configuration', None ) # remove configuration entry

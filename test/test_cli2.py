@@ -8,6 +8,9 @@ from tracs.config import ApplicationContext as Context
 log = getLogger( __name__ )
 
 cmd_list = 'list'
+cmd_list_1 = 'list 1'
+cmd_list_l_1 = 'list -l "id name" 1'
+
 cmd_version = 'version'
 
 # no command
@@ -24,6 +27,13 @@ def test_nocommand( ctx: Context ):
 def test_list( ctx: Context ):
 	i = invoke( ctx, cmd_list )
 	assert i.out.contains( 'Run at Noon' )
+	# todo: don't know how to extend the width of the virtual terminal to more than 80 characters
+	assert i.out.table_header == [ 'id', 'name', 'type', 'starttime_l…', 'uid', 'uids' ]
+	i = invoke( ctx, cmd_list_1 )
+	assert i.out.table_header == [ 'id', 'name', 'type', 'starttime_lo…', 'uid', 'uids' ]
+
+	i = invoke( ctx, cmd_list_l_1 )
+	assert i.out.table_header == [ 'id', 'name' ]
 
 # version
 

@@ -5,7 +5,7 @@ from importlib.resources import path
 from json import load as load_json
 from logging import getLogger
 from pathlib import Path
-from re import compile
+from re import compile, fullmatch, split
 from shutil import copy
 from shutil import copytree
 from shutil import rmtree
@@ -30,6 +30,8 @@ DATABASES = 'databases'
 LIBRARIES = 'libraries'
 VAR = 'var'
 VAR_RUN = 'var/run'
+
+TABLE_LINE = compile( r'^\|([\s\w_]+\|)+$' )
 
 @define( eq=False, repr=False )
 class StringLines:
@@ -61,7 +63,12 @@ class StringLines:
 
 	@property
 	def table_header( self ) -> List[str]:
-		return [ l.strip() for l in first_true( self.__data__, pred=lambda s: '│' in s ).split( '│' ) ]
+		header = first_true( self.__data__, pred=lambda s: fullmatch( TABLE_LINE , s ) )
+		return list( filter( lambda s: s, split( '[\W_]+', header ) ) )
+
+	def table_row( self, index: int ) -> List[str]:
+		lines = list( filter( lambda s: fullmatch( TABLE_LINE , s ), self.__data__ ) )
+		return list( filter( lambda s: s, split( '[\W_]+', lines[index + 1] ) ) ) # return index + 1 -> ignore header
 
 @define
 class CliInvocation:

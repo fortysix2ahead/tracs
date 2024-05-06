@@ -38,8 +38,8 @@ def import_activities( ctx: ApplicationContext, sources: List[str], **kwargs ):
 				ctx=ctx,
 				force=ctx.force,
 				pretend=ctx.pretend,
-				first_year=ctx.config['import']['first_year'].get( int ),
-				days_range=ctx.config['import']['range'].get( int ),
+				first_year=ctx.config['import'].first_year,
+				days_range=ctx.config['import'].range,
 				**kwargs )
 		else:
 			log.error( f'skipping import from service {src}, either service is unknown or disabled' )

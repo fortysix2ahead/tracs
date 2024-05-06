@@ -1,7 +1,7 @@
 arrow~=1.3.0
 attrs~=23.2.0
 beautifulsoup4~=4.12.3
-Babel~=2.14.0
+Babel~=2.15.0
 bottle~=0.12.25
 cattrs~=23.2.3
 click~=8.1.7

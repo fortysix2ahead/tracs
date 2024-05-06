@@ -10,6 +10,9 @@ log = getLogger( __name__ )
 cmd_list = 'list'
 cmd_list_1 = 'list 1'
 cmd_list_l_1 = 'list -l "id name" 1'
+cmd_list_1_tags = 'list -l "id tags" 1'
+
+cmd_tag = 'tag -t one 1'
 
 cmd_version = 'version'
 
@@ -34,6 +37,18 @@ def test_list( ctx: Context ):
 
 	i = invoke( ctx, cmd_list_l_1 )
 	assert i.out.table_header == [ 'id', 'name' ]
+
+# tagging
+
+@mark.context( env='default', persist='clone', cleanup=True )
+def test_tagging( ctx: Context ):
+	# no output -> no assert
+	i = invoke( ctx, cmd_tag, print_stdout=True )
+
+	# check tag in list view
+	i = invoke( ctx, cmd_list_1_tags, print_stdout=True )
+	assert i.out.table_header == [ 'id', 'tags' ]
+	assert i.out.table_row( 0 ) == [ '1', 'one' ]
 
 # version
 

@@ -9,6 +9,10 @@ db:
   cache_size: 0
   index: false
 
+formats:
+  table:
+    box: ascii
+
 plugins:
   polar:
       password: some_polar_password

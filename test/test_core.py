@@ -42,6 +42,10 @@ def test_virtual_fields():
 		def uname( self ) -> str:
 			return self.name.upper()
 
+		@vproperty( display_name='Another Internal Name' )
+		def __another_name__( self ) -> str:
+			return self.__internal_name__
+
 		@property
 		def protected_name( self ) -> str:
 			return 'some protected value'
@@ -53,6 +57,7 @@ def test_virtual_fields():
 
 	edc = EnrichedDataclass()
 	assert edc.name == 'Name' and edc.uname == 'NAME'
+	assert edc.__another_name__ == 'Internal Name'
 	assert edc.vf.upper_name == 'NAME'
 	assert edc.vf.index == 10
 
@@ -68,10 +73,10 @@ def test_virtual_fields():
 	assert names == ['name', 'id', '__internal_name__']
 
 	names = EnrichedDataclass.field_names( include_internal=True, include_virtual=True )
-	assert names == ['name', 'id', '__internal_name__', 'index', 'upper_name', 'uname']
+	assert names == ['name', 'id', '__internal_name__', 'index', 'upper_name', 'uname', '__another_name__' ]
 
 	names = EnrichedDataclass.field_names( include_internal=False, include_virtual=True )
-	assert names == ['name', 'id', 'index', 'upper_name', 'uname']
+	assert names == ['name', 'id', 'index', 'upper_name', 'uname' ]
 
 def test_formatted_field():
 

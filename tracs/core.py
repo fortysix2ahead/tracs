@@ -288,7 +288,8 @@ def vproperty( **kwargs ):
 		@property
 		def wrap( *wargs, **wkwargs ):
 			# fn is the decorated function, kwargs contains the keywords/values
-			VirtualFieldsBase.__vf__.add( VirtualField(
+			enclosing_cls: VirtualFieldsBase = wargs[0]
+			enclosing_cls.__vf__.add( VirtualField(
 				name = next( m[1] for m in getmembers( fn ) if m[0] == '__name__' ),
 				type = kwargs.get( 'type' ) or signature( fn ).return_annotation,
 				factory = fn,

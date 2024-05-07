@@ -1,10 +1,12 @@
 from datetime import datetime
+from inspect import *
+from typing import ClassVar, List
 
 from attrs import define, field
 from babel.numbers import format_decimal
 from pytest import raises
 
-from tracs.core import FormattedField, FormattedFields, FormattedFieldsBase, Metadata, VirtualField, VirtualFields, VirtualFieldsBase
+from tracs.core import vproperty, FormattedField, FormattedFields, FormattedFieldsBase, Metadata, VirtualField, VirtualFields, VirtualFieldsBase
 
 def test_virtual_field():
 
@@ -30,8 +32,19 @@ def test_virtual_fields():
 	@define
 	class EnrichedDataclass( VirtualFieldsBase ):
 
+		__protected_names__: ClassVar[List[str]] = [ 'protected_name' ]
+
 		name: str = field( default='Name' )
-		__internal_name__ = field( default='Internal Name', alias='__internal_name__' )
+		id: id = field( default=1 )
+		__internal_name__: str = field( default='Internal Name', alias='__internal_name__' )
+
+		@vproperty( type=str, display_name='Uppercase Name' )
+		def uname( self ) -> str:
+			return self.name.upper()
+
+		@property
+		def protected_name( self ) -> str:
+			return 'some protected value'
 
 	vf = EnrichedDataclass.__vf__
 
@@ -39,26 +52,26 @@ def test_virtual_fields():
 	vf.add( VirtualField( 'upper_name', str, factory=lambda *args: args[0].name.upper() ) )
 
 	edc = EnrichedDataclass()
-	assert edc.name == 'Name'
+	assert edc.name == 'Name' and edc.uname == 'NAME'
 	assert edc.vf.upper_name == 'NAME'
 	assert edc.vf.index == 10
 
 	assert 'index' in edc.vf and 'upper_name' in edc.vf
 
 	names = EnrichedDataclass.field_names()
-	assert 'name' in names and '__internal_name__' in names
+	assert names == ['name', 'id', '__internal_name__']
 
-	names = EnrichedDataclass.field_names( False )
-	assert 'name' in names and not '__internal_name__' in names
+	names = EnrichedDataclass.field_names( include_internal=False )
+	assert names == ['name', 'id']
 
-	names = EnrichedDataclass.field_names( True )
-	assert 'name' in names and '__internal_name__' in names
+	names = EnrichedDataclass.field_names( include_internal=True )
+	assert names == ['name', 'id', '__internal_name__']
 
-	names = EnrichedDataclass.field_names( True, True )
-	assert 'name' in names and '__internal_name__' in names and 'index' in names and 'upper_name' in names
+	names = EnrichedDataclass.field_names( include_internal=True, include_virtual=True )
+	assert names == ['name', 'id', '__internal_name__', 'index', 'upper_name', 'uname']
 
-	names = EnrichedDataclass.field_names( False, True )
-	assert 'name' in names and not '__internal_name__' in names and 'index' in names and 'upper_name' in names
+	names = EnrichedDataclass.field_names( include_internal=False, include_virtual=True )
+	assert names == ['name', 'id', 'index', 'upper_name', 'uname']
 
 def test_formatted_field():
 

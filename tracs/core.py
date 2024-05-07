@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from functools import cached_property
+from inspect import getmembers, isclass, ismethod, signature
 from sys import version_info
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mapping, Optional, Tuple, Type, TypeVar, Union
@@ -196,6 +197,7 @@ class VirtualField:
 	factory: Callable = field( default=None )
 	description: str = field( default=None )
 	display_name: str = field( default=None )
+	# enclosing: Type = field( default=None )
 
 	def __call__( self, parent: Any = None ) -> Any:
 		return self.value_for( parent )
@@ -280,6 +282,23 @@ class VirtualFieldsBase( AttrsInstance ):
 	@property
 	def vf( self ) -> VirtualFields:
 		return self.__class__.__vf__( self )
+
+def vproperty( **kwargs ):
+	def inner( fn ):
+		@property
+		def wrap( *wargs, **wkwargs ):
+			# fn is the decorated function, kwargs contains the keywords/values
+			VirtualFieldsBase.__vf__.add( VirtualField(
+				name = next( m[1] for m in getmembers( fn ) if m[0] == '__name__' ),
+				type = kwargs.get( 'type' ) or signature( fn ).return_annotation,
+				factory = fn,
+				description = kwargs.get( 'description' ),
+				display_name = kwargs.get( 'display_name' ),
+				# enclosing= wargs[0],
+			) )
+			return fn( *wargs, **wkwargs )
+		return wrap
+	return inner
 
 @define
 class FormattedField:

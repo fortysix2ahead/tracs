@@ -77,6 +77,9 @@ def test_virtual_fields():
 	assert cvf.getattr( 'internal_index', quiet=True ) is None
 	assert cvf.getattr( 'internal_index', quiet=True, default=30 ) == 30
 
+	# values
+	assert cvf.values( 'name', 'index', 'upper_name', 'xyz' ) == ['Name', 10, 'NAME', None]
+
 	# contains
 	assert 'upper_name' in cvf.vf and 'index' in cvf.vf and 'internal_index' in cvf.vf
 	assert 'index' in cvf.vf.keys()

@@ -295,6 +295,9 @@ class VirtualFieldsBase( AttrsInstance ):
 			else:
 				raise AttributeError
 
+	def values( self, *field_names: str ) -> List[Any]:
+		return [ self.getattr( f, quiet=True ) for f in field_names ]
+
 	@property
 	def vf( self ) -> VirtualFields:
 		return self.__class__.__vf__.proxy( self )

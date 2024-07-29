@@ -286,6 +286,15 @@ class VirtualFieldsBase( AttrsInstance ):
 		else:
 			raise AttributeError
 
+	def getattr( self, name: str, quiet: bool = False, default: Any = None ) -> Any:
+		try:
+			return getattr( self, name )
+		except AttributeError:
+			if quiet:
+				return default
+			else:
+				raise AttributeError
+
 	@property
 	def vf( self ) -> VirtualFields:
 		return self.__class__.__vf__.proxy( self )

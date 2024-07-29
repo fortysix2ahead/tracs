@@ -30,53 +30,64 @@ def test_virtual_fields():
 
 	# test class enriched with virtual fields
 	@define
-	class EnrichedDataclass( VirtualFieldsBase ):
-
-		__protected_names__: ClassVar[List[str]] = [ 'protected_name' ]
+	class ClassWithVirtualFields( VirtualFieldsBase ):
 
 		name: str = field( default='Name' )
 		id: id = field( default=1 )
 		__internal_name__: str = field( default='Internal Name', alias='__internal_name__' )
 
-		@vproperty( type=str, display_name='Uppercase Name' )
-		def uname( self ) -> str:
-			return self.name.upper()
+	vf = ClassWithVirtualFields.__vf__
 
-		@vproperty( display_name='Another Internal Name' )
-		def __another_name__( self ) -> str:
-			return self.__internal_name__
+	vf.add( VirtualField( 'index', int, default=10, expose=True ) )
+	vf.add( VirtualField( 'internal_index', int, default=20 ) )
+	vf.add( VirtualField( 'upper_name', str, factory=lambda p: p.name.upper(), expose=True ) )
 
-		@property
-		def protected_name( self ) -> str:
-			return 'some protected value'
+	cvf = ClassWithVirtualFields()
 
-	vf = EnrichedDataclass.__vf__
+	assert cvf.name == 'Name'
+	assert cvf.upper_name == 'NAME'
+	assert cvf.index == 10
+	with raises( AttributeError ): # internal index is not exposed as property
+		assert cvf.internal_index == 20
+	with raises( AttributeError ):
+		assert cvf.__another_name__ == 'Another name' # another name is unknown
 
-	vf['index'] = VirtualField( 'index', int, default=10 )
-	vf.add( VirtualField( 'upper_name', str, factory=lambda *args: args[0].name.upper() ) )
+	# access via vf field - dict-like
+	with raises( KeyError ):
+		assert cvf.vf['name'] == 'Name' # name is not a virtual field
+	assert cvf.vf['upper_name'] == 'NAME'
+	assert cvf.vf['index'] == 10
+	assert cvf.vf['internal_index'] == 20
 
-	edc = EnrichedDataclass()
-	assert edc.name == 'Name' and edc.uname == 'NAME'
-	assert edc.__another_name__ == 'Internal Name'
-	assert edc.vf.upper_name == 'NAME'
-	assert edc.vf.index == 10
+	# access via vf field
+	with raises( AttributeError ):
+		assert cvf.vf.name == 'Name' # name is not a virtual field
+	assert cvf.vf.upper_name == 'NAME'
+	assert cvf.vf.index == 10
+	assert cvf.vf.internal_index == 20 # internal index works this time
+	with raises( AttributeError ):
+		assert cvf.vf.__another_name__ == 'Another name' # still unknown
 
-	assert 'index' in edc.vf and 'upper_name' in edc.vf
+	assert 'upper_name' in cvf.vf and 'index' in cvf.vf and 'internal_index' in cvf.vf
 
-	names = EnrichedDataclass.field_names()
+	assert 'index' in cvf.vf.keys()
+	# assert 20 in cvf.vf.values()
+	# assert ('index', 10) in cvf.vf.items()
+
+	names = ClassWithVirtualFields.field_names()
 	assert names == ['name', 'id', '__internal_name__']
 
-	names = EnrichedDataclass.field_names( include_internal=False )
+	names = ClassWithVirtualFields.field_names( include_internal=False )
 	assert names == ['name', 'id']
 
-	names = EnrichedDataclass.field_names( include_internal=True )
+	names = ClassWithVirtualFields.field_names( include_internal=True )
 	assert names == ['name', 'id', '__internal_name__']
 
-	names = EnrichedDataclass.field_names( include_internal=True, include_virtual=True )
-	assert names == ['name', 'id', '__internal_name__', 'index', 'upper_name', 'uname', '__another_name__' ]
+	names = ClassWithVirtualFields.field_names( include_internal=True, include_virtual=True )
+	assert names == ['name', 'id', '__internal_name__', 'index', 'internal_index', 'upper_name' ]
 
-	names = EnrichedDataclass.field_names( include_internal=False, include_virtual=True )
-	assert names == ['name', 'id', 'index', 'upper_name', 'uname' ]
+	names = ClassWithVirtualFields.field_names( include_internal=False, include_virtual=True )
+	assert names == ['name', 'id', 'index', 'internal_index', 'upper_name' ]
 
 def test_formatted_field():
 

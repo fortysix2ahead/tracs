@@ -257,31 +257,32 @@ class VirtualFieldsBase( AttrsInstance ):
 		return cls.__vf__
 
 	@classmethod
-	def fields( cls, include_internal = True, include_virtual = False ) -> List[Attribute | VirtualField]:
-		_fields = list( fields( cls ) )
-		if include_virtual:
-			_fields.extend( [f for f in cls.__vf__.values()] )
+	def fields( cls, include_virtual: bool = False, include_internal: bool = False, include_unexposed: bool = False ) -> List[Attribute | VirtualField]:
+		_fields = fields( cls )
 		if not include_internal:
-			_fields = list( filter( lambda f: not f.name.startswith( '_' ), _fields ) )
-		return _fields
+			# _fields = filter( lambda f: not f.name.startswith( '_' ), _fields )
+			_fields = [ f for f in _fields if not f.name.startswith( '_' ) ]
+
+		_vfields = [ f for f in cls.__vf__.values() ] if include_virtual else []
+		if not include_unexposed:
+			_vfields = [ vf for vf in _vfields if vf.expose ]
+
+		return [ *_fields, *_vfields ]
 
 	@classmethod
-	def field_names( cls, include_internal = True, include_virtual = False ) -> List[str]:
-		return [f.name for f in cls.fields( include_internal=include_internal, include_virtual=include_virtual )]
+	def field_names( cls, include_virtual: bool = False, include_internal: bool = False, include_unexposed: bool = False ) -> List[str]:
+		return [f.name for f in cls.fields( include_virtual, include_internal, include_unexposed )]
 
 	@classmethod
 	def field_type( cls, field_name: str ) -> Any:
-		if f := next( (f for f in cls.fields( include_internal=True, include_virtual=True ) if f.name == field_name), None ):
+		if f := next( (f for f in cls.fields( True, True, True ) if f.name == field_name), None ):
 			return f.type
 		else:
 			return None
 
 	def __getattr__( self, name: str ) -> Any:
-		if vf := self.__class__.__vf__.get( name ):
-			if vf.expose:
-				return vf.factory( self ) if vf.factory else vf.default
-			else:
-				raise AttributeError
+		if ( vf := self.__class__.__vf__.get( name ) ) and vf.expose:
+			return vf.factory( self ) if vf.factory else vf.default
 		else:
 			raise AttributeError
 

@@ -75,19 +75,26 @@ def test_virtual_fields():
 	# assert ('index', 10) in cvf.vf.items()
 
 	names = ClassWithVirtualFields.field_names()
-	assert names == ['name', 'id', '__internal_name__']
-
-	names = ClassWithVirtualFields.field_names( include_internal=False )
 	assert names == ['name', 'id']
 
-	names = ClassWithVirtualFields.field_names( include_internal=True )
-	assert names == ['name', 'id', '__internal_name__']
+	# same as default above
+	names = ClassWithVirtualFields.field_names( include_internal=False, include_virtual=False, include_unexposed=False )
+	assert names == ['name', 'id']
 
-	names = ClassWithVirtualFields.field_names( include_internal=True, include_virtual=True )
-	assert names == ['name', 'id', '__internal_name__', 'index', 'internal_index', 'upper_name' ]
+	names = ClassWithVirtualFields.field_names( include_internal=True, include_virtual=False, include_unexposed=False )
+	assert names == ['name', 'id', '__internal_name__' ]
 
-	names = ClassWithVirtualFields.field_names( include_internal=False, include_virtual=True )
+	names = ClassWithVirtualFields.field_names( include_internal=False, include_virtual=True, include_unexposed=False )
+	assert names == ['name', 'id', 'index', 'upper_name' ]
+
+	names = ClassWithVirtualFields.field_names( include_internal=False, include_virtual=False, include_unexposed=True )
+	assert names == ['name', 'id']
+
+	names = ClassWithVirtualFields.field_names( include_internal=False, include_virtual=True, include_unexposed=True )
 	assert names == ['name', 'id', 'index', 'internal_index', 'upper_name' ]
+
+	names = ClassWithVirtualFields.field_names( include_internal=True, include_virtual=True, include_unexposed=True )
+	assert names == ['name', 'id', '__internal_name__', 'index', 'internal_index', 'upper_name']
 
 def test_formatted_field():
 

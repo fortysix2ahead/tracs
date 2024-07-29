@@ -68,10 +68,19 @@ def test_virtual_fields():
 	with raises( AttributeError ):
 		assert cvf.vf.__another_name__ == 'Another name' # still unknown
 
-	assert 'upper_name' in cvf.vf and 'index' in cvf.vf and 'internal_index' in cvf.vf
+	# access via getattr
+	assert cvf.getattr( 'name' ) == 'Name'
+	assert cvf.getattr( 'upper_name' ) == 'NAME'
+	assert cvf.getattr( 'index' ) == 10
+	with raises( AttributeError ):
+		assert cvf.getattr( 'internal_index' ) == 20
+	assert cvf.getattr( 'internal_index', quiet=True ) is None
+	assert cvf.getattr( 'internal_index', quiet=True, default=30 ) == 30
 
+	# contains
+	assert 'upper_name' in cvf.vf and 'index' in cvf.vf and 'internal_index' in cvf.vf
 	assert 'index' in cvf.vf.keys()
-	# assert 20 in cvf.vf.values()
+	# assert 20 in cvf.vf.values() # this returns a vf, not the value, maybe we can fix this later if needed
 	# assert ('index', 10) in cvf.vf.items()
 
 	names = ClassWithVirtualFields.field_names()

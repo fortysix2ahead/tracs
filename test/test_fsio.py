@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from json import loads
 
 from dateutil.tz import UTC
@@ -18,7 +18,8 @@ def test_load_write_activities( dbfs ):
 
 	a1 = Activity(
 		id = 1,
-		uid= 'polar:101'
+		uid= 'polar:101',
+		duration=timedelta( hours=2 )
 	)
 	a1.metadata.created = datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC )
 	a1.metadata.favourite = True
@@ -33,6 +34,7 @@ def test_load_write_activities( dbfs ):
 		{
 			'id': 1,
 			'uid': 'polar:101',
+			'duration': '02:00:00',
 			'metadata': {
 				'created': '2024-01-04T10:00:00+00:00',
 				'favourite': True
@@ -46,5 +48,6 @@ def test_load_write_activities( dbfs ):
 	assert len( activities ) == 1
 	a1 = activities.values()[0]
 	assert a1.id == 1 and a1.uid == 'polar:101'
+	assert a1.duration == timedelta( hours=2 )
 	assert a1.metadata.created == datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC )
 	assert a1.metadata.favourite

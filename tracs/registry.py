@@ -139,8 +139,8 @@ class Registry:
 				log.error( f'unable to register virtual field from {fncls}' )
 
 		# announce virtuals fields to activity class
-		for k, vf in self.virtual_fields.__fields__.items():
-			Activity.VF().set_field( k, vf )
+		for k, vf in self.virtual_fields.items():
+			Activity.add_field( vf, k )
 
 	def _setup_setups( self, setups: List[Tuple] ):
 		for fn, args, kwargs in setups:

@@ -216,13 +216,13 @@ def test_fields( registry ):
 	fields = Activity.fields()
 	assert next( f for f in fields if f.name == 'name' )
 	field_names = Activity.field_names()
-	assert 'name' in field_names and '__parent__' in field_names and 'weekday' not in field_names
-
-	field_names = Activity.field_names( include_internal=False )
 	assert 'name' in field_names and '__parent__' not in field_names and 'weekday' not in field_names
 
+	field_names = Activity.field_names( include_internal=True )
+	assert 'name' in field_names and '__parent__' in field_names and 'weekday' not in field_names
+
 	field_names = Activity.field_names( include_virtual=True )
-	assert 'name' in field_names and '__parent__' in field_names and 'weekday' in field_names
+	assert 'name' in field_names and '__parent__' not in field_names and 'weekday' in field_names
 
 	assert Activity.field_type( 'name' ) == Optional[str]
 	assert Activity.field_type( 'weekday' ) == int
@@ -246,12 +246,12 @@ def capitalized_name( a: Activity ):
 
 def test_virtual_activity_fields( registry ):
 
-	assert 'lower_name' in Activity.__vf__.__fields__.keys()
-	assert 'upper_name' in Activity.__vf__.__fields__.keys()
-	assert 'title_name' in Activity.__vf__.__fields__.keys()
-	assert 'cap_name' in Activity.__vf__.__fields__.keys()
+	assert 'lower_name' in Activity.__vf__.keys()
+	assert 'upper_name' in Activity.__vf__.keys()
+	assert 'title_name' in Activity.__vf__.keys()
+	assert 'cap_name' in Activity.__vf__.keys()
 
-	vf = Activity.__vf__.__fields__['lower_name']
+	vf = Activity.__vf__.get( 'lower_name' )
 	assert vf.name == 'lower_name'
 
 	a = Activity(
@@ -264,7 +264,7 @@ def test_virtual_activity_fields( registry ):
 	assert a.vf.title_name == 'Afternoon Run In Berlin'
 	assert a.vf.cap_name == 'Afternoon run in berlin'
 
-	Activity.__vf__.__fields__['fixed_value'] = VirtualField( 'fixed_value', int, 10 )
+	Activity.__vf__['fixed_value'] = VirtualField( 'fixed_value', int, 10 )
 
 	assert a.vf.fixed_value == 10
 
@@ -287,7 +287,7 @@ def test_virtual_activity_field_override( registry ):
 
 	a = Activity( id = 100, name='Run', type=ActivityTypes.run )
 
-	assert 'name' in Activity.__vf__.__fields__
+	assert 'name' in Activity.field_names( include_virtual=True )
 	assert a.name == 'Run' and a.getattr( 'name' ) == 'Run'
 
 def test_formatted_activity_fields():

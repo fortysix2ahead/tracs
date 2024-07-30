@@ -42,7 +42,11 @@ SCHEMA_CONVERTER = make_converter()
 
 metadata_struct_hook = make_dict_structure_fn( Metadata, CONVERTER )
 #activity_struct_hook = make_dict_structure_fn( Activity, CONVERTER, metadata = override( struct_hook=metadata_struct_hook ) ) # don't need this here ...
-activity_struct_hook = make_dict_structure_fn( Activity, CONVERTER )
+activity_struct_hook = make_dict_structure_fn(
+	Activity,
+	CONVERTER,
+	type = override( struct_hook=lambda obj, cls: ActivityTypes.from_str( obj ) )
+)
 
 # support for unstructuring
 
@@ -67,6 +71,7 @@ activity_unstruct_hook = make_dict_unstructure_fn(
 	duration=override( unstruct_hook=timedelta_to_str ),
 	duration_moving=override( unstruct_hook=timedelta_to_str ),
 	metadata=override( unstruct_hook=metadata_unstruct_hook ),
+	type=override( unstruct_hook=ActivityTypes.to_str ),
 	__uid__=override( omit=True ),
 	__uids__=override( omit=True ),
 	__dirty__=override( omit=True ),

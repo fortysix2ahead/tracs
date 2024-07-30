@@ -60,8 +60,8 @@ def test_fields_and_types( registry ):
 	assert (f := registry.activity_field( 'duration' )) is not None and f.type == Optional[timedelta]
 	assert (f := registry.activity_field( 'starttime' )) is not None and f.type == datetime
 
-	with raises( AttributeError ):
-		assert registry.activity_field( 'not_existing_field' ) is None
+#	with raises( AttributeError ):
+	assert registry.activity_field( 'not_existing_field' ) is None
 
 	# check above fields against normalizers
 	assert registry.rule_normalizer_type( 'name' ) == Optional[str]

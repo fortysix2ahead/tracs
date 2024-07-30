@@ -1,12 +1,12 @@
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from json import loads
 
 from dateutil.tz import UTC
 from pytest import mark
 
-from activity import Activities, Activity
+from activity import Activities, Activity, ActivityPart
 from activity_types import ActivityTypes
-from fsio import load_activities, load_schema, write_activities
+from fsio import load_activities, load_schema, write_activities, write_activities_as_list
 
 @mark.context( env='default', persist='mem' )
 def test_load_schema( dbfs ):
@@ -23,6 +23,7 @@ def test_load_write_activities( dbfs ):
 		starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
 		duration=timedelta( hours=2 ),
 		type=ActivityTypes.walk,
+		parts=[ActivityPart( uids=[ 'polar:222', 'polar:333' ], gap=time( minute=20 ) ) ],
 	)
 	a1.metadata.created = datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC )
 	a1.metadata.favourite = True
@@ -43,7 +44,10 @@ def test_load_write_activities( dbfs ):
 			'metadata': {
 				'created': '2024-01-04T10:00:00+00:00',
 				'favourite': True
-			}
+			},
+			'parts': [
+				{ 'gap': '00:20:00', 'uids': ['polar:222', 'polar:333'] }
+			]
 		}
 	]
 
@@ -57,5 +61,9 @@ def test_load_write_activities( dbfs ):
 	assert a1.starttime == datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC )
 	# assert a1.type == ActivityTypes.walk # don't know why this fails
 	assert a1.type.name == 'walk'
+
+	assert a1.parts[0].gap == time( minute=20 )
+	assert a1.parts[0].uids == [ 'polar:222', 'polar:333' ]
+
 	assert a1.metadata.created == datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC )
 	assert a1.metadata.favourite

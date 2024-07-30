@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, time, timedelta
+from functools import cached_property
 from logging import getLogger
 from typing import Any, Dict, List, Optional, TypeVar, Union
 
@@ -24,26 +25,25 @@ class ActivityPart:
 	gap: time = field( default=None )
 	uids: List[str] = field( factory=list )
 
-	__uids__: List[UID] = field( factory=list, alias='__uids__' )
-
-	def __attrs_post_init__(self):
-		self.__uids__ = [UID( uid ) for uid in self.uids]
-
 	@property
 	def classifiers( self ) -> List[str]:
-		return unique_sorted( [ uid.classifier for uid in self.__uids__ ] )
+		return unique_sorted( [ uid.classifier for uid in self.uid_objs ] )
 
 	@property
 	def activity_uids( self ) -> List[str]:
 		return [ uid.uid for uid in self.as_activity_uids ]
 
-	@property
-	def as_uids( self ) -> List[UID]:
-		return unique_sorted( self.__uids__ )
+	@cached_property
+	def uid_objs( self ) -> List[UID]:
+		return [UID( uid ) for uid in self.uids]
 
 	@property
+	def as_uids( self ) -> List[UID]:
+		return unique_sorted( self.uid_objs )
+
+	@cached_property
 	def as_activity_uids( self ) -> List[UID]:
-		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.__uids__ ] )
+		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.uid_objs ] )
 
 @define( eq=True ) # todo: mark fields with proper eq attributes
 class Activity( VirtualFieldsBase, FormattedFieldsBase ):
@@ -104,6 +104,8 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	heartrate_min: Optional[int] = field( default=None ) #
 	calories: Optional[int] = field( default=None ) #
 
+
+	metadata: Metadata = field( factory=Metadata )
 	parts: List[ActivityPart] = field( factory=list )
 
 	# init variables
@@ -112,11 +114,8 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	others = field( default=None )
 	other_parts = field( default=None )
 
-	metadata: Metadata = field( factory=Metadata )
-
 	## internal fields
 	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
-	__parts__: List[Activity] = field( init=False, factory=list, repr=False, alias='__parts__' )
 	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False, alias='__resources__' )
 	__parent__: Optional[Activity] = field( init=False, default=None, alias='__parent__' )
 	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )

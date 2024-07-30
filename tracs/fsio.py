@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from logging import getLogger
 from re import compile
 from typing import List, Union
@@ -18,7 +18,7 @@ from tracs.config import current_ctx as ctx
 from tracs.core import Metadata
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
-from tracs.utils import fromisoformat, str_to_timedelta, timedelta_to_str
+from tracs.utils import str_to_timedelta, timedelta_to_str
 
 log = getLogger( __name__ )
 
@@ -83,52 +83,6 @@ activity_unstruct_hook = make_dict_unstructure_fn(
 	other_parts=override( omit=True ),
 
 )
-
-# activity structuring
-
-ACTIVITIES_CONVERTER.register_structure_hook( time, lambda obj, cls: fromisoformat( obj ) )
-ACTIVITIES_CONVERTER.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
-
-activity_structure_hook = make_dict_structure_fn(
-	Activity,
-	ACTIVITIES_CONVERTER,
-	_cattrs_forbid_extra_keys=True,
-)
-
-ACTIVITIES_CONVERTER.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
-
-# activity unstructuring
-
-ACTIVITIES_CONVERTER.register_unstructure_hook( timedelta, timedelta_to_str )
-ACTIVITIES_CONVERTER.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
-
-activity_part_unstructure_hook = make_dict_unstructure_fn(
-	ActivityPart,
-	ACTIVITIES_CONVERTER,
-	_cattrs_omit_if_default=True,
-	__uids__=override( omit=True ),
-)
-
-ACTIVITIES_CONVERTER.register_unstructure_hook( ActivityPart, activity_part_unstructure_hook )
-
-activity_unstructure_hook = make_dict_unstructure_fn(
-	Activity,
-	ACTIVITIES_CONVERTER,
-	_cattrs_omit_if_default=True,
-	__uid__=override( omit=True ),
-	__uids__=override( omit=True ),
-	__dirty__=override( omit=True ),
-	__metadata__=override( omit=False, rename='metadata', unstruct_hook=metadata_unstruct_hook ),
-	__parts__=override( omit=True ),
-	__resources__=override( omit=True ),
-	__parent__=override( omit=True ),
-	__parent_id__=override( omit=True ),
-	others=override( omit=True ),
-	other_parts=override( omit=True ),
-
-)
-
-ACTIVITIES_CONVERTER.register_unstructure_hook( Activity, activity_unstructure_hook )
 
 # resource
 

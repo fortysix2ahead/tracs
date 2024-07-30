@@ -20,8 +20,7 @@ from rule_engine import Rule
 
 from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
-from tracs.core import Metadata
-from tracs.fsio import load_activities, load_metadata, load_resources, load_schema, Schema, write_activities, write_metadata, write_resources
+from tracs.fsio import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.resources import Resource, Resources
 
@@ -31,14 +30,12 @@ ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
 ACTIVITIES_NAME = 'activities.json'
 INDEX_NAME = 'index.json'
-METADATA_NAME = 'metadata.json'
 RESOURCES_NAME = 'resources.json'
 SCHEMA_NAME = 'schema.json'
 
 DB_FILES = {
 	ACTIVITIES_NAME: '{}',
 	INDEX_NAME: '{}',
-	METADATA_NAME: '{}',
 	RESOURCES_NAME: '{}',
 	SCHEMA_NAME: '{"version": 13}'
 }
@@ -161,7 +158,6 @@ class ActivityDb:
 		self._schema = load_schema( self.fs )
 		self._resources: Resources = load_resources( self.fs )
 		self._activities: Activities = load_activities( self.fs )
-		self._metadata: List[Metadata] = load_metadata( self.fs )
 
 	def register_summary_types( self, *types: str ):
 		[ self._summary_types.add( t ) for t in types ]
@@ -174,7 +170,6 @@ class ActivityDb:
 		if do_commit:
 			write_resources( self._resources, self.overlay_fs )
 			write_activities( self._activities, self.overlay_fs )
-			write_metadata( self._metadata, self.overlay_fs )
 
 	def save( self ):
 		if self._read_only or self.underlay_fs is None:

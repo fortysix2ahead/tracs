@@ -112,19 +112,16 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	others = field( default=None )
 	other_parts = field( default=None )
 
+	metadata: Metadata = field( factory=Metadata )
+
 	## internal fields
 	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
-	__metadata__: Metadata = field( init=False, factory=Metadata, alias='__metadata__' )
 	__parts__: List[Activity] = field( init=False, factory=list, repr=False, alias='__parts__' )
 	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False, alias='__resources__' )
 	__parent__: Optional[Activity] = field( init=False, default=None, alias='__parent__' )
 	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
 
 	# additional properties
-
-	@property
-	def metadata( self ) -> Metadata:
-		return self.__metadata__
 
 	@property
 	def classifiers( self ) -> List[str]:

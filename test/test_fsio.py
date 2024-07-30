@@ -20,6 +20,7 @@ def test_load_write_activities( dbfs ):
 	a1 = Activity(
 		id = 1,
 		uid= 'polar:101',
+		starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
 		duration=timedelta( hours=2 ),
 		type=ActivityTypes.walk,
 	)
@@ -37,6 +38,7 @@ def test_load_write_activities( dbfs ):
 			'id': 1,
 			'uid': 'polar:101',
 			'duration': '02:00:00',
+			'starttime': '2024-01-03T10:00:00+00:00',
 			'type': 'walk',
 			'metadata': {
 				'created': '2024-01-04T10:00:00+00:00',
@@ -52,6 +54,7 @@ def test_load_write_activities( dbfs ):
 	a1 = activities.values()[0]
 	assert a1.id == 1 and a1.uid == 'polar:101'
 	assert a1.duration == timedelta( hours=2 )
+	assert a1.starttime == datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC )
 	# assert a1.type == ActivityTypes.walk # don't know why this fails
 	assert a1.type.name == 'walk'
 	assert a1.metadata.created == datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC )

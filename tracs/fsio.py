@@ -59,11 +59,14 @@ activity_part_unstruct_hook = make_dict_unstructure_fn(
 	__uids__=override( omit=True ),
 )
 
+# still don't understand why we need to define unstruct_hooks here, otherwise it will ignore _cattrs_omit_if_default
 activity_unstruct_hook = make_dict_unstructure_fn(
 	Activity,
 	CONVERTER,
 	_cattrs_omit_if_default=True,
-	metadata=override( unstruct_hook=metadata_unstruct_hook ), # need to define the unstruct_hook, otherwise it will ignore _cattrs_omit_if_default
+	duration=override( unstruct_hook=timedelta_to_str ),
+	duration_moving=override( unstruct_hook=timedelta_to_str ),
+	metadata=override( unstruct_hook=metadata_unstruct_hook ),
 	__uid__=override( omit=True ),
 	__uids__=override( omit=True ),
 	__dirty__=override( omit=True ),

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from logging import getLogger
 from re import compile
 from typing import List, Union
@@ -18,7 +18,7 @@ from tracs.config import current_ctx as ctx
 from tracs.core import Metadata
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
-from tracs.utils import str_to_timedelta, timedelta_to_str
+from tracs.utils import fromisoformat, str_to_timedelta, timedelta_to_str
 
 log = getLogger( __name__ )
 
@@ -31,12 +31,15 @@ RESOURCES_PATH = f'/{RESOURCES_NAME}'
 SCHEMA_NAME = 'schema.json'
 SCHEMA_PATH = f'/{SCHEMA_NAME}'
 
-ACTIVITIES_CONVERTER = make_converter()
 RESOURCE_CONVERTER = make_converter()
-CONVERTER = make_converter() # todo: is it possible to use only one cattr converter?
+CONVERTER = make_converter()
 SCHEMA_CONVERTER = make_converter()
 
 # converter configuration
+
+# helper only ...
+#def __hook__( obj, cls ):
+#	return obj, cls
 
 # support for structuring
 
@@ -45,7 +48,7 @@ metadata_struct_hook = make_dict_structure_fn( Metadata, CONVERTER )
 activity_struct_hook = make_dict_structure_fn(
 	Activity,
 	CONVERTER,
-	type = override( struct_hook=lambda obj, cls: ActivityTypes.from_str( obj ) )
+	type = override( struct_hook=lambda obj, cls: ActivityTypes.from_str( obj ) ),
 )
 
 # support for unstructuring
@@ -60,7 +63,6 @@ activity_part_unstruct_hook = make_dict_unstructure_fn(
 	ActivityPart,
 	CONVERTER,
 	_cattrs_omit_if_default=True,
-	__uids__=override( omit=True ),
 )
 
 # still don't understand why we need to define unstruct_hooks here, otherwise it will ignore _cattrs_omit_if_default
@@ -70,18 +72,17 @@ activity_unstruct_hook = make_dict_unstructure_fn(
 	_cattrs_omit_if_default=True,
 	duration=override( unstruct_hook=timedelta_to_str ),
 	duration_moving=override( unstruct_hook=timedelta_to_str ),
+#	parts=override( unstruct_hook=activity_part_unstruct_hook ),
 	metadata=override( unstruct_hook=metadata_unstruct_hook ),
 	type=override( unstruct_hook=ActivityTypes.to_str ),
 	__uid__=override( omit=True ),
 	__uids__=override( omit=True ),
 	__dirty__=override( omit=True ),
-	__parts__=override( omit=True ),
 	__resources__=override( omit=True ),
 	__parent__=override( omit=True ),
 	__parent_id__=override( omit=True ),
 	others=override( omit=True ),
 	other_parts=override( omit=True ),
-
 )
 
 # resource
@@ -113,7 +114,7 @@ RESOURCE_CONVERTER.register_unstructure_hook( Resource, resource_unstructure_hoo
 
 # unified converter
 
-# CONVERTER.register_structure_hook( time, lambda obj, cls: fromisoformat( obj ) )
+CONVERTER.register_structure_hook( time, lambda obj, cls: fromisoformat( obj ) )
 CONVERTER.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
 CONVERTER.register_structure_hook( Metadata, metadata_struct_hook )
 CONVERTER.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
@@ -154,6 +155,9 @@ def write_activities( activities: Activities, fs: FS ) -> None:
 	dump = CONVERTER.dumps( activities.all( sort=True ), unstructure_as=List[Activity], option=ORJSON_OPTIONS )
 	fs.writebytes( ACTIVITIES_PATH, dump )
 	log.debug( f'wrote {len( activities )} activities to {ACTIVITIES_NAME}' )
+
+def write_activities_as_list( activities: Activities ) -> List:
+	return CONVERTER.unstructure( activities, List[Activity] )
 
 # schema handling
 

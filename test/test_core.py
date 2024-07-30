@@ -39,7 +39,7 @@ def test_virtual_fields():
 	vf = ClassWithVirtualFields.__vf__
 
 	vf.add( VirtualField( 'index', int, default=10, expose=True ) )
-	vf.add( VirtualField( 'internal_index', int, default=20 ) )
+	vf.add( VirtualField( 'internal_index', int, default=20, expose=False ) )
 	vf.add( VirtualField( 'upper_name', str, factory=lambda p: p.name.upper(), expose=True ) )
 
 	cvf = ClassWithVirtualFields()

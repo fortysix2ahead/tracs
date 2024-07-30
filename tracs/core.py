@@ -197,7 +197,7 @@ class VirtualField:
 	factory: Callable = field( default=None )
 	description: str = field( default=None )
 	display_name: str = field( default=None )
-	expose: bool = field( default=False ) # expose field as regular property
+	expose: bool = field( default=True ) # expose field as regular property
 
 	# enclosing: Type = field( default=None )
 
@@ -241,7 +241,7 @@ class VirtualFields( dict[str, VirtualField] ):
 		self[vf.name] = vf
 
 	def set_field( self, name: str, vf: VirtualField ) -> None:
-		self[name] = vf
+		self[name or vf.name] = vf
 
 	def proxy( self, parent: Any ) -> VirtualFields:
 		self.__parent__ = parent
@@ -279,6 +279,10 @@ class VirtualFieldsBase( AttrsInstance ):
 			return f.type
 		else:
 			return None
+
+	@classmethod
+	def add_field( cls, vf: VirtualField, name: str = None ) -> None:
+		cls.__vf__.set_field( name, vf )
 
 	def __getattr__( self, name: str ) -> Any:
 		if ( vf := self.__class__.__vf__.get( name ) ) and vf.expose:

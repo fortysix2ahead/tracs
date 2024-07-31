@@ -12,7 +12,7 @@ from fs.errors import ResourceNotFound
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import dumps, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
@@ -39,7 +39,7 @@ DB_FILES = {
 	ACTIVITIES_NAME: '{}',
 	INDEX_NAME: '{}',
 	RESOURCES_NAME: '{}',
-	SCHEMA_NAME: f'\{ "version": {SCHEMA_VERSION} \}'
+	SCHEMA_NAME: dumps( { "version": SCHEMA_VERSION } )
 }
 
 UNDERLAY = 'underlay'

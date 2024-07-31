@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from functools import cached_property
 from re import compile, Pattern
-from typing import Any, cast, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, cast, ClassVar, Dict, List, Optional, Tuple, Type, Union
 
 from attrs import Attribute, define, field, fields
 
@@ -142,6 +142,30 @@ class Resource:
 
 	def get_child( self, resource_type: str ) -> Optional[Resource]:
 		return next( (r for r in self.resources if r.type == resource_type), None )
+
+class ResourceList( list[Resource] ):
+
+	def __init__( self, *resources: Resource ):
+		super().__init__()
+		self.extend( resources ) # for convenience, allow creation with given resources
+
+	def summary( self ) -> Optional[Resource]:
+		return next( (r for r in self if r.summary), None )
+
+	def summaries( self ) -> List[Resource]:
+		return [r for r in self if r.summary]
+
+	def recording( self ) -> Resource:
+		return next( (r for r in self if r.recording), None )
+
+	def recordings( self ) -> List[Resource]:
+		return [r for r in self if r.recording]
+
+	def image( self ) -> Optional[Resource]:
+		return next( (r for r in self if r.image), None )
+
+	def images( self ) -> List[Resource]:
+		return [r for r in self if r.image]
 
 @define
 class Resources( Container[Resource] ):

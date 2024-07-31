@@ -49,6 +49,53 @@ def test_activity_group():
 	assert a.group
 	assert not a.multipart
 
+def test_group_of():
+	src1 = Activity(
+		id=1,
+		name='One',
+		uid='polar:1',
+		type=ActivityTypes.walk,
+		starttime=datetime( 2024, 2, 1, 10, 0, 0 ),
+		tags=['a'],
+	)
+	src2 = Activity(
+		id=2,
+		name='Two',
+		distance=10,
+		calories=20,
+		uid='polar:2',
+		starttime = datetime( 2024, 2, 1, 10, 1, 0 ),
+		tags=['b'],
+	)
+	src3 = Activity( id=3, calories=100, heartrate=100, uid='group:1', uids=['polar:1', 'polar:2'] )
+
+	group = Activity.group_of(src1, src2 )
+	assert group.name == 'One' and group.distance == 10 and group.calories == 20
+	assert group.uid == 'group:240101100000'
+	assert group.uids == [ 'polar:1', 'polar:2' ]
+	assert group.type == ActivityTypes.walk and group.distance == 10 and group.calories == 20
+
+	target = src1.union( others=[src2, src3], force=True, copy=True )
+	assert target.name == 'One' and target.distance == 10 and target.calories == 100 and target.heartrate == 100
+	assert target.id == 3
+	assert target.uid == 'g1'
+	assert target.uids == ['a1', 'a2']
+	assert src1.distance is None  # source should be untouched
+
+	src1.union( [src2, src3], copy=False )
+	assert src1.name == 'One' and src1.distance == 10 and src1.calories == 20 and src1.heartrate == 100
+	assert src1.id == 1
+	assert src1.uid == 'a1'
+	assert src1.uids == []
+
+	# test constructor
+	src1 = Activity( id=1, name='One' )
+	target = Activity( others=[src1, src2, src3] )
+	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
+	assert target.id is None
+	assert target.uid is None
+	assert target.uids == []
+
 def test_activity_part():
 	p = ActivityPart( uids=[ 'polar:1234' ] )
 	assert p.as_uids == [ UID( classifier='polar', local_id=1234 ) ]

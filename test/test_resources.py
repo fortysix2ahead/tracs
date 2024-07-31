@@ -1,6 +1,6 @@
 from pytest import raises
 
-from tracs.resources import Resource, Resources, ResourceType
+from tracs.resources import Resource, ResourceList, Resources, ResourceType
 from tracs.uid import UID
 
 def test_resource_type():
@@ -65,6 +65,25 @@ def test_resource():
 		Resource( uid='polar:1001' )
 	#with raises( AttributeError ):
 	Resource( uid='polar', path='recording.gpx' ) # todo: very special case, not sure what to do with it
+
+def test_resource_list():
+	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
+	r2 = Resource( uid='polar:1234', name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )
+	r3 = Resource( uid='polar:1234', name='test1.json', type='application/vnd.polar+json', path='test1.json', summary=True )
+	r4 = Resource( uid='polar:1234', name='test2.json', type='application/vnd.polar+json', path='test2.json', summary=True )
+	r5 = Resource( uid='polar:1234', name='title.jpg', type='image/jpeg', path='title.jpeg' )
+
+	rl = ResourceList( r1, r2, r3, r4 )
+	rl.append( r5 )
+
+	assert len( rl ) == 5
+
+	assert rl.summary() == r3
+	assert rl.summaries() == [r4, r5]
+	assert rl.recording() == r1
+	assert rl.recordings() == [r1, r2, r3]
+	assert rl.image() == r5
+	assert rl.images() == [r5]
 
 def test_resources():
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )

@@ -274,6 +274,51 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 		self.tags.remove( tag )
 
 	@classmethod
+	def group_of( cls, *activities: Activity, ignored_fields: List[str] = None, force: bool = False, target: Activity = None ) -> Activity:
+		target = target if target else Activity()
+		ignored_fields = ignored_fields if ignored_fields else []
+
+		for f in target.fields():
+			if f.name.startswith( '__' ) or f.name in ignored_fields: # never touch internal or ignored fields
+				continue
+
+			if not force and f.metadata.get( 'protected', False ): # only overwrite protected fields when forced
+				continue
+
+			value = getattr( target, f.name )
+
+			# case 1: non-factory types
+			if not isinstance( f.default, Factory ):
+				if not force and value != f.default:  # do not overwrite when a value is already set
+					continue
+
+				for a in activities:
+					# overwrite when other value is different and different from default
+					if (other_value := getattr( a, f.name )) != value and other_value != f.default:
+						setattr( target, f.name, other_value )
+						if not force: # with force the last value wins
+							break
+
+			# case 2: factory types
+			else:
+				for a in activities:
+					other_value = getattr( a, f.name )
+					if f.default.factory is list:
+						setattr( target, f.name, sorted( list( set().union( getattr( target, f.name ), other_value ) ) ) )
+					elif f.default.factory is dict:
+						setattr( target, f.name, { **value, **other_value } )
+					elif f.default.factory is Metadata:
+						pass
+					else:
+						raise RuntimeError( f'unsupported factory datatype: {f.default.factory}' )
+
+		# treatment of special fields
+		target.uid = f'group:{activities[0].starttime.strftime( "%y%m%d%H%M%S" )}'
+		target.uids = [ a.uid for a in activities ]
+
+		return target
+
+	@classmethod
 	def multipart_of( cls, *activities: Activity ) -> Activity:
 		"""
 		Creates a new multipart activity from provided activities.

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime
 from functools import cached_property
-from inspect import getmembers, isclass, ismethod, signature
+from inspect import getmembers, signature
 from sys import version_info
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mapping, Optional, Tuple, Type, TypeVar, Union
 
 from attr import AttrsInstance
-from attrs import define, field, fields, Attribute
+from attrs import Attribute, define, field, fields
 
 FIELD_KWARGS = {
 	'init': True,
@@ -119,8 +119,9 @@ class Container( Generic[T] ):
 class Metadata:
 
 	uid: str = field( default=None )
-	created: datetime = field( default=None )
-	modified: datetime = field( default=None )
+	created: Optional[datetime] = field( default=None )
+	modified: Optional[datetime] = field( default=None )
+	favourite: bool = field( default=False )
 
 	supplementary: Dict[str, Any] = field( factory=dict )
 	# __kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )

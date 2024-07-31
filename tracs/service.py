@@ -310,7 +310,11 @@ class Service( Plugin ):
 
 	# noinspection PyMethodMayBeStatic,PyUnresolvedReferences
 	def create_activities( self, summary: Resource, resources: List[Resource], **kwargs ) -> List[Activity]:
-		return [ Service.as_activity_from( summary ) ]
+		activities = [ Service.as_activity_from( summary ) ]
+		now = datetime.now( UTC )
+		for a in activities:
+			a.metadata.created = now
+		return activities
 
 	# noinspection PyMethodMayBeStatic
 	def postprocess_activities( self, activities: List[Activity], resources: List[Resource], **kwargs ) -> List[Activity]:

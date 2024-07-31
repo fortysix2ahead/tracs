@@ -8,7 +8,7 @@ from rich.prompt import Confirm
 
 from tracs.service import Service
 from tracs.activity import Activity, ActivityPart, groups
-from tracs.fsio import ACTIVITIES_CONVERTER
+from tracs.fsio import CONVERTER
 from tracs.config import ApplicationContext
 from tracs.ui import Choice, dict_table, diff_table_3
 from tracs.utils import seconds_to_time, unique_sorted as usort
@@ -78,9 +78,9 @@ def confirm_grouping( ctx: ApplicationContext, group: ActivityGroup, force: bool
 	if force:
 		return True
 
-	result = ACTIVITIES_CONVERTER.unstructure( group.head.union( group.tail, copy=True ), Activity )
+	result = CONVERTER.unstructure( group.head.union( group.tail, copy=True ), Activity )
 	result['uids'] = sorted( list( { *group.head.uids, *[uid for t in group.tail for uid in t.uids] } ) )
-	sources = [ACTIVITIES_CONVERTER.unstructure( a, Activity ) for a in group.members]
+	sources = [CONVERTER.unstructure( a, Activity ) for a in group.members]
 
 	ctx.console.print( diff_table_3( result = result, sources = sources ) )
 

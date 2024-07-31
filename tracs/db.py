@@ -33,11 +33,13 @@ INDEX_NAME = 'index.json'
 RESOURCES_NAME = 'resources.json'
 SCHEMA_NAME = 'schema.json'
 
+SCHEMA_VERSION = 14
+
 DB_FILES = {
 	ACTIVITIES_NAME: '{}',
 	INDEX_NAME: '{}',
 	RESOURCES_NAME: '{}',
-	SCHEMA_NAME: '{"version": 13}'
+	SCHEMA_NAME: f'\{ "version": {SCHEMA_VERSION} \}'
 }
 
 UNDERLAY = 'underlay'

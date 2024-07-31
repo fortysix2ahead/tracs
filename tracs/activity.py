@@ -212,6 +212,8 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 						setattr( this, f.name, sorted( list( set().union( getattr( this, f.name ), other_value ) ) ) )
 					elif f.default.factory is dict:
 						setattr( this, f.name, { **value, **other_value } )
+					elif f.default.factory is Metadata:
+						pass # ignore metadata
 					else:
 						raise RuntimeError( f'unsupported factory datatype: {f.default}' )
 

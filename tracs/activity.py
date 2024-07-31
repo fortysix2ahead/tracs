@@ -11,7 +11,7 @@ from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
 from tracs.core import Container, FormattedFieldsBase, Metadata, VirtualFieldsBase
-from tracs.resources import Resource
+from tracs.resources import Resource, Resources
 from tracs.uid import UID
 from tracs.utils import sum_timedeltas, unchain, unique_sorted
 
@@ -104,9 +104,9 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	heartrate_min: Optional[int] = field( default=None ) #
 	calories: Optional[int] = field( default=None ) #
 
-
 	metadata: Metadata = field( factory=Metadata )
 	parts: List[ActivityPart] = field( factory=list )
+	resources: Resources = field( factory=Resources )
 
 	# init variables
 	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works

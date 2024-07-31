@@ -67,34 +67,53 @@ def test_group_of():
 		starttime = datetime( 2024, 2, 1, 10, 1, 0 ),
 		tags=['b'],
 	)
-	src3 = Activity( id=3, calories=100, heartrate=100, uid='group:1', uids=['polar:1', 'polar:2'] )
+	g1 = Activity(
+		id=3,
+		calories=100,
+		heartrate=100,
+		name='Group One',
+		uid='group:1',
+		uids=['polar:1', 'polar:2']
+	)
+	g2 = Activity(
+		id=4,
+		calories=200,
+		heartrate=200,
+		name='Group Two',
+		uid='group:2',
+		uids=['polar:1', 'polar:2']
+	)
 
+	# grouping
 	group = Activity.group_of(src1, src2 )
 	assert group.name == 'One' and group.distance == 10 and group.calories == 20
-	assert group.uid == 'group:240101100000'
-	assert group.uids == [ 'polar:1', 'polar:2' ]
-	assert group.type == ActivityTypes.walk and group.distance == 10 and group.calories == 20
+	assert group.uid == 'group:240201100000' and group.uids == [ 'polar:1', 'polar:2' ]
+	assert group.type == ActivityTypes.walk
 
-	target = src1.union( others=[src2, src3], force=True, copy=True )
-	assert target.name == 'One' and target.distance == 10 and target.calories == 100 and target.heartrate == 100
-	assert target.id == 3
-	assert target.uid == 'g1'
-	assert target.uids == ['a1', 'a2']
-	assert src1.distance is None  # source should be untouched
+	# grouping with force
+	group = Activity.group_of( src1, src2, force=True )
+	assert group.name == 'Two' and group.distance == 10 and group.calories == 20 and group.type == ActivityTypes.walk
+	assert group.uid == 'group:240201100000' and group.uids == [ 'polar:1', 'polar:2' ]
 
-	src1.union( [src2, src3], copy=False )
-	assert src1.name == 'One' and src1.distance == 10 and src1.calories == 20 and src1.heartrate == 100
-	assert src1.id == 1
-	assert src1.uid == 'a1'
-	assert src1.uids == []
+	# grouping with ignored_fields
+	group = Activity.group_of(src1, src2, ignored_fields=[ 'type' ] )
+	assert group.name == 'One' and group.distance == 10 and group.calories == 20
+	assert group.uid == 'group:240201100000' and group.uids == [ 'polar:1', 'polar:2' ]
+	assert group.type is None
 
-	# test constructor
-	src1 = Activity( id=1, name='One' )
-	target = Activity( others=[src1, src2, src3] )
-	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
-	assert target.id is None
-	assert target.uid is None
-	assert target.uids == []
+	# grouping with target
+	group = Activity.group_of(src1, src2, target=g1 )
+	assert group is g1
+	assert group.name == 'Group One' and group.distance == 10 and group.calories == 100
+	assert group.uid == 'group:240201100000' and group.uids == [ 'polar:1', 'polar:2' ]
+	assert group.type == ActivityTypes.walk
+
+	# grouping with target and force
+	group = Activity.group_of( src1, src2, target=g2, force=True )
+	assert group is g2
+	assert group.name == 'Two' and group.distance == 10 and group.calories == 20
+	assert group.uid == 'group:240201100000' and group.uids == ['polar:1', 'polar:2']
+	assert group.type == ActivityTypes.walk
 
 def test_activity_part():
 	p = ActivityPart( uids=[ 'polar:1234' ] )

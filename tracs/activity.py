@@ -312,6 +312,10 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 					else:
 						raise RuntimeError( f'unsupported factory datatype: {f.default.factory}' )
 
+		# treatment of special fields
+		target.uid = f'group:{activities[0].starttime.strftime( "%y%m%d%H%M%S" )}'
+		target.uids = [ a.uid for a in activities ]
+
 		return target
 
 	@classmethod

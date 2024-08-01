@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from attrs import define, field
 from typing import List, Optional, Tuple
-from urllib.parse import ParseResult, SplitResult, urlsplit, urlunsplit
-from urllib.parse import urlparse
+from urllib.parse import ParseResult, SplitResult, urlparse, urlsplit, urlunsplit
+
+from attrs import define, field
 
 @define( order=False )
 class UID:
@@ -115,3 +115,12 @@ class UID:
 
 	def denotes_part( self ) -> bool:
 		return True if self.classifier and self.local_id and self.part else False
+
+	# serialization
+
+	@classmethod
+	def _deserialize( cls, data: str ) -> UID:
+		return cls( uid=data )
+
+	def _serialize( self ) -> str:
+		return self.uid

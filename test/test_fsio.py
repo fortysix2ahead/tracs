@@ -44,7 +44,15 @@ def test_load_write_metadata():
 		members = [ UID( 'polar:101' ), UID( 'strava:101' ) ]
 	)
 
-	assert METADATA_CONVERTER.unstructure( md ) == 'polar:101/recording.gpx#1'
+	mdd = {
+		'created': '2024-01-04T10:00:00+00:00',
+		'favourite': True,
+		'members': ['polar:101', 'strava:101'],
+		'modified': '2024-01-04T11:00:00+00:00'
+	}
+
+	assert md.to_dict() == mdd
+	assert Metadata.from_dict( mdd ) == md
 
 def test_load_write_activity():
 	activities = Activities()

@@ -1,3 +1,6 @@
+from cattrs.preconf.orjson import make_converter
+from cattrs.strategies import use_class_methods
+
 from tracs.uid import UID
 
 def test_uid():
@@ -56,4 +59,13 @@ def test_lt():
 	uid3 = UID( 'strava:101' )
 
 	assert uid1 < uid2 < uid3
-	
+
+def test_serialize():
+	uid_str = 'polar:101/recording.gpx#1'
+	uid = UID( uid_str )
+
+	converter = make_converter()
+	use_class_methods( converter, "_deserialize", "_serialize" )
+
+	assert converter.unstructure( uid ) == uid_str
+	assert converter.structure( uid_str, UID ) == uid

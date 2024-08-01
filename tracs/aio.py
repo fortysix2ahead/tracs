@@ -12,7 +12,6 @@ from tzlocal import get_localzone_name
 from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.db import ActivityDb
-from tracs.fsio import CONVERTER
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.registry import Registry
 from tracs.resources import Resource
@@ -146,8 +145,7 @@ def load_resource( resource: Resource, as_activity: bool = False, update_raw: bo
 	log.error( f'unable to load resource {resource.uid}?{resource.path}, no importer found for resource type {resource.type}' )
 
 def _confirm_init( source: Activity, target: Activity, ignore: List[str], ctx: ApplicationContext ) -> bool:
-	src_dict = CONVERTER.unstructure( source, Activity )
-	target_dict = CONVERTER.unstructure( target, Activity )
+	src_dict, target_dict = source.to_dict(), target.to_dict()
 	# don't display ignored fields
 	src_dict = { k: v for k, v in src_dict.items() if k not in ignore }
 	target_dict = { k: v for k, v in target_dict.items() if k not in ignore }

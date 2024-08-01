@@ -431,7 +431,7 @@ class Activities( Container[Activity] ):
 
 	@classmethod
 	def from_dict( cls, obj: List[Dict] ) -> Activities:
-		return Activities()
+		return Activities( data=[Activity.from_dict( o ) for o in obj] )
 
 	def to_dict( self ) -> List[Dict]:
 		return [ Activity.to_dict( a ) for a in self.all( sort=True ) ]

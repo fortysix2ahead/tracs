@@ -2,10 +2,11 @@ from datetime import timedelta
 from typing import ClassVar, List
 
 from attrs import define, field
-from cattrs import Converter
+from cattrs import Converter, GenConverter
 from cattrs.gen import make_dict_unstructure_fn, override
 from cattrs.preconf.orjson import make_converter
 from pytest import mark
+from rich.pretty import pprint
 
 @define
 class Inner:
@@ -127,3 +128,27 @@ def test_specific_base():
 
 	# this fails
 	assert d == {'id': 10, 'time': '7200 sec'}
+
+@define
+class Name:
+
+	name: str = field( default=None )
+
+@define
+class Names:
+
+	primary: Name = field( default=None )
+	second_primary: Name = field( default=None )
+	secondary: List[Name] = field( factory=list )
+
+@define
+class Book:
+
+	authors: Names = field( default=None )
+
+def test_names():
+	book_converter, names_converter = GenConverter( omit_if_default=True ), GenConverter( omit_if_default=True )
+	names_converter.register_unstructure_hook( Name, lambda n: n.name.upper() )
+	book_converter.register_unstructure_hook( Names, lambda n: names_converter.unstructure( n ) )
+	b = Book( authors = Names( primary=Name( 'joe' ), secondary=[ Name( 'john' ), Name( 'jim' ) ] ) )
+	pprint( book_converter.unstructure( b ) )

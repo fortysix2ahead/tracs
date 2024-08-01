@@ -3,6 +3,7 @@ from json import loads
 
 from dateutil.tz import UTC
 from pytest import mark
+from rich.pretty import pprint
 
 from activity import Activities, Activity, ActivityPart
 from activity_types import ActivityTypes
@@ -55,10 +56,9 @@ def test_load_write_metadata():
 	assert Metadata.from_dict( mdd ) == md
 
 def test_load_write_activity():
-	activities = Activities()
-	activities.add( A )
-
-	pprint( CONVERTER.unstructure( [A] ) )
+	ad = A.to_dict()
+	A.from_dict( ad )
+	pprint( ad )
 
 @mark.context( env='default', persist='mem' )
 def test_load_write_activities( dbfs ):

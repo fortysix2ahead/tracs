@@ -6,11 +6,51 @@ from pytest import mark
 
 from activity import Activities, Activity, ActivityPart
 from activity_types import ActivityTypes
-from fsio import load_activities, load_schema, write_activities, write_activities_as_list
+from core import Metadata
+from fsio import CONVERTER, load_activities, load_schema, write_activities
+from uid import UID
+
+A = Activity(
+	id=1,
+	uid='polar:101',
+	starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
+	duration=timedelta( hours=2 ),
+	type=ActivityTypes.walk,
+	metadata=Metadata(
+		created = datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
+		modified = datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
+		favourite = True,
+		members = [ UID( 'polar:101' ), UID( 'strava:101' ) ],
+	),
+	parts=[ActivityPart( uids=['polar:222', 'polar:333'], gap=time( minute=20 ) )],
+	location_country='de',
+)
 
 @mark.context( env='default', persist='mem' )
 def test_load_schema( dbfs ):
 	assert load_schema( dbfs ).version == 13
+
+def test_load_write_uid():
+	uid_str = 'polar:101/recording.gpx#1'
+	uid = UID( uid_str )
+	assert uid.to_str() == uid_str
+	assert UID.from_str( uid_str ) == uid
+
+def test_load_write_metadata():
+	md = Metadata(
+		created = datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
+		modified = datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
+		favourite = True,
+		members = [ UID( 'polar:101' ), UID( 'strava:101' ) ]
+	)
+
+	assert METADATA_CONVERTER.unstructure( md ) == 'polar:101/recording.gpx#1'
+
+def test_load_write_activity():
+	activities = Activities()
+	activities.add( A )
+
+	pprint( CONVERTER.unstructure( [A] ) )
 
 @mark.context( env='default', persist='mem' )
 def test_load_write_activities( dbfs ):

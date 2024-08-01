@@ -9,8 +9,10 @@ from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mappi
 
 from attr import AttrsInstance
 from attrs import Attribute, define, field, fields
+from cattrs import Converter, GenConverter
 
 from uid import UID
+from utils import fromisoformat, toisoformat
 
 FIELD_KWARGS = {
 	'init': True,
@@ -120,6 +122,8 @@ class Container( Generic[T] ):
 @define( init=False )
 class Metadata:
 
+	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
+
 	created: Optional[datetime] = field( default=None )
 	modified: Optional[datetime] = field( default=None )
 
@@ -185,13 +189,14 @@ class Metadata:
 		d = { f: self.__getattr__( f ) for f in self.__regular_fieldnames } | self.supplementary
 		return { k: v for k, v in d.items() if v is not None }
 
-	@classmethod
-	def from_dict( cls, data: Dict[str, Any], type: Any ) -> Metadata:
-		return Metadata( **data )
+	# serialization
 
 	@classmethod
-	def to_dict( cls, metadata: Metadata ) -> Dict[str, Any]:
-		return metadata.as_dict()
+	def from_dict( cls, obj: Dict[str, Any] ) -> Metadata:
+		return Metadata.converter.structure( obj, Metadata )
+
+	def to_dict( self ) -> Dict[str, Any]:
+		return Metadata.converter.unstructure( self )
 
 @define
 class VirtualField:
@@ -447,3 +452,12 @@ class Normalizer:
 
 	def __call__( self, *args, **kwargs ) -> str:
 		return self.fn( *args, **kwargs )
+
+
+# setup converters
+
+Metadata.converter.register_unstructure_hook( datetime, toisoformat )
+Metadata.converter.register_unstructure_hook( UID, lambda u: u.to_str() )
+
+Metadata.converter.register_structure_hook( datetime, lambda dt, c: fromisoformat( dt ) )
+Metadata.converter.register_structure_hook( UID, lambda uid, c: UID.from_str( uid ) )

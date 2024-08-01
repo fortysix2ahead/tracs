@@ -4,16 +4,17 @@ from __future__ import annotations
 from datetime import datetime, time, timedelta
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Dict, List, Optional, TypeVar, Union
+from typing import Any, ClassVar, Dict, List, Optional, TypeVar, Union
 
 from attrs import define, evolve, Factory, field
+from cattrs import Converter, GenConverter
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
 from tracs.core import Container, FormattedFieldsBase, Metadata, VirtualFieldsBase
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
-from tracs.utils import sum_timedeltas, unchain, unique_sorted
+from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unchain, unique_sorted
 
 log = getLogger( __name__ )
 
@@ -47,6 +48,8 @@ class ActivityPart:
 
 @define( eq=True ) # todo: mark fields with proper eq attributes
 class Activity( VirtualFieldsBase, FormattedFieldsBase ):
+
+	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
 
 	# fields
 	id: int = field( default=None, metadata={ 'protected': True } )
@@ -365,8 +368,20 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 		return mpa
 
+	# serialization
+
+	@classmethod
+	def from_dict( cls, obj: Dict[str, Any] ) -> Activity:
+		return Activity.converter.structure( obj, Activity )
+
+	def to_dict( self ) -> Dict[str, Any]:
+		return Activity.converter.unstructure( self )
+
 @define
 class Activities( Container[Activity] ):
+
+	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
+
 	"""
 	Dict-like container for activities.
 	"""
@@ -412,6 +427,15 @@ class Activities( Container[Activity] ):
 			except KeyError:
 				pass
 
+	# serialization
+
+	@classmethod
+	def from_dict( cls, obj: List[Dict] ) -> Activities:
+		return Activities()
+
+	def to_dict( self ) -> List[Dict]:
+		return [ Activity.to_dict( a ) for a in self.all( sort=True ) ]
+
 # helper
 
 def values( *activities: Activity, name: str, filter: bool = False ) -> List:
@@ -435,3 +459,15 @@ def _sum( activities: List[Activity], name: str ) -> Any:
 
 def _stream( activities: List[Activity], name: str ) -> List:
 	return [ v for a in activities if ( v := getattr( a, name, None ) ) ]
+
+# configure converters
+
+Activity.converter.register_unstructure_hook( datetime, toisoformat )
+Activity.converter.register_unstructure_hook( timedelta, timedelta_to_str )
+Activity.converter.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
+Activity.converter.register_unstructure_hook( Metadata, lambda md: md.to_dict() )
+
+Activity.converter.register_structure_hook( time, lambda obj, cls: fromisoformat( obj ) )
+Activity.converter.register_structure_hook( datetime, lambda obj, cls: fromisoformat( obj ) )
+Activity.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
+Activity.converter.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )

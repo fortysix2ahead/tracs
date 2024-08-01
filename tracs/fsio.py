@@ -9,7 +9,7 @@ from cattrs.preconf.orjson import make_converter
 from fs.base import FS
 from fs.copy import copy_dir
 from fs.walk import Walker
-from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import dumps, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich.prompt import Confirm
 
 from tracs.activity import Activities, Activity, ActivityPart
@@ -152,8 +152,7 @@ def load_activities( fs: FS ) -> Activities:
 		log.error( f'error loading db', exc_info=True )
 
 def write_activities( activities: Activities, fs: FS ) -> None:
-	dump = CONVERTER.dumps( activities.all( sort=True ), unstructure_as=List[Activity], option=ORJSON_OPTIONS )
-	fs.writebytes( ACTIVITIES_PATH, dump )
+	fs.writebytes( ACTIVITIES_PATH, dumps( activities.to_dict(), option=ORJSON_OPTIONS ) )
 	log.debug( f'wrote {len( activities )} activities to {ACTIVITIES_NAME}' )
 
 def write_activities_as_list( activities: Activities ) -> List:

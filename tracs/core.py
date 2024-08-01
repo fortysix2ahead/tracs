@@ -10,6 +10,8 @@ from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mappi
 from attr import AttrsInstance
 from attrs import Attribute, define, field, fields
 
+from uid import UID
+
 FIELD_KWARGS = {
 	'init': True,
 	'repr': True,
@@ -118,10 +120,12 @@ class Container( Generic[T] ):
 @define( init=False )
 class Metadata:
 
-	uid: str = field( default=None )
 	created: Optional[datetime] = field( default=None )
 	modified: Optional[datetime] = field( default=None )
+
 	favourite: bool = field( default=False )
+
+	members: List[UID] = field( default=[] )
 
 	supplementary: Dict[str, Any] = field( factory=dict )
 	# __kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )

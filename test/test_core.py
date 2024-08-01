@@ -7,6 +7,7 @@ from babel.numbers import format_decimal
 from pytest import raises
 
 from tracs.core import vproperty, FormattedField, FormattedFields, FormattedFieldsBase, Metadata, VirtualField, VirtualFields, VirtualFieldsBase
+from uid import UID
 
 def test_virtual_field():
 
@@ -161,9 +162,9 @@ def test_formatted_fields():
 def test_metadata():
 
 	md = Metadata(
-		uid='polar:101',
 		created=datetime( 2023, 6, 1, 10, 0, 0 ),
 		modified=datetime( 2023, 7, 2, 11, 0, 0 ),
+		members=[ UID( 'polar:101' ), UID( 'strava:101' ) ],
 		f1='one',
 	)
 
@@ -171,34 +172,34 @@ def test_metadata():
 	md['f3'] = 'three'
 
 	assert len( md ) == 7
-	assert md.uid == 'polar:101'
 	assert md.f2 == 'two'
 	assert md['f3'] == 'three'
+	assert md.members == [ UID( 'polar:101' ), UID( 'strava:101' ) ]
 
-	assert md.keys() == ['uid', 'created', 'modified', 'favourite', 'f1', 'f2', 'f3']
+	assert md.keys() == ['created', 'modified', 'favourite', 'members', 'f1', 'f2', 'f3']
 	assert md.values() == [
-		'polar:101',
 		datetime( 2023, 6, 1, 10, 0, 0 ),
 		datetime( 2023, 7, 2, 11, 0, 0 ),
 		False,
+		[ UID( 'polar:101' ), UID( 'strava:101' ) ],
 		'one',
 		'two',
 		'three',
 	]
 	assert md.items() == [
-		('uid', 'polar:101'),
 		('created', datetime( 2023, 6, 1, 10, 0, 0 )),
 		('modified', datetime( 2023, 7, 2, 11, 0, 0 )),
 		('favourite', False),
+		('members', [ UID( 'polar:101' ), UID( 'strava:101' ) ]),
 		('f1', 'one'),
 		('f2', 'two'),
 		('f3', 'three'),
 	]
 	assert md.as_dict() == {
-		'uid': 'polar:101',
 		'created': datetime( 2023, 6, 1, 10, 0, 0 ),
 		'modified': datetime( 2023, 7, 2, 11, 0, 0 ),
 		'favourite': False,
+		'members': [ UID( 'polar:101' ), UID( 'strava:101' ) ],
 		'f1': 'one',
 		'f2': 'two',
 		'f3': 'three',

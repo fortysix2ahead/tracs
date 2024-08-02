@@ -64,8 +64,4 @@ def test_serialize():
 	uid_str = 'polar:101/recording.gpx#1'
 	uid = UID( uid_str )
 
-	converter = make_converter()
-	use_class_methods( converter, "_deserialize", "_serialize" )
-
-	assert converter.unstructure( uid ) == uid_str
-	assert converter.structure( uid_str, UID ) == uid
+	assert uid.to_str() == uid_str and UID.from_str( uid_str ) == uid

@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from functools import cached_property
 from logging import getLogger
 from typing import Any, ClassVar, Dict, List, Optional, TypeVar, Union
@@ -12,7 +12,7 @@ from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
 from tracs.core import Container, FormattedFieldsBase, Metadata, VirtualFieldsBase
-from tracs.resources import Resource, Resources
+from tracs.resources import Resource, ResourceList
 from tracs.uid import UID
 from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unchain, unique_sorted
 
@@ -120,7 +120,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	metadata: Metadata = field( factory=Metadata )
 	parts: List[ActivityPart] = field( factory=list )
-	resources: Resources = field( factory=Resources )
+	resources: ResourceList = field( factory=ResourceList ) # todo: merge with Resources later
 
 	# init variables
 	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
@@ -130,7 +130,6 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	## internal fields
 	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
-	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False, alias='__resources__' )
 	__parent__: Optional[Activity] = field( init=False, default=None, alias='__parent__' )
 	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
 
@@ -153,10 +152,6 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	#@property
 	#def activity_uids( self ) -> List[str]:
 	#	return unique_sorted( [ f'{uid.classifier}:{uid.local_id}' for uid in self.as_uids() ] )
-
-	@property
-	def resources( self ) -> List[Resource]:
-		return self.__resources__
 
 	@property
 	def parent( self ) -> Optional[Activity]:
@@ -480,8 +475,10 @@ Activity.converter.register_unstructure_hook( datetime, toisoformat )
 Activity.converter.register_unstructure_hook( timedelta, timedelta_to_str )
 Activity.converter.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
 Activity.converter.register_unstructure_hook( Metadata, lambda md: md.to_dict() )
+Activity.converter.register_unstructure_hook( ResourceList, lambda rl: rl.to_list() )
 
 Activity.converter.register_structure_hook( datetime, lambda obj, cls: fromisoformat( obj ) )
 Activity.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
 Activity.converter.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
 Activity.converter.register_structure_hook( Metadata, lambda obj, cls: Metadata.from_dict( obj ) )
+Activity.converter.register_structure_hook( ResourceList, lambda obj, cls: ResourceList.from_list( obj ) )

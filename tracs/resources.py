@@ -6,6 +6,7 @@ from re import compile, Pattern
 from typing import Any, cast, ClassVar, Dict, List, Optional, Tuple, Type, Union
 
 from attrs import Attribute, define, field, fields
+from cattrs import Converter, GenConverter
 
 from tracs.core import Container
 from tracs.uid import UID
@@ -58,6 +59,9 @@ class ResourceType:
 
 @define
 class Resource:
+
+	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
+
 	id: int = field( default=None )
 	name: Optional[str] = field( default=None )
 	type: str = field( default=None )
@@ -143,6 +147,15 @@ class Resource:
 	def get_child( self, resource_type: str ) -> Optional[Resource]:
 		return next( (r for r in self.resources if r.type == resource_type), None )
 
+	# serialization
+
+	@classmethod
+	def from_dict( cls, obj: Dict[str, Any] ) -> Resource:
+		return Resource.converter.structure( obj, Resource )
+
+	def to_dict( self ) -> Dict[str, Any]:
+		return Resource.converter.unstructure( self )
+
 class ResourceList( list[Resource] ):
 
 	def __init__( self, *resources: Resource ):
@@ -166,6 +179,15 @@ class ResourceList( list[Resource] ):
 
 	def images( self ) -> List[Resource]:
 		return [r for r in self if r.image]
+
+	# serialization
+
+	@classmethod
+	def from_list( cls, obj: List[Dict[str, Any]] ) -> ResourceList:
+		return [ Resource.from_dict( r ) for r in obj ]
+
+	def to_list( self ) -> List[Dict[str, Any]]:
+		return [ r.to_dict() for r in self ]
 
 @define
 class Resources( Container[Resource] ):

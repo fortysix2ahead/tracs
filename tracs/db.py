@@ -29,16 +29,12 @@ log = getLogger( __name__ )
 ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
 ACTIVITIES_NAME = 'activities.json'
-INDEX_NAME = 'index.json'
-RESOURCES_NAME = 'resources.json'
 SCHEMA_NAME = 'schema.json'
 
 SCHEMA_VERSION = 14
 
 DB_FILES = {
-	ACTIVITIES_NAME: '{}',
-	INDEX_NAME: '{}',
-	RESOURCES_NAME: '{}',
+	ACTIVITIES_NAME: dumps( '[]' ),
 	SCHEMA_NAME: dumps( { "version": SCHEMA_VERSION } )
 }
 
@@ -119,7 +115,7 @@ class ActivityDb:
 
 		for file, content in DB_FILES.items():
 			if not fs.get_fs( UNDERLAY ).exists( f'/{file}' ):
-				fs.get_fs( UNDERLAY ).writetext( f'/{file}', content )
+				fs.get_fs( UNDERLAY ).writebytes( f'/{file}', content )
 			# copy_file_if( self.pkgfs, f'/{f}', self.underlay_fs, f'/{f}', 'not_exists', preserve_time=True )
 
 		# todo: this is probably not needed?
@@ -148,7 +144,7 @@ class ActivityDb:
 	def _init_existing_fs( self, fs: FS ) -> FS:
 		for file, content in DB_FILES.items():
 			if not fs.exists( file ):
-				fs.writetext( file, content )
+				fs.writebytes( file, content )
 		return fs
 
 	# for development only ...
@@ -158,7 +154,6 @@ class ActivityDb:
 
 	def _load_db( self ):
 		self._schema = load_schema( self.fs )
-		self._resources: Resources = load_resources( self.fs )
 		self._activities: Activities = load_activities( self.fs )
 
 	def register_summary_types( self, *types: str ):
@@ -170,7 +165,6 @@ class ActivityDb:
 	# todo: remove do_commit flag?
 	def commit( self, do_commit: bool = True ):
 		if do_commit:
-			write_resources( self._resources, self.overlay_fs )
 			write_activities( self._activities, self.overlay_fs )
 
 	def save( self ):

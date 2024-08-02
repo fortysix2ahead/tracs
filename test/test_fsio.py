@@ -9,6 +9,8 @@ from activity import Activities, Activity, ActivityPart
 from activity_types import ActivityTypes
 from core import Metadata
 from fsio import load_activities, load_schema, write_activities
+from plugins.gpx import GPX_TYPE
+from resources import Resource, ResourceList, Resources
 from uid import UID
 
 A = Activity(
@@ -17,6 +19,7 @@ A = Activity(
 	starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
 	duration=timedelta( hours=2 ),
 	type=ActivityTypes.walk,
+	location_country='de',
 	metadata=Metadata(
 		created = datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
 		modified = datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
@@ -24,7 +27,9 @@ A = Activity(
 		members = [ UID( 'polar:101' ), UID( 'strava:101' ) ],
 	),
 	parts=[ActivityPart( uids=['polar:222', 'polar:333'], gap=timedelta( minutes=20 ) )],
-	location_country='de',
+	resources=ResourceList(
+		Resource( name = 'recording.gpx', type=GPX_TYPE, path='polar/1/2/3/1234/1234.gpx', source='https://polar.com/1234/1234.gpx' )
+	)
 )
 
 AD = {
@@ -42,6 +47,9 @@ AD = {
 	},
 	'parts': [
 		{'gap': '00:20:00', 'uids': ['polar:222', 'polar:333']}
+	],
+	'resources': [
+		{ 'name': 'recording.gpx', 'path': 'polar/1/2/3/1234/1234.gpx', 'source': 'https://polar.com/1234/1234.gpx', 'type': 'application/gpx+xml' }
 	]
 }
 
@@ -58,6 +66,10 @@ def test_uid():
 def test_metadata():
 	assert A.metadata.to_dict() == AD['metadata']
 	assert Metadata.from_dict( AD['metadata'] ) == A.metadata
+
+def test_resource():
+	assert A.resources.to_list() == AD['resources']
+	assert ResourceList.from_list( AD['resources'] ) == A.resources
 
 def test_activity_part():
 	assert A.parts[0].to_dict() == AD['parts'][0]

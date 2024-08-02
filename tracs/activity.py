@@ -23,7 +23,9 @@ T = TypeVar('T')
 @define( eq=True )
 class ActivityPart:
 
-	gap: time = field( default=None )
+	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
+
+	gap: timedelta = field( default=None )
 	uids: List[str] = field( factory=list )
 
 	@property
@@ -45,6 +47,15 @@ class ActivityPart:
 	@cached_property
 	def as_activity_uids( self ) -> List[UID]:
 		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.uid_objs ] )
+
+	# serialization
+
+	@classmethod
+	def from_dict( cls, obj: Dict[str, Any] ) -> ActivityPart:
+		return ActivityPart.converter.structure( obj, ActivityPart )
+
+	def to_dict( self ) -> Dict[str, Any]:
+		return ActivityPart.converter.unstructure( self )
 
 @define( eq=True ) # todo: mark fields with proper eq attributes
 class Activity( VirtualFieldsBase, FormattedFieldsBase ):
@@ -462,12 +473,15 @@ def _stream( activities: List[Activity], name: str ) -> List:
 
 # configure converters
 
+ActivityPart.converter.register_unstructure_hook( timedelta, timedelta_to_str )
+ActivityPart.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
+
 Activity.converter.register_unstructure_hook( datetime, toisoformat )
 Activity.converter.register_unstructure_hook( timedelta, timedelta_to_str )
 Activity.converter.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
 Activity.converter.register_unstructure_hook( Metadata, lambda md: md.to_dict() )
 
-Activity.converter.register_structure_hook( time, lambda obj, cls: fromisoformat( obj ) )
 Activity.converter.register_structure_hook( datetime, lambda obj, cls: fromisoformat( obj ) )
 Activity.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
 Activity.converter.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
+Activity.converter.register_structure_hook( Metadata, lambda obj, cls: Metadata.from_dict( obj ) )

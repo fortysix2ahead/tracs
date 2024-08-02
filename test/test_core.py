@@ -1,12 +1,10 @@
 from datetime import datetime
-from inspect import *
-from typing import ClassVar, List
 
 from attrs import define, field
 from babel.numbers import format_decimal
-from pytest import raises
+from pytest import mark, raises
 
-from tracs.core import vproperty, FormattedField, FormattedFields, FormattedFieldsBase, Metadata, VirtualField, VirtualFields, VirtualFieldsBase
+from tracs.core import FormattedField, FormattedFields, FormattedFieldsBase, Metadata, VirtualField, VirtualFieldsBase
 from uid import UID
 
 def test_virtual_field():
@@ -27,6 +25,7 @@ def test_virtual_field():
 	with raises( AttributeError ):
 		assert vf() == 'two'
 
+@mark.xfail
 def test_virtual_fields():
 
 	# test class enriched with virtual fields

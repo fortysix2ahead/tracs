@@ -10,7 +10,7 @@ XML_TYPE = 'application/xml'
 
 @resourcetype
 def xml_resource_type() -> ResourceType:
-	return ResourceType( type=XML_TYPE, activity_cls=ObjectifiedElement )
+	return ResourceType( type=XML_TYPE )
 
 @importer( type=XML_TYPE )
 class XMLHandler( ResourceHandler ):

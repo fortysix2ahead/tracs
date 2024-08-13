@@ -3,14 +3,12 @@ from __future__ import annotations
 from enum import Enum
 from functools import cached_property
 from re import compile, Pattern
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from attrs import Attribute, define, field, fields
 from cattrs import Converter, GenConverter
 
-from tracs.core import Container
 from tracs.uid import UID
-from tracs.utils import unchain
 
 # todo: not sure if we still need the status
 class Status( Enum ):
@@ -180,9 +178,9 @@ class Resource:
 	def to_dict( self ) -> Dict[str, Any]:
 		return Resource.converter.unstructure( self )
 
-class ResourceList( list[Resource] ):
+class Resources( list[Resource] ):
 
-	def __init__( self, *resources: Resource, lst: Optional[List[Resource]] = None, lists: Optional[List[ResourceList]] = None ):
+	def __init__( self, *resources: Resource, lst: Optional[List[Resource]] = None, lists: Optional[List[Resources]] = None ):
 		super().__init__()
 		# for convenience, allow creation with given resources/list/resource lists
 		self.extend( resources )
@@ -219,84 +217,14 @@ class ResourceList( list[Resource] ):
 		return list( _all )
 
 	@classmethod
-	def from_list( cls, *lists: ResourceList ) -> ResourceList:
-		return ResourceList( lst=[r for l in lists for r in l] )
+	def from_list( cls, *lists: Resources ) -> Resources:
+		return Resources( lst=[r for l in lists for r in l] )
 
 	# serialization
 
 	@classmethod
-	def from_dict( cls, obj: List[Dict[str, Any]] ) -> ResourceList:
-		return ResourceList( *[ Resource.from_dict( r ) for r in obj ] )
+	def from_dict( cls, obj: List[Dict[str, Any]] ) -> Resources:
+		return Resources( *[ Resource.from_dict( r ) for r in obj ] )
 
 	def to_dict( self ) -> List[Dict[str, Any]]:
 		return [ r.to_dict() for r in self ]
-
-@define
-class Resources( Container[Resource] ):
-	"""
-	Dict-like container for resources.
-	"""
-
-	def __attrs_post_init__( self ):
-		super().__attrs_post_init__()
-		for r in self.data:
-			self.__uid_map__[r.uidpath] = r
-
-	# magic/dict methods
-
-	def __contains__( self, item: Resource ) -> bool:
-		try:
-			return any( [item.uid == r.uid and item.path == r.path for r in self.data] )
-		except AttributeError:
-			return False
-
-	def get( self, key: str ) -> Optional[Resource]:
-		return next( (i for i in self.data if i.uidpath == key), None )
-
-	# add/remove etc.
-
-	def add( self, *resources: Union[Resource, List[Resource]] ) -> List[int]:
-		for r in unchain( *resources ):
-			if r.uidpath in self.__uid_map__:
-				raise KeyError( f'resource with UID {r.uidpath} already contained in resources' )
-
-			r.id = self.__next_id__()
-			self.data.append( r )
-			self.__uid_map__[r.uidpath] = r
-			self.__id_map__[r.id] = r
-
-		return [r.id for r in resources]
-
-	def update( self, *resources: Union[Resource, List[Resource]] ) -> Tuple[List[int], List[int]]:
-		added, updated = [], []
-		for r in unchain( *resources ):
-			if r.uidpath in self.__uid_map__.keys():
-				# use evolve?
-				# r = evolve( self.__uid_map__[r.uidpath], **asdict( r ) )
-				old = next( o for o in self.data if o.uidpath == r.uidpath )
-				r.id = old.id
-				self.__uid_map__[r.uidpath] = r
-				self.__id_map__[old.id] = r
-				self.data.remove( old )
-				self.data.append( r )
-				updated.append( r.id )
-			else:
-				added.extend( self.add( r ) )
-
-		return added, updated
-
-	# access methods
-
-	def all_for( self, uid: str = None, path: str = None ) -> List[Resource]:
-		_all = filter( lambda r: r.uid == uid, self.all() ) if uid else self.all()
-		_all = filter( lambda r: r.path == path, _all ) if path else _all
-		return list( _all )
-
-	def summary( self ) -> Optional[Resource]:
-		return next( (r for r in self.data if r.summary), None )
-
-	def summaries( self ) -> List[Resource]:
-		return [r for r in self.data if r.summary]
-
-	def recordings( self ) -> List[Resource]:
-		return [r for r in self.data if not r.summary]

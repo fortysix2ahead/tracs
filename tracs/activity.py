@@ -12,7 +12,7 @@ from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
 from tracs.core import Container, FormattedFieldsBase, Metadata, VirtualFieldsBase
-from tracs.resources import Resource, ResourceList
+from tracs.resources import Resource, Resources
 from tracs.uid import UID
 from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unchain, unique_sorted
 
@@ -120,7 +120,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	metadata: Metadata = field( factory=Metadata )
 	parts: List[ActivityPart] = field( factory=list )
-	resources: ResourceList = field( factory=ResourceList ) # todo: merge with Resources later
+	resources: Resources = field( factory=Resources ) # todo: merge with Resources later
 
 	# init variables
 	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
@@ -221,7 +221,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 						setattr( this, f.name, sorted( list( set().union( getattr( this, f.name ), other_value ) ) ) )
 					elif f.default.factory is dict:
 						setattr( this, f.name, { **value, **other_value } )
-					elif f.default.factory in [Metadata, ResourceList]:
+					elif f.default.factory in [Metadata, Resources]:
 						pass # ignore metadata
 					else:
 						raise RuntimeError( f'unsupported factory datatype: {f.default}' )
@@ -316,7 +316,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 						setattr( target, f.name, sorted( list( set().union( getattr( target, f.name ), other_value ) ) ) )
 					elif f.default.factory is dict:
 						setattr( target, f.name, { **value, **other_value } )
-					elif f.default.factory in [Metadata, ResourceList]:
+					elif f.default.factory in [Metadata, Resources]:
 						pass
 					else:
 						raise RuntimeError( f'unsupported factory datatype: {f.default.factory}' )
@@ -475,10 +475,10 @@ Activity.converter.register_unstructure_hook( datetime, toisoformat )
 Activity.converter.register_unstructure_hook( timedelta, timedelta_to_str )
 Activity.converter.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
 Activity.converter.register_unstructure_hook( Metadata, lambda md: md.to_dict() )
-Activity.converter.register_unstructure_hook( ResourceList, lambda rl: rl.to_dict() )
+Activity.converter.register_unstructure_hook( Resources, lambda rl: rl.to_dict() )
 
 Activity.converter.register_structure_hook( datetime, lambda obj, cls: fromisoformat( obj ) )
 Activity.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
 Activity.converter.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
 Activity.converter.register_structure_hook( Metadata, lambda obj, cls: Metadata.from_dict( obj ) )
-Activity.converter.register_structure_hook( ResourceList, lambda obj, cls: ResourceList.from_dict( obj ) )
+Activity.converter.register_structure_hook( Resources, lambda obj, cls: Resources.from_dict( obj ) )

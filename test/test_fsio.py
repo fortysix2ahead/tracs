@@ -1,19 +1,15 @@
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from json import loads
 
 from dateutil.tz import UTC
 from pytest import mark
-from rich.pretty import pprint
 
-from activity import Activities, Activity, ActivityPart
-from activity_types import ActivityTypes
+from activity import Activities, ActivityPart
 from core import Metadata
 from fsio import load_activities, load_schema, write_activities
-from plugins.gpx import GPX_TYPE
-from resources import Resource, ResourceList, Resources
-from uid import UID
-
+from resources import Resources
 from test.objects import COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD
+from uid import UID
 
 @mark.context( env='default', persist='mem' )
 def test_load_schema( dbfs ):
@@ -31,7 +27,7 @@ def test_metadata():
 
 def test_resource():
 	assert A.resources.to_dict() == AD['resources']
-	assert ResourceList.from_dict( AD['resources'] ) == A.resources
+	assert Resources.from_dict( AD['resources'] ) == A.resources
 
 def test_activity_part():
 	assert A.parts[0].to_dict() == AD['parts'][0]

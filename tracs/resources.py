@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from functools import cached_property
 from re import compile, Pattern
-from typing import Any, cast, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 from attrs import Attribute, define, field, fields
 from cattrs import Converter, GenConverter
@@ -13,14 +13,13 @@ from tracs.uid import UID
 from tracs.utils import unchain
 
 # todo: not sure if we still need the status
-class ResourceStatus( Enum ):
+class Status( Enum ):
 	UNKNOWN = 100
 	EXISTS = 200
 	NO_CONTENT = 204
 	NOT_FOUND = 404
 
-pattern: Pattern = compile( '\w+/(vnd\.(?P<vendor>\w+).)?((?P<subtype>\w+)\+)?(?P<suffix>\w+)' )
-classifier_local_id_pattern = compile( '\w+:\d+' )
+TYPE_PATTERN: Pattern = compile( r'\w+/(vnd\.(?P<vendor>\w+).)?((?P<subtype>\w+)\+)?(?P<suffix>\w+)' )
 
 @define
 class ResourceType:
@@ -28,11 +27,6 @@ class ResourceType:
 	# type "/" [tree "."] subtype ["+" suffix]* [";" parameter]
 
 	type: str = field( default=None )
-	subtype: str = field( default=None )
-	suffix: str = field( default=None )
-	vendor: str = field( default=None )
-
-	activity_cls: Type = field( default=None ) # todo: field is probably obsolete
 	name: str = field( default=None )
 
 	summary: bool = field( default=False )
@@ -40,22 +34,52 @@ class ResourceType:
 	image: bool = field( default=False )
 
 	def __attrs_post_init__( self ):
-		if self.subtype or self.suffix or self.vendor:
-			return
-		if self.type and (m := pattern.match( self.type )):
-			self.suffix = m.groupdict().get( 'suffix' )
-			self.subtype = m.groupdict().get( 'subtype' )
-			self.vendor = m.groupdict().get( 'vendor' )
+		if not TYPE_PATTERN.match( self.type ):
+			raise ValueError
 
-	def extension( self ) -> Optional[str]:
+	@cached_property
+	def subtype( self ) -> Optional[str]:
+		return TYPE_PATTERN.match( self.type ).groupdict().get( 'subtype' )
+
+	@cached_property
+	def suffix( self ) -> Optional[str]:
+		return TYPE_PATTERN.match( self.type ).groupdict().get( 'suffix' )
+
+	@cached_property
+	def vendor( self ) -> Optional[str]:
+		return TYPE_PATTERN.match( self.type ).groupdict().get( 'vendor' )
+
+	@cached_property
+	def ext( self ) -> Optional[str]:
 		if self.suffix and self.subtype:
 			return f'{self.subtype}' if not self.vendor else f'{self.subtype}.{self.suffix}'
 		else:
 			return self.suffix
 
-	@property
-	def other( self ) -> bool:
-		return True if not self.summary and not self.recording and not self.image else False
+	def extension( self ) -> Optional[str]:
+		return self.ext
+
+class ResourceTypes( dict[str, ResourceType] ):
+
+	_instance: ClassVar[ResourceTypes] = None
+
+	@classmethod
+	def inst( cls ):
+		if not cls._instance:
+			cls._instance = ResourceTypes()
+		return cls._instance
+
+	@classmethod
+	def images( cls ) -> List[ResourceType]:
+		return [rt for rt in cls.inst().values() if rt.image]
+
+	@classmethod
+	def recordings( cls ) -> List[ResourceType]:
+		return [rt for rt in cls.inst().values() if rt.recording]
+
+	@classmethod
+	def summaries( cls ) -> List[ResourceType]:
+		return [rt for rt in cls.inst().values() if rt.summary]
 
 @define
 class Resource:

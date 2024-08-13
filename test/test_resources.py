@@ -1,29 +1,29 @@
 from pytest import mark, raises
 
-from tracs.resources import Resource, ResourceList, Resources, ResourceType
+from tracs.resources import Resource, ResourceList, Resources, ResourceType, ResourceTypes
 from tracs.uid import UID
 
 def test_resource_type():
 	rt = ResourceType( 'application/xml' )
-	assert rt == ResourceType( type=rt.type, suffix='xml' ) and rt.extension() == 'xml'
+	assert rt.suffix == 'xml' and rt.extension() == 'xml'
 
 	rt = ResourceType( 'application/gpx+xml' )
-	assert rt == ResourceType( type=rt.type, subtype='gpx', suffix='xml' ) and rt.extension() == 'gpx'
+	assert rt.subtype == 'gpx' and rt.suffix == 'xml' and rt.extension() == 'gpx'
 
 	rt = ResourceType( 'application/vnd.polar.flow+json' )
-	assert rt == ResourceType( type=rt.type, vendor='polar', subtype='flow', suffix='json' ) and rt.extension() == 'flow.json'
+	assert rt.subtype == 'flow' and rt.suffix == 'json' and rt.vendor == 'polar' and rt.extension() == 'flow.json'
 
 	rt = ResourceType( 'application/vnd.polar+csv' )
-	assert rt == ResourceType( type=rt.type, vendor='polar', suffix='csv' ) and rt.extension() == 'csv'
+	assert rt.suffix == 'csv' and rt.vendor == 'polar' and rt.extension() == 'csv'
 
 	rt = ResourceType( 'application/vnd.polar.flow+csv' )
-	assert rt == ResourceType( type=rt.type, vendor='polar', subtype='flow', suffix='csv' ) and rt.extension() == 'flow.csv'
+	assert rt.subtype == 'flow' and rt.suffix == 'csv' and rt.vendor == 'polar' and rt.extension() == 'flow.csv'
 
 	rt = ResourceType( 'application/vnd.polar.ped+xml' )
-	assert rt == ResourceType( type=rt.type, vendor='polar', subtype='ped', suffix='xml' ) and rt.extension() == 'ped.xml'
+	assert rt.subtype == 'ped' and rt.suffix == 'xml' and rt.vendor == 'polar' and rt.extension() == 'ped.xml'
 
 	rt = ResourceType( 'application/vnd.polar.gpx+zip' )
-	assert rt == ResourceType( type=rt.type, vendor='polar', subtype='gpx', suffix='zip' ) and rt.extension() == 'gpx.zip'
+	assert rt.subtype == 'gpx' and rt.suffix == 'zip' and rt.vendor == 'polar' and rt.extension() == 'gpx.zip'
 
 	assert ResourceType( 'application/fit' ).extension() == 'fit'
 	assert ResourceType( 'application/vnd.bikecitizens+json' ).extension() == 'json'
@@ -37,6 +37,19 @@ def test_resource_type():
 	assert ResourceType( 'application/tcx+xml' ).extension() == 'tcx'
 	assert ResourceType( 'application/vnd.polar+csv' ).extension() == 'csv'
 	assert ResourceType( 'application/vnd.polar.hrv+csv' ).extension() == 'hrv.csv'
+
+def test_resource_types():
+	# setup
+	ResourceTypes.inst().clear()
+	ResourceTypes.inst()[rt.type] = ( rt := ResourceType( 'application/vnd.polar+json', summary=True ) )
+	ResourceTypes.inst()[rt.type] = ( rt := ResourceType( 'application/gpx+xml', recording=True ) )
+	ResourceTypes.inst()[rt.type] = ( rt := ResourceType( 'image/jpeg', image=True ) )
+
+	# actual test
+	assert len( ResourceTypes.inst() ) == 3
+	assert ResourceTypes.summaries() == [ ResourceType( 'application/vnd.polar+json', summary=True ) ]
+	assert ResourceTypes.recordings() == [ ResourceType( 'application/gpx+xml', recording=True ) ]
+	assert ResourceTypes.images() == [ ResourceType( 'image/jpeg', image=True ) ]
 
 def test_resource():
 	# creation with separate uid and path arguments

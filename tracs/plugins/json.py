@@ -18,7 +18,7 @@ JSON_TYPE = 'application/json'
 
 @resourcetype
 def json_resource_type() -> ResourceType:
-	return ResourceType( type=JSON_TYPE, activity_cls=dict )
+	return ResourceType( type=JSON_TYPE )
 
 @importer( type=JSON_TYPE )
 class JSONHandler( ResourceHandler ):

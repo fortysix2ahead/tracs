@@ -182,9 +182,12 @@ class Resource:
 
 class ResourceList( list[Resource] ):
 
-	def __init__( self, *resources: Resource ):
+	def __init__( self, *resources: Resource, lst: Optional[List[Resource]] = None, lists: Optional[List[ResourceList]] = None ):
 		super().__init__()
-		self.extend( resources ) # for convenience, allow creation with given resources
+		# for convenience, allow creation with given resources/list/resource lists
+		self.extend( resources )
+		self.extend( lst or [] )
+		self.extend( [r for l in lists or [] for r in l] )
 
 	def summary( self ) -> Optional[Resource]:
 		return next( (r for r in self if r.summary), None )
@@ -204,13 +207,28 @@ class ResourceList( list[Resource] ):
 	def images( self ) -> List[Resource]:
 		return [r for r in self if r.image]
 
+	# access
+
+	# for compatibility only
+	def all( self ) -> List[Resource]:
+		return [ r for r in self ]
+
+	def all_for( self, uid: str = None, path: str = None ) -> List[Resource]:
+		_all = filter( lambda r: r.uid == uid, self ) if uid else self
+		_all = filter( lambda r: r.path == path, _all ) if path else _all
+		return list( _all )
+
+	@classmethod
+	def from_list( cls, *lists: ResourceList ) -> ResourceList:
+		return ResourceList( lst=[r for l in lists for r in l] )
+
 	# serialization
 
 	@classmethod
-	def from_list( cls, obj: List[Dict[str, Any]] ) -> ResourceList:
-		return [ Resource.from_dict( r ) for r in obj ]
+	def from_dict( cls, obj: List[Dict[str, Any]] ) -> ResourceList:
+		return ResourceList( *[ Resource.from_dict( r ) for r in obj ] )
 
-	def to_list( self ) -> List[Dict[str, Any]]:
+	def to_dict( self ) -> List[Dict[str, Any]]:
 		return [ r.to_dict() for r in self ]
 
 @define

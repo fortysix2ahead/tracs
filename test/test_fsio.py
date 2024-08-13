@@ -30,8 +30,8 @@ def test_metadata():
 	assert Metadata.from_dict( AD['metadata'] ) == A.metadata
 
 def test_resource():
-	assert A.resources.to_list() == AD['resources']
-	assert ResourceList.from_list( AD['resources'] ) == A.resources
+	assert A.resources.to_dict() == AD['resources']
+	assert ResourceList.from_dict( AD['resources'] ) == A.resources
 
 def test_activity_part():
 	assert A.parts[0].to_dict() == AD['parts'][0]

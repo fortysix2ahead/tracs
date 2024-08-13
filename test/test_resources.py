@@ -82,15 +82,34 @@ def test_resource():
 @mark.xfail
 def test_resource_list():
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
-	r2 = Resource( uid='polar:1234', name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )
+	r2 = Resource( uid='strava:1234', name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )
 	r3 = Resource( uid='polar:1234', name='test1.json', type='application/vnd.polar+json', path='test1.json', summary=True )
-	r4 = Resource( uid='polar:1234', name='test2.json', type='application/vnd.polar+json', path='test2.json', summary=True )
+	r4 = Resource( uid='strava:1234', name='test2.json', type='application/vnd.polar+json', path='test2.json', summary=True )
 	r5 = Resource( uid='polar:1234', name='title.jpg', type='image/jpeg', path='title.jpeg' )
 
 	rl = ResourceList( r1, r2, r3, r4 )
 	rl.append( r5 )
 
 	assert len( rl ) == 5
+
+	rl = ResourceList( lst = [r1, r2, r3, r4, r5] )
+	assert len( rl ) == 5
+
+	rl = ResourceList( lists = [ResourceList( r1, r2 ), ResourceList( r3, r4, r5 )] )
+	assert len( rl ) == 5
+
+	rl = ResourceList.from_list( ResourceList( r1, r2 ), ResourceList( r3, r4, r5 ) )
+	assert len( rl ) == 5
+
+	assert rl.all() == [r1, r2, r3, r4, r5]
+	assert rl.all_for( uid=r1.uid ) == [r1, r3, r5]
+	assert rl.all_for( path=r1.path ) == [r1]
+	assert rl.all_for( uid=r1.uid, path=r1.path ) == [r1]
+
+	r1a = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' ) # copy of r1
+	assert r1a in rl
+	r1a.path = 'other.gpx'
+	assert r1a not in rl
 
 	assert rl.summary() == r3
 	assert rl.summaries() == [r4, r5]

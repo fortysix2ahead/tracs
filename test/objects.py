@@ -6,7 +6,7 @@ from activity import Activity, ActivityPart
 from activity_types import ActivityTypes
 from core import Metadata
 from plugins.gpx import GPX_TYPE
-from resources import Resource, ResourceList
+from resources import Resource, Resources
 from uid import UID
 
 # collection of test objects
@@ -25,7 +25,7 @@ COMPLETE_ACTIVITY = Activity(
 		members = [ UID( 'polar:101' ), UID( 'strava:101' ) ],
 	),
 	parts=[ActivityPart( uids=['polar:222', 'polar:333'], gap=timedelta( minutes=20 ) )],
-	resources=ResourceList(
+	resources=Resources(
 		Resource( name = 'recording.gpx', type=GPX_TYPE, path='polar/1/2/3/1234/1234.gpx', source='https://polar.com/1234/1234.gpx' )
 	)
 )

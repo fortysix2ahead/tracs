@@ -26,7 +26,13 @@ COMPLETE_ACTIVITY = Activity(
 	),
 	parts=[ActivityPart( uids=['polar:222', 'polar:333'], gap=timedelta( minutes=20 ) )],
 	resources=Resources(
-		Resource( name = 'recording.gpx', type=GPX_TYPE, path='polar/1/2/3/1234/1234.gpx', source='https://polar.com/1234/1234.gpx' )
+		Resource(
+			name = 'recording.gpx',
+			type=GPX_TYPE,
+			path='polar/1/2/3/1234/1234.gpx',
+			source='https://polar.com/1234/1234.gpx',
+			uid='polar:1234'
+		)
 	)
 )
 
@@ -47,6 +53,13 @@ COMPLETE_ACTIVITY_DICT = {
 		{'gap': '00:20:00', 'uids': ['polar:222', 'polar:333']}
 	],
 	'resources': [
-		{ 'name': 'recording.gpx', 'path': 'polar/1/2/3/1234/1234.gpx', 'source': 'https://polar.com/1234/1234.gpx', 'type': 'application/gpx+xml' }
+		{
+			'name': 'recording.gpx',
+			'path': 'polar/1/2/3/1234/1234.gpx',
+			'source': 'https://polar.com/1234/1234.gpx',
+			'type': 'application/gpx+xml',
+			#'uid': UID( 'polar:1234' ),
+			'uid': 'polar:1234'
+		}
 	]
 }

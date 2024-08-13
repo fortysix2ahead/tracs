@@ -13,7 +13,7 @@ from uid import UID
 
 @mark.context( env='default', persist='mem' )
 def test_load_schema( dbfs ):
-	assert load_schema( dbfs ).version == 13
+	assert load_schema( dbfs ).version == 14
 
 def test_uid():
 	uid_str = 'polar:101/recording.gpx#1'

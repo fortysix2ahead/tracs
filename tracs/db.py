@@ -34,7 +34,7 @@ SCHEMA_NAME = 'schema.json'
 SCHEMA_VERSION = 14
 
 DB_FILES = {
-	ACTIVITIES_NAME: dumps( '[]' ),
+	ACTIVITIES_NAME: dumps( [] ),
 	SCHEMA_NAME: dumps( { "version": SCHEMA_VERSION } )
 }
 
@@ -136,7 +136,7 @@ class ActivityDb:
 			try:
 				copy_file( osfs, f'/{f}', fs, f'/{f}', preserve_time=True )
 			except ResourceNotFound:
-				fs.writetext( f, DB_FILES.get( f ) )
+				fs.writebytes( f, DB_FILES.get( f ) )
 
 		return fs
 
@@ -225,7 +225,7 @@ class ActivityDb:
 
 	@property
 	def resources( self ) -> Resources:
-		return self._resources
+		return Resources( [r for a in self.activities for r in a.resources] )
 
 	@property
 	def resource_ids( self ) -> List[int]:

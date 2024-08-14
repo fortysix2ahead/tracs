@@ -9,7 +9,7 @@ from tracs.activity import Activities, Activity, ActivityPart, groups
 from tracs.activity_types import ActivityTypes
 from tracs.core import VirtualField
 from tracs.pluginmgr import virtualfield
-from tracs.resources import Resource
+from tracs.resources import Resource, Resources
 from tracs.uid import UID
 
 log = getLogger( __name__ )
@@ -236,12 +236,12 @@ def test_add():
 
 def test_activities():
 	activities = Activities()
-	a = Activity( name='a1', uid='a:1' )
-	activities.add( a )
+	a1 = Activity( name='a1', uid='a:1' )
+	activities.add( a1 )
 	assert len( activities ) == 1
 
 	# replace based on old activity
-	activities.replace( Activity( name='a2', uid='a:2' ), a )
+	activities.replace( Activity( name='a2', uid='a:2' ), a1 )
 	assert len( activities ) == 1 and activities.idget( 1 ).name == 'a2'
 
 	# replace based on id
@@ -259,6 +259,19 @@ def test_activities():
 	# replace based on uid of new activity only
 	activities.replace( Activity( name='a6', uid='a:5' ) )
 	assert len( activities ) == 1 and activities.idget( 1 ).name == 'a6'
+
+	# test iter
+	activities.idget( 1 ).resources = Resources( Resource( uid='a:1', path='a1.gpx' ), Resource( uid='a:1', path='a1.json' ) )
+	a10 = Activity(
+		name='a10', uid='a:10',
+		resources = Resources( Resource( uid='a:10', path='a10.gpx' ), Resource( uid='a:10', path='a10.json' ) )
+	)
+	activities.add( a10 )
+	assert len( activities ) == 2
+
+	assert [ it.uid for it in iter( activities ) ] == [ 'a:5', 'a:10' ]
+	assert [ it.uid for it in activities.iter() ] == [ 'a:5', 'a:10' ]
+	assert [ it.path for it in activities.iter_resources() ] == ['a1.gpx', 'a1.json', 'a10.gpx', 'a10.json']
 
 def test_groups():
 	g = Activity( uid='g:1', uids=[ 'p:1', 's:1' ] )

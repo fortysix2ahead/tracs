@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from functools import cached_property
+from itertools import chain
 from logging import getLogger
 from typing import Any, ClassVar, Dict, List, Optional, TypeVar, Union
 
@@ -432,6 +433,12 @@ class Activities( Container[Activity] ):
 				del self.__id_map__[id]
 			except KeyError:
 				pass
+
+	def iter( self ):
+		return iter( self.data )
+
+	def iter_resources( self ):
+		return chain( *[ a.resources for a in self.data ] )
 
 	# serialization
 

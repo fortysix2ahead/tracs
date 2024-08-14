@@ -505,7 +505,6 @@ class Waze( Service ):
 					path=f'{ld.id()}.txt',
 					raw=ld, # this allows to skip parsing again
 					source=str( file.relative_to( takeouts_dir ) ),
-					summary=True,
 					type=WAZE_TYPE,
 					uid=f'{self.name}:{ld.id()}'
 				) )

@@ -53,14 +53,14 @@ def test_resource_types():
 
 def test_resource():
 	# creation with separate uid and path arguments
-	r = Resource( id=1, name='recording', type='application/gpx+xml', path='recording.gpx', uid='polar:1001' )
+	r = Resource( name='recording', type='application/gpx+xml', path='recording.gpx', uid='polar:1001' )
 	assert r.uid == 'polar:1001'
 	assert r.classifier == 'polar'
 	assert r.local_id == 1001 and r.local_id_str == '1001'
 	assert r.uidpath == 'polar:1001/recording.gpx'
 
 	# path can also be integrated into uid
-	r = Resource( id=1, uid='polar:1001/recording.gpx' )
+	r = Resource( uid='polar:1001/recording.gpx' )
 	assert r.uid == 'polar:1001'
 	assert r.classifier == 'polar'
 	assert r.local_id == 1001 and r.local_id_str == '1001'
@@ -82,8 +82,8 @@ def test_resource():
 def test_resources():
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
 	r2 = Resource( uid='strava:1234', name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )
-	r3 = Resource( uid='polar:1234', name='test1.json', type='application/vnd.polar+json', path='test1.json', summary=True )
-	r4 = Resource( uid='strava:1234', name='test2.json', type='application/vnd.polar+json', path='test2.json', summary=True )
+	r3 = Resource( uid='polar:1234', name='test1.json', type='application/vnd.polar+json', path='test1.json' )
+	r4 = Resource( uid='strava:1234', name='test2.json', type='application/vnd.polar+json', path='test2.json' )
 	r5 = Resource( uid='polar:1234', name='title.jpg', type='image/jpeg', path='title.jpeg' )
 
 	rl = Resources( r1, r2, r3, r4 )

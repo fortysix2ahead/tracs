@@ -32,7 +32,7 @@ def test_constructor():
 
 	# absolute paths work, even with MemFS
 	r = Resource( uid='mock:1001', path='recording.gpx' )
-	assert mock.path_for( r, absolute=True, as_path=False ) == '/mock/1/0/0/1001/recording.gpx'
+	assert mock.path_for( r, absolute=True, as_path=False ) == '/db/mock/1/0/0/1001/recording.gpx'
 
 @mark.service( cls=Mock )
 def test_path_for( service ):
@@ -48,14 +48,24 @@ def test_path_for( service ):
 
 	# paths for resources
 	r = Resource( uid='mock:1001', path='recording.gpx' )
-	assert service.path_for( r, absolute=False ) == Path( 'mock/1/0/0/1001/recording.gpx' )
-	assert service.path_for( r, absolute=False, omit_classifier=True ) == Path( '1/0/0/1001/recording.gpx' )
-	assert service.path_for( r, absolute=False, as_path=False ) == 'mock/1/0/0/1001/recording.gpx'
+	assert service.path_for( r ) == 'mock/1/0/0/1001/recording.gpx'
+	assert service.path_for( r, absolute=False ) == 'mock/1/0/0/1001/recording.gpx' # absolute = False is the default
+	assert service.path_for( r, absolute=False, omit_classifier=True ) == '1/0/0/1001/recording.gpx'
+	assert service.path_for( r, absolute=False, as_path=True ) == Path( 'mock/1/0/0/1001/recording.gpx' )
 	assert service.path_for( r, absolute=False, omit_classifier=True, as_path=False ) == '1/0/0/1001/recording.gpx'
 
-	# absolute paths work, when there is an FS behind
-	assert service.path_for( r, absolute=True, as_path=False ) == '/mock/1/0/0/1001/recording.gpx'
-	assert service.path_for( r, absolute=True, omit_classifier=True, as_path=False ) == '/1/0/0/1001/recording.gpx'
+	# absolute paths work differently when there is an OSFS behind, see next test case
+	assert service.path_for( r, absolute=True ) == '/db/mock/1/0/0/1001/recording.gpx'
+	# absolute implies omit classifier
+	assert service.path_for( r, absolute=True, omit_classifier=True ) == '/db/mock/1/0/0/1001/recording.gpx'
+
+@mark.context( env='empty', persist='clone', cleanup=True )
+@mark.service( cls=Mock )
+def test_path_for_with_osfs( service ):
+	dbpath = service.dbfs.getsyspath( '/' )
+	r = Resource( uid='mock:1001', path='recording.gpx' )
+	assert service.path_for( r, absolute=True ) == f'{dbpath}/mock/1/0/0/1001/recording.gpx'
+	assert service.path_for( r, absolute=True, omit_classifier=True ) == f'{dbpath}/mock/1/0/0/1001/recording.gpx'
 
 @mark.service( cls=Mock, register=True )
 def test_path_for_cls( service ):

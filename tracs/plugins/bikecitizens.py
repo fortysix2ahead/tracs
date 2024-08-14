@@ -260,7 +260,7 @@ class Bikecitizens( Service ):
 			response = options( url=url, headers=HEADERS_OPTIONS )
 			json_list = self.json_handler.load( url=url, headers={ **HEADERS_OPTIONS, **{ 'X-API-Key': self._api_key } }, session=self._session )
 
-			return [
+			resources = [
 				self.importer.save_to_resource(
 					content=self.json_handler.save_raw( j ),
 					raw=j,
@@ -268,9 +268,13 @@ class Bikecitizens( Service ):
 					uid=f'{self.name}:{j.get( "id" )}',
 					path=f'{j.get( "id" )}.json',
 					type=BIKECITIZENS_TYPE,
-					summary = True,
 				) for j in json_list.raw
 			]
+
+			for r in resources:
+				r.path = self.path_for( r )
+
+			return resources
 
 		except RuntimeError:
 			log.error( f'error fetching summaries', exc_info=True )
@@ -278,8 +282,20 @@ class Bikecitizens( Service ):
 
 	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		resources = [
-			Resource( uid=summary.uid, path=f'{summary.local_id}.rec.json', type=BIKECITIZENS_RECORDING_TYPE, source=f'{self.url_for_id( summary.local_id )}/points' ),
-			Resource( uid=summary.uid, path=f'{summary.local_id}.gpx', type=GPX_TYPE, source=f'{self.url_for_id( summary.local_id )}/gpx' )
+			Resource(
+				uid=summary.uid,
+				# path=f'{summary.local_id}.rec.json',
+				path=self.path_for_id( summary.local_id, self.name, f'{summary.local_id}.rec.json' ),
+				type=BIKECITIZENS_RECORDING_TYPE,
+				source=f'{self.url_for_id( summary.local_id )}/points'
+			),
+			Resource(
+				uid=summary.uid,
+				# path=f'{summary.local_id}.gpx',
+				path=self.path_for_id( summary.local_id, self.name, f'{summary.local_id}.gpx' ),
+				type=GPX_TYPE,
+				source=f'{self.url_for_id( summary.local_id )}/gpx'
+			)
 		]
 
 		for r in resources:
@@ -288,6 +304,8 @@ class Bikecitizens( Service ):
 					self.download_resource( r )
 				except RuntimeError:
 					log.error( f'error fetching resource from {r.source}', exc_info=True )
+			else:
+				log.info( f'skipping download from {r.source}, resource already exists' )
 
 		return [ r for r in resources if r.content ]
 

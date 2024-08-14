@@ -79,7 +79,6 @@ def test_resource():
 	#with raises( AttributeError ):
 	Resource( uid='polar', path='recording.gpx' ) # todo: very special case, not sure what to do with it
 
-@mark.xfail
 def test_resources():
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
 	r2 = Resource( uid='strava:1234', name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )
@@ -110,6 +109,10 @@ def test_resources():
 	assert r1a in rl
 	r1a.path = 'other.gpx'
 	assert r1a not in rl
+
+	# iterators
+	assert rl.uids() == ['polar:1234', 'strava:1234']
+	assert rl.paths() == ['test1.gpx', 'test1.json', 'test2.gpx', 'test2.json', 'title.jpeg']
 
 	assert rl.summary() == r3
 	assert rl.summaries() == [r4, r5]

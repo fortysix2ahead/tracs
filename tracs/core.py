@@ -11,8 +11,8 @@ from attr import AttrsInstance
 from attrs import Attribute, define, field, fields
 from cattrs import Converter, GenConverter
 
-from uid import UID
-from utils import fromisoformat, toisoformat
+from tracs.uid import UID
+from tracs.utils import fromisoformat, toisoformat
 
 FIELD_KWARGS = {
 	'init': True,

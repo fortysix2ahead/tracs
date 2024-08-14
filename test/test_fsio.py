@@ -8,7 +8,7 @@ from activity import Activities, ActivityPart
 from core import Metadata
 from fsio import load_activities, load_schema, write_activities
 from resources import Resources
-from test.objects import COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD
+from test.objects import COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, COMPLETE_ACTIVITY_WITH_RESOURCE_DATA as AC
 from uid import UID
 
 @mark.context( env='default', persist='mem' )
@@ -27,6 +27,7 @@ def test_metadata():
 
 def test_resource():
 	assert A.resources.to_dict() == AD['resources']
+	assert AC.resources.to_dict() == AD['resources']
 	assert Resources.from_dict( AD['resources'] ) == A.resources
 
 def test_activity_part():

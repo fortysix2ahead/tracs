@@ -476,10 +476,9 @@ class Polar( Service ):
 					raw=j,
 					data=self.importer.load_data( j ),
 					uid=f'{self.name}:{ _local_id( j ) }',
-					path=f'{ _local_id( j ) }.json',
+					path=f'{_local_id( j )}.json',
 					type=POLAR_FLOW_TYPE,
 					source=self.url_for_id( _local_id( j ) ),
-					summary = True,
 				) for j in json_list.raw
 			]
 
@@ -519,10 +518,30 @@ class Polar( Service ):
 
 	def download_resources( self, summary: Resource ) -> List[Resource]:
 		resources = [
-			Resource( uid=summary.uid, type=POLAR_CSV_TYPE, path=f'{summary.local_id}.csv', source=f'{self.export_url}/csv/{summary.local_id}' ),
-			Resource( uid=summary.uid, type=GPX_TYPE, path=f'{summary.local_id}.gpx', source=f'{self.export_url}/gpx/{summary.local_id}' ),
-			Resource( uid=summary.uid, type=TCX_TYPE, path=f'{summary.local_id}.tcx', source=f'{self.export_url}/tcx/{summary.local_id}' ),
-			Resource( uid=summary.uid, type=POLAR_HRV_TYPE, path=f'{summary.local_id}.hrv.csv', source=f'{self.export_url}/rr/csv/{summary.local_id}' )
+			Resource(
+				uid=summary.uid,
+				type=POLAR_CSV_TYPE,
+				path=f'{summary.local_id}.csv',
+				source=f'{self.export_url}/csv/{summary.local_id}'
+			),
+			Resource(
+				uid=summary.uid,
+				type=GPX_TYPE,
+				path=f'{summary.local_id}.gpx',
+				source=f'{self.export_url}/gpx/{summary.local_id}'
+			),
+			Resource(
+				uid=summary.uid,
+				type=TCX_TYPE,
+				path=f'{summary.local_id}.tcx',
+				source=f'{self.export_url}/tcx/{summary.local_id}'
+			),
+			Resource(
+				uid=summary.uid,
+				type=POLAR_HRV_TYPE,
+				path=f'{summary.local_id}.hrv.csv',
+				source=f'{self.export_url}/rr/csv/{summary.local_id}'
+			)
 		]
 
 		for r in list( resources ):

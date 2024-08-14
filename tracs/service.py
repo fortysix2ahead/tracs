@@ -149,8 +149,7 @@ class Service( Plugin ):
 
 	# service methods
 
-	# todo: set as_path to a default of False
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = True ) -> Union[Path, str]:
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = False ) -> Union[Path, str]:
 		path = Service.default_path_for_id( local_id, base_path, resource_path )
 		return Path( path ) if as_path else path
 
@@ -214,6 +213,8 @@ class Service( Plugin ):
 
 	def fetch_summary_resources( self, skip: bool, force: bool, pretend: bool, **kwargs ) -> List[Union[Resource, int]]:
 		summaries = self.ctx.db.summaries if skip else self.fetch( force=force, pretend=pretend, **kwargs )  # fetch all summary resources
+		for s in summaries:
+			s.path = self.path_for( s ) # adjust resource path
 		# sort summaries by uid so that progress bar in download looks better -> todo: improve progress bar later?
 		return sorted( summaries, key=lambda r: r.uid )
 
@@ -288,6 +289,7 @@ class Service( Plugin ):
 		try:
 			self.dbfs.makedirs( dirname( path ), recreate=True )
 			self.dbfs.writebytes( path, resource.content )
+			resource.path = path # adjust resource
 		except TypeError:
 			log.error( f'error writing resource data for resource {resource.uidpath}', exc_info=True )
 

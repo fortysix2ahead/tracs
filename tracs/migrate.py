@@ -9,7 +9,7 @@ from orjson import loads, dumps
 from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 
 from tracs.config import ApplicationContext
-from uid import UID
+from tracs.uid import UID
 
 log = getLogger( __name__ )
 

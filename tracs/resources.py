@@ -7,6 +7,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from attrs import Attribute, define, field, fields
 from cattrs import Converter, GenConverter
+from cattrs.gen import make_dict_unstructure_fn, override
 from more_itertools import unique, unique_in_window
 
 from tracs.uid import UID
@@ -85,13 +86,11 @@ class Resource:
 
 	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
 
-	id: int = field( default=None ) # todo: to be removed
-	name: Optional[str] = field( default=None )
+	name: str = field( default=None )
 	type: str = field( default=None )
 	path: str = field( default=None )
-	source: Optional[str] = field( default=None )
-	status: Optional[int] = field( default=None )
-	summary: bool = field( default=False ) # todo: to be removed
+	source: str = field( default=None )
+	status: int = field( default=None )
 	uid: Union[str, UID] = field( default=None )
 
 	# additional fields holding data of a resource, used during load
@@ -251,3 +250,13 @@ Resource.converter.register_unstructure_hook( UID, lambda uid: uid.to_str() )
 
 Resource.converter.register_structure_hook( UID, lambda obj, cls: UID.from_str( obj ) )
 Resource.converter.register_structure_hook( Union[str, UID], lambda obj, cls: obj if isinstance( obj, str ) else UID.from_str( obj ) )
+hook = make_dict_unstructure_fn(
+	Resource,
+	Resource.converter,
+	_cattrs_omit_if_default=True,
+	content=override( omit=True ),
+	data=override( omit=True ),
+	raw=override( omit=True ),
+	text=override( omit=True ),
+)
+Resource.converter.register_unstructure_hook( Resource, hook )

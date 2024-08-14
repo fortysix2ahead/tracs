@@ -19,19 +19,48 @@ COMPLETE_ACTIVITY = Activity(
 	type=ActivityTypes.walk,
 	location_country='de',
 	metadata=Metadata(
-		created = datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
-		modified = datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
-		favourite = True,
-		members = [ UID( 'polar:101' ), UID( 'strava:101' ) ],
+		created=datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
+		modified=datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
+		favourite=True,
+		members=[UID( 'polar:101' ), UID( 'strava:101' )],
 	),
 	parts=[ActivityPart( uids=['polar:222', 'polar:333'], gap=timedelta( minutes=20 ) )],
 	resources=Resources(
 		Resource(
-			name = 'recording.gpx',
+			name='recording.gpx',
 			type=GPX_TYPE,
 			path='polar/1/2/3/1234/1234.gpx',
 			source='https://polar.com/1234/1234.gpx',
-			uid='polar:1234'
+			uid='polar:1234',
+		)
+	)
+)
+
+COMPLETE_ACTIVITY_WITH_RESOURCE_DATA = Activity(
+	id=1,
+	uid='polar:101',
+	starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
+	duration=timedelta( hours=2 ),
+	type=ActivityTypes.walk,
+	location_country='de',
+	metadata=Metadata(
+		created=datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
+		modified=datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
+		favourite=True,
+		members=[UID( 'polar:101' ), UID( 'strava:101' )],
+	),
+	parts=[ActivityPart( uids=['polar:222', 'polar:333'], gap=timedelta( minutes=20 ) )],
+	resources=Resources(
+		Resource(
+			name='recording.gpx',
+			type=GPX_TYPE,
+			path='polar/1/2/3/1234/1234.gpx',
+			source='https://polar.com/1234/1234.gpx',
+			uid='polar:1234',
+			content=b'<xml></xml>',
+			text='<xml></xml>',
+			raw={ 'xml': 'some data' },
+			data={ 'xml': 'some data' },
 		)
 	)
 )
@@ -50,7 +79,7 @@ COMPLETE_ACTIVITY_DICT = {
 		'members': ['polar:101', 'strava:101']
 	},
 	'parts': [
-		{'gap': '00:20:00', 'uids': ['polar:222', 'polar:333']}
+		{ 'gap': '00:20:00', 'uids': ['polar:222', 'polar:333'] }
 	],
 	'resources': [
 		{
@@ -58,7 +87,7 @@ COMPLETE_ACTIVITY_DICT = {
 			'path': 'polar/1/2/3/1234/1234.gpx',
 			'source': 'https://polar.com/1234/1234.gpx',
 			'type': 'application/gpx+xml',
-			#'uid': UID( 'polar:1234' ),
+			# 'uid': UID( 'polar:1234' ),
 			'uid': 'polar:1234'
 		}
 	]

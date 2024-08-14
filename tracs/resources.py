@@ -7,6 +7,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from attrs import Attribute, define, field, fields
 from cattrs import Converter, GenConverter
+from more_itertools import unique, unique_in_window
 
 from tracs.uid import UID
 
@@ -186,6 +187,21 @@ class Resources( list[Resource] ):
 		self.extend( resources )
 		self.extend( lst or [] )
 		self.extend( [r for l in lists or [] for r in l] )
+
+	def iter( self ):
+		return iter( self )
+
+	def iter_uids( self ):
+		return iter( self.iter_uids() )
+
+	def uids( self ) -> List[Union[str, UID]]:
+		return [r.uid for r in unique( self, key=lambda r: r.uid )]
+
+	def iter_paths( self ):
+		return iter( self.iter_paths() )
+
+	def paths( self ) -> List[str]:
+		return [r.path for r in unique( self, key=lambda r: r.path )]
 
 	def summary( self ) -> Optional[Resource]:
 		return next( (r for r in self if r.summary), None )

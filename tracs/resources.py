@@ -257,6 +257,7 @@ hook = make_dict_unstructure_fn(
 	content=override( omit=True ),
 	data=override( omit=True ),
 	raw=override( omit=True ),
+	status=override( omit=True ),
 	text=override( omit=True ),
 )
 Resource.converter.register_unstructure_hook( Resource, hook )

@@ -220,20 +220,8 @@ class ActivityDb:
 		return sorted( list( self._activities.id_keys() ) )
 
 	@property
-	def resource_map( self ) -> Mapping[int, Resource]:
-		return self._resources.id_map()
-
-	@property
 	def resources( self ) -> Resources:
-		return Resources( [r for a in self.activities for r in a.resources] )
-
-	@property
-	def resource_ids( self ) -> List[int]:
-		return sorted( self._resources.id_keys() )
-
-	@property
-	def resource_keys( self ) -> List[str]:
-		return sorted( self._resources.keys() )
+		return Resources( lst = [r for a in self.activities for r in a.resources] )
 
 	# ---- DB Operations --------------------------------------------------------
 
@@ -262,24 +250,6 @@ class ActivityDb:
 
 	def replace_activity( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
 		self._activities.replace( new, old, id, uid )
-
-	# insert resources
-
-	def insert_resource( self, resource: Resource ) -> int:
-		return self.insert_resources( resource )[0]
-
-	def insert_resources( self, *resources: Union[Resource, List[Resource]] ) -> List[int]:
-		return self.resources.add( *resources )
-
-	def upsert_resource( self, resource: Resource ) -> int:
-		if existing := self.get_resource_by_uid_path( resource.uid, resource.path ):
-			self.resource_map[existing.id] = resource
-			return existing.id
-		else:
-			return self.insert_resource( resource )
-
-	def upsert_resources( self, *resources: Union[Resource, List[Resource]] ) -> Tuple[List[int], List[int]]:
-		return self.resources.update( *resources )
 
 	# remove items
 
@@ -331,7 +301,7 @@ class ActivityDb:
 		return any( uid in a.uids for a in self.activities )
 
 	def contains_resource( self, uid: str, path: str ) -> bool:
-		return any( r.uid == uid and r.path == path for r in self.resources )
+		return True if self.get_resource_by_uid_path( uid, path ) else False
 
 	# def get( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> Optional[Activity]:
 	# 	filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
@@ -387,34 +357,22 @@ class ActivityDb:
 		"""
 		return [ a for a in self.activities if any( uid in a.uids for uid in ( uids or [] ) ) ]
 
-	def get_resource( self, id: int ) -> Optional[Resource]:
-		return self.get_resource_by_id( id )
-
-	def get_resource_by_id( self, id: int ) -> Optional[Resource]:
-		"""
-		Returns the resource with the provided id.
-		:param id:
-		:return:
-		"""
-		return self._resources.idget( id )
-
 	def get_resources_by_uid( self, uid ) -> List[Resource]:
 		"""
 		Returns all resources with the provided uid.
 		:param uid:
 		:return:
 		"""
-		return [r for r in self.resources if r.uid == uid]
+		activities = [ a for a in self.activities if a.uid == uid or uid in a.uids or uid in a.metadata.members ]
+		return [r for a in activities for r in a.resources]
 
-	def get_resources_by_uids( self, uids: List[str] ):
+	def get_resources_by_uids( self, uids: List[str] ) -> List[Resource]:
 		"""
 		Returns all resources with the provided uids.
 		:param uids:
 		:return:
 		"""
-		# regular_list = [[1, 2, 3, 4], [5, 6, 7], [8, 9]]
-		# flat_list = [item for sublist in regular_list for item in sublist]
-		return list( chain( *[r for r in [self.get_resources_by_uid( uid ) for uid in uids]] ) ) # todo: revise flatten list!
+		return [r for rl in [self.get_resources_by_uid( uid ) for uid in uids] for r in rl]
 
 	def get_resource_by_uid_path( self, uid: str, path: str ) -> Optional[Resource]:
 		"""
@@ -423,7 +381,7 @@ class ActivityDb:
 		:param path:
 		:return:
 		"""
-		return next( (r for r in self.resources if r.uid == uid and r.path == path), None )
+		return next( (r for r in self.get_resources_by_uid( uid ) if r.path == path), None )
 
 	def get_resource_of_type( self, uids: List[str], type: str ) -> Optional[Resource]:
 		return next( iter( [ r for r in self.find_all_resources( uids ) if r.type == type] ), None )

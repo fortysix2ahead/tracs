@@ -198,7 +198,6 @@ class Strava( Service ):
 				path = f'{a.id}.json',
 				type=STRAVA_TYPE,
 				source=self.url_for_id( a.id ),
-				summary = True,
 			) )
 
 		#	self.ctx.complete( 'done' )

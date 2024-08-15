@@ -97,7 +97,7 @@ class Service( Plugin ):
 		return path
 
 	@classmethod
-	def path_for_uid( cls, uid: Union[UID, str], absolute: bool = False, as_path=True, ctx=None ) -> Union[Path, str]:
+	def path_for_uid( cls, uid: Union[UID, str], absolute: bool = False, as_path=False, ctx=None ) -> Union[Path, str]:
 		"""
 		Returns the relative path for a given uid.
 		A service with the classifier of the uid has to exist, otherwise None will be returned.
@@ -111,7 +111,7 @@ class Service( Plugin ):
 		except AttributeError:
 			path = Service.default_path_for_id( uid.local_id, uid.classifier, uid.path )
 
-		return Path( path ) if as_path else Path
+		return Path( path ) if as_path else path
 
 	@classmethod
 	def path_for_resource( cls, resource: Resource, absolute: bool = True, as_path: bool = True, ignore_overlay: bool = True ) -> Union[Path, str]:

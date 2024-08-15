@@ -72,9 +72,9 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	uids: List[str] = field( factory=list, on_setattr=lambda i, a, v: unique_sorted( v ) if v else [], converter=lambda v: unique_sorted( v ), metadata={ 'protected': True } ) # referenced list activities
 	"""List of uids of referenced activities"""
 
-	name: Optional[str] = field( default=None )
+	name: str = field( default=None )
 	"""activity name"""
-	type: Optional[ActivityTypes] = field( default=None )
+	type: ActivityTypes = field( default=None )
 	"""activity type"""
 	description: str = field( default=None )
 	"""description"""
@@ -83,10 +83,10 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	equipment: List[str] = field( factory=list )
 	"""list of equipment tags"""
 
-	location_country: Optional[str] = field( default=None ) #
-	location_state: Optional[str] = field( default=None ) #
-	location_city: Optional[str] = field( default=None ) #
-	location_place: Optional[str] = field( default=None ) #
+	location_country: str = field( default=None ) #
+	location_state: str = field( default=None ) #
+	location_city: str = field( default=None ) #
+	location_place: str = field( default=None ) #
 	location_latitude_start: float = field( default=None ) #
 	location_longitude_start: float = field( default=None ) #
 	location_latitude_end: float = field( default=None ) #
@@ -95,30 +95,30 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	starttime: datetime = field( default=None, metadata={ 'multipart': 'min' } )
 	"""activity time (UTC)"""
-	endtime: Optional[datetime] = field( default=None, metadata={ 'multipart': 'max' } )
+	endtime: datetime = field( default=None, metadata={ 'multipart': 'max' } )
 	"""activity end time (UTC)"""
 	starttime_local: datetime = field( default=None, metadata={ 'multipart': 'min' } )
 	"""activity time (local)"""
-	endtime_local: Optional[datetime] = field( default=None, metadata={ 'multipart': 'max' } )
+	endtime_local: datetime = field( default=None, metadata={ 'multipart': 'max' } )
 	"""activity end time (local)"""
 	timezone: str = field( default=get_localzone_name() )
 	"""timezone of the activity, local timezone by default"""
 
-	duration: Optional[timedelta] = field( default=None ) #
-	duration_moving: Optional[timedelta] = field( default=None ) #
+	duration: timedelta = field( default=None ) #
+	duration_moving: timedelta = field( default=None ) #
 
-	distance: Optional[float] = field( default=None, metadata={ 'multipart': 'sum' } ) #
-	ascent: Optional[float] = field( default=None ) #
-	descent: Optional[float] = field( default=None ) #
-	elevation_max: Optional[float] = field( default=None ) #
-	elevation_min: Optional[float] = field( default=None ) #
-	speed: Optional[float] = field( default=None ) #
-	speed_max: Optional[float] = field( default=None ) #
+	distance: float = field( default=None, metadata={ 'multipart': 'sum' } ) #
+	ascent: float = field( default=None ) #
+	descent: float = field( default=None ) #
+	elevation_max: float = field( default=None ) #
+	elevation_min: float = field( default=None ) #
+	speed: float = field( default=None ) #
+	speed_max: float = field( default=None ) #
 
-	heartrate: Optional[int] = field( default=None, metadata={ 'multipart': 'average' } ) #
-	heartrate_max: Optional[int] = field( default=None ) #
-	heartrate_min: Optional[int] = field( default=None ) #
-	calories: Optional[int] = field( default=None ) #
+	heartrate: int = field( default=None, metadata={ 'multipart': 'average' } ) #
+	heartrate_max: int = field( default=None ) #
+	heartrate_min: int = field( default=None ) #
+	calories: int = field( default=None ) #
 
 	metadata: Metadata = field( factory=Metadata )
 	parts: List[ActivityPart] = field( factory=list )
@@ -132,7 +132,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	## internal fields
 	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
-	__parent__: Optional[Activity] = field( init=False, default=None, alias='__parent__' )
+	__parent__: Activity = field( init=False, default=None, alias='__parent__' )
 	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
 
 	# additional properties

@@ -129,7 +129,11 @@ class Metadata:
 
 	favourite: bool = field( default=False )
 
-	members: List[UID] = field( default=[] )
+	# member: UID = field( default=None ) # indicator that an activity is a member of a group, not used yet
+	members: List[UID] = field( default=[] ) # used for groups to indicate group members
+
+	# part: List[UID] = field( factory=list ) # indicator that an activity is part of one or multiple others, not used yet
+	# parts: List = field( factory=list ) # indicates parts of a multipart activity
 
 	supplementary: Dict[str, Any] = field( factory=dict )
 	# __kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )

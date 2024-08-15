@@ -4,7 +4,6 @@ from pathlib import Path
 from re import split
 from typing import List
 
-from dynaconf import inspect_settings
 from dynaconf.vendor.box.exceptions import BoxKeyError
 from rich import box
 from rich.pretty import Pretty as pp
@@ -14,6 +13,7 @@ from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.config import console
 from tracs.core import VirtualField
+from tracs.pluginmgr import PluginManager
 from tracs.registry import Registry
 from tracs.ui.tables import create_table
 from tracs.ui.utils import style
@@ -75,7 +75,7 @@ def inspect_plugins( ctx: ApplicationContext ) -> None:
 	table.add_column( '[bold bright_blue]name[/bold bright_blue]' )
 	table.add_column( '[bold bright_blue]plugin[/bold bright_blue]' )
 
-	[ table.add_row( n, str( p ) ) for n, p in ctx.plugins.items() ]
+	[ table.add_row( n, str( p ) ) for n, p in PluginManager.plugins.items() ]
 
 	ctx.console.print( table )
 

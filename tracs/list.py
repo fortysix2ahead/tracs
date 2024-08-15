@@ -111,7 +111,7 @@ def inspect_registry( registry: Registry ) -> None:
 	table.add_row( *style( 'type', 'class', 'summary, recording, image', style='blue' ) )
 	for k, v in sorted( registry.resource_types.items(), key=lambda i: i[0] ):
 		flags = [ v.summary, v.recording, v.image ]
-		table.add_row( k, pp( v.activity_cls ), pp( flags ) )
+		table.add_row( k, pp( v.type ), pp( flags ) )
 
 	table.add_row( '[bold bright_blue]Setup Functions[/bold bright_blue]' )
 	table.add_row( '[blue]name[/blue]', '[blue]function[/blue]' )

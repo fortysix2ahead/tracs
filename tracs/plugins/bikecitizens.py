@@ -284,15 +284,13 @@ class Bikecitizens( Service ):
 		resources = [
 			Resource(
 				uid=summary.uid,
-				# path=f'{summary.local_id}.rec.json',
-				path=self.path_for_id( summary.local_id, self.name, f'{summary.local_id}.rec.json' ),
+				path=f'{summary.local_id}.rec.json',
 				type=BIKECITIZENS_RECORDING_TYPE,
 				source=f'{self.url_for_id( summary.local_id )}/points'
 			),
 			Resource(
 				uid=summary.uid,
-				# path=f'{summary.local_id}.gpx',
-				path=self.path_for_id( summary.local_id, self.name, f'{summary.local_id}.gpx' ),
+				path=f'{summary.local_id}.gpx',
 				type=GPX_TYPE,
 				source=f'{self.url_for_id( summary.local_id )}/gpx'
 			)

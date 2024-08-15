@@ -386,9 +386,6 @@ class ActivityDb:
 	def get_resource_of_type( self, uids: List[str], type: str ) -> Optional[Resource]:
 		return next( iter( [ r for r in self.find_all_resources( uids ) if r.type == type] ), None )
 
-	def get_resource_of_type_for( self, activity: Activity, resource_type: str ) -> Optional[Resource]:
-		return self.get_resource_of_type( activity.refs(), resource_type )
-
 	def get_summary( self, uid ) -> Resource:
 		return next( iter( self.find_summaries( uid ) ), None )
 

@@ -9,6 +9,7 @@ from typing import Any, ClassVar, Dict, List, Optional, TypeVar, Union
 
 from attrs import define, evolve, Factory, field
 from cattrs import Converter, GenConverter
+from more_itertools import first_true
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
@@ -271,6 +272,9 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	def add_resource( self, resource: Resource ) -> None:
 		self.__resources__.append( resource )
 		resource.__parent_activity__ = self
+
+	def resource_of_type( self, resource_type: str ) -> Optional[Resource]:
+		return first_true( self.resources.iter(), default=None, pred=lambda r: r.type == resource_type )
 
 	def resources_for( self, classifier: str ) -> List[Resource]:
 		return [r for r in self.resources if r.uid.startswith( f'{classifier}:' )]

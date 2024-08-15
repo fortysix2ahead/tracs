@@ -50,10 +50,8 @@ def open_activities( ctx: ApplicationContext, activities: List[Activity] ) -> No
 
 	resource_type = GPX_TYPE # todo: make this configurable
 
-	resources = [ ctx.db.get_resource_of_type_for( a, resource_type ) for a in activities ]
-	paths = [ Service.path_for_resource( r, as_path=False ) for r in resources ]
-	paths = list( filter( lambda p: p, paths ) )
-	paths = [ quote( ctx.db_fs.getsyspath( p ) ) for p in paths ]
+	resources = [ a.resource_of_type( resource_type ) for a in activities ]
+	paths = [ quote( p ) for p in [ ctx.db_fs.getsyspath( r.path ) for r in resources ] if p is not None ]
 
 	if paths:
 		system( 'open ' + ' '.join( paths ) )

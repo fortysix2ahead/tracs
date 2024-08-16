@@ -499,6 +499,7 @@ Activity.converter.register_unstructure_hook( ActivityTypes, ActivityTypes.to_st
 Activity.converter.register_unstructure_hook( Metadata, lambda md: md.to_dict() )
 Activity.converter.register_unstructure_hook( Resources, lambda rl: rl.to_dict() )
 
+Activity.converter.register_structure_hook( int, lambda obj, cls: int( obj ) if obj is not None else None )
 Activity.converter.register_structure_hook( datetime, lambda obj, cls: fromisoformat( obj ) )
 Activity.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
 Activity.converter.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )

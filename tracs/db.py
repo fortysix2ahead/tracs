@@ -469,6 +469,12 @@ class ActivityDb:
 		"""
 		return [r for r in self.find_resources( uid ) if r.type in self._summary_types]
 
+	def find_summaries_for( self, *activities: Activity ) -> List[Resource]:
+		"""
+		Finds all summary resources having the provided uid.
+		"""
+		return [r for a in activities for r in a.resources if r.type in self._summary_types]
+
 	def find_all_summaries( self, uids: List[str] ) -> List[Resource]:
 		"""
 		Finds all summary resources having an uid contained in the provided list.

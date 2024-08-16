@@ -134,10 +134,8 @@ class Service( Plugin ):
 		"""
 		Loads a resource and transforms it into an activity by using the importer indicated by the resource type.
 		"""
-		ctx = current_ctx()
-		fs, path = ctx.db_fs, Service.path_for_resource( resource, as_path=False )
-		registry = registry if registry else ctx.registry
-		return registry.importer_for( resource.type ).load_as_activity( path=path, fs=fs, **kwargs )
+		registry = registry if registry else current_ctx().registry
+		return registry.importer_for( resource.type ).load_as_activity( path=resource.path, fs=current_ctx().db_fs, **kwargs )
 
 	@classmethod
 	def as_activity_from( cls, resource: Resource, registry: Registry = None, **kwargs ) -> Optional[Activity]:

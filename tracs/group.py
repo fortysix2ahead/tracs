@@ -42,7 +42,7 @@ def group_activities( ctx: ApplicationContext, activities: List[Activity], force
 		if force or confirm_grouping( ctx, g ):
 			added.append( g.target )
 			removed.extend( g.members )
-	
+
 		ctx.db.insert_activities( added )
 		ctx.db.remove_activities( removed )
 		ctx.db.commit()
@@ -109,8 +109,7 @@ def ungroup_activities( ctx: ApplicationContext,
 	all_groups, all_members = [], []
 	for a in groups( activities ):
 		if force or Confirm.ask( f'Ungroup activity {a.id} ({a.name})?' ):
-			# members = [Service.as_activity( ctx.db.get_summary( uid ) ) for uid in a.uids]
-			members = [ Service.as_activity( r ) for r in ctx.db.find_all_summaries( a.uids ) ]
+			members = [ Service.as_activity( r ) for r in ctx.db.find_summaries_for( a ) ]
 			all_groups.append( a )
 			all_members.extend( members )
 			log.debug( f'ungrouped activity {a.uid}, containing members {a.uids}' )

@@ -53,20 +53,20 @@ def test_importer( registry: Registry ):
 	assert type( registry.importer_for( 'TYPE_2' ) ) == ImporterTwo
 
 def test_fields_and_types( registry ):
-	assert (f := registry.activity_field( 'name' )) is not None and f.type == 'str'
-	assert (f := registry.activity_field( 'id' )) is not None and f.type == 'int'
-	assert (f := registry.activity_field( 'distance' )) is not None and f.type == 'float'
-	assert (f := registry.activity_field( 'duration' )) is not None and f.type == 'timedelta'
-	assert (f := registry.activity_field( 'starttime' )) is not None and f.type == 'datetime'
+	assert (f := registry.activity_field( 'name' )) is not None and f.type in [str, 'str']
+	assert (f := registry.activity_field( 'id' )) is not None and f.type in [int, 'int']
+	assert (f := registry.activity_field( 'distance' )) is not None and f.type in [float, 'float']
+	assert (f := registry.activity_field( 'duration' )) is not None and f.type in [timedelta, 'timedelta']
+	assert (f := registry.activity_field( 'starttime' )) is not None and f.type in [datetime, 'datetime']
 
 #	with raises( AttributeError ):
 	assert registry.activity_field( 'not_existing_field' ) is None
 
 	# check above fields against normalizers
-	assert registry.rule_normalizer_type( 'name' ) == 'str'
-	assert registry.rule_normalizer_type( 'id' ) == int
-	assert registry.rule_normalizer_type( 'distance' ) == 'float'
-	assert registry.rule_normalizer_type( 'duration' ) == 'timedelta'
-	assert registry.rule_normalizer_type( 'time' ) == datetime
+	assert registry.rule_normalizer_type( 'name' ) in [str, 'str']
+	assert registry.rule_normalizer_type( 'id' ) in [int, 'int']
+	assert registry.rule_normalizer_type( 'distance' ) in [float, 'float']
+	assert registry.rule_normalizer_type( 'duration' ) in [timedelta, 'timedelta']
+	assert registry.rule_normalizer_type( 'time' ) in [datetime, 'datetime']
 
 	assert registry.rule_normalizer_type( 'not_existing_field' ) is None

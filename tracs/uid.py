@@ -6,7 +6,7 @@ from urllib.parse import ParseResult, SplitResult, urlparse, urlsplit, urlunspli
 from attrs import define, field
 from cattrs import Converter, GenConverter
 
-@define( order=False )
+@define( eq=False, order=False )
 class UID:
 
 	converter: ClassVar[Converter] = GenConverter()
@@ -81,11 +81,17 @@ class UID:
 			p = f'{p}/{path}' if path else p
 			return urlunsplit( [classifier if classifier else '', '', p, '', str( part ) if part else ''] )
 
+	def __eq__( self, other ):
+		return self.uid == other.uid if isinstance( other, UID ) else self.uid == other
+
 	def __hash__( self ) -> int:
 		return hash( self.uid )
 
-	def __lt__( self, other: UID ):
-		return self.uid < other.uid
+	def __lt__( self, other: [UID|str] ):
+		return self.uid < other.uid if isinstance( other, UID ) else self.uid < other
+
+	def __gt__( self, other ):
+		return self.uid > other.uid if isinstance( other, UID ) else self.uid > other
 
 	def __str__( self ) -> str:
 		return self.uid

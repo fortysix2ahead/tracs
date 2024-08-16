@@ -56,14 +56,25 @@ def test_uid():
 def test_eq():
 	uid1 = UID( 'polar:101/recording.gpx' )
 	uid2 = UID( 'polar:101/recording.gpx' )
+	uid3 = UID( 'polar:102/recording.gpx' )
+	uid4 = 'polar:102/recording.gpx'
+
 	assert uid1 == uid2
+	assert uid1 == 'polar:101/recording.gpx'
+	assert 'polar:101/recording.gpx' == uid1
+	assert uid1 != uid3 and uid1 != uid4
 
 def test_lt():
 	uid1 = UID( 'polar:101' )
 	uid2 = UID( 'polar:102' )
-	uid3 = UID( 'strava:101' )
+	uid3 = 'strava:101'
 
-	assert uid1 < uid2 < uid3
+	assert uid1 < uid2
+	assert uid2 > uid1
+	assert uid2 < uid3
+	assert uid3 > uid2
+
+	assert sorted( [uid2, uid3, uid1] ) == [uid1, uid2, uid3]
 
 def test_serialize():
 	uid_str = 'polar:101/recording.gpx#1'

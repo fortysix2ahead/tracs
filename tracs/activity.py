@@ -167,7 +167,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	@property
 	def group( self ) -> bool:
-		return len( self.uids ) > 1
+		return len( self.metadata.members ) > 1
 
 	@property
 	def multipart( self ) -> bool:
@@ -464,7 +464,7 @@ def values( *activities: Activity, name: str, filter: bool = False ) -> List:
 	return [ v for v in _values if v is not None ] if filter else _values
 
 def groups( activities: List[Activity] ) -> List[Activity]:
-	return list( filter( lambda a: a.group, activities or [] ) )
+	return [a for a in activities if a.group]
 
 def _unique( activities: List[Activity], name: str ) -> Any:
 	return s.pop() if ( len( s := set( _stream( activities, name ) ) ) == 1 ) else None

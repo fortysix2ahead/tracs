@@ -141,14 +141,14 @@ class ResourceHandler:
 		else:
 			path, source = None, None
 
-		return Resource(
-			type = self.__class__.TYPE,
-			path = path,
-			source = source,
-			content = self.content,
-			raw = self.raw,
-			data = self.data
-		)
+		if resource := kwargs.get( 'resource' ):
+			resource.content = self.content
+			resource.raw = self.raw
+			resource.data = self.data
+		else:
+			resource = Resource( type=self.__class__.TYPE, path=path, source=source, content=self.content, raw=self.raw, data=self.data )
+
+		return resource
 
 	# noinspection PyMethodMayBeStatic
 	def as_str( self, content: bytes, encoding: str = 'UTF-8' ) -> str:

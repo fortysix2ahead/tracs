@@ -2,15 +2,20 @@ from __future__ import annotations
 
 from enum import Enum
 from functools import cached_property
+from logging import getLogger
 from re import compile, Pattern
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from attrs import Attribute, define, field, fields
 from cattrs import Converter, GenConverter
 from cattrs.gen import make_dict_unstructure_fn, override
-from more_itertools import unique, unique_in_window
+from fs.base import FS
+from more_itertools import unique
 
+from tracs.protocols import Exporter, Importer
 from tracs.uid import UID
+
+log = getLogger( __name__ )
 
 # todo: not sure if we still need the status
 class Status( Enum ):
@@ -170,6 +175,12 @@ class Resource:
 		return next( (r for r in self.resources if r.type == resource_type), None )
 
 	# serialization
+
+	def load( self, fs: FS, path: str, importer: Importer ) -> None:
+		importer.load( path, fs=fs, resource=self ) # todo: add exception handling here
+
+	def save( self, fs: FS, path: str, exporter: Exporter ) -> None:
+		exporter.save( data=self.data, path=path, fs=fs, resource=self ) # todo: add exception handling here
 
 	@classmethod
 	def from_dict( cls, obj: Dict[str, Any] ) -> Resource:

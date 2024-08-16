@@ -37,11 +37,11 @@ def test_constructor():
 @mark.service( cls=Mock )
 def test_path_for( service ):
 	# path for a given id
-	assert service.path_for_id( '1001' ) == Path( '1/0/0/1001' )
-	assert service.path_for_id( '1' ) == Path( '0/0/1/1' )
-	assert service.path_for_id( '1001', 'test' ) == Path( 'test/1/0/0/1001' )
-	assert service.path_for_id( '1001', resource_path='recording.gpx' ) == Path( '1/0/0/1001/recording.gpx' )
-	assert service.path_for_id( '1001', 'test', 'recording.gpx' ) == Path( 'test/1/0/0/1001/recording.gpx' )
+	assert service.path_for_id( '1001' ) == '1/0/0/1001'
+	assert service.path_for_id( '1' ) == '0/0/1/1'
+	assert service.path_for_id( '1001', 'test' ) == 'test/1/0/0/1001'
+	assert service.path_for_id( '1001', resource_path='recording.gpx' ) == '1/0/0/1001/recording.gpx'
+	assert service.path_for_id( '1001', 'test', 'recording.gpx' ) == 'test/1/0/0/1001/recording.gpx'
 
 	# as str
 	assert service.path_for_id( '1001', 'test', 'recording.gpx', as_path=False ) == 'test/1/0/0/1001/recording.gpx'
@@ -70,11 +70,11 @@ def test_path_for_with_osfs( service ):
 @mark.service( cls=Mock, register=True )
 def test_path_for_cls( service ):
 	# path for uid (this calls path_for_id internally)
-	assert Service.path_for_uid( 'mock:1001' ) == Path( 'mock/1/0/0/1001' )
-	assert Service.path_for_uid( 'mock:0' ) == Path( 'mock/0/0/0/0' )
+	assert Service.path_for_uid( 'mock:1001' ) == 'mock/1/0/0/1001'
+	assert Service.path_for_uid( 'mock:0' ) == 'mock/0/0/0/0'
 
 	# use default for unknown classifiers
-	assert Service.path_for_uid( 'unknown:1001' ) == Path( 'unknown/1/0/0/1001' )
+	assert Service.path_for_uid( 'unknown:1001' ) == 'unknown/1/0/0/1001'
 
 # noinspection PyTestUnpassedFixture
 @mark.context( env='empty', persist='mem', cleanup=True )

@@ -22,6 +22,7 @@ PART_THRESHOLD = 4
 class ActivityGroup:
 
 	members: List[Activity] = field( factory=list )
+	target: Activity = field( default=None )
 	time: datetime = field( default=None )
 
 	@property
@@ -32,22 +33,17 @@ class ActivityGroup:
 	def tail( self ) -> List[Activity]:
 		return self.members[1:]
 
-	def execute( self ):
-		self.head.union( self.tail )
-		self.head.uids = usort( [ a.uid for a in self.members ] )
-		self.head.uid = sorted( [ a.starttime for a in self.members ] )[0].strftime( 'group:%y%m%d%H%M%S' )
 
 def group_activities( ctx: ApplicationContext, activities: List[Activity], force: bool = False ) -> None:
 	groups = group_activities2( activities )
 
 	for g in groups:
-		updated, removed = [], []
+		added, removed = [], []
 		if force or confirm_grouping( ctx, g ):
-			g.execute()
-			updated.append( g.head )
-			removed.extend( g.tail )
-
-		# ctx.db.upsert_activities( updated ) # this is not necessary, activity is already updated
+			added.append( g.target )
+			removed.extend( g.members )
+	
+		ctx.db.insert_activities( added )
 		ctx.db.remove_activities( removed )
 		ctx.db.commit()
 
@@ -77,18 +73,20 @@ def confirm_grouping( ctx: ApplicationContext, group: ActivityGroup, force: bool
 	if force:
 		return True
 
-	result = group.head.union( group.tail, copy=True ).to_dict()
-	result['uids'] = sorted( list( { *group.head.uids, *[uid for t in group.tail for uid in t.uids] } ) )
+	group.target = Activity.group_of( *group.members )
 	sources = [a.to_dict() for a in group.members]
 
-	ctx.console.print( diff_table_3( result = result, sources = sources ) )
+	ctx.console.print( diff_table_3( result = group.target.to_dict(), sources = sources ) )
 
 	answer = Confirm.ask( f'Continue grouping?' )
 	names = sorted( list( set( [member.name for member in group.members] ) ) )
 	if answer and len( names ) > 1:
-		headline = 'Select a name for the new activity group:'
-		choices = names
-		group.head.name = Choice.ask( headline=headline, choices=choices, use_index=True, allow_free_text=True )
+		group.target.name = Choice.ask(
+			headline='Select a name for the new activity group:',
+			choices=names,
+			use_index=True,
+			allow_free_text=True
+		)
 
 	return answer
 

@@ -16,8 +16,9 @@ from tracs.edit import edit_activities, equip_activities, modify_activities, ren
 	untag_activities
 from tracs.fsio import backup_db, restore_db
 from tracs.group import group_activities, part_activities, ungroup_activities, unpart_activities
+from tracs.inspect import inspect_activities, inspect_plugins, inspect_registry, inspect_resources
 from tracs.link import link_activities
-from tracs.list import inspect_activities, inspect_plugins, inspect_registry, inspect_resources, list_activities, show_config, show_fields
+from tracs.list import list_activities, show_config, show_fields
 from tracs.setup import setup as setup_application
 from tracs.show import show_activities, show_aggregate, show_equipments, show_keywords, show_resources, show_tags, show_types
 from tracs.validate import validate_activities

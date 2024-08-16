@@ -23,23 +23,21 @@
 		"modified": "2024-01-04T12:00:00.000+00:00",
 		"favourite": true
 	},
-	"raw_id": 1234567890,
 	"resources": [
 		{
-			"path": "100001.gpx",
+			"path": "polar/1/0/0/100001/100001.gpx",
 			"type": "application/gpx+xml"
 		}, {
-			"path": "100001.json",
+			"path": "polar/1/0/0/100001/100001.json",
 			"type": "application/vnd.polar+json"
 		}
 	],
 	"starttime": "2012-01-07T10:40:51.000+00:00",
 	"type": "run",
-	"uid": "polar:1234567890"
+	"uid": "polar:100001"
 }, {
 	"id": 3,
 	"name": "Run at Noon",
-	"raw_id": 12345678,
 	"starttime": "2012-01-07T10:40:56+00:00",
 	"heartrate": 140,
 	"starttime_local": "2012-01-07T11:40:56+01:00",
@@ -48,7 +46,6 @@
 }, {
 	"id": 4,
 	"name": "Unknown Location",
-	"raw_id": 20210101010101,
 	"heartrate": 130,
 	"starttime": "2021-01-11T12:00:00+00:00",
 	"type": "drive",
@@ -70,6 +67,15 @@
 	"id": 1998,
 	"location_country": "Germany",
 	"name": "Ungrouped Polar Activity",
+	"resources": [
+		{
+			"path": "polar/2/0/0/200000/200000.gpx",
+			"type": "application/gpx+xml"
+		}, {
+			"path": "polar/2/0/0/200000/200000.json",
+			"type": "application/vnd.polar+json"
+		}
+	],
 	"starttime": "2017-04-10T17:15:53+00:00",
 	"starttime_local": "2017-04-10T19:15:53+02:00",
 	"type": "gym",
@@ -83,6 +89,15 @@
 	"id": 1999,
 	"location_country": "Germany",
 	"name": "Ungrouped Strava Activity",
+	"resources": [
+		{
+			"path": "strava/2/0/0/200000/200000.tcx",
+			"type": "application/tcx+xml"
+		}, {
+			"path": "strava/2/0/0/200000/200000.json",
+			"type": "application/vnd.strava+json"
+		}
+	],
 	"starttime": "2017-04-10T17:15:53+00:00",
 	"starttime_local": "2017-04-10T19:15:53+02:00",
 	"type": "gym",
@@ -97,6 +112,25 @@
 	"id": 2001,
 	"location_country": "Germany",
 	"name": "Grouped Activity",
+	"resources": [
+		{
+			"path": "polar/2/0/0/200000/200000.gpx",
+			"type": "application/gpx+xml",
+			"uid": "polar:200000"
+		}, {
+			"path": "polar/2/0/0/200000/200000.json",
+			"type": "application/vnd.polar+json",
+			"uid": "polar:200000"
+		}, {
+			"path": "strava/2/0/0/200000/200000.tcx",
+			"type": "application/tcx+xml",
+			"uid": "strava:200000"
+		}, {
+			"path": "strava/2/0/0/200000/200000.json",
+			"type": "application/vnd.strava+json",
+			"uid": "strava:200000"
+		}
+	],
 	"starttime": "2017-04-18T10:14:13+00:00",
 	"starttime_local": "2017-04-18T12:14:13+02:00",
 	"type": "gym",

@@ -28,13 +28,12 @@ class ActivityThree:
 @mark.resource_type( types=('application/one', 'application/two'), default=False )
 def test_resource_type( registry: Registry ):
 	assert 'application/one' in registry.resource_types.keys()
-	assert registry.resource_types['application/one'] == ResourceType( type='application/one', suffix='one', summary=True, activity_cls=ActivityOne )
+	assert registry.resource_types['application/one'] == ResourceType( type='application/one', summary=True )
 
 	assert 'application/two' in registry.resource_types.keys()
-	assert registry.resource_types['application/two'] == ResourceType( type='application/two', suffix='two', summary=False, activity_cls=ActivityTwo )
+	assert registry.resource_types['application/two'] == ResourceType( type='application/two', summary=False )
 
-	registry.register_resource_type( ResourceType( type='application/three', activity_cls=ActivityThree ) )
-	assert registry.resource_types.get( 'application/three' ).activity_cls is ActivityThree
+	registry.register_resource_type( ResourceType( type='application/three' ) )
 
 	rt = registry.resource_type_for_extension( 'one' )
 	assert rt == registry.resource_types['application/one']

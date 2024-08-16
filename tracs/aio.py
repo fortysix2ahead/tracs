@@ -12,7 +12,6 @@ from tzlocal import get_localzone_name
 from tracs.activity import Activity
 from tracs.config import ApplicationContext
 from tracs.db import ActivityDb
-from tracs.fsio import CONVERTER
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.registry import Registry
 from tracs.resources import Resource
@@ -51,10 +50,8 @@ def open_activities( ctx: ApplicationContext, activities: List[Activity] ) -> No
 
 	resource_type = GPX_TYPE # todo: make this configurable
 
-	resources = [ ctx.db.get_resource_of_type_for( a, resource_type ) for a in activities ]
-	paths = [ Service.path_for_resource( r, as_path=False ) for r in resources ]
-	paths = list( filter( lambda p: p, paths ) )
-	paths = [ quote( ctx.db_fs.getsyspath( p ) ) for p in paths ]
+	resources = [ a.resource_of_type( resource_type ) for a in activities ]
+	paths = [ quote( p ) for p in [ ctx.db_fs.getsyspath( r.path ) for r in resources ] if p is not None ]
 
 	if paths:
 		system( 'open ' + ' '.join( paths ) )
@@ -146,8 +143,7 @@ def load_resource( resource: Resource, as_activity: bool = False, update_raw: bo
 	log.error( f'unable to load resource {resource.uid}?{resource.path}, no importer found for resource type {resource.type}' )
 
 def _confirm_init( source: Activity, target: Activity, ignore: List[str], ctx: ApplicationContext ) -> bool:
-	src_dict = CONVERTER.unstructure( source, Activity )
-	target_dict = CONVERTER.unstructure( target, Activity )
+	src_dict, target_dict = source.to_dict(), target.to_dict()
 	# don't display ignored fields
 	src_dict = { k: v for k, v in src_dict.items() if k not in ignore }
 	target_dict = { k: v for k, v in target_dict.items() if k not in ignore }

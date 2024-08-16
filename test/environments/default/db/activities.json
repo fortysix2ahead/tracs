@@ -9,124 +9,158 @@
 		"tags": [],
 		"uid": "group:1",
 		"uids": [
-			"polar:1234567890",
-			"strava:12345678",
-			"waze:20210101010101"
+			"polar:1234567890", "strava:12345678", "waze:20210101010101"
 		]
+	}, {
+	"id": 2,
+	"name": "03:23:53;0.0 km",
+	"calories": 2904,
+	"distance": 30000.1,
+	"duration_moving": "01:40:00",
+	"heartrate": 150,
+	"metadata": {
+		"created": "2024-01-04T10:00:00.000+00:00",
+		"modified": "2024-01-04T12:00:00.000+00:00",
+		"favourite": true
 	},
-	{
-		"id": 2,
-		"name": "03:23:53;0.0 km",
-		"calories": 2904,
-		"distance": 30000.1,
-		"duration_moving": "01:40:00",
-		"heartrate": 150,
-		"raw_id": 1234567890,
-		"starttime": "2012-01-07T10:40:51.000+00:00",
-		"type": "run",
-		"uid": "polar:1234567890"
-	},
-	{
-		"id": 3,
-		"name": "Run at Noon",
-		"raw_id": 12345678,
-		"starttime": "2012-01-07T10:40:56+00:00",
-		"heartrate": 140,
-		"starttime_local": "2012-01-07T11:40:56+01:00",
-		"type": "run",
-		"uid": "strava:12345678"
-	},
-	{
-		"id": 4,
-		"name": "Unknown Location",
-		"raw_id": 20210101010101,
-		"heartrate": 130,
-		"starttime": "2021-01-11T12:00:00+00:00",
-		"type": "drive",
-		"uid": "waze:20210101010101"
-	},
-	{
-		"id": 100,
-		"name": null,
-		"heartrate": null,
-		"location": "",
-		"starttime": "2021-01-11T12:00:00+00:00",
-		"type": "drive",
-		"uid": "polar:123456"
-	},
-  {
-    "calories": 311,
-    "duration": "00:48:51",
-    "duration_moving": "00:48:51",
-    "heartrate": 113,
-    "heartrate_max": 147,
-    "id": 1998,
-    "location_country": "Germany",
-    "name": "Ungrouped Polar Activity",
-    "starttime": "2017-04-10T17:15:53+00:00",
-    "starttime_local": "2017-04-10T19:15:53+02:00",
-    "type": "gym",
-    "uid": "polar:200000"
-  },
-  {
-    "calories": 311,
-    "duration": "00:48:51",
-    "duration_moving": "00:48:51",
-    "heartrate": 113,
-    "heartrate_max": 147,
-    "id": 1999,
-    "location_country": "Germany",
-    "name": "Ungrouped Strava Activity",
-    "starttime": "2017-04-10T17:15:53+00:00",
-    "starttime_local": "2017-04-10T19:15:53+02:00",
-    "type": "gym",
-    "uid": "strava:200000"
-  },
-  {
-    "calories": 460,
-    "distance": 0.0,
-    "duration": "00:58:25",
-    "duration_moving": "00:58:25",
-    "heartrate": 127,
-    "heartrate_max": 155,
-    "id": 2001,
-    "location_country": "Germany",
-    "name": "Grouped Activity",
-    "starttime": "2017-04-18T10:14:13+00:00",
-    "starttime_local": "2017-04-18T12:14:13+02:00",
-    "type": "gym",
-    "uid": "group:170418101413",
-    "uids": [
-      "polar:200001",
-      "strava:200001"
-    ]
-  },
-  {
-    "id": 2010,
-    "name": "Grouped Polar Activity",
-    "starttime": "2018-04-10T17:15:53+00:00",
-    "starttime_local": "2018-04-10T19:15:53+02:00",
-    "type": "gym",
-    "uid": "polar:200010"
-  },
-  {
-    "id": 2011,
-    "name": "Grouped Strava Activity",
-    "starttime": "2018-04-10T17:15:53+00:00",
-    "starttime_local": "2018-04-10T19:15:53+02:00",
-    "type": "gym",
-    "uid": "strava:200010"
-  },
-  {
-    "id": 2012,
-    "name": "Grouped Polar + Strava Activity",
-    "starttime": "2018-04-18T10:14:13+00:00",
-    "starttime_local": "2018-04-18T12:14:13+02:00",
-    "type": "gym",
-    "uid": "group:180418101413",
-    "uids": [
-      "polar:200010",
-      "strava:200010"
-    ]
-  }
+	"resources": [
+		{
+			"path": "polar/1/0/0/100001/100001.gpx",
+			"type": "application/gpx+xml"
+		}, {
+			"path": "polar/1/0/0/100001/100001.json",
+			"type": "application/vnd.polar+json"
+		}
+	],
+	"starttime": "2012-01-07T10:40:51.000+00:00",
+	"type": "run",
+	"uid": "polar:100001"
+}, {
+	"id": 3,
+	"name": "Run at Noon",
+	"starttime": "2012-01-07T10:40:56+00:00",
+	"heartrate": 140,
+	"starttime_local": "2012-01-07T11:40:56+01:00",
+	"type": "run",
+	"uid": "strava:12345678"
+}, {
+	"id": 4,
+	"name": "Unknown Location",
+	"heartrate": 130,
+	"starttime": "2021-01-11T12:00:00+00:00",
+	"type": "drive",
+	"uid": "waze:20210101010101"
+}, {
+	"id": 100,
+	"name": null,
+	"heartrate": null,
+	"location": "",
+	"starttime": "2021-01-11T12:00:00+00:00",
+	"type": "drive",
+	"uid": "polar:123456"
+}, {
+	"calories": 311,
+	"duration": "00:48:51",
+	"duration_moving": "00:48:51",
+	"heartrate": 113,
+	"heartrate_max": 147,
+	"id": 1998,
+	"location_country": "Germany",
+	"name": "Ungrouped Polar Activity",
+	"resources": [
+		{
+			"path": "polar/2/0/0/200000/200000.gpx",
+			"type": "application/gpx+xml"
+		}, {
+			"path": "polar/2/0/0/200000/200000.json",
+			"type": "application/vnd.polar+json"
+		}
+	],
+	"starttime": "2017-04-10T17:15:53+00:00",
+	"starttime_local": "2017-04-10T19:15:53+02:00",
+	"type": "gym",
+	"uid": "polar:200000"
+}, {
+	"calories": 311,
+	"duration": "00:48:51",
+	"duration_moving": "00:48:51",
+	"heartrate": 113,
+	"heartrate_max": 147,
+	"id": 1999,
+	"location_country": "Germany",
+	"name": "Ungrouped Strava Activity",
+	"resources": [
+		{
+			"path": "strava/2/0/0/200000/200000.tcx",
+			"type": "application/tcx+xml"
+		}, {
+			"path": "strava/2/0/0/200000/200000.json",
+			"type": "application/vnd.strava+json"
+		}
+	],
+	"starttime": "2017-04-10T17:15:53+00:00",
+	"starttime_local": "2017-04-10T19:15:53+02:00",
+	"type": "gym",
+	"uid": "strava:200000"
+}, {
+	"calories": 460,
+	"distance": 0.0,
+	"duration": "00:58:25",
+	"duration_moving": "00:58:25",
+	"heartrate": 127,
+	"heartrate_max": 155,
+	"id": 2001,
+	"location_country": "Germany",
+	"name": "Grouped Activity",
+	"resources": [
+		{
+			"path": "polar/2/0/0/200000/200000.gpx",
+			"type": "application/gpx+xml",
+			"uid": "polar:200000"
+		}, {
+			"path": "polar/2/0/0/200000/200000.json",
+			"type": "application/vnd.polar+json",
+			"uid": "polar:200000"
+		}, {
+			"path": "strava/2/0/0/200000/200000.tcx",
+			"type": "application/tcx+xml",
+			"uid": "strava:200000"
+		}, {
+			"path": "strava/2/0/0/200000/200000.json",
+			"type": "application/vnd.strava+json",
+			"uid": "strava:200000"
+		}
+	],
+	"starttime": "2017-04-18T10:14:13+00:00",
+	"starttime_local": "2017-04-18T12:14:13+02:00",
+	"type": "gym",
+	"uid": "group:170418101413",
+	"uids": [
+		"polar:200001", "strava:200001"
+	]
+}, {
+	"id": 2010,
+	"name": "Grouped Polar Activity",
+	"starttime": "2018-04-10T17:15:53+00:00",
+	"starttime_local": "2018-04-10T19:15:53+02:00",
+	"type": "gym",
+	"uid": "polar:200010"
+}, {
+	"id": 2011,
+	"name": "Grouped Strava Activity",
+	"starttime": "2018-04-10T17:15:53+00:00",
+	"starttime_local": "2018-04-10T19:15:53+02:00",
+	"type": "gym",
+	"uid": "strava:200010"
+}, {
+	"id": 2012,
+	"name": "Grouped Polar + Strava Activity",
+	"starttime": "2018-04-18T10:14:13+00:00",
+	"starttime_local": "2018-04-18T12:14:13+02:00",
+	"type": "gym",
+	"uid": "group:180418101413",
+	"uids": [
+		"polar:200010", "strava:200010"
+	]
+}
 ]

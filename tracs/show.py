@@ -1,23 +1,21 @@
 
 from dataclasses import fields
 from logging import getLogger
-from pathlib import Path
 from typing import List
-from urllib.parse import urlparse
 
 from rich import box
 from rich.columns import Columns
 from rich.pretty import Pretty as pp
 from rich.table import Table
 
-from .activity import Activity
-from .activity_types import ActivityTypes
-from .resources import Resource
-from .config import ApplicationContext
-from .config import console
-from .registry import Registry
-from .service import Service
-from .utils import fmt
+from tracs.activity import Activity
+from tracs.activity_types import ActivityTypes
+from tracs.config import ApplicationContext, console
+from tracs.registry import Registry
+from tracs.resources import Resource
+from tracs.service import Service
+from tracs.uid import UID
+from tracs.utils import fmt
 
 log = getLogger( __name__ )
 
@@ -98,32 +96,27 @@ def show_verbose_activity( a: Activity, ctx: ApplicationContext, show_fields: Li
 
 	# locations/urls
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False, title='URLs and Locations:', **TITLE_STYLE )
-	for uid in a.uids:
-		classifier, local_id = uid.split( ':', 1 )
-		table.add_row( classifier, Service.url_for_uid( uid ) )
-	for uid in a.uids:
-		path = Path( ctx.db_dir, Service.path_for_uid( uid ) )
-		table.add_row( 'local db', f'{str( path )}/' )
+	uids = a.metadata.members if a.group else [ a.uid ]
+	for uid in uids:
+		uid = UID( uid ) if isinstance( uid, str ) else uid
+		table.add_row( uid.classifier, Service.url_for_uid( str( uid )  ) )
+	for r in a.resources:
+		table.add_row( 'local db', ctx.db_fs.getsyspath( r.path ) )
 	console.print( table )
 
 	# attached resources
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False, title='Resources:', **TITLE_STYLE )
-	table.add_row( '[blue]id[/blue]', '[blue]name[/blue]', '[blue]path[/blue]', '[blue]type[/blue]', '[blue]exists[/blue]', '[blue]overlayed[/blue]' )
-	for uid in a.uids:
-		resources = ctx.db.find_resources( uid ) if ctx else []
-		for r in resources:
-			service = ctx.registry.services.get( r.classifier )
-			resource_path = service.path_for( resource=r, as_path=False )
+	table.add_row( '[blue]path[/blue]', '[blue]absolute path[/blue]', '[blue]type[/blue]', '[blue]exists[/blue]', '[blue]overlayed[/blue]' )
+	for r in a.resources:
+		resource_path = ctx.db_fs.getsyspath( r.path )
+		resource_path_exists = '[bright_green]\u2713[/bright_green]' if ctx.db_fs.exists( r.path ) else '[bright_red]\u2716[/bright_red]'
 
-			abs_path = service.path_for( resource=r, absolute=True, as_path=False )
-			abs_path_exists = '[bright_green]\u2713[/bright_green]' if ctx.db_fs.exists( abs_path ) else '[bright_red]\u2716[/bright_red]'
+		# overlay_sign = ' \u29c9'
+		# overlay_sign = '\u2a39'
+		overlay_sign = '\u2a01'
+		overlay_exists = f'[bright_green] {overlay_sign}[/bright_green]' if ctx.overlay_fs.exists( r.path ) else '[bright_red]\u2716[/bright_red]'
 
-			# overlay_sign = ' \u29c9'
-			# overlay_sign = '\u2a39'
-			overlay_sign = '\u2a01'
-			overlay_exists = f'[bright_green] {overlay_sign}[/bright_green]' if ctx.overlay_fs.exists( abs_path ) else '[bright_red]\u2716[/bright_red]'
-
-			table.add_row( pp( r.id ), r.path, resource_path, r.type, abs_path_exists, overlay_exists )
+		table.add_row( r.path, resource_path, r.type, resource_path_exists, overlay_exists )
 
 	# resource_url = Registry.services.get( r.classifier ).url_for( resource=r )
 	# table.add_row( pp( r.doc_id ), f'{r.path} {path_exists}{overlay_path_exists}', absolute_path, r.type, resource_url )

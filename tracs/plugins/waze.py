@@ -504,8 +504,7 @@ class Waze( Service ):
 					content=ld.coordinates.encode( 'UTF-8' ),
 					path=f'{ld.id()}.txt',
 					raw=ld, # this allows to skip parsing again
-					source=str( file.relative_to( takeouts_dir ) ),
-					summary=True,
+					source=str( f'{self.name}/{file.relative_to( takeouts_dir )}' ),
 					type=WAZE_TYPE,
 					uid=f'{self.name}:{ld.id()}'
 				) )
@@ -518,7 +517,12 @@ class Waze( Service ):
 
 	def download( self, summary: Resource, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		try:
-			gpx_resource = Resource( type=GPX_TYPE, path=f'{summary.local_id}.gpx', uid=summary.uid )
+			gpx_resource = Resource(
+				type=GPX_TYPE,
+				path=f'{summary.local_id}.gpx',
+				source=summary.source,
+				uid=summary.uid
+			)
 			self.download_resource( gpx_resource, summary=summary )
 			return [gpx_resource]
 		except RuntimeError:

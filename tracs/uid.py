@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import ClassVar, List, Optional, Tuple
 from urllib.parse import ParseResult, SplitResult, urlparse, urlsplit, urlunsplit
 
 from attrs import define, field
+from cattrs import Converter, GenConverter
 
 @define( order=False )
 class UID:
+
+	converter: ClassVar[Converter] = GenConverter()
 
 	uid: str = field( default=None )
 	"""Contains the full uid string. Example: polar:101?recording.gpx"""
@@ -118,9 +121,14 @@ class UID:
 
 	# serialization
 
-	@classmethod
-	def _deserialize( cls, data: str ) -> UID:
-		return cls( uid=data )
+	def to_str( self ):
+		return UID.converter.unstructure( self )
 
-	def _serialize( self ) -> str:
-		return self.uid
+	@classmethod
+	def from_str( cls, obj: str ) -> UID:
+		return UID.converter.structure( obj, UID )
+
+# setup converter
+
+UID.converter.register_unstructure_hook( UID, lambda u: str( u ) )
+UID.converter.register_structure_hook( UID, lambda u, v: UID( uid=u ) )

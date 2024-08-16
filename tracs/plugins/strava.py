@@ -50,7 +50,7 @@ TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
 # register CSV type
 @resourcetype
 def strava_resource_type() -> ResourceType:
-	return ResourceType( type=STRAVA_TYPE, activity_cls=StravaActivity, summary=True )
+	return ResourceType( type=STRAVA_TYPE, summary=True )
 
 @importer( type=STRAVA_TYPE )
 class StravaHandler( JSONHandler ):
@@ -198,7 +198,6 @@ class Strava( Service ):
 				path = f'{a.id}.json',
 				type=STRAVA_TYPE,
 				source=self.url_for_id( a.id ),
-				summary = True,
 			) )
 
 		#	self.ctx.complete( 'done' )

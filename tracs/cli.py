@@ -16,7 +16,7 @@ from tracs.edit import edit_activities, equip_activities, modify_activities, ren
 	untag_activities
 from tracs.fsio import backup_db, restore_db
 from tracs.group import group_activities, part_activities, ungroup_activities, unpart_activities
-from tracs.inspect import inspect_activities, inspect_plugins, inspect_registry, inspect_resources
+from tracs.inspct import inspect_activities, inspect_keywords, inspect_plugins, inspect_registry, inspect_resources
 from tracs.link import link_activities
 from tracs.list import list_activities, show_config, show_fields
 from tracs.setup import setup as setup_application
@@ -304,13 +304,17 @@ def aggregate( ctx: ApplicationContext, filters ):
 	show_aggregate( _flt( *filters ), ctx=ctx )
 
 @cli.command( hidden=True, help='inspects activities/resources/internal registry' )
-@option( '-g', '--registry', is_flag=True, required=False, help='inspects the internal registry (filter will be ignored)' )
+@option( '-j', '--json', is_flag=True, required=False, default=False, help='outputs json instead of text' )
+@option( '-k', '--keywords', is_flag=True, required=False, help='inspects keywords (filters are ignored)' )
 @option( '-p', '--plugins', is_flag=True, required=False, help='inspects all discoverable plugins (filter will be ignored)' )
-@option( '-r', '--resource', is_flag=True, required=False, help='applies the provided filters to resources instead of activities' )
+@option( '-rg', '--registry', is_flag=True, required=False, help='inspects the internal registry (filter will be ignored)' )
+@option( '-rs', '--resource', is_flag=True, required=False, help='inspects resources of activities' )
 @argument( 'filters', nargs=-1 )
 @pass_obj
-def inspect( ctx: ApplicationContext, filters, plugins: bool, registry: bool, resource: bool ):
-	if plugins:
+def inspect( ctx: ApplicationContext, filters, json: bool, keywords: bool, plugins: bool, registry: bool, resource: bool ):
+	if keywords:
+		inspect_keywords( ctx, json )
+	elif plugins:
 		inspect_plugins( ctx )
 	elif registry:
 		inspect_registry( ctx.registry )

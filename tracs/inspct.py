@@ -1,3 +1,4 @@
+from orjson import dumps
 from rich import box
 from rich.pretty import Pretty as pp
 from rich.table import Table
@@ -6,6 +7,7 @@ from tracs.activity import Activity
 from tracs.config import ApplicationContext, console
 from tracs.pluginmgr import PluginManager
 from tracs.registry import Registry
+from tracs.ui.utils import style
 
 def inspect_activities( activities: [Activity] ) -> None:
 	for a in activities:
@@ -70,3 +72,14 @@ def inspect_registry( registry: Registry ) -> None:
 
 	console.print( table )
 
+def inspect_keywords( ctx: ApplicationContext, as_json: bool ) -> None:
+	keywords = sorted( ctx.registry.keywords.items() )
+	if as_json:
+		json = [ { 'name': k } for k, v in keywords ]
+		console.print_json( dumps( json ).decode(), sort_keys=True )
+	else:
+		table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
+		table.add_column( '[bold bright_blue]name[/bold bright_blue]' )
+		for k, v in keywords:
+			table.add_row( k )
+		ctx.console.print( table )

@@ -8,18 +8,18 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, cast, List, Optional, Tuple, Union
 
+from arrow import utcnow
 from dateutil.tz import UTC
 from fs.base import FS
 from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from fs.path import combine, dirname, frombase
+from fs.path import combine, dirname
 
 from tracs.activity import Activity
 from tracs.config import current_ctx, DB_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
-from tracs.registry import Registry
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
 
@@ -129,21 +129,41 @@ class Service( Plugin ):
 		else:
 			return None
 
-	@classmethod
-	def as_activity( cls, resource: Resource, registry: Registry = None, **kwargs ) -> Optional[Activity]:
+	@staticmethod
+	def as_activity( resource: Resource, **kwargs ) -> Activity:
 		"""
 		Loads a resource and transforms it into an activity by using the importer indicated by the resource type.
 		"""
-		registry = registry if registry else current_ctx().registry
-		return registry.importer_for( resource.type ).load_as_activity( path=resource.path, fs=current_ctx().db_fs, **kwargs )
+		Service.load_resources( None, resource )
+		importer = kwargs.get( 'ctx', current_ctx() ).registry.importer_for( resource.type )
+		activity = importer.load_as_activity( resource=resource )
+		activity.metadata.created = utcnow().datetime
+		activity.resources = Resources( resource )
+		return activity
 
-	@classmethod
-	def as_activity_from( cls, resource: Resource, registry: Registry = None, **kwargs ) -> Optional[Activity]:
+	@staticmethod
+	def as_activity_from( resource: Resource, **kwargs ) -> Optional[Activity]:
 		"""
 		Loads a resource to an activity in a 'lazy' manner, reusing the existing content of the resource.
 		"""
-		registry = registry if registry else current_ctx().registry
+		registry = kwargs.get( 'registry', current_ctx().registry )
 		return registry.importer_for( resource.type ).load_as_activity( resource=resource, **kwargs )
+
+	@staticmethod
+	def load_resources( activity: Optional[Activity] = None, *resources: Resource, **kwargs ):
+		"""
+		Loads the provided resources, either from the list or from the activity. This will only load the content, the activity will not be updated.
+
+		:param activity: activity, which resources shall be loaded
+		:param resources: list of resources to load
+		:param kwargs: ctx: context to use, if omitted current_ctx() will be used
+		:return:
+		"""
+		ctx = kwargs.get( 'ctx', current_ctx() )
+		resources = activity.resources if activity else resources or []
+		for r in resources:
+			if importer := ctx.registry.importer_for( r.type ):
+				importer.load( path=r.path, fs=ctx.db_fs, resource=r ) # todo: implement exception handling here
 
 	# service methods
 

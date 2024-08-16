@@ -169,7 +169,7 @@ class Importer( Protocol ):
 		"""
 		...
 
-	def load_as_activity( self, path: Optional[Path] = None, url: Optional[str] = None, **kwargs ) -> Optional[Activity]:
+	def load_as_activity( self, path: Optional[Path|str] = None, url: Optional[str] = None, **kwargs ) -> Optional[Activity]:
 		"""
 		Loads data via load() and returns it via as_activity()
 		"""

@@ -15,6 +15,7 @@ from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
 from tracs.core import Container, FormattedFieldsBase, Metadata, VirtualFieldsBase
+from tracs.protocols import Importer
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
 from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unchain, unique_sorted
@@ -278,8 +279,14 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	def resource_of_type( self, resource_type: str ) -> Optional[Resource]:
 		return first_true( self.resources.iter(), default=None, pred=lambda r: r.type == resource_type )
 
-	def resources_for( self, classifier: str ) -> List[Resource]:
-		return [r for r in self.resources if r.uid.startswith( f'{classifier}:' )]
+	def resources_for( self, classifier: Optional[str], uid: Optional[UID|str] ) -> List[Resource]:
+		if classifier:
+			return [r for r in self.resources if r.uid.startswith( f'{classifier}:' )]
+		elif uid:
+			uid = uid if isinstance( uid, str ) else str( uid )
+			return [ r for r in self.resources if r.uid == uid ]
+		else:
+			return self.resources
 
 	def tag( self, tag: str ):
 		if tag not in self.tags:

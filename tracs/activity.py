@@ -9,6 +9,7 @@ from typing import Any, ClassVar, Dict, List, Optional, TypeVar, Union
 
 from attrs import define, evolve, Factory, field
 from cattrs import Converter, GenConverter
+from dateutil.tz import UTC
 from more_itertools import first_true
 from tzlocal import get_localzone_name
 
@@ -329,7 +330,9 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 		# treatment of special fields
 		target.uid = f'group:{activities[0].starttime.strftime( "%y%m%d%H%M%S" )}'
-		target.uids = [ a.uid for a in activities ]
+		target.metadata.created = datetime.now( UTC )
+		target.metadata.members = sorted( [ UID( a.uid ) for a in activities ] )
+		target.resources = Resources( lst=sorted( [ r for a in activities for r in a.resources ], key=lambda r: r.path ) )
 
 		return target
 

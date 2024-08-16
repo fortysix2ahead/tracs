@@ -28,6 +28,7 @@ class ActivityPart:
 	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
 
 	gap: timedelta = field( default=None )
+	uid: str = field( factory=list )
 	uids: List[str] = field( factory=list )
 
 	@property

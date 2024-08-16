@@ -8,18 +8,19 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, cast, List, Optional, Tuple, Union
 
+from arrow import utcnow
 from dateutil.tz import UTC
 from fs.base import FS
-from fs.errors import ResourceNotFound
+from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
-from fs.path import combine, dirname, frombase
+from fs.osfs import OSFS
+from fs.path import combine, dirname
 
 from tracs.activity import Activity
-from tracs.config import current_ctx
+from tracs.config import current_ctx, DB_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
-from tracs.registry import Registry
-from tracs.resources import Resource
+from tracs.resources import Resource, Resources
 from tracs.uid import UID
 
 log = getLogger( __name__ )
@@ -34,6 +35,7 @@ class Service( Plugin ):
 		# paths + plugin filesystem area
 		self._fs: FS = kwargs.get( 'fs' ) or ( self.ctx.plugin_fs( self.name ) if self.ctx else None )
 		self._dbfs = kwargs.get( 'dbfs' ) or ( self.ctx.db_fs if self.ctx else None )
+		self._rootfs = OSFS( '/' )
 		self._base_url = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
 
@@ -86,27 +88,30 @@ class Service( Plugin ):
 
 	# class methods for helping with various things
 
-	@classmethod
-	def default_path_for_id( cls, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = False ) -> Union[Path, str]:
+	@staticmethod
+	def default_path_for_id( local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None ) -> str:
 		local_id_rjust = str( local_id ).rjust( 3, '0' )
 		path = f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
 		path = combine( base_path, path ) if base_path else path
 		path = combine( path, resource_path ) if resource_path else path
-		return Path( path ) if as_path else path
+		return path
 
 	@classmethod
-	def path_for_uid( cls, uid: Union[UID, str], absolute: bool = False, as_path=True, ctx=None ) -> Union[Path, str]:
+	def path_for_uid( cls, uid: Union[UID, str], absolute: bool = False, as_path=False, ctx=None ) -> Union[Path, str]:
 		"""
 		Returns the relative path for a given uid.
 		A service with the classifier of the uid has to exist, otherwise None will be returned.
 		"""
 		uid = UID( uid ) if isinstance( uid, str ) else uid
 		ctx = ctx if ctx else current_ctx()
+
 		try:
 			service = ctx.registry.services.get( uid.classifier )
-			return service.path_for_id( uid.local_id, service.name, uid.path, as_path=as_path )
+			path = service.path_for_id( uid.local_id, service.name, uid.path )
 		except AttributeError:
-			return Service.default_path_for_id( uid.local_id, uid.classifier, uid.path, as_path=as_path )
+			path = Service.default_path_for_id( uid.local_id, uid.classifier, uid.path )
+
+		return Path( path ) if as_path else path
 
 	@classmethod
 	def path_for_resource( cls, resource: Resource, absolute: bool = True, as_path: bool = True, ignore_overlay: bool = True ) -> Union[Path, str]:
@@ -124,31 +129,49 @@ class Service( Plugin ):
 		else:
 			return None
 
-	@classmethod
-	def as_activity( cls, resource: Resource, registry: Registry = None, **kwargs ) -> Optional[Activity]:
+	@staticmethod
+	def as_activity( resource: Resource, **kwargs ) -> Activity:
 		"""
 		Loads a resource and transforms it into an activity by using the importer indicated by the resource type.
 		"""
-		ctx = current_ctx()
-		fs, path = ctx.db_fs, Service.path_for_resource( resource, as_path=False )
-		registry = registry if registry else ctx.registry
-		return registry.importer_for( resource.type ).load_as_activity( path=path, fs=fs, **kwargs )
+		Service.load_resources( None, resource )
+		importer = kwargs.get( 'ctx', current_ctx() ).registry.importer_for( resource.type )
+		activity = importer.load_as_activity( resource=resource )
+		activity.metadata.created = utcnow().datetime
+		activity.resources = Resources( resource )
+		return activity
 
-	@classmethod
-	def as_activity_from( cls, resource: Resource, registry: Registry = None, **kwargs ) -> Optional[Activity]:
+	@staticmethod
+	def as_activity_from( resource: Resource, **kwargs ) -> Optional[Activity]:
 		"""
 		Loads a resource to an activity in a 'lazy' manner, reusing the existing content of the resource.
 		"""
-		registry = registry if registry else current_ctx().registry
+		registry = kwargs.get( 'registry', current_ctx().registry )
 		return registry.importer_for( resource.type ).load_as_activity( resource=resource, **kwargs )
+
+	@staticmethod
+	def load_resources( activity: Optional[Activity] = None, *resources: Resource, **kwargs ):
+		"""
+		Loads the provided resources, either from the list or from the activity. This will only load the content, the activity will not be updated.
+
+		:param activity: activity, which resources shall be loaded
+		:param resources: list of resources to load
+		:param kwargs: ctx: context to use, if omitted current_ctx() will be used
+		:return:
+		"""
+		ctx = kwargs.get( 'ctx', current_ctx() )
+		resources = activity.resources if activity else resources or []
+		for r in resources:
+			if importer := ctx.registry.importer_for( r.type ):
+				importer.load( path=r.path, fs=ctx.db_fs, resource=r ) # todo: implement exception handling here
 
 	# service methods
 
-	# todo: set as_path to a default of False
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = True ) -> Union[Path, str]:
-		return Service.default_path_for_id( local_id, base_path, resource_path, as_path )
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = False ) -> Union[Path, str]:
+		path = Service.default_path_for_id( local_id, base_path, resource_path )
+		return Path( path ) if as_path else path
 
-	def path_for( self, resource: Resource, ignore_overlay: bool = True, absolute: bool = True, omit_classifier: bool = False, as_path: bool = True ) -> Optional[Path]:
+	def path_for( self, resource: Resource, absolute: bool = False, omit_classifier: bool = False, ignore_overlay: bool = True, as_path: bool = False ) -> Optional[Union[Path, str]]:
 		"""
 		Returns the path in the local file system where all artefacts of a provided activity are located.
 
@@ -161,10 +184,6 @@ class Service( Plugin ):
 		"""
 		uid = resource.uid_obj
 
-		if uid.classifier != self.name:
-			# this should not happen, if it does, something's wrong
-			log.warning( f'called path_for() on service {self.name} for a foreign resource with UID {resource.uidpath}' )
-
 		if omit_classifier and not absolute:
 			path = self.path_for_id( uid.local_id, None, resource_path=uid.path, as_path=False )
 		else:
@@ -172,9 +191,9 @@ class Service( Plugin ):
 
 		if absolute:
 			try:
-				path = self.fs.getsyspath( path )
-			except (AttributeError, ResourceNotFound):
-				path = f'/{path}' if not omit_classifier else f'{frombase( uid.classifier, path )}'
+				path = self.dbfs.getsyspath( path )
+			except (AttributeError, ResourceNotFound, NoSysPath ):
+				path = f'/{DB_DIRNAME}/{path}'
 
 		return Path( path ) if as_path else path
 
@@ -211,14 +230,11 @@ class Service( Plugin ):
 	# methods related to fetch()
 
 	def fetch_summary_resources( self, skip: bool, force: bool, pretend: bool, **kwargs ) -> List[Union[Resource, int]]:
-		if skip:
-			summaries = self.ctx.db.summaries
-		else:
-			summaries = self.fetch( force=force, pretend=pretend, **kwargs )  # fetch all summary resources
-
+		summaries = self.ctx.db.summaries if skip else self.fetch( force=force, pretend=pretend, **kwargs )  # fetch all summary resources
+		for s in summaries:
+			s.path = self.path_for( s ) # adjust resource path
 		# sort summaries by uid so that progress bar in download looks better -> todo: improve progress bar later?
 		return sorted( summaries, key=lambda r: r.uid )
-
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Union[Resource, int]]:
 		"""
@@ -270,7 +286,8 @@ class Service( Plugin ):
 		[ self.persist_resource( r, force, pretend, **kwargs ) for r in resources ]
 
 	def persist_resource( self, resource: Resource, force: bool, pretend: bool, **kwargs ) -> None:
-		path = self.path_for_resource( resource, as_path=False )
+		# path = self.path_for_resource( resource, as_path=False )
+		path = self.path_for( resource )
 		if pretend:
 			log.info( f'pretending to write resource {resource.uidpath}' )
 			return
@@ -280,7 +297,7 @@ class Service( Plugin ):
 			return
 
 		if self.dbfs.exists( path ) and not force:
-			log.debug( f'not persisting resource {resource.uidpath}, path already exists: {path}' )
+			log.debug( f'not persisting resource {resource.uidpath}, path already exists: {path}, use --force to overwrite' )
 			return
 
 		if not resource.content or not len( resource.content ) > 0:
@@ -290,7 +307,7 @@ class Service( Plugin ):
 		try:
 			self.dbfs.makedirs( dirname( path ), recreate=True )
 			self.dbfs.writebytes( path, resource.content )
-			self.ctx.db.upsert_resources( resource )
+			resource.path = path # adjust resource
 		except TypeError:
 			log.error( f'error writing resource data for resource {resource.uidpath}', exc_info=True )
 
@@ -308,13 +325,18 @@ class Service( Plugin ):
 	def postprocess_resource( self, resource: Resource = None, **kwargs ) -> None:
 		pass
 
+	def activity_from( self, summary: Resource, resources: List[Resource], **kwargs ) -> Optional[Activity]:
+		"""
+		Loads a resource to an activity in a 'lazy' manner, reusing the existing content of the resource.
+		"""
+		activity = self.ctx.registry.importer_for( summary.type ).load_as_activity( resource=summary, **kwargs )
+		activity.resources = Resources( *resources )
+		activity.metadata.created = datetime.now( UTC )
+		return activity
+
 	# noinspection PyMethodMayBeStatic,PyUnresolvedReferences
 	def create_activities( self, summary: Resource, resources: List[Resource], **kwargs ) -> List[Activity]:
-		activities = [ Service.as_activity_from( summary ) ]
-		now = datetime.now( UTC )
-		for a in activities:
-			a.metadata.created = now
-		return activities
+		return [ self.activity_from( summary, resources, **kwargs ) ]
 
 	# noinspection PyMethodMayBeStatic
 	def postprocess_activities( self, activities: List[Activity], resources: List[Resource], **kwargs ) -> List[Activity]:

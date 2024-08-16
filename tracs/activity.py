@@ -1,19 +1,24 @@
 
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from functools import cached_property
+from itertools import chain
 from logging import getLogger
-from typing import Any, Dict, List, Optional, TypeVar, Union
+from typing import Any, ClassVar, Dict, List, Optional, TypeVar, Union
 
 from attrs import define, evolve, Factory, field
+from cattrs import Converter, GenConverter
+from dateutil.tz import UTC
+from more_itertools import first_true
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
 from tracs.core import Container, FormattedFieldsBase, Metadata, VirtualFieldsBase
-from tracs.resources import Resource
+from tracs.protocols import Importer
+from tracs.resources import Resource, Resources
 from tracs.uid import UID
-from tracs.utils import sum_timedeltas, unchain, unique_sorted
+from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unchain, unique_sorted
 
 log = getLogger( __name__ )
 
@@ -22,7 +27,10 @@ T = TypeVar('T')
 @define( eq=True )
 class ActivityPart:
 
-	gap: time = field( default=None )
+	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
+
+	gap: timedelta = field( default=None )
+	uid: str = field( factory=list )
 	uids: List[str] = field( factory=list )
 
 	@property
@@ -45,8 +53,19 @@ class ActivityPart:
 	def as_activity_uids( self ) -> List[UID]:
 		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.uid_objs ] )
 
+	# serialization
+
+	@classmethod
+	def from_dict( cls, obj: Dict[str, Any] ) -> ActivityPart:
+		return ActivityPart.converter.structure( obj, ActivityPart )
+
+	def to_dict( self ) -> Dict[str, Any]:
+		return ActivityPart.converter.unstructure( self )
+
 @define( eq=True ) # todo: mark fields with proper eq attributes
 class Activity( VirtualFieldsBase, FormattedFieldsBase ):
+
+	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
 
 	# fields
 	id: int = field( default=None, metadata={ 'protected': True } )
@@ -56,9 +75,9 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	uids: List[str] = field( factory=list, on_setattr=lambda i, a, v: unique_sorted( v ) if v else [], converter=lambda v: unique_sorted( v ), metadata={ 'protected': True } ) # referenced list activities
 	"""List of uids of referenced activities"""
 
-	name: Optional[str] = field( default=None )
+	name: str = field( default=None )
 	"""activity name"""
-	type: Optional[ActivityTypes] = field( default=None )
+	type: ActivityTypes = field( default=None )
 	"""activity type"""
 	description: str = field( default=None )
 	"""description"""
@@ -67,10 +86,10 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	equipment: List[str] = field( factory=list )
 	"""list of equipment tags"""
 
-	location_country: Optional[str] = field( default=None ) #
-	location_state: Optional[str] = field( default=None ) #
-	location_city: Optional[str] = field( default=None ) #
-	location_place: Optional[str] = field( default=None ) #
+	location_country: str = field( default=None ) #
+	location_state: str = field( default=None ) #
+	location_city: str = field( default=None ) #
+	location_place: str = field( default=None ) #
 	location_latitude_start: float = field( default=None ) #
 	location_longitude_start: float = field( default=None ) #
 	location_latitude_end: float = field( default=None ) #
@@ -79,34 +98,34 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	starttime: datetime = field( default=None, metadata={ 'multipart': 'min' } )
 	"""activity time (UTC)"""
-	endtime: Optional[datetime] = field( default=None, metadata={ 'multipart': 'max' } )
+	endtime: datetime = field( default=None, metadata={ 'multipart': 'max' } )
 	"""activity end time (UTC)"""
 	starttime_local: datetime = field( default=None, metadata={ 'multipart': 'min' } )
 	"""activity time (local)"""
-	endtime_local: Optional[datetime] = field( default=None, metadata={ 'multipart': 'max' } )
+	endtime_local: datetime = field( default=None, metadata={ 'multipart': 'max' } )
 	"""activity end time (local)"""
 	timezone: str = field( default=get_localzone_name() )
 	"""timezone of the activity, local timezone by default"""
 
-	duration: Optional[timedelta] = field( default=None ) #
-	duration_moving: Optional[timedelta] = field( default=None ) #
+	duration: timedelta = field( default=None ) #
+	duration_moving: timedelta = field( default=None ) #
 
-	distance: Optional[float] = field( default=None, metadata={ 'multipart': 'sum' } ) #
-	ascent: Optional[float] = field( default=None ) #
-	descent: Optional[float] = field( default=None ) #
-	elevation_max: Optional[float] = field( default=None ) #
-	elevation_min: Optional[float] = field( default=None ) #
-	speed: Optional[float] = field( default=None ) #
-	speed_max: Optional[float] = field( default=None ) #
+	distance: float = field( default=None, metadata={ 'multipart': 'sum' } ) #
+	ascent: float = field( default=None ) #
+	descent: float = field( default=None ) #
+	elevation_max: float = field( default=None ) #
+	elevation_min: float = field( default=None ) #
+	speed: float = field( default=None ) #
+	speed_max: float = field( default=None ) #
 
-	heartrate: Optional[int] = field( default=None, metadata={ 'multipart': 'average' } ) #
-	heartrate_max: Optional[int] = field( default=None ) #
-	heartrate_min: Optional[int] = field( default=None ) #
-	calories: Optional[int] = field( default=None ) #
-
+	heartrate: int = field( default=None, metadata={ 'multipart': 'average' } ) #
+	heartrate_max: int = field( default=None ) #
+	heartrate_min: int = field( default=None ) #
+	calories: int = field( default=None ) #
 
 	metadata: Metadata = field( factory=Metadata )
 	parts: List[ActivityPart] = field( factory=list )
+	resources: Resources = field( factory=Resources ) # todo: merge with Resources later
 
 	# init variables
 	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
@@ -116,8 +135,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	## internal fields
 	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
-	__resources__: List[Resource] = field( init=False, factory=list, repr=False, eq=False, alias='__resources__' )
-	__parent__: Optional[Activity] = field( init=False, default=None, alias='__parent__' )
+	__parent__: Activity = field( init=False, default=None, alias='__parent__' )
 	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
 
 	# additional properties
@@ -141,10 +159,6 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	#	return unique_sorted( [ f'{uid.classifier}:{uid.local_id}' for uid in self.as_uids() ] )
 
 	@property
-	def resources( self ) -> List[Resource]:
-		return self.__resources__
-
-	@property
 	def parent( self ) -> Optional[Activity]:
 		return self.__parent__
 
@@ -154,7 +168,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	@property
 	def group( self ) -> bool:
-		return len( self.uids ) > 1
+		return len( self.metadata.members ) > 1
 
 	@property
 	def multipart( self ) -> bool:
@@ -212,7 +226,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 						setattr( this, f.name, sorted( list( set().union( getattr( this, f.name ), other_value ) ) ) )
 					elif f.default.factory is dict:
 						setattr( this, f.name, { **value, **other_value } )
-					elif f.default.factory is Metadata:
+					elif f.default.factory in [Metadata, Resources]:
 						pass # ignore metadata
 					else:
 						raise RuntimeError( f'unsupported factory datatype: {f.default}' )
@@ -262,8 +276,17 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 		self.__resources__.append( resource )
 		resource.__parent_activity__ = self
 
-	def resources_for( self, classifier: str ) -> List[Resource]:
-		return [r for r in self.resources if r.uid.startswith( f'{classifier}:' )]
+	def resource_of_type( self, resource_type: str ) -> Optional[Resource]:
+		return first_true( self.resources.iter(), default=None, pred=lambda r: r.type == resource_type )
+
+	def resources_for( self, classifier: Optional[str], uid: Optional[UID|str] ) -> List[Resource]:
+		if classifier:
+			return [r for r in self.resources if r.uid.startswith( f'{classifier}:' )]
+		elif uid:
+			uid = uid if isinstance( uid, str ) else str( uid )
+			return [ r for r in self.resources if r.uid == uid ]
+		else:
+			return self.resources
 
 	def tag( self, tag: str ):
 		if tag not in self.tags:
@@ -307,14 +330,16 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 						setattr( target, f.name, sorted( list( set().union( getattr( target, f.name ), other_value ) ) ) )
 					elif f.default.factory is dict:
 						setattr( target, f.name, { **value, **other_value } )
-					elif f.default.factory is Metadata:
+					elif f.default.factory in [Metadata, Resources]:
 						pass
 					else:
 						raise RuntimeError( f'unsupported factory datatype: {f.default.factory}' )
 
 		# treatment of special fields
 		target.uid = f'group:{activities[0].starttime.strftime( "%y%m%d%H%M%S" )}'
-		target.uids = [ a.uid for a in activities ]
+		target.metadata.created = datetime.now( UTC )
+		target.metadata.members = sorted( [ UID( a.uid ) for a in activities ] )
+		target.resources = Resources( lst=sorted( [ r for a in activities for r in a.resources ], key=lambda r: r.path ) )
 
 		return target
 
@@ -365,8 +390,20 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 		return mpa
 
+	# serialization
+
+	@classmethod
+	def from_dict( cls, obj: Dict[str, Any] ) -> Activity:
+		return Activity.converter.structure( obj, Activity )
+
+	def to_dict( self ) -> Dict[str, Any]:
+		return Activity.converter.unstructure( self )
+
 @define
 class Activities( Container[Activity] ):
+
+	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
+
 	"""
 	Dict-like container for activities.
 	"""
@@ -412,6 +449,21 @@ class Activities( Container[Activity] ):
 			except KeyError:
 				pass
 
+	def iter( self ):
+		return iter( self.data )
+
+	def iter_resources( self ):
+		return chain( *[ a.resources for a in self.data ] )
+
+	# serialization
+
+	@classmethod
+	def from_dict( cls, obj: List[Dict] ) -> Activities:
+		return Activities( data=[Activity.from_dict( o ) for o in obj] )
+
+	def to_dict( self ) -> List[Dict]:
+		return [ Activity.to_dict( a ) for a in self.all( sort=True ) ]
+
 # helper
 
 def values( *activities: Activity, name: str, filter: bool = False ) -> List:
@@ -419,7 +471,7 @@ def values( *activities: Activity, name: str, filter: bool = False ) -> List:
 	return [ v for v in _values if v is not None ] if filter else _values
 
 def groups( activities: List[Activity] ) -> List[Activity]:
-	return list( filter( lambda a: a.group, activities or [] ) )
+	return [a for a in activities if a.group]
 
 def _unique( activities: List[Activity], name: str ) -> Any:
 	return s.pop() if ( len( s := set( _stream( activities, name ) ) ) == 1 ) else None
@@ -435,3 +487,20 @@ def _sum( activities: List[Activity], name: str ) -> Any:
 
 def _stream( activities: List[Activity], name: str ) -> List:
 	return [ v for a in activities if ( v := getattr( a, name, None ) ) ]
+
+# configure converters
+
+ActivityPart.converter.register_unstructure_hook( timedelta, timedelta_to_str )
+ActivityPart.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
+
+Activity.converter.register_unstructure_hook( datetime, toisoformat )
+Activity.converter.register_unstructure_hook( timedelta, timedelta_to_str )
+Activity.converter.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
+Activity.converter.register_unstructure_hook( Metadata, lambda md: md.to_dict() )
+Activity.converter.register_unstructure_hook( Resources, lambda rl: rl.to_dict() )
+
+Activity.converter.register_structure_hook( datetime, lambda obj, cls: fromisoformat( obj ) )
+Activity.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
+Activity.converter.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
+Activity.converter.register_structure_hook( Metadata, lambda obj, cls: Metadata.from_dict( obj ) )
+Activity.converter.register_structure_hook( Resources, lambda obj, cls: Resources.from_dict( obj ) )

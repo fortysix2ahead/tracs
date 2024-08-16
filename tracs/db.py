@@ -12,7 +12,7 @@ from fs.errors import ResourceNotFound
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import dumps, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
@@ -29,15 +29,13 @@ log = getLogger( __name__ )
 ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
 ACTIVITIES_NAME = 'activities.json'
-INDEX_NAME = 'index.json'
-RESOURCES_NAME = 'resources.json'
 SCHEMA_NAME = 'schema.json'
 
+SCHEMA_VERSION = 14
+
 DB_FILES = {
-	ACTIVITIES_NAME: '{}',
-	INDEX_NAME: '{}',
-	RESOURCES_NAME: '{}',
-	SCHEMA_NAME: '{"version": 13}'
+	ACTIVITIES_NAME: dumps( [] ),
+	SCHEMA_NAME: dumps( { "version": SCHEMA_VERSION } )
 }
 
 UNDERLAY = 'underlay'
@@ -117,7 +115,7 @@ class ActivityDb:
 
 		for file, content in DB_FILES.items():
 			if not fs.get_fs( UNDERLAY ).exists( f'/{file}' ):
-				fs.get_fs( UNDERLAY ).writetext( f'/{file}', content )
+				fs.get_fs( UNDERLAY ).writebytes( f'/{file}', content )
 			# copy_file_if( self.pkgfs, f'/{f}', self.underlay_fs, f'/{f}', 'not_exists', preserve_time=True )
 
 		# todo: this is probably not needed?
@@ -138,7 +136,7 @@ class ActivityDb:
 			try:
 				copy_file( osfs, f'/{f}', fs, f'/{f}', preserve_time=True )
 			except ResourceNotFound:
-				fs.writetext( f, DB_FILES.get( f ) )
+				fs.writebytes( f, DB_FILES.get( f ) )
 
 		return fs
 
@@ -146,7 +144,7 @@ class ActivityDb:
 	def _init_existing_fs( self, fs: FS ) -> FS:
 		for file, content in DB_FILES.items():
 			if not fs.exists( file ):
-				fs.writetext( file, content )
+				fs.writebytes( file, content )
 		return fs
 
 	# for development only ...
@@ -156,7 +154,6 @@ class ActivityDb:
 
 	def _load_db( self ):
 		self._schema = load_schema( self.fs )
-		self._resources: Resources = load_resources( self.fs )
 		self._activities: Activities = load_activities( self.fs )
 
 	def register_summary_types( self, *types: str ):
@@ -168,7 +165,6 @@ class ActivityDb:
 	# todo: remove do_commit flag?
 	def commit( self, do_commit: bool = True ):
 		if do_commit:
-			write_resources( self._resources, self.overlay_fs )
 			write_activities( self._activities, self.overlay_fs )
 
 	def save( self ):
@@ -224,20 +220,8 @@ class ActivityDb:
 		return sorted( list( self._activities.id_keys() ) )
 
 	@property
-	def resource_map( self ) -> Mapping[int, Resource]:
-		return self._resources.id_map()
-
-	@property
 	def resources( self ) -> Resources:
-		return self._resources
-
-	@property
-	def resource_ids( self ) -> List[int]:
-		return sorted( self._resources.id_keys() )
-
-	@property
-	def resource_keys( self ) -> List[str]:
-		return sorted( self._resources.keys() )
+		return Resources( lst = [r for a in self.activities for r in a.resources] )
 
 	# ---- DB Operations --------------------------------------------------------
 
@@ -266,24 +250,6 @@ class ActivityDb:
 
 	def replace_activity( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
 		self._activities.replace( new, old, id, uid )
-
-	# insert resources
-
-	def insert_resource( self, resource: Resource ) -> int:
-		return self.insert_resources( resource )[0]
-
-	def insert_resources( self, *resources: Union[Resource, List[Resource]] ) -> List[int]:
-		return self.resources.add( *resources )
-
-	def upsert_resource( self, resource: Resource ) -> int:
-		if existing := self.get_resource_by_uid_path( resource.uid, resource.path ):
-			self.resource_map[existing.id] = resource
-			return existing.id
-		else:
-			return self.insert_resource( resource )
-
-	def upsert_resources( self, *resources: Union[Resource, List[Resource]] ) -> Tuple[List[int], List[int]]:
-		return self.resources.update( *resources )
 
 	# remove items
 
@@ -335,7 +301,7 @@ class ActivityDb:
 		return any( uid in a.uids for a in self.activities )
 
 	def contains_resource( self, uid: str, path: str ) -> bool:
-		return any( r.uid == uid and r.path == path for r in self.resources )
+		return True if self.get_resource_by_uid_path( uid, path ) else False
 
 	# def get( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> Optional[Activity]:
 	# 	filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
@@ -391,34 +357,22 @@ class ActivityDb:
 		"""
 		return [ a for a in self.activities if any( uid in a.uids for uid in ( uids or [] ) ) ]
 
-	def get_resource( self, id: int ) -> Optional[Resource]:
-		return self.get_resource_by_id( id )
-
-	def get_resource_by_id( self, id: int ) -> Optional[Resource]:
-		"""
-		Returns the resource with the provided id.
-		:param id:
-		:return:
-		"""
-		return self._resources.idget( id )
-
 	def get_resources_by_uid( self, uid ) -> List[Resource]:
 		"""
 		Returns all resources with the provided uid.
 		:param uid:
 		:return:
 		"""
-		return [r for r in self.resources if r.uid == uid]
+		activities = [ a for a in self.activities if a.uid == uid or uid in a.uids or uid in a.metadata.members ]
+		return [r for a in activities for r in a.resources]
 
-	def get_resources_by_uids( self, uids: List[str] ):
+	def get_resources_by_uids( self, uids: List[str] ) -> List[Resource]:
 		"""
 		Returns all resources with the provided uids.
 		:param uids:
 		:return:
 		"""
-		# regular_list = [[1, 2, 3, 4], [5, 6, 7], [8, 9]]
-		# flat_list = [item for sublist in regular_list for item in sublist]
-		return list( chain( *[r for r in [self.get_resources_by_uid( uid ) for uid in uids]] ) ) # todo: revise flatten list!
+		return [r for rl in [self.get_resources_by_uid( uid ) for uid in uids] for r in rl]
 
 	def get_resource_by_uid_path( self, uid: str, path: str ) -> Optional[Resource]:
 		"""
@@ -427,13 +381,10 @@ class ActivityDb:
 		:param path:
 		:return:
 		"""
-		return next( (r for r in self.resources if r.uid == uid and r.path == path), None )
+		return next( (r for r in self.get_resources_by_uid( uid ) if r.path == path), None )
 
 	def get_resource_of_type( self, uids: List[str], type: str ) -> Optional[Resource]:
 		return next( iter( [ r for r in self.find_all_resources( uids ) if r.type == type] ), None )
-
-	def get_resource_of_type_for( self, activity: Activity, resource_type: str ) -> Optional[Resource]:
-		return self.get_resource_of_type( activity.refs(), resource_type )
 
 	def get_summary( self, uid ) -> Resource:
 		return next( iter( self.find_summaries( uid ) ), None )
@@ -517,6 +468,12 @@ class ActivityDb:
 		Finds all summary resources having the provided uid.
 		"""
 		return [r for r in self.find_resources( uid ) if r.type in self._summary_types]
+
+	def find_summaries_for( self, *activities: Activity ) -> List[Resource]:
+		"""
+		Finds all summary resources having the provided uid.
+		"""
+		return [r for a in activities for r in a.resources if r.type in self._summary_types]
 
 	def find_all_summaries( self, uids: List[str] ) -> List[Resource]:
 		"""

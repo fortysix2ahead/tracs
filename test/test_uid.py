@@ -53,6 +53,11 @@ def test_uid():
 	assert UID( classifier='polar', local_id=101, part=1 ).uid == 'polar:101#1'
 	assert UID( classifier='polar', local_id=101, path='recording.gpx', part=1 ).uid == 'polar:101/recording.gpx#1'  # works, but does not make sense ...
 
+def test_eq():
+	uid1 = UID( 'polar:101/recording.gpx' )
+	uid2 = UID( 'polar:101/recording.gpx' )
+	assert uid1 == uid2
+
 def test_lt():
 	uid1 = UID( 'polar:101' )
 	uid2 = UID( 'polar:102' )
@@ -64,8 +69,4 @@ def test_serialize():
 	uid_str = 'polar:101/recording.gpx#1'
 	uid = UID( uid_str )
 
-	converter = make_converter()
-	use_class_methods( converter, "_deserialize", "_serialize" )
-
-	assert converter.unstructure( uid ) == uid_str
-	assert converter.structure( uid_str, UID ) == uid
+	assert uid.to_str() == uid_str and UID.from_str( uid_str ) == uid

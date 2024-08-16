@@ -103,7 +103,7 @@ class Registry:
 				if isfunction( fncls ):
 					self.resource_types[rt.type] = (rt := fncls())
 				elif isclass( fncls ):
-					self.resource_types[rt.type] = (rt := ResourceType( **kwargs, activity_cls=fncls ) )
+					self.resource_types[rt.type] = (rt := ResourceType( **kwargs ) )
 
 				# noinspection PyUnboundLocalVariable
 				log.debug( f'registered resource type [orange1]{_qname( fncls )}[/orange1] for type [orange1]{rt.type}[/orange1]' )

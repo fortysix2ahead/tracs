@@ -9,7 +9,7 @@ from cattrs.preconf.orjson import make_converter
 from fs.base import FS
 from fs.copy import copy_dir
 from fs.walk import Walker
-from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import dumps, loads, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich.prompt import Confirm
 
 from tracs.activity import Activities, Activity, ActivityPart
@@ -32,58 +32,9 @@ SCHEMA_NAME = 'schema.json'
 SCHEMA_PATH = f'/{SCHEMA_NAME}'
 
 RESOURCE_CONVERTER = make_converter()
-CONVERTER = make_converter()
 SCHEMA_CONVERTER = make_converter()
 
-# converter configuration
-
-# helper only ...
-#def __hook__( obj, cls ):
-#	return obj, cls
-
 # support for structuring
-
-metadata_struct_hook = make_dict_structure_fn( Metadata, CONVERTER )
-#activity_struct_hook = make_dict_structure_fn( Activity, CONVERTER, metadata = override( struct_hook=metadata_struct_hook ) ) # don't need this here ...
-activity_struct_hook = make_dict_structure_fn(
-	Activity,
-	CONVERTER,
-	type = override( struct_hook=lambda obj, cls: ActivityTypes.from_str( obj ) ),
-)
-
-# support for unstructuring
-
-metadata_unstruct_hook = make_dict_unstructure_fn(
-	Metadata,
-	CONVERTER,
-	_cattrs_omit_if_default=True,
-)
-
-activity_part_unstruct_hook = make_dict_unstructure_fn(
-	ActivityPart,
-	CONVERTER,
-	_cattrs_omit_if_default=True,
-)
-
-# still don't understand why we need to define unstruct_hooks here, otherwise it will ignore _cattrs_omit_if_default
-activity_unstruct_hook = make_dict_unstructure_fn(
-	Activity,
-	CONVERTER,
-	_cattrs_omit_if_default=True,
-	duration=override( unstruct_hook=timedelta_to_str ),
-	duration_moving=override( unstruct_hook=timedelta_to_str ),
-#	parts=override( unstruct_hook=activity_part_unstruct_hook ),
-	metadata=override( unstruct_hook=metadata_unstruct_hook ),
-	type=override( unstruct_hook=ActivityTypes.to_str ),
-	__uid__=override( omit=True ),
-	__uids__=override( omit=True ),
-	__dirty__=override( omit=True ),
-	__resources__=override( omit=True ),
-	__parent__=override( omit=True ),
-	__parent_id__=override( omit=True ),
-	others=override( omit=True ),
-	other_parts=override( omit=True ),
-)
 
 # resource
 
@@ -112,21 +63,6 @@ resource_unstructure_hook = make_dict_unstructure_fn(
 
 RESOURCE_CONVERTER.register_unstructure_hook( Resource, resource_unstructure_hook )
 
-# unified converter
-
-CONVERTER.register_structure_hook( time, lambda obj, cls: fromisoformat( obj ) )
-CONVERTER.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
-CONVERTER.register_structure_hook( Metadata, metadata_struct_hook )
-CONVERTER.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
-CONVERTER.register_structure_hook( Activity, activity_struct_hook )
-
-CONVERTER.register_unstructure_hook( timedelta, timedelta_to_str )
-# CONVERTER.register_unstructure_hook( datetime, lambda v: v.isoformat() if v else None )
-CONVERTER.register_unstructure_hook( Metadata, metadata_unstruct_hook )
-CONVERTER.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
-CONVERTER.register_unstructure_hook( ActivityPart, activity_part_unstruct_hook )
-CONVERTER.register_unstructure_hook( Activity, activity_unstruct_hook )
-
 # resource handling
 
 def load_resources( fs: FS ) -> Resources:
@@ -145,19 +81,18 @@ def write_resources( resources: Resources, fs: FS ) -> None:
 
 def load_activities( fs: FS ) -> Activities:
 	try:
-		activities = CONVERTER.loads( fs.readbytes( ACTIVITIES_PATH ), List[Activity] )
+		activities = Activities.from_dict( loads( fs.readbytes( ACTIVITIES_PATH ) ) )
 		log.debug( f'loaded {len( activities )} activities from {ACTIVITIES_NAME}' )
-		return Activities( data = activities )
+		return activities
 	except RuntimeError:
 		log.error( f'error loading db', exc_info=True )
 
 def write_activities( activities: Activities, fs: FS ) -> None:
-	dump = CONVERTER.dumps( activities.all( sort=True ), unstructure_as=List[Activity], option=ORJSON_OPTIONS )
-	fs.writebytes( ACTIVITIES_PATH, dump )
+	fs.writebytes( ACTIVITIES_PATH, dumps( activities.to_dict(), option=ORJSON_OPTIONS ) )
 	log.debug( f'wrote {len( activities )} activities to {ACTIVITIES_NAME}' )
 
 def write_activities_as_list( activities: Activities ) -> List:
-	return CONVERTER.unstructure( activities, List[Activity] )
+	return activities.to_dict()
 
 # schema handling
 

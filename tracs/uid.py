@@ -21,8 +21,13 @@ class UID:
 	"""Part number of an activity. Example: uid = polar:101#2, part = 2."""
 
 	def __attrs_post_init__( self ):
-		if self.classifier and all( f is None for f in [ self.local_id, self.path, self.part ] ):
-			self.classifier, self.local_id, self.path, self.part = self._uidparse( self.classifier )
+		# always parse classifier
+		classifier, local_id, path, part = self._uidparse( self.classifier )
+		# overwrite fields depending on provided and parsed values
+		self.classifier = classifier # always
+		self.local_id = self.local_id if self.local_id else local_id
+		self.path = self.path if self.path else path
+		self.part = self.part if self.part else part
 
 	# noinspection PyMethodMayBeStatic
 	def _urlsplit( self, url: str ) -> SplitResult:

@@ -11,8 +11,6 @@ class UID:
 
 	converter: ClassVar[Converter] = GenConverter()
 
-	uid: str = field( default=None )
-	"""Contains the full uid string. Example: polar:101?recording.gpx"""
 	classifier: str = field( default=None )
 	"""Classifier is equal to the url scheme. Example: uid = polar:101, classifier = polar."""
 	local_id: int = field( default=None )
@@ -23,15 +21,8 @@ class UID:
 	"""Part number of an activity. Example: uid = polar:101#2, part = 2."""
 
 	def __attrs_post_init__( self ):
-		if self.uid:
-			classifier, local_id, path, part = self._uidparse( self.uid )
-			# allow overwrting path
-			path = self.path if self.path else path
-			# set attributes and update uid
-			self.classifier, self.local_id, self.path, self.part = classifier, local_id, path, part
-			self.uid = self._unsplit( classifier, local_id, path, part )
-		else:
-			self.uid = self._unsplit( self.classifier, self.local_id, self.path, self.part )
+		if self.classifier and all( f is None for f in [ self.local_id, self.path, self.part ] ):
+			self.classifier, self.local_id, self.path, self.part = self._uidparse( self.classifier )
 
 	# todo: this can be removed as the minimum python version is now 3.10
 	# custom url parsing to overcome inconsistencies between python 3.8 and 3.9+:
@@ -96,10 +87,24 @@ class UID:
 	def __str__( self ) -> str:
 		return self.uid
 
+	@property
+	def uid( self ):
+		return self.as_str
+
 	# todo: rename, clspath is not a good name
 	@property
 	def clspath( self ) -> str:
 		return f'{self.classifier}:{self.local_id}' if self.local_id else self.classifier
+
+	@property
+	def as_str( self ) -> str:
+		if self.classifier and not self.local_id:
+			return urlunsplit( ['', '', self.classifier, self.path or '', self.part or ''] )
+		else:
+			local_id = str( self.local_id ) if self.local_id else ''
+			path = f'{local_id}/{self.path}' if self.path else local_id
+			part = str( self.part ) if self.part else ''
+			return urlunsplit( [self.classifier, '', path, '', part] )
 
 	@property
 	def as_tuple( self ) -> Tuple[str, int]:
@@ -137,4 +142,4 @@ class UID:
 # setup converter
 
 UID.converter.register_unstructure_hook( UID, lambda u: str( u ) )
-UID.converter.register_structure_hook( UID, lambda u, v: UID( uid=u ) )
+UID.converter.register_structure_hook( UID, lambda u, v: UID( u ) )

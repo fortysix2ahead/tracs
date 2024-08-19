@@ -1,5 +1,4 @@
-from cattrs.preconf.orjson import make_converter
-from cattrs.strategies import use_class_methods
+from attrs import define, field
 
 from tracs.uid import UID
 
@@ -81,3 +80,14 @@ def test_serialize():
 	uid = UID( uid_str )
 
 	assert uid.to_str() == uid_str and UID.from_str( uid_str ) == uid
+
+@define
+class ClassWithUid:
+
+	uid: UID|str = field( default=None, converter=lambda u: UID( u ) if isinstance( u, str ) else u )
+
+def test_uid_class():
+	c = ClassWithUid( 'polar:101/recording.gpx' )
+	assert isinstance( c.uid, UID )
+	c.uid = 'polar:101/recording_2.gpx'
+	assert isinstance( c.uid, UID )

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import ClassVar, List, Optional, Tuple
-from urllib.parse import ParseResult, SplitResult, urlparse, urlsplit, urlunsplit
+from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 from attrs import define, field
 from cattrs import Converter, GenConverter
@@ -24,24 +24,6 @@ class UID:
 		if self.classifier and all( f is None for f in [ self.local_id, self.path, self.part ] ):
 			self.classifier, self.local_id, self.path, self.part = self._uidparse( self.classifier )
 
-	# todo: this can be removed as the minimum python version is now 3.10
-	# custom url parsing to overcome inconsistencies between python 3.8 and 3.9+:
-	# url       python 3.8    python 3.9+ (in format scheme,path)
-	# polar    ,polar         ,polar
-	# polar:   polar,         polar,
-	# polar:1  ,polar:1      polar,1
-	# noinspection PyMethodMayBeStatic
-	def _urlparse( self, url: str ) -> ParseResult:
-		url: ParseResult = urlparse( url )
-		if not url.scheme and url.path:
-			if ':' in url.path:
-				path, local_id = url.path.split( ':' )
-				return ParseResult( scheme=path, netloc=url.netloc, path=local_id, params=url.params, query=url.query, fragment=url.fragment )
-			else:
-				return ParseResult( scheme=url.path, netloc=url.netloc, path='', params=url.params, query=url.query, fragment=url.fragment )
-		else:
-			return url
-
 	# noinspection PyMethodMayBeStatic
 	def _urlsplit( self, url: str ) -> SplitResult:
 		url: SplitResult = urlsplit( url )
@@ -62,15 +44,6 @@ class UID:
 		path = path_split[1] if len( path_split ) > 1 else None
 		part = int( url.fragment ) if url.fragment else None
 		return classifier, local_id, path, part
-
-	# noinspection PyMethodMayBeStatic
-	def _unsplit( self, classifier, local_id, path, part ) -> str:
-		if classifier and not local_id:
-			return urlunsplit( ['', '', classifier if classifier else '', path if path else '', part if part else ''] )
-		else:
-			p = f'{local_id if local_id else ""}'
-			p = f'{p}/{path}' if path else p
-			return urlunsplit( [classifier if classifier else '', '', p, '', str( part ) if part else ''] )
 
 	def __eq__( self, other ):
 		return self.uid == other.uid if isinstance( other, UID ) else self.uid == other

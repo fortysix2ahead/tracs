@@ -117,9 +117,13 @@ class UID:
 	def to_str( self ):
 		return UID.converter.unstructure( self )
 
-	@classmethod
-	def from_str( cls, obj: str ) -> UID:
+	@staticmethod
+	def from_str( obj: str ) -> UID:
 		return UID.converter.structure( obj, UID )
+
+	@staticmethod
+	def from_strs( objs: List[str] ) -> List[UID]:
+		return [UID.converter.structure( u, UID ) for u in objs]
 
 # setup converter
 

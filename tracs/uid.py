@@ -89,6 +89,10 @@ class UID:
 		return self.classifier, self.local_id
 
 	@property
+	def as_tuple_str( self ) -> str:
+		return f'{self.classifier}:{self.local_id}' if self.local_id else self.classifier
+
+	@property
 	def as_triple( self ) -> Tuple[str, int, str]:
 		return self.classifier, self.local_id, self.path
 

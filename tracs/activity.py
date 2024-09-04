@@ -505,6 +505,7 @@ ActivityPart.converter.register_structure_hook( timedelta, lambda obj, cls: str_
 
 Activity.converter.register_unstructure_hook( datetime, toisoformat )
 Activity.converter.register_unstructure_hook( timedelta, timedelta_to_str )
+Activity.converter.register_unstructure_hook( UID|str, lambda uid: uid.to_str() )
 Activity.converter.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
 Activity.converter.register_unstructure_hook( Metadata, lambda md: md.to_dict() )
 Activity.converter.register_unstructure_hook( Resources, lambda rl: rl.to_dict() )

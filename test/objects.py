@@ -38,7 +38,7 @@ COMPLETE_ACTIVITY = Activity(
 
 COMPLETE_ACTIVITY_WITH_RESOURCE_DATA = Activity(
 	id=1,
-	uid='polar:101',
+	uid=UID.from_str( 'polar:101' ),
 	starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
 	duration=timedelta( hours=2 ),
 	type=ActivityTypes.walk,
@@ -56,7 +56,7 @@ COMPLETE_ACTIVITY_WITH_RESOURCE_DATA = Activity(
 			type=GPX_TYPE,
 			path='polar/1/2/3/1234/1234.gpx',
 			source='https://polar.com/1234/1234.gpx',
-			uid='polar:1234',
+			uid=UID.from_str( 'polar:1234' ),
 			content=b'<xml></xml>',
 			text='<xml></xml>',
 			raw={ 'xml': 'some data' },

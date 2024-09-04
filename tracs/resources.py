@@ -258,6 +258,7 @@ class Resources( list[Resource] ):
 # configure converters
 
 Resource.converter.register_unstructure_hook( UID, lambda uid: uid.to_str() )
+Resource.converter.register_unstructure_hook( UID|str, lambda uid: uid.to_str() )
 
 Resource.converter.register_structure_hook( UID, lambda obj, cls: UID.from_str( obj ) )
 Resource.converter.register_structure_hook( Union[str, UID], lambda obj, cls: obj if isinstance( obj, str ) else UID.from_str( obj ) )

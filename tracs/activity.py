@@ -203,6 +203,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	# def union( self, others: List[Activity], strategy: Literal['first', 'last'] = 'first' ) -> Activity: # todo: are different strategies useful?
 	def union( self, others: List[Activity], ignore: List[str] = None, copy: bool = False, force: bool = False ) -> Activity:
+		log.warning( 'call to deprecated method Activity.union(), method will be removed in the future' )
 		this = evolve( self ) if copy else self
 		ignore = ignore if ignore else []
 

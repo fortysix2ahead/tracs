@@ -14,7 +14,7 @@ from fs.base import FS
 from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from fs.path import combine, dirname
+from fs.path import combine, dirname, frombase, isabs, join, parts, split
 
 from tracs.activity import Activity
 from tracs.config import current_ctx, DB_DIRNAME
@@ -182,12 +182,18 @@ class Service( Plugin ):
 		:param as_path: if True, return the result as Path
 		:return: path of the resource in the local file system
 		"""
-		uid = resource.uid_obj
+		uid = resource.uid
+		path = resource.path or resource.uid.path
+		head, tail = split( path )
+
+		if isabs( path ):
+			return path
+
+		if not head:
+			path = self.path_for_id( uid.local_id, uid.classifier, resource_path=path, as_path=False )
 
 		if omit_classifier and not absolute:
-			path = self.path_for_id( uid.local_id, None, resource_path=uid.path, as_path=False )
-		else:
-			path = self.path_for_id( uid.local_id, uid.classifier, resource_path=uid.path, as_path=False )
+			path = join( *parts( path )[2:] )
 
 		if absolute:
 			try:
@@ -229,10 +235,8 @@ class Service( Plugin ):
 
 	# methods related to fetch()
 
-	def fetch_summary_resources( self, skip: bool, force: bool, pretend: bool, **kwargs ) -> List[Union[Resource, int]]:
+	def fetch_summary_resources( self, skip: bool, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		summaries = self.ctx.db.summaries if skip else self.fetch( force=force, pretend=pretend, **kwargs )  # fetch all summary resources
-		for s in summaries:
-			s.path = self.path_for( s ) # adjust resource path
 		# sort summaries by uid so that progress bar in download looks better -> todo: improve progress bar later?
 		return sorted( summaries, key=lambda r: r.uid )
 

@@ -1,19 +1,48 @@
 [
 	{
 		"id": 1,
-		"name": "Unknown Location",
-		"type": "xcski",
-		"starttime": "2012-01-07T10:40:56+00:00",
-		"starttime_local": "2012-01-07T11:40:56+01:00",
+		"name": "Somewhere in the Forest",
+		"description": "Reference Group for a Polar and a Strava Activity",
+		"type": "run",
+		"starttime": "2012-01-07T10:40:51+00:00",
+		"starttime_local": "2012-01-07T11:40:51+01:00",
 		"location_place": "Forest",
-		"tags": [],
-		"uid": "group:1",
-		"uids": [
-			"polar:1234567890", "strava:12345678", "waze:20210101010101"
+		"tags": ["forest"],
+		"equipment": ["blue_shoes", "red_shirt", "green_shorts"],
+		"uid": "group:1001",
+		"metadata": {
+			"created": "2024-01-04T10:00:00.000+00:00",
+			"modified": "2024-01-04T12:00:00.000+00:00",
+			"members": ["polar:1001", "strava:1001"],
+			"favourite": true
+		},
+		"resources": [
+			{
+				"name": "Polar GPX Track",
+				"path": "polar/1/0/0/1001/1001.gpx",
+				"type": "application/gpx+xml",
+				"uid": "polar:1001"
+			}, {
+				"name": "Polar Activity Data",
+				"path": "polar/1/0/0/1001/1001.json",
+				"type": "application/vnd.polar+json",
+				"uid": "polar:1001"
+			}, {
+				"name": "Strava GPX Track",
+				"path": "strava/1/0/0/1001/1001.gpx",
+				"type": "application/gpx+xml",
+				"uid": "strava:1001"
+			}, {
+				"name": "Strava Activity Data",
+				"path": "strava/1/0/0/1001/1001.json",
+				"type": "application/vnd.strava+json",
+				"strava": "strava:1001"
+			}
 		]
 	}, {
 	"id": 2,
 	"name": "03:23:53;0.0 km",
+	"description": "Reference Polar Activity",
 	"calories": 2904,
 	"distance": 30000.1,
 	"duration_moving": "01:40:00",
@@ -25,31 +54,53 @@
 	},
 	"resources": [
 		{
-			"path": "polar/1/0/0/100001/100001.gpx",
+			"name": "Polar GPX Track",
+			"path": "polar/1/0/0/1001/1001.gpx",
 			"type": "application/gpx+xml"
 		}, {
-			"path": "polar/1/0/0/100001/100001.json",
+			"name": "Polar Activity Data",
+			"path": "polar/1/0/0/1001/1001.json",
 			"type": "application/vnd.polar+json"
 		}
 	],
 	"starttime": "2012-01-07T10:40:51.000+00:00",
 	"type": "run",
-	"uid": "polar:100001"
+	"uid": "polar:1001"
 }, {
 	"id": 3,
-	"name": "Run at Noon",
-	"starttime": "2012-01-07T10:40:56+00:00",
+	"name": "Run in the Forest",
+	"description": "Reference Strava Activity",
+	"starttime": "2012-01-07T10:40:52+00:00",
 	"heartrate": 140,
-	"starttime_local": "2012-01-07T11:40:56+01:00",
+	"starttime_local": "2012-01-07T11:40:52+01:00",
+	"resources": [
+		{
+			"name": "Strava GPX Track",
+			"path": "strava/1/0/0/1001/1001.gpx",
+			"type": "application/gpx+xml"
+		}, {
+			"name": "Strava Activity Data",
+			"path": "strava/1/0/0/1001/1001.json",
+			"type": "application/vnd.strava+json"
+		}
+	],
 	"type": "run",
-	"uid": "strava:12345678"
+	"uid": "strava:1001"
 }, {
 	"id": 4,
-	"name": "Unknown Location",
+	"name": "Drive to the Forest",
+	"description": "Reference Waze Activity, supposed to be a drive to make the run #1",
 	"heartrate": 130,
 	"starttime": "2021-01-11T12:00:00+00:00",
 	"type": "drive",
-	"uid": "waze:20210101010101"
+	"uid": "waze:210111120000",
+	"resources": [
+		{
+			"name": "Waze GPX Track",
+			"path": "waze/21/01/11/210111120000/210111120000.gpx",
+			"type": "application/gpx+xml"
+		}
+	]
 }, {
 	"id": 100,
 	"name": null,

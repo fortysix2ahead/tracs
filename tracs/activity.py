@@ -10,12 +10,11 @@ from typing import Any, ClassVar, Dict, List, Optional, TypeVar, Union
 from attrs import define, evolve, Factory, field
 from cattrs import Converter, GenConverter
 from dateutil.tz import UTC
-from more_itertools import first_true
+from more_itertools import first_true, unique
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
 from tracs.core import Container, FormattedFieldsBase, Metadata, VirtualFieldsBase
-from tracs.protocols import Importer
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
 from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unchain, unique_sorted
@@ -70,11 +69,13 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	# fields
 	id: int = field( default=None, metadata={ 'protected': True } )
 	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
-	uid: str = field( default=None, metadata={ 'protected': True } )
-	"""UID of this activity"""
-	uids: List[str] = field( factory=list, on_setattr=lambda i, a, v: unique_sorted( v ) if v else [], converter=lambda v: unique_sorted( v ), metadata={ 'protected': True } ) # referenced list activities
-	"""List of uids of referenced activities"""
+	uid: UID|str = field(
+		default=None,
+		converter=lambda u: UID.from_str( u ) if isinstance( u, str ) else u,
+		metadata={ 'protected': True }
+	)
 
+	# actual activitiy fields
 	name: str = field( default=None )
 	"""activity name"""
 	type: ActivityTypes = field( default=None )
@@ -142,17 +143,25 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	@property
 	def classifiers( self ) -> List[str]:
-		return unique_sorted( [uid.classifier for uid in self.refs( as_uid=True )] )
+		if self.group:
+			return list( unique( [ m.classifier for m in self.metadata.members ] ) )
+		elif self.multipart:
+			pass # todo: add multipart support
+		else:
+			return [ self.uid.classifier ]
+
+	@property
+	def uids( self ) -> List[str]:
+		if self.group:
+			return list( unique( [ m.as_tuple_str for m in self.metadata.members ] ) )
+		elif self.multipart:
+			pass # todo: add multipart support
+		else:
+			return [ self.uid.as_tuple_str ]
 
 	#@property
 	#def local_ids( self ) -> List[int]:
 	#	return sorted( list( set( [int( uid.split( ':', maxsplit=1 )[1] ) for uid in self.uids] ) ) )
-
-	def as_uid( self ) -> Optional[UID]:
-		return UID( self.uid ) if self.uid else None
-
-	def as_uids( self ) -> List[UID]:
-		return [ UID( u ) for u in self.uids ]
 
 	#@property
 	#def activity_uids( self ) -> List[str]:
@@ -194,6 +203,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	# def union( self, others: List[Activity], strategy: Literal['first', 'last'] = 'first' ) -> Activity: # todo: are different strategies useful?
 	def union( self, others: List[Activity], ignore: List[str] = None, copy: bool = False, force: bool = False ) -> Activity:
+		log.warning( 'call to deprecated method Activity.union(), method will be removed in the future' )
 		this = evolve( self ) if copy else self
 		ignore = ignore if ignore else []
 
@@ -338,7 +348,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 		# treatment of special fields
 		target.uid = f'group:{activities[0].starttime.strftime( "%y%m%d%H%M%S" )}'
 		target.metadata.created = datetime.now( UTC )
-		target.metadata.members = sorted( [ UID( a.uid ) for a in activities ] )
+		target.metadata.members = sorted( [ a.uid for a in activities ] )
 		target.resources = Resources( lst=sorted( [ r for a in activities for r in a.resources ], key=lambda r: r.path ) )
 
 		return target
@@ -386,7 +396,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 		# type + uid
 		mpa.type = t if (t := _unique( activities, 'type' ) ) else ActivityTypes.multisport
-		mpa.uids = list( set( a.uid for a in activities ) )
+		# mpa.uids = list( set( a.uid for a in activities ) )
 
 		return mpa
 
@@ -471,7 +481,7 @@ def values( *activities: Activity, name: str, filter: bool = False ) -> List:
 	return [ v for v in _values if v is not None ] if filter else _values
 
 def groups( activities: List[Activity] ) -> List[Activity]:
-	return [a for a in activities if a.group]
+	return [a for a in activities if a.group] if activities else []
 
 def _unique( activities: List[Activity], name: str ) -> Any:
 	return s.pop() if ( len( s := set( _stream( activities, name ) ) ) == 1 ) else None
@@ -495,6 +505,7 @@ ActivityPart.converter.register_structure_hook( timedelta, lambda obj, cls: str_
 
 Activity.converter.register_unstructure_hook( datetime, toisoformat )
 Activity.converter.register_unstructure_hook( timedelta, timedelta_to_str )
+Activity.converter.register_unstructure_hook( UID|str, lambda uid: uid.to_str() )
 Activity.converter.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
 Activity.converter.register_unstructure_hook( Metadata, lambda md: md.to_dict() )
 Activity.converter.register_unstructure_hook( Resources, lambda rl: rl.to_dict() )

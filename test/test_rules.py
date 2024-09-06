@@ -7,12 +7,13 @@ from dateutil.tz import tzlocal, UTC
 from pytest import mark, raises
 from rule_engine import Context, EvaluationError, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
 
+from tracs.core import Metadata
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
-from tracs.plugins.polar import Polar
 from tracs.plugins.rule_extensions import TIME_FRAMES as TIME_FRAMES_EXT
 from tracs.rules import DATE_PATTERN, DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, INT_LIST, INT_PATTERN, KEYWORD_PATTERN, LIST_PATTERN, \
-	parse_date_range_as_str, RANGE_PATTERN, RULE_PATTERN, TIME_PATTERN, TIME_RANGE_PATTERN, RuleParser
+	parse_date_range_as_str, RANGE_PATTERN, RULE_PATTERN, TIME_PATTERN, TIME_RANGE_PATTERN
+from uid import UID
 
 log = getLogger( __name__ )
 
@@ -29,7 +30,9 @@ A1 = Activity(
 	starttime=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ),
 	starttime_local=datetime( 2023, 1, 13, 10, 0, 42, tzinfo=UTC ).astimezone( tzlocal() ),
 	heartrate=160,
-	uids=['polar:123456', 'strava:123456']
+	metadata=Metadata(
+		members=UID.from_strs( ['polar:123456', 'strava:123456'] )
+	)
 )
 
 d2 = {
@@ -43,7 +46,9 @@ a2 = Activity(
 	heartrate=180,
 	starttime=datetime( 2023, 11, 11, 10, 0, 42, tzinfo=UTC ),
 	tags=['morning', 'salomon', 'tired'],
-	uids=['polar:1234', 'strava:3456']
+	metadata = Metadata(
+		members=UID.from_strs( ['polar:1234', 'strava:3456'] )
+	)
 )
 
 def test_rule_engine():

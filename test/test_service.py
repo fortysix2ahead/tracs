@@ -35,18 +35,19 @@ def test_constructor():
 	assert mock.path_for( r, absolute=True, as_path=False ) == '/db/mock/1/0/0/1001/recording.gpx'
 
 @mark.service( cls=Mock )
-def test_path_for( service ):
-	# path for a given id
+def test_path_for_id( service ):
 	assert service.path_for_id( '1001' ) == '1/0/0/1001'
 	assert service.path_for_id( '1' ) == '0/0/1/1'
 	assert service.path_for_id( '1001', 'test' ) == 'test/1/0/0/1001'
 	assert service.path_for_id( '1001', resource_path='recording.gpx' ) == '1/0/0/1001/recording.gpx'
 	assert service.path_for_id( '1001', 'test', 'recording.gpx' ) == 'test/1/0/0/1001/recording.gpx'
 
-	# as str
-	assert service.path_for_id( '1001', 'test', 'recording.gpx', as_path=False ) == 'test/1/0/0/1001/recording.gpx'
+	# as path
+	assert service.path_for_id( '1001', 'test', 'recording.gpx', as_path=True ) == Path( 'test/1/0/0/1001/recording.gpx' )
 
-	# paths for resources
+@mark.service( cls=Mock )
+def test_path_for( service ):
+	# case 1: uid without a path + path in resource with filename only
 	r = Resource( uid='mock:1001', path='recording.gpx' )
 	assert service.path_for( r ) == 'mock/1/0/0/1001/recording.gpx'
 	assert service.path_for( r, absolute=False ) == 'mock/1/0/0/1001/recording.gpx' # absolute = False is the default
@@ -54,8 +55,25 @@ def test_path_for( service ):
 	assert service.path_for( r, absolute=False, as_path=True ) == Path( 'mock/1/0/0/1001/recording.gpx' )
 	assert service.path_for( r, absolute=False, omit_classifier=True, as_path=False ) == '1/0/0/1001/recording.gpx'
 
+	# case 2: uid without a path + path with parent dirs in resource
+	r = Resource( uid='mock:1001', path='mock/1/0/0/1001/recording.gpx' )
+	assert service.path_for( r ) == 'mock/1/0/0/1001/recording.gpx'
+
+	# case 3: uid with a file path + path in resource is empty
+	r = Resource( uid='mock:1001/recording.gpx' )
+	assert service.path_for( r ) == 'mock/1/0/0/1001/recording.gpx'
+
+	# case 4: uid with a path including dirs + path in resource is empty -> this should never happen, but works also
+	r = Resource( uid='mock:1001/mock/1/0/0/1001/recording.gpx' )
+	assert service.path_for( r ) == 'mock/1/0/0/1001/recording.gpx'
+
+	# case 5: uid without a path + absolute path in resource
+	r = Resource( uid='mock:1001', path='/usr/local/var/recording.gpx' )
+	assert service.path_for( r ) == '/usr/local/var/recording.gpx'
+
 	# absolute paths work differently when there is an OSFS behind, see next test case
-	assert service.path_for( r, absolute=True ) == '/db/mock/1/0/0/1001/recording.gpx'
+	r = Resource( uid='mock:1001', path='recording.gpx' )
+	assert service.path_for( r, absolute=True ) == '/db/mock/1/0/0/1001/recording.gpx' # this is actually a relative path as there's no OSFS behind
 	# absolute implies omit classifier
 	assert service.path_for( r, absolute=True, omit_classifier=True ) == '/db/mock/1/0/0/1001/recording.gpx'
 
@@ -80,7 +98,7 @@ def test_path_for_cls( service ):
 @mark.context( env='empty', persist='mem', cleanup=True )
 @mark.service( cls=Mock, init=True, register=True )
 def test_fetch( service: Mock ):
-	service.import_activities( skip_download=True, skip_link=True )
+	service.import_activities( skip_download=True, skip_link=True, amount=3 )
 	assert len( service.ctx.db.activities ) == 3
 
 	mfs = service.ctx.db_fs_for( service.name )
@@ -102,7 +120,7 @@ def test_fetch( service: Mock ):
 @mark.context( env='empty', persist='clone', cleanup=True )
 @mark.service( cls=Mock, init=True, register=True )
 def test_download( service ):
-	service.import_activities( skip_download=False, skip_link=True )
+	service.import_activities( skip_download=False, skip_link=True, amount=3 )
 
 	assert len( service.ctx.db.resources ) == 6
 	assert len( service.ctx.db.activities ) == 3

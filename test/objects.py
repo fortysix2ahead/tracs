@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from dateutil.tz import UTC
+from dateutil.tz import tzlocal, tzoffset, UTC
 
 from activity import Activity, ActivityPart
 from activity_types import ActivityTypes
@@ -38,7 +38,7 @@ COMPLETE_ACTIVITY = Activity(
 
 COMPLETE_ACTIVITY_WITH_RESOURCE_DATA = Activity(
 	id=1,
-	uid='polar:101',
+	uid=UID.from_str( 'polar:101' ),
 	starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
 	duration=timedelta( hours=2 ),
 	type=ActivityTypes.walk,
@@ -56,7 +56,7 @@ COMPLETE_ACTIVITY_WITH_RESOURCE_DATA = Activity(
 			type=GPX_TYPE,
 			path='polar/1/2/3/1234/1234.gpx',
 			source='https://polar.com/1234/1234.gpx',
-			uid='polar:1234',
+			uid=UID.from_str( 'polar:1234' ),
 			content=b'<xml></xml>',
 			text='<xml></xml>',
 			raw={ 'xml': 'some data' },
@@ -92,3 +92,17 @@ COMPLETE_ACTIVITY_DICT = {
 		}
 	]
 }
+
+DEFAULT_ONE = Activity(
+	id=1,
+	name='Unknown Location',
+	type=ActivityTypes.xcski,
+	starttime=datetime( 2012, 1, 7, 10, 40, 56, tzinfo=UTC ),
+	#starttime_local=datetime( 2012, 1, 7, 11, 40, 56, tzinfo=tzlocal() ),
+	starttime_local=datetime( 2012, 1, 7, 11, 40, 56, tzinfo=tzoffset(None, 3600) ),
+	location_place='Forest',
+	uid='group:1',
+	metadata=Metadata(
+		members=UID.from_strs( ['polar:1234567890', 'strava:12345678', 'waze:20210101010101'] )
+	)
+)

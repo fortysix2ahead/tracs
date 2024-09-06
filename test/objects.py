@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from dateutil.tz import UTC
+from dateutil.tz import tzlocal, tzoffset, UTC
 
 from activity import Activity, ActivityPart
 from activity_types import ActivityTypes
@@ -92,3 +92,17 @@ COMPLETE_ACTIVITY_DICT = {
 		}
 	]
 }
+
+DEFAULT_ONE = Activity(
+	id=1,
+	name='Unknown Location',
+	type=ActivityTypes.xcski,
+	starttime=datetime( 2012, 1, 7, 10, 40, 56, tzinfo=UTC ),
+	#starttime_local=datetime( 2012, 1, 7, 11, 40, 56, tzinfo=tzlocal() ),
+	starttime_local=datetime( 2012, 1, 7, 11, 40, 56, tzinfo=tzoffset(None, 3600) ),
+	location_place='Forest',
+	uid='group:1',
+	metadata=Metadata(
+		members=UID.from_strs( ['polar:1234567890', 'strava:12345678', 'waze:20210101010101'] )
+	)
+)

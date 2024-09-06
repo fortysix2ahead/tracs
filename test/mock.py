@@ -59,15 +59,15 @@ class Mock( Service ):
 		super().__init__( *args, **kwargs )
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
-		resources = [
-			Resource( uid='mock:1001', path='1001.json', type=MOCK_TYPE, text='mock:1001 content' ),
-			Resource( uid='mock:1002', path='1002.json', type=MOCK_TYPE, text='mock:1002 content' ),
-			Resource( uid='mock:1003', path='1003.json', type=MOCK_TYPE, text='mock:1003 content' ),
+		return [
+			Resource(
+				uid=f'mock:{i}/{i}.json',
+				path=f'mock/1/0/0/{i}/{i}.json',
+				type=MOCK_TYPE,
+				text=f'mock:{i} content'
+			)
+			for i in range( 1001, 1000 + kwargs.get( 'amount', 1 ) + 1 )
 		]
-		for r in resources:
-			r.path = self.path_for( r )
-
-		return resources
 
 	def download( self, summary: Resource = None, force: bool = False, pretend: bool = False, **kwargs ) -> List[Resource]:
 		return [Resource(

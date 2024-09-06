@@ -96,7 +96,8 @@ class Resource:
 	path: str = field( default=None )
 	source: str = field( default=None )
 	status: int = field( default=None )
-	uid: Union[str, UID] = field( default=None )
+	# field type is actually UID, str is only allowed in constructor
+	uid: UID|str = field( default=None, converter=lambda u: UID.from_str( u ) if isinstance( u, str ) else u )
 
 	# additional fields holding data of a resource, used during load
 
@@ -113,16 +114,15 @@ class Resource:
 	__dict__: Dict = field( factory=dict, repr=False, init=False ) # property cache
 
 	def __attrs_post_init__( self ):
-		if type( self.uid ) is UID:  # uid of type UID is allowed
-			self.uid, self.path = self.uid.clspath, self.uid.path
+		# move path information from uid to resource, we may change this later
+		if not self.path and self.uid:
+			self.path = self.uid.path
+			self.uid.path = None # always remove path in UID
 
-		if self.uid_obj.denotes_resource():
-			self.uid, self.path = self.uid_obj.clspath, self.uid_obj.path
+		if self.uid and self.uid.denotes_activity() and self.path is None:
+			raise AttributeError( 'resource UID may not denote an activity without having a path' )
 
-		if self.uid_obj.denotes_activity():
-			raise AttributeError( 'resource UID may not denote an activity without a proper path' )
-
-		if self.uid_obj.denotes_service():
+		if self.uid and self.uid.denotes_service():
 			raise AttributeError( 'resource UID may not denote a service' )
 
 		# todo: really needed?
@@ -149,11 +149,11 @@ class Resource:
 
 	@property
 	def classifier( self ) -> str:
-		return self.uid_obj.classifier
+		return self.uid.classifier
 
 	@property
 	def local_id( self ) -> int:
-		return self.uid_obj.local_id
+		return self.uid.local_id
 
 	@property
 	def local_id_str( self ) -> str:
@@ -161,12 +161,12 @@ class Resource:
 
 	@cached_property
 	def uid_obj( self ) -> UID:
-		return UID( uid=self.uid, path=self.path )
+		return self.uid
 
 	# todo: rename, that's not a good name
 	@property
 	def uidpath( self ) -> str:
-		return self.uid_obj.uid
+		return f'{self.uid}/{self.path}'
 
 	def as_text( self, encoding: str = 'UTF-8' ) -> Optional[str]:
 		return self.content.decode( encoding )
@@ -258,6 +258,7 @@ class Resources( list[Resource] ):
 # configure converters
 
 Resource.converter.register_unstructure_hook( UID, lambda uid: uid.to_str() )
+Resource.converter.register_unstructure_hook( UID|str, lambda uid: uid.to_str() )
 
 Resource.converter.register_structure_hook( UID, lambda obj, cls: UID.from_str( obj ) )
 Resource.converter.register_structure_hook( Union[str, UID], lambda obj, cls: obj if isinstance( obj, str ) else UID.from_str( obj ) )

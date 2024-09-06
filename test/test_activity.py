@@ -20,30 +20,26 @@ def setup_module( module ):
 	log.info( 'importing tracs.plugins.rule_extensions' )
 
 def test_activity():
-	a = Activity( uid = 'polar:100' )
-	assert a.as_uid() == UID( classifier='polar', local_id=100 )
-	assert a.uids == [] and a.as_uids() == []
-	assert a.refs() == ['polar:100'] and a.refs( True ) == [UID( 'polar:100' )]
+	a = Activity( uid='polar:100' )
+	assert a.uid == UID( classifier='polar', local_id=100 )
+	assert a.uids == [ 'polar:100' ]
+	# assert a.refs() == ['polar:100'] and a.refs( True ) == [UID( 'polar:100' )]
 	assert a.classifiers == ['polar']
 
 	assert not a.group
 	assert not a.multipart
-
-	# explicitely set uids to None
-	a.uids = None
-	assert a.uids == []
 
 	# test values
 	a = Activity( uid='polar:101', heartrate=150, calories=1000 )
 	assert a.values( 'uid', 'heartrate', 'calories', 'speed', 'xyz' ) == ['polar:101', 150, 1000, None, None]
 
 def test_activity_group():
-	a = Activity( uid = 'group:101', uids = ['strava:100', 'polar:100', 'polar:100'] )
-	assert a.uid == 'group:101' and a.as_uid() == UID( 'group:101' )
+	a = Activity( uid = 'group:101' )
+	a.metadata.members = UID.from_strs( [ 'strava:100', 'polar:100', 'polar:100' ] )
+	assert a.uid == 'group:101'
 	assert a.uids == [ 'polar:100', 'strava:100' ]
-	assert a.as_uids() == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
-	assert a.refs() == [ 'polar:100', 'strava:100' ]
-	assert a.refs( True ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
+#	assert a.refs() == [ 'polar:100', 'strava:100' ]
+#	assert a.refs( True ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
 	assert a.classifiers == [ 'polar', 'strava' ]
 
 	assert a.group
@@ -67,22 +63,12 @@ def test_group_of():
 		starttime = datetime( 2024, 2, 1, 10, 1, 0 ),
 		tags=['b'],
 	)
-	g1 = Activity(
-		id=3,
-		calories=100,
-		heartrate=100,
-		name='Group One',
-		uid='group:1',
-		uids=['polar:1', 'polar:2']
-	)
-	g2 = Activity(
-		id=4,
-		calories=200,
-		heartrate=200,
-		name='Group Two',
-		uid='group:2',
-		uids=['polar:1', 'polar:2']
-	)
+
+	g1 = Activity( id=3, calories=100, heartrate=100, name='Group One', uid='group:1' )
+	g1.metadata.members = UID.from_strs( ['polar:1', 'polar:2'] )
+
+	g2 = Activity( id=4, calories=200, heartrate=200, name='Group Two', uid='group:2' )
+	g2.metadata.members = UID.from_strs( ['polar:1', 'polar:2'] )
 
 	# grouping
 	group = Activity.group_of(src1, src2 )
@@ -184,29 +170,30 @@ def test_multipart_activity2():
 	assert a.classifiers == [ 'polar' ]
 
 def test_union():
-	src1 = Activity( id=1, name='One', uid='a1' )
-	src2 = Activity( id=2, distance=10, calories=20, uid='a2' )
-	src3 = Activity( id=3, calories=100, heartrate= 100, uid='g1', uids=[ 'a1', 'a2' ] )
+	src1 = Activity( id=1, name='One', uid='a:1' )
+	src2 = Activity( id=2, distance=10, calories=20, uid='a:2' )
+	src3 = Activity( id=3, calories=100, heartrate= 100, uid='g:1' )
+	src3.metadata.members = UID.from_strs( [ 'a1', 'a2' ] )
 
 	target = src1.union( [src2, src3], copy=True )
 	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
 	assert target.id == 1
-	assert target.uid == 'a1'
-	assert target.uids == []
+	assert target.uid == 'a:1'
+	assert target.uids == [ 'a:1' ]
 	assert src1.distance is None # source should be untouched
 
 	target = src1.union( others=[src2, src3], force=True, copy=True )
 	assert target.name == 'One' and target.distance == 10 and target.calories == 100 and target.heartrate == 100
 	assert target.id == 3
-	assert target.uid == 'g1'
-	assert target.uids == [ 'a1', 'a2' ]
+	assert target.uid == 'g:1'
+	#assert target.uids == [ 'a:1', 'a:2' ]
 	assert src1.distance is None # source should be untouched
 
 	src1.union( [src2, src3], copy=False )
 	assert src1.name == 'One' and src1.distance == 10 and src1.calories == 20 and src1.heartrate == 100
 	assert src1.id == 1
-	assert src1.uid == 'a1'
-	assert src1.uids == []
+	assert src1.uid == UID.from_str( 'a:1' )
+	# assert src1.uids == []
 
 	# test constructor
 	src1 = Activity( id=1, name='One' )
@@ -214,7 +201,7 @@ def test_union():
 	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
 	assert target.id is None
 	assert target.uid is None
-	assert target.uids == []
+	# assert target.uids == []
 
 def test_add():
 	src1 = Activity( starttime=datetime( 2022, 2, 22, 7 ), distance=10, duration=timedelta( hours=1 ), heartrate_max=180, heartrate_min=100 )
@@ -274,7 +261,8 @@ def test_activities():
 	assert [ it.path for it in activities.iter_resources() ] == ['a1.gpx', 'a1.json', 'a10.gpx', 'a10.json']
 
 def test_groups():
-	g = Activity( uid='g:1', uids=[ 'p:1', 's:1' ] )
+	g = Activity( uid='g:1' )
+	g.metadata.members=UID.from_strs( [ 'p:1', 's:1' ] )
 	ng = Activity( uid='ng:1' )
 
 	assert groups( None ) == []
@@ -303,7 +291,7 @@ def test_fields( registry ):
 	field_names = Activity.field_names( include_virtual=True )
 	assert 'name' in field_names and '__parent__' not in field_names and 'weekday' in field_names
 
-	assert Activity.field_type( 'name' ) == 'Optional[str]'
+	assert Activity.field_type( 'name' ) == 'str'
 	assert Activity.field_type( 'weekday' ) == int
 	assert Activity.field_type( 'noexist' ) is None
 

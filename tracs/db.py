@@ -463,7 +463,7 @@ class ActivityDb:
 		"""
 		Finds all resources related to a given activity.
 		"""
-		resources = [r for r in self.resources if r.uid in [uid.clspath for uid in activity.as_uids()]]
+		resources = [r for r in self.resources if r.uid in [uid.head for uid in activity.as_uids()]]
 		# simplifiy this?
 		return [r for r in resources if r.uidpath in activity.uids or r.uid in activity.uids]
 

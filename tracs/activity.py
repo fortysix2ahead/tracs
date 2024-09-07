@@ -29,8 +29,8 @@ class ActivityPart:
 	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
 
 	gap: timedelta = field( default=None )
-	uid: str = field( factory=list )
-	uids: List[str] = field( factory=list )
+	uid: UID = field( default=None, converter=lambda u: UID.from_str( u ) if isinstance( u, str ) else u )
+	uids: List[UID] = field( factory=list )
 
 	@property
 	def classifiers( self ) -> List[str]:
@@ -501,12 +501,16 @@ def _stream( activities: List[Activity], name: str ) -> List:
 # configure converters
 
 ActivityPart.converter.register_unstructure_hook( timedelta, timedelta_to_str )
+ActivityPart.converter.register_unstructure_hook( UID, lambda uid: uid.to_str() )
+
 ActivityPart.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
+ActivityPart.converter.register_structure_hook( UID, lambda obj, cls: UID.from_str( obj ) )
 
 Activity.converter.register_unstructure_hook( datetime, toisoformat )
 Activity.converter.register_unstructure_hook( timedelta, timedelta_to_str )
 Activity.converter.register_unstructure_hook( UID|str, lambda uid: uid.to_str() )
 Activity.converter.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
+Activity.converter.register_unstructure_hook( ActivityPart, lambda ap: ap.to_dict() )
 Activity.converter.register_unstructure_hook( Metadata, lambda md: md.to_dict() )
 Activity.converter.register_unstructure_hook( Resources, lambda rl: rl.to_dict() )
 
@@ -514,5 +518,6 @@ Activity.converter.register_structure_hook( int, lambda obj, cls: int( obj ) if 
 Activity.converter.register_structure_hook( datetime, lambda obj, cls: fromisoformat( obj ) )
 Activity.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
 Activity.converter.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
+Activity.converter.register_structure_hook( ActivityPart, lambda obj, cls: ActivityPart.from_dict( obj ) )
 Activity.converter.register_structure_hook( Metadata, lambda obj, cls: Metadata.from_dict( obj ) )
 Activity.converter.register_structure_hook( Resources, lambda obj, cls: Resources.from_dict( obj ) )

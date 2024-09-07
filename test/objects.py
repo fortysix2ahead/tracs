@@ -24,7 +24,10 @@ COMPLETE_ACTIVITY = Activity(
 		favourite=True,
 		members=[UID( 'polar:101' ), UID( 'strava:101' )],
 	),
-	parts=[ActivityPart( uids=['polar:222', 'polar:333'], gap=timedelta( minutes=20 ) )],
+	parts=[
+		ActivityPart( uid=UID.from_str( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
+		ActivityPart( uid=UID.from_str( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
+	],
 	resources=Resources(
 		Resource(
 			name='recording.gpx',
@@ -49,7 +52,10 @@ COMPLETE_ACTIVITY_WITH_RESOURCE_DATA = Activity(
 		favourite=True,
 		members=[UID( 'polar:101' ), UID( 'strava:101' )],
 	),
-	parts=[ActivityPart( uids=['polar:222', 'polar:333'], gap=timedelta( minutes=20 ) )],
+	parts=[
+		ActivityPart( uid=UID.from_str( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
+		ActivityPart( uid=UID.from_str( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
+	],
 	resources=Resources(
 		Resource(
 			name='recording.gpx',
@@ -79,7 +85,8 @@ COMPLETE_ACTIVITY_DICT = {
 		'members': ['polar:101', 'strava:101']
 	},
 	'parts': [
-		{ 'gap': '00:20:00', 'uids': ['polar:222', 'polar:333'] }
+		{ 'gap': '00:20:00', 'uid': 'polar:222#1' },
+		{ 'gap': '00:20:00', 'uid': 'polar:222#2' }
 	],
 	'resources': [
 		{

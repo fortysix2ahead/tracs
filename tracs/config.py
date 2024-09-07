@@ -76,6 +76,10 @@ CONSOLE = Console( tab_size=2 )
 console = CONSOLE
 cs = CONSOLE
 
+def install_path() -> Path:
+	with pkg_path( APP_PKG_NAME, '__init__.py' ) as path:
+		return path.parent.parent
+
 def default_plugin_path() -> Path:
 	with pkg_path( APP_PKG_NAME, f'{PLUGINS_PKG_NAME}/__init__.py' ) as path:
 		return path
@@ -179,8 +183,8 @@ class ApplicationContext:
 			log.debug( f'config dir/file not set as FS does not support getsyspath()' )
 
 	def __setup_config_state__( self ):
-		settings_files = [ f'{APP_PKG_NAME}/{DEFAULT_CONFIG_FILENAME}' ]
-		appstate_files = [f'{APP_PKG_NAME}/{DEFAULT_STATE_FILENAME}']
+		settings_files = [ f'{install_path()}/{APP_PKG_NAME}/{DEFAULT_CONFIG_FILENAME}' ]
+		appstate_files = [ f'{install_path()}/{APP_PKG_NAME}/{DEFAULT_STATE_FILENAME}' ]
 
 		try:
 			settings_files.append( self.config_fs.getsyspath( CONFIG_FILENAME ) )

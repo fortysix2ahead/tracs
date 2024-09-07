@@ -63,7 +63,7 @@ def test_activities( dbfs ):
 	assert a1.type.name == 'walk'
 
 	assert a1.parts[0].gap == timedelta( minutes=20 )
-	assert a1.parts[0].uids == [ 'polar:222', 'polar:333' ]
+	assert a1.parts[0].uid == UID.from_str( 'polar:222#1' )
 
 	assert a1.metadata.created == datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC )
 	assert a1.metadata.favourite

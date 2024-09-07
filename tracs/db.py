@@ -299,7 +299,7 @@ class ActivityDb:
 	# 	return False
 
 	def contains_activity( self, uid: str ) -> bool:
-		return any( uid in a.uids for a in self.activities )
+		return any( [ uid == a.uid for a in self.activities ] )
 
 	def contains_resource( self, uid: str, path: str ) -> bool:
 		return True if self.get_resource_by_uid_path( uid, path ) else False
@@ -463,7 +463,7 @@ class ActivityDb:
 		"""
 		Finds all resources related to a given activity.
 		"""
-		resources = [r for r in self.resources if r.uid in [uid.clspath for uid in activity.as_uids()]]
+		resources = [r for r in self.resources if r.uid in [uid.head for uid in activity.as_uids()]]
 		# simplifiy this?
 		return [r for r in resources if r.uidpath in activity.uids or r.uid in activity.uids]
 

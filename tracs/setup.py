@@ -62,12 +62,13 @@ def setup( ctx: ApplicationContext, services: List[str] ):
 			console.print()
 			console.rule( f'[bold]Setup {name}[/bold]' )
 			setup_function = ctx.registry.setups.get( name )
+			config_key = name.split( '.' )[-1]
 			if setup_function:
-				existing_config = ctx.config.plugins[name]
-				existing_state = ctx.state.plugins[name]
+				existing_config = ctx.config.plugins[config_key]
+				existing_state = ctx.state.plugins[config_key]
 				config, state = setup_function( ctx, existing_config, existing_state )
-				ctx.config['plugins'][name] = { **existing_config, **config }
-				ctx.state['plugins'][name] = { **existing_state, **state }
+				ctx.config['plugins'][config_key] = { **existing_config, **config }
+				ctx.state['plugins'][config_key] = { **existing_state, **state }
 				console.print()
 
 	ctx.dump_config_state()

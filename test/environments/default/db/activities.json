@@ -102,6 +102,262 @@
 		}
 	]
 }, {
+	"id": 20,
+	"name": "Polar Multisport Activity",
+	"description": "2 consecutive runs, consisting of #21 and #22",
+	"starttime": "2022-03-01T09:00:00+00:00",
+	"endtime": "2022-03-01T10:55:00+00:00",
+	"parts": [
+		{
+			"gap": "00:00:00",
+			"uid": "polar:1021"
+		}, {
+			"gap": "00:05:00",
+			"uid": "polar:1022"
+		}
+	],
+	"type": "multisport",
+	"uid": "multipart:1020"
+}, {
+	"id": 21,
+	"name": "Polar Run 1",
+	"description": "complement to #24",
+	"starttime": "2022-03-01T09:00:00+00:00",
+	"endtime": "2022-03-01T09:55:00+00:00",
+	"uid": "polar:1021"
+}, {
+	"id": 22,
+	"name": "Polar Run 2",
+	"description": "complement to #24",
+	"starttime": "2022-03-01T10:00:00+00:00",
+	"endtime": "2022-03-01T10:55:00+00:00",
+	"uid": "polar:1022"
+}, {
+	"id": 23,
+	"name": "Polar Run 1",
+	"description": "complement to #24",
+	"starttime": "2022-03-01T11:00:00+00:00",
+	"endtime": "2022-03-01T11:55:00+00:00",
+	"uid": "polar:1023"
+}, {
+	"id": 24,
+	"name": "Strava Run 1",
+	"description": "Complement to #23",
+	"starttime": "2022-03-01T11:00:00+00:00",
+	"endtime": "2022-03-01T11:55:00+00:00",
+	"type": "run",
+	"uid": "strava:1024"
+}, {
+	"id": 25,
+	"name": "Grouped of polar and strava runs 1",
+	"description": "This groups #23 and #24",
+	"starttime": "2022-03-01T11:00:00+00:00",
+	"endtime": "2022-03-01T11:55:00+00:00",
+	"uid": "group:1025",
+	"metadata": {
+		"members": ["polar:1023", "strava:1024"]
+	}
+}, {
+	"id": 26,
+	"name": "Polar Run 2",
+	"description": "Second polar run, complement to #27",
+	"starttime": "2022-03-01T12:00:00+00:00",
+	"endtime": "2022-03-01T12:55:00+00:00",
+	"uid": "polar:1026"
+}, {
+	"id": 27,
+	"name": "Strava Run 2",
+	"description": "Second strava run, complement to #26",
+	"starttime": "2022-03-01T12:00:00+00:00",
+	"endtime": "2022-03-01T12:55:00+00:00",
+	"type": "run",
+	"uid": "strava:1027"
+}, {
+	"id": 28,
+	"name": "Grouped of polar and strava runs 2",
+	"description": "This groups #26 and #27",
+	"starttime": "2022-03-01T12:00:00+00:00",
+	"endtime": "2022-03-01T12:55:00+00:00",
+	"uid": "group:1028",
+	"metadata": {
+		"members": ["polar:1026", "strava:1027"]
+	}
+}, {
+	"id": 29,
+	"name": "Everything",
+	"description": "multipart of everything from 21 to 28",
+	"starttime": "2022-03-01T09:00:00+00:00",
+	"endtime": "2022-03-01T12:55:00+00:00",
+	"parts": [
+		{
+			"gap": "00:00:00",
+			"uid": "polar:1021"
+		}, {
+			"gap": "00:05:00",
+			"uid": "polar:1022"
+		}, {
+			"gap": "00:05:00",
+			"uid": "group:1025"
+		}, {
+			"gap": "00:05:00",
+			"uid": "group:1029"
+		}
+	],
+	"type": "multisport",
+	"uid": "multipart:1029"
+}, {
+	"name": "Triathlon Polar - Swim",
+	"description": "dedicated swimming activity with artificial polar ID",
+	"duration": "00:14:19",
+	"endtime": "2017-07-02T09:21:37+00:00",
+	"endtime_local": "2017-07-02T11:21:38+02:00",
+	"id": 30,
+	"resources": [
+		{
+			"path": "polar/1/0/3/1031/2017-07-02T09-07-18.000Z_Swimming.gpx",
+			"type": "application/gpx+xml"
+		}, {
+			"path": "polar/1/0/3/1031/2017-07-02T09-07-18.000Z_Swimming.tcx",
+			"type": "application/tcx+xml"
+		}
+	],
+	"starttime": "2017-07-02T09:07:18+00:00",
+	"starttime_local": "2017-07-02T11:07:19+02:00",
+	"uid": "polar:1031#1"
+}, {
+	"duration": "01:50:00",
+	"id": 31,
+	"name": "Triathlon Polar",
+	"description": "Multipart triathlon activity as exported from Polar",
+	"metadata":{
+		"members": [ "polar:1031#1", "polar:1031#2", "polar:1031#3" ]
+	},
+	"parts": [
+		{
+			"gap": "00:00:00",
+			"uid": "polar:1031#1"
+		}, {
+			"gap": "00:00:09",
+			"uid": "polar:1031#2"
+		}, {
+			"gap": "00:01:13",
+			"uid": "polar:1031#3"
+		}
+	],
+	"resources": [
+		{
+			"path": "polar/1/0/3/1031/1031.gpx.zip",
+			"type": "application/vnd.polar.gpx+zip"
+		}, {
+			"path": "polar/1/0/3/1031/1031.json",
+			"type": "application/vnd.polar+json"
+		}, {
+			"path": "polar/1/0/3/1031/1031.tcx.zip",
+			"type": "application/vnd.polar.tcx+zip"
+		}
+	],
+	"starttime": "2017-07-02T09:07:18+00:00",
+	"starttime_local": "2017-07-02T11:07:18+02:00",
+	"type": "triathlon",
+	"uid": "polar:1031"
+}, {
+	"duration": "00:14:19",
+	"id": 32,
+	"name": "Triathlon - Swim",
+	"resources": [
+		{
+			"path": "strava/1/0/3/1032/1032.gpx",
+			"type": "application/gpx+xml"
+		}, {
+			"path": "strava/1/0/3/1032/1032.json",
+			"type": "application/vnd.strava+json"
+		}, {
+			"path": "strava/1/0/3/1032/1032.tcx",
+			"type": "application/tcx+xml"
+		}
+	],
+	"starttime": "2017-07-02T09:07:19+00:00",
+	"starttime_local": "2017-07-02T11:07:19+00:00",
+	"type": "swim",
+	"uid": "strava:1032"
+}, {
+	"name": "Triathlon Polar - Cycling",
+	"description": "dedicated cycling activity with artificial polar ID",
+	"duration": "00:56:17",
+	"endtime": "2017-07-02T10:18:03+00:00",
+	"endtime_local": "2017-07-02T12:18:03+02:00",
+	"id": 33,
+	"resources": [
+		{
+			"path": "polar/1/0/3/1031/2017-07-02T09-21-45.000Z_Cycling.gpx",
+			"type": "application/gpx+xml"
+		}, {
+			"path": "polar/1/0/3/1031/2017-07-02T09-21-45.000Z_Cycling.tcx",
+			"type": "application/tcx+xml"
+		}
+	],
+	"starttime": "2017-07-02T09:21:46+00:00",
+	"starttime_local": "2017-07-02T11:21:46+02:00",
+	"uid": "polar:1031#2"
+}, {
+	"duration": "00:56:17",
+	"id": 34,
+	"name": "Triathlon - Bike",
+	"resources": [
+		{
+			"path": "strava/1/0/3/1034/1034.gpx",
+			"type": "application/gpx+xml"
+		}, {
+			"path": "strava/1/0/3/1034/1034.json",
+			"type": "application/vnd.strava+json"
+		}, {
+			"path": "strava/1/0/3/1034/1034.tcx",
+			"type": "application/tcx+xml"
+		}
+	],
+	"starttime": "2017-07-02T09:21:46+00:00",
+	"starttime_local": "2017-07-02T11:21:46+00:00",
+	"type": "bike",
+	"uid": "strava:1034"
+}, {
+	"name": "Triathlon Polar - Run",
+	"description": "dedicated running activity with artificial polar ID",
+	"endtime": "2017-07-02T10:57:18+00:00",
+	"endtime_local": "2017-07-02T12:57:18+02:00",
+	"id": 35,
+	"resources": [
+		{
+			"path": "polar/1/0/3/1031/2017-07-02T10-19-15.000Z_Running.gpx",
+			"type": "application/gpx+xml"
+		}, {
+			"path": "polar/1/0/3/1031/2017-07-02T10-19-15.000Z_Running.tcx",
+			"type": "application/tcx+xml"
+		}
+	],
+	"starttime": "2017-07-02T10:19:16+00:00",
+	"starttime_local": "2017-07-02T12:19:16+02:00",
+	"uid": "polar:1031#3"
+}, {
+	"duration": "00:38:02",
+	"id": 36,
+	"name": "Triathlon - Run",
+	"resources": [
+		{
+			"path": "strava/1/0/3/1036/1036.gpx",
+			"type": "application/gpx+xml"
+		}, {
+			"path": "strava/1/0/3/1036/1036.json",
+			"type": "application/vnd.strava+json"
+		}, {
+			"path": "strava/1/0/3/1036/1036.tcx",
+			"type": "application/tcx+xml"
+		}
+	],
+	"starttime": "2017-07-02T10:19:16+00:00",
+	"starttime_local": "2017-07-02T12:19:16+00:00",
+	"type": "run",
+	"uid": "strava:1036"
+}, {
 	"id": 100,
 	"name": null,
 	"heartrate": null,

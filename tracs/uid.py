@@ -69,10 +69,20 @@ class UID:
 	def uid( self ):
 		return self.as_str
 
-	# todo: rename, clspath is not a good name
 	@property
-	def clspath( self ) -> str:
+	def head( self ) -> str:
 		return f'{self.classifier}:{self.local_id}' if self.local_id else self.classifier
+
+	@property
+	def tail( self ) -> Optional[str]:
+		if self.path and self.part:
+			return f'{self.path}#{self.part}'
+		elif self.path:
+			return self.path
+		elif self.part:
+			return str( self.part )
+		else:
+			return None
 
 	@property
 	def as_str( self ) -> str:

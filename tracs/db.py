@@ -299,7 +299,7 @@ class ActivityDb:
 	# 	return False
 
 	def contains_activity( self, uid: str ) -> bool:
-		return any( uid in a.uids for a in self.activities )
+		return any( [ uid == a.uid for a in self.activities ] )
 
 	def contains_resource( self, uid: str, path: str ) -> bool:
 		return True if self.get_resource_by_uid_path( uid, path ) else False

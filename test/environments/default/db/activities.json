@@ -102,6 +102,110 @@
 		}
 	]
 }, {
+	"id": 20,
+	"name": "Polar Multisport Activity",
+	"description": "2 consecutive runs, consisting of #21 and #22",
+	"starttime": "2022-03-01T09:00:00+00:00",
+	"endtime": "2022-03-01T10:55:00+00:00",
+	"parts": [
+		{
+			"gap": "00:00:00",
+			"uid": "polar:1021"
+		}, {
+			"gap": "00:05:00",
+			"uid": "polar:1022"
+		}
+	],
+	"type": "multisport",
+	"uid": "multipart:1020"
+}, {
+	"id": 21,
+	"name": "Polar Run 1",
+	"description": "complement to #24",
+	"starttime": "2022-03-01T09:00:00+00:00",
+	"endtime": "2022-03-01T09:55:00+00:00",
+	"uid": "polar:1021"
+}, {
+	"id": 22,
+	"name": "Polar Run 2",
+	"description": "complement to #24",
+	"starttime": "2022-03-01T10:00:00+00:00",
+	"endtime": "2022-03-01T10:55:00+00:00",
+	"uid": "polar:1022"
+}, {
+	"id": 23,
+	"name": "Polar Run 1",
+	"description": "complement to #24",
+	"starttime": "2022-03-01T11:00:00+00:00",
+	"endtime": "2022-03-01T11:55:00+00:00",
+	"uid": "polar:1023"
+}, {
+	"id": 24,
+	"name": "Strava Run 1",
+	"description": "Complement to #23",
+	"starttime": "2022-03-01T11:00:00+00:00",
+	"endtime": "2022-03-01T11:55:00+00:00",
+	"type": "run",
+	"uid": "strava:1024"
+}, {
+	"id": 25,
+	"name": "Grouped of polar and strava runs 1",
+	"description": "This groups #23 and #24",
+	"starttime": "2022-03-01T11:00:00+00:00",
+	"endtime": "2022-03-01T11:55:00+00:00",
+	"uid": "group:1025",
+	"metadata": {
+		"members": [ "polar:1023", "strava:1024" ]
+	}
+}, {
+	"id": 26,
+	"name": "Polar Run 2",
+	"description": "Second polar run, complement to #27",
+	"starttime": "2022-03-01T12:00:00+00:00",
+	"endtime": "2022-03-01T12:55:00+00:00",
+	"uid": "polar:1026"
+}, {
+	"id": 27,
+	"name": "Strava Run 2",
+	"description": "Second strava run, complement to #26",
+	"starttime": "2022-03-01T12:00:00+00:00",
+	"endtime": "2022-03-01T12:55:00+00:00",
+	"type": "run",
+	"uid": "strava:1027"
+}, {
+	"id": 28,
+	"name": "Grouped of polar and strava runs 2",
+	"description": "This groups #26 and #27",
+	"starttime": "2022-03-01T12:00:00+00:00",
+	"endtime": "2022-03-01T12:55:00+00:00",
+	"uid": "group:1028",
+	"metadata": {
+		"members": [ "polar:1026", "strava:1027" ]
+	}
+}, {
+	"id": 29,
+	"name": "Everything",
+	"description": "multipart of everything from 21 to 28",
+	"starttime": "2022-03-01T09:00:00+00:00",
+	"endtime": "2022-03-01T12:55:00+00:00",
+	"parts": [
+		{
+			"gap": "00:00:00",
+			"uid": "polar:1021"
+		}, {
+			"gap": "00:05:00",
+			"uid": "polar:1022"
+		}, {
+			"gap": "00:05:00",
+			"uid": "group:1025"
+		}, {
+			"gap": "00:05:00",
+			"uid": "group:1029"
+		}
+	],
+	"type": "multisport",
+	"uid": "multipart:1029"
+}, {
 	"id": 100,
 	"name": null,
 	"heartrate": null,

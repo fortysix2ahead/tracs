@@ -48,7 +48,7 @@ def test_uid():
 
 	uid = UID( 'polar:101#2' )
 	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.part == 2
-	assert uid.uid == 'polar:101#2' and uid.denotes_part()
+	assert uid.uid == 'polar:101#2' and uid.denotes_activity() and uid.denotes_part()
 	assert uid.as_tuple == ('polar', 101) and uid.as_triple == ( 'polar', 101, None )
 	assert uid.as_tuple_str == 'polar:101'
 	assert uid.head == 'polar:101' and uid.tail == "2"

@@ -515,10 +515,10 @@ def status_db( ctx: ApplicationContext ) -> None:
 
 	activity_map = {}
 	for a in ctx.db.activities:
-		if a.as_uid().classifier not in activity_map.keys():
-			activity_map[a.as_uid().classifier] = 1
+		if a.uid.classifier not in activity_map.keys():
+			activity_map[a.uid.classifier] = 1
 		else:
-			activity_map[a.as_uid().classifier] = activity_map[a.as_uid().classifier] + 1
+			activity_map[a.uid.classifier] = activity_map[a.uid.classifier] + 1
 
 	for k in sorted( activity_map.keys() ):
 		table.add_row( f' - {k}', pp( activity_map[k] ) )

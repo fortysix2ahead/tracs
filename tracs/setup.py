@@ -67,8 +67,8 @@ def setup( ctx: ApplicationContext, services: List[str] ):
 				existing_config = ctx.config.plugins[config_key]
 				existing_state = ctx.state.plugins[config_key]
 				config, state = setup_function( ctx, existing_config, existing_state )
-				ctx.config['plugins'][config_key] = { **existing_config, **config }
-				ctx.state['plugins'][config_key] = { **existing_state, **state }
+				ctx.config['plugins'][config_key] = config
+				ctx.state['plugins'][config_key] = state
 				console.print()
 
 	ctx.dump_config_state()

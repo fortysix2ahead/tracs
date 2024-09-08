@@ -24,6 +24,7 @@ from tracs.config import ApplicationContext
 from tracs.fsio import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.resources import Resource, Resources
+from uid import UID
 
 log = getLogger( __name__ )
 
@@ -297,6 +298,13 @@ class ActivityDb:
 	# 		if all( [f( a ) for f in filters] ):
 	# 			return True
 	# 	return False
+
+	def contains( self, uid: UID|str ) -> bool:
+		uid = uid if isinstance( uid, UID ) else UID.from_str( uid )
+		if uid.denotes_activity():
+			return any( u == uid for u in self._activities.iter_uids() )
+		elif uid.denotes_resource():
+			...
 
 	def contains_activity( self, uid: str ) -> bool:
 		return any( [ uid == a.uid for a in self.activities ] )

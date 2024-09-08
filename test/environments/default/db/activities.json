@@ -102,6 +102,47 @@
 		}
 	]
 }, {
+		"id": 5,
+		"name": "Somewhere in the Forest",
+		"description": "Reference Group for a Polar and a Strava Activity where members do not exist as separate activities",
+		"type": "run",
+		"starttime": "2012-01-07T10:40:51+00:00",
+		"starttime_local": "2012-01-07T11:40:51+01:00",
+		"location_place": "Forest",
+		"tags": ["forest"],
+		"equipment": ["blue_shoes", "red_shirt", "green_shorts"],
+		"uid": "group:1005",
+		"metadata": {
+			"created": "2024-01-04T10:00:00.000+00:00",
+			"modified": "2024-01-04T12:00:00.000+00:00",
+			"members": ["polar:1005", "strava:1005"],
+			"favourite": true
+		},
+		"resources": [
+			{
+				"name": "Polar GPX Track",
+				"path": "polar/1/0/0/1005/1005.gpx",
+				"type": "application/gpx+xml",
+				"uid": "polar:1005"
+			}, {
+				"name": "Polar Activity Data",
+				"path": "polar/1/0/0/1005/1005.json",
+				"type": "application/vnd.polar+json",
+				"uid": "polar:1005"
+			}, {
+				"name": "Strava GPX Track",
+				"path": "strava/1/0/0/1005/1005.gpx",
+				"type": "application/gpx+xml",
+				"uid": "strava:1005"
+			}, {
+				"name": "Strava Activity Data",
+				"path": "strava/1/0/0/1005/1005.json",
+				"type": "application/vnd.strava+json",
+				"strava": "strava:1005"
+			}
+		]
+	}, {
+}, {
 	"id": 20,
 	"name": "Polar Multisport Activity",
 	"description": "2 consecutive runs, consisting of #21 and #22",

@@ -23,7 +23,7 @@ TITLE_STYLE = { 'title_justify': 'left', 'title_style': 'bold bright_blue' }
 
 def show_resources( activities: List[Activity], ctx: ApplicationContext, display_raw: bool = False, verbose: bool = True, format_name: str = None ) -> None:
 	for a in activities:
-		for r in ctx.db.get_resources_by_uids( a.uids ):
+		for r in ctx.db.find_resources_by_uids( a.uids ):
 			table = Table( box=box.MINIMAL, show_header=False, show_footer=False, title=f'Resource:', **TITLE_STYLE )
 			for f in sorted( Resource.fieldnames() ):
 				if f in ['__parent_activity__', 'content', 'raw']:

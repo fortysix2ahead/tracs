@@ -118,11 +118,6 @@ def test_get( db ):
 	# non-existing polar activity
 	assert db.get_by_uid( 'polar:999' ) is None
 
-	# get by ids
-	assert db.get_by_ids( [] ) == []
-	assert db.get_by_ids( None ) == []
-	assert db.get_by_ids( [ 1, 2, 3, 999 ] ) == [ db.get( id=1 ), db.get( id=2 ), db.get( id=3 ) ]
-
 	# get by uids
 	assert db.get_by_uids( [] ) == []
 	assert db.get_by_uids( None ) == []
@@ -151,6 +146,11 @@ def test_get( db ):
 @mark.context( env='default', persist='clone', cleanup=True )
 @mark.db( summary_types=[POLAR_FLOW_TYPE, STRAVA_TYPE], recording_types=[GPX_TYPE, TCX_TYPE] )
 def test_find( db ):
+	# find by ids
+	assert db.find_by_id( [] ) == []
+	assert db.find_by_id( None ) == []
+	assert db.find_by_id( [1, 2, 3, 999] ) == [db.get( id=1 ), db.get( id=2 ), db.get( id=3 )]
+
 	resources = db.find_resources_of_type( GPX_TYPE )
 	assert len( resources ) > 0 and all( [ r.type == GPX_TYPE for r in resources ] )
 

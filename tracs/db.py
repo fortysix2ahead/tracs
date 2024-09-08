@@ -327,17 +327,11 @@ class ActivityDb:
 
 	def get_by_id( self, id: int ) -> Optional[Activity]:
 		"""
-		Returns the activity with the provided id.
+		Returns the (first and only) activity with the provided id.
+		There should never be two activities with the same id.
+		:param id: id of the activity
 		"""
 		return first_true( self.activities, pred=lambda a: a.id == id )
-
-	def get_by_ids( self, ids: Optional[List[int]] ) -> List[Activity]:
-		"""
-		Returns all activities with ids contained in the provided list of ids
-		:param ids:
-		:return:
-		"""
-		return [ a for a in self.activities if a.id in ( ids or [] ) ]
 
 	def get_by_uid( self, uid: str ) -> Optional[Activity]:
 		"""
@@ -431,6 +425,14 @@ class ActivityDb:
 			# all_activities = filter( r.evaluate, all_activities )
 			all_activities = r.filter( all_activities )
 		return list( all_activities )
+
+	def find_by_id( self, ids: Optional[List[int]] ) -> List[Activity]:
+		"""
+		Returns all activities with ids contained in the provided list of ids
+		:param ids:
+		:return:
+		"""
+		return [ a for a in self.activities if a.id in ( ids or [] ) ]
 
 	def find_by_classifier( self, classifier: str ) -> List[Activity]:
 		"""

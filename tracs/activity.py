@@ -465,6 +465,9 @@ class Activities( Container[Activity] ):
 	def iter_resources( self ):
 		return chain( *[ a.resources for a in self.data ] )
 
+	def iter_uids( self ):
+		return chain( *[ [ a.uid, *a.metadata.members ] for a in self.data ] )
+
 	# serialization
 
 	@classmethod

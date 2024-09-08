@@ -341,16 +341,6 @@ class ActivityDb:
 		"""
 		return first_true( self.activities, pred=lambda a: a.uid == uid )
 
-	def get_for_uid( self, uid: Optional[str] ) -> List[Activity]:
-		"""
-		Returns all activities for the given uid.
-		This includes activities with the uid equal to the provided as well as activities
-		where the uid appears as member (groups and multiparts)
-		:param uid:
-		:return:
-		"""
-		return [ a for a in self.activities if ( uid in [ a.uid, *a.metadata.members ] ) ] if uid else []
-
 	def get_group_for_uid( self, uid: Optional[str] ) -> Optional[Activity]:
 		"""
 		Returns all groups for the given uid.
@@ -398,7 +388,7 @@ class ActivityDb:
 		return next( iter( [ r for r in self.find_all_resources( uids ) if r.type == type] ), None )
 
 	def get_resources_for_uid( self, uid: str ) -> List[Resource]:
-		activity_resources = [(a, r) for a in self.get_for_uid( uid ) for r in a.resources]
+		activity_resources = [(a, r) for a in self.find_for_uid( uid ) for r in a.resources]
 		return list( unique( [r for a, r in activity_resources if (a.uid == uid or r.uid == uid)], key=lambda r: r.path ) )
 
 	def get_resources_for_uids( self, uids: List[str] ) -> List[Resource]:
@@ -418,7 +408,7 @@ class ActivityDb:
 			all_activities = r.filter( all_activities )
 		return list( all_activities )
 
-	def find_by_id( self, ids: Optional[List[int]] ) -> List[Activity]:
+	def find_by_id( self, ids: List[int] ) -> List[Activity]:
 		"""
 		Returns all activities with ids contained in the provided list of ids
 		:param ids:
@@ -426,7 +416,7 @@ class ActivityDb:
 		"""
 		return [ a for a in self.activities if a.id in ( ids or [] ) ]
 
-	def find_by_uid( self, uids: Optional[List[str]] ) -> List[Activity]:
+	def find_by_uid( self, uids: List[str] ) -> List[Activity]:
 		"""
 		Returns all activities with uids contained in the provided list of uids
 		This method does not treat any uids which appear as group members.
@@ -434,6 +424,16 @@ class ActivityDb:
 		:return:
 		"""
 		return [ a for a in self.activities if a.uid in ( uids or [] ) ]
+
+	def find_for_uid( self, uid: UID|str ) -> List[Activity]:
+		"""
+		Returns all activities for the given uid.
+		This includes activities with the uid equal to the provided uid as well as activities
+		where the uid appears as member (groups and multiparts)
+		:param uid:
+		:return:
+		"""
+		return [ a for a in self.activities if ( uid in [ a.uid, *a.metadata.members ] ) ] if uid else []
 
 	def find_by_classifier( self, classifier: str ) -> List[Activity]:
 		"""

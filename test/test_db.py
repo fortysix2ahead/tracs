@@ -118,11 +118,6 @@ def test_get( db ):
 	# non-existing polar activity
 	assert db.get_by_uid( 'polar:999' ) is None
 
-	# get for uid
-	assert db.get_for_uid( None ) == []
-	assert ids( db.get_for_uid( 'polar:1001' ) ) == [ 1, 2 ]
-	assert ids( db.get_for_uid( 'strava:1001' ) ) == [ 1, 3 ]
-
 	# get groups by uid
 	assert db.get_group_for_uid( None ) is None
 	assert db.get_group_for_uid( 'polar:1001' ).id == 1
@@ -150,6 +145,11 @@ def test_find( db ):
 	assert db.find_by_uid( [] ) == []
 	assert db.find_by_uid( None ) == []
 	assert db.find_by_uid( ['group:1001'] ) == [db.get( id=1 )]
+
+	# find for uid
+	assert db.find_for_uid( None ) == []
+	assert ids( db.find_for_uid( 'polar:1001' ) ) == [1, 2]
+	assert ids( db.find_for_uid( 'strava:1001' ) ) == [1, 3]
 
 	resources = db.find_resources_of_type( GPX_TYPE )
 	assert len( resources ) > 0 and all( [ r.type == GPX_TYPE for r in resources ] )

@@ -333,21 +333,13 @@ class ActivityDb:
 		"""
 		return first_true( self.activities, pred=lambda a: a.id == id )
 
-	def get_by_uid( self, uid: str ) -> Optional[Activity]:
+	def get_by_uid( self, uid: UID|str ) -> Optional[Activity]:
 		"""
 		Returns the activity with the uid equal to the provided uid.
 		This method does not treat any uids which appear as group members.
+		:param uid: uid of the activity
 		"""
 		return first_true( self.activities, pred=lambda a: a.uid == uid )
-
-	def get_by_uids( self, uids: Optional[List[str]] ) -> List[Activity]:
-		"""
-		Returns all activities with uids contained in the provided list of uids
-		This method does not treat any uids which appear as group members.
-		:param uids:
-		:return:
-		"""
-		return [ a for a in self.activities if a.uid in ( uids or [] ) ]
 
 	def get_for_uid( self, uid: Optional[str] ) -> List[Activity]:
 		"""
@@ -433,6 +425,15 @@ class ActivityDb:
 		:return:
 		"""
 		return [ a for a in self.activities if a.id in ( ids or [] ) ]
+
+	def find_by_uid( self, uids: Optional[List[str]] ) -> List[Activity]:
+		"""
+		Returns all activities with uids contained in the provided list of uids
+		This method does not treat any uids which appear as group members.
+		:param uids:
+		:return:
+		"""
+		return [ a for a in self.activities if a.uid in ( uids or [] ) ]
 
 	def find_by_classifier( self, classifier: str ) -> List[Activity]:
 		"""

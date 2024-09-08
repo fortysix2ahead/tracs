@@ -256,7 +256,7 @@ def test_iter_activities():
 	)
 	a2 = Activity(
 		name='a2', uid='a:2',
-		resources = Resources( Resource( uid='a:2', path='a2.gpx' ), Resource( uid='a:2', path='a2.json' ) )
+		resources = Resources( Resource( uid='a:2', path='a2.gpx' ), Resource( path='a2.json' ) ) # no uid in a2.json!!
 	)
 	g1 = Activity(
 		name='g34', uid='g:34',

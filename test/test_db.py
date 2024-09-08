@@ -123,8 +123,6 @@ def test_get( db ):
 	assert db.get_group_for_uid( 'polar:1001' ).id == 1
 
 	# get resources
-	assert db.get_resources_by_uid( 'polar:1001' ) == db.get( id=2 ).resources
-	assert db.get_resources_by_uids( ['polar:1001', 'strava:1001' ] ) == [ *db.get( id=2 ).resources, *db.get( id=3 ).resources ]
 	assert db.get_resource_by_uid_path( 'polar:1001', 'polar/1/0/0/1001/1001.gpx' ) == db.get_by_id( 2 ).resources[0]
 
 	# get_for resources
@@ -152,6 +150,10 @@ def test_find( db ):
 	assert db.find_groups_for_uid( None ) == []
 	assert db.find_groups_for_uid( 'polar:1001' ) == [db.get( id=1 )]
 	assert db.find_groups_for_uid( 'strava:1001' ) == [db.get( id=1 )]
+
+	# find resources
+	assert db.find_resources_by_uid( 'polar:1001' ) == db.get( id=2 ).resources
+	assert db.find_resources_by_uids( ['polar:1001', 'strava:1001'] ) == [*db.get( id=2 ).resources, *db.get( id=3 ).resources]
 
 	resources = db.find_resources_of_type( GPX_TYPE )
 	assert len( resources ) > 0 and all( [ r.type == GPX_TYPE for r in resources ] )

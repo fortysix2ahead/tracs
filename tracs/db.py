@@ -360,22 +360,6 @@ class ActivityDb:
 		"""
 		return first_true( self._activities, pred=lambda a: uid in a.metadata.members )
 
-	def get_resources_by_uid( self, uid: str ) -> List[Resource]:
-		"""
-		Returns all resources with the provided uid.
-		:param uid:
-		:return:
-		"""
-		return a.resources if ( a:= self.get_by_uid( uid ) ) else []
-
-	def get_resources_by_uids( self, uids: List[str] ) -> List[Resource]:
-		"""
-		Returns all resources with the provided uids.
-		:param uids:
-		:return:
-		"""
-		return [r for rl in [self.get_resources_by_uid( uid ) for uid in uids] for r in rl]
-
 	def get_resource_by_uid_path( self, uid: str, path: str ) -> Optional[Resource]:
 		"""
 		Returns the resource with the provided uid and path.
@@ -383,7 +367,7 @@ class ActivityDb:
 		:param path:
 		:return:
 		"""
-		return next( (r for r in self.get_resources_by_uid( uid ) if r.path == path), None )
+		return next( (r for r in self.find_resources_by_uid( uid ) if r.path == path), None )
 
 	def get_resource_of_type( self, uids: List[str], type: str ) -> Optional[Resource]:
 		return next( iter( [ r for r in self.find_all_resources( uids ) if r.type == type] ), None )
@@ -475,6 +459,22 @@ class ActivityDb:
 		if path:
 			resources = [ r for r in resources if r.path == path ]
 		return resources
+
+	def find_resources_by_uid( self, uid: str ) -> List[Resource]:
+		"""
+		Returns all resources with of the activity with the provided uid.
+		:param uid:
+		:return:
+		"""
+		return a.resources if ( a:= self.get_by_uid( uid ) ) else []
+
+	def find_resources_by_uids( self, uids: List[str] ) -> List[Resource]:
+		"""
+		Returns all resources with the provided uids.
+		:param uids:
+		:return:
+		"""
+		return [r for rl in [self.find_resources_by_uid( uid ) for uid in uids] for r in rl]
 
 	def find_resources_of_type( self, resource_type: str ) -> List[Resource]:
 		"""

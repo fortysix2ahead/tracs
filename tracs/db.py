@@ -351,7 +351,7 @@ class ActivityDb:
 		"""
 		return first_true( self._activities, pred=lambda a: uid in [ a.uid, *a.metadata.members ] )
 
-	def get_group_for_uid( self, uid: Optional[str] ) -> Optional[Activity]:
+	def get_group_for_uid( self, uid: UID|str ) -> Optional[Activity]:
 		"""
 		Returns the first group where the given uid appears as member.
 		This does not include activities with the uid equal to the provided.
@@ -360,7 +360,7 @@ class ActivityDb:
 		"""
 		return first_true( self._activities, pred=lambda a: uid in a.metadata.members )
 
-	def get_resource_by_uid_path( self, uid: str, path: str ) -> Optional[Resource]:
+	def get_resource_by_uid_path( self, uid: UID|str, path: str ) -> Optional[Resource]:
 		"""
 		Returns the resource with the provided uid and path.
 		:param uid:
@@ -399,7 +399,7 @@ class ActivityDb:
 		:param ids:
 		:return:
 		"""
-		return [ a for a in self.activities if a.id in ( ids or [] ) ]
+		return [ a for a in self._activities if a.id in ( ids or [] ) ]
 
 	def find_by_uid( self, uids: List[str] ) -> List[Activity]:
 		"""
@@ -408,7 +408,7 @@ class ActivityDb:
 		:param uids:
 		:return:
 		"""
-		return [ a for a in self.activities if a.uid in ( uids or [] ) ]
+		return [ a for a in self._activities if a.uid in ( uids or [] ) ]
 
 	def find_for_uid( self, uid: UID|str ) -> List[Activity]:
 		"""
@@ -418,7 +418,7 @@ class ActivityDb:
 		:param uid:
 		:return:
 		"""
-		return [ a for a in self.activities if ( uid in [ a.uid, *a.metadata.members ] ) ] if uid else []
+		return [ a for a in self._activities if ( uid in [ a.uid, *a.metadata.members ] ) ] if uid else []
 
 	def find_groups_for_uid( self, uid: Optional[str] ) -> List[Activity]:
 		"""
@@ -427,13 +427,13 @@ class ActivityDb:
 		:param uid:
 		:return:
 		"""
-		return [a for a in self.activities if uid in a.metadata.members ] if uid else []
+		return [a for a in self._activities if uid in a.metadata.members ] if uid else []
 
 	def find_by_classifier( self, classifier: str ) -> List[Activity]:
 		"""
 		Finds all activities, which have a certain classifier (originate from a certain service, i.e. polar).
 		"""
-		return [a for a in self.activities if any( uid.startswith( classifier ) for uid in a.uids ) ]
+		return [a for a in self._activities if any( uid.startswith( classifier ) for uid in a.uids ) ]
 
 	def find_first( self, classifier: Optional[str] = None ) -> Optional[Activity]:
 		"""

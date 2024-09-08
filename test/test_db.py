@@ -86,9 +86,18 @@ def test_contains( db ):
 	assert not db.contains( 'polar:999' )
 
 	assert db.contains_activity( uid='polar:1001' )
+	assert db.contains_activity( uid='polar:1005' )
 	assert not db.contains_activity( uid='polar:999' )
 
+	assert db.contains( uid='polar:1001/1001.gpx' )
+	assert db.contains( uid='polar:1005/1005.gpx' )
+	assert not db.contains( uid='polar:1001/1001.xxx' )
+
 	assert db.contains_resource( uid='polar:1001', path='polar/1/0/0/1001/1001.gpx' )
+	assert db.contains_resource( uid='polar:1001', path='1001.gpx' )
+	assert db.contains_resource( uid='polar:1005', path='polar/1/0/0/1005/1005.gpx' )
+	assert db.contains_resource( uid='polar:1005', path='1005.gpx' )
+	assert not db.contains_resource( uid='polar:1001', path='polar/1/0/0/1001/1001.xxx' )
 	assert not db.contains_resource( uid='polar:999', path='999.gpx' )
 
 @mark.context( env='default', persist='clone', cleanup=True )

@@ -12,6 +12,7 @@ from fs.errors import ResourceNotFound
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
+from fs.path import basename
 from more_itertools import first_true, unique
 from orjson import dumps, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
@@ -21,7 +22,7 @@ from rule_engine import Rule
 
 from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
-from tracs.fsio import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
+from tracs.fsio import load_activities, load_schema, Schema, write_activities
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.resources import Resource, Resources
 from uid import UID
@@ -292,25 +293,26 @@ class ActivityDb:
 		else:
 			return list( set( [r.uid for r in self.resources] ) )
 
-	# def contains( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> bool:
-	# 	filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
-	# 	for a in self.activities.all():
-	# 		if all( [f( a ) for f in filters] ):
-	# 			return True
-	# 	return False
-
 	def contains( self, uid: UID|str ) -> bool:
 		uid = uid if isinstance( uid, UID ) else UID.from_str( uid )
 		if uid.denotes_activity():
-			return any( u == uid for u in self._activities.iter_uids() )
+			return self.contains_activity( uid )
 		elif uid.denotes_resource():
-			...
+			return self.contains_resource( uid, None )
+		else:
+			return False
 
-	def contains_activity( self, uid: str ) -> bool:
-		return any( [ uid == a.uid for a in self.activities ] )
+	def contains_activity( self, uid: UID|str ) -> bool:
+		uid = uid if isinstance( uid, UID ) else UID.from_str( uid )
+		return any( u == uid for u in self._activities.iter_uids() )
 
-	def contains_resource( self, uid: str, path: str ) -> bool:
-		return True if self.get_resource_by_uid_path( uid, path ) else False
+	def contains_resource( self, uid: UID|str, path: Optional[str] ) -> bool:
+		# todo: we might also accept paths with directories, but then we need to iterate over resources below
+		if isinstance( uid, UID ):
+			uid = UID( uid.classifier, uid.local_id, uid.path or basename( path ) )
+		else:
+			uid = UID( uid, path=basename( path ) if path else None )
+		return any( u == uid for u in self._activities.iter_resource_uids() )
 
 	# get methods
 
@@ -361,7 +363,7 @@ class ActivityDb:
 		:param uid:
 		:return:
 		"""
-		return [ a for a in self.activities if ( uid in [ a.uid, *a.metadata.members ] ) ]
+		return [ a for a in self.activities if ( uid in [ a.uid, *a.metadata.members ] ) ] if uid else []
 
 	def get_group_for_uid( self, uid: Optional[str] ) -> Optional[Activity]:
 		"""
@@ -379,7 +381,7 @@ class ActivityDb:
 		:param uid:
 		:return:
 		"""
-		return [a for a in self.activities if uid in a.metadata.members ]
+		return [a for a in self.activities if uid in a.metadata.members ] if uid else []
 
 	def get_resources_by_uid( self, uid: str ) -> List[Resource]:
 		"""

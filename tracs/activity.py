@@ -469,7 +469,7 @@ class Activities( Container[Activity] ):
 		return chain( *[ [ a.uid, *a.metadata.members ] for a in self.data ] )
 
 	def iter_resource_uids( self ):
-		return chain( *[ [ r.as_uid for r in a.resources ] for a in self.data ] )
+		return chain( *[ [ r.as_uid if r.uid else UID( *a.uid.as_tuple, r.path ) for r in a.resources ] for a in self.data ] )
 
 	# serialization
 

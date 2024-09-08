@@ -272,6 +272,9 @@ def test_iter_activities():
 	assert [ it.uid for it in activities.iter() ] == [ 'a:1', 'a:2', 'g:34' ]
 	assert [ it.path for it in activities.iter_resources() ] == ['a1.gpx', 'a1.json', 'a2.gpx', 'a2.json', 'a3.gpx', 'a4.gpx']
 	assert [ str( uid ) for uid in activities.iter_uids() ] == ['a:1', 'a:2', 'g:34', 'a:3', 'a:4']
+	assert [ str( uid ) for uid in activities.iter_resource_uids() ] == [
+		'a:1/a1.gpx', 'a:1/a1.json', 'a:2/a2.gpx', 'a:2/a2.json', 'a:3/a3.gpx', 'a:4/a4.gpx'
+	]
 
 def test_groups():
 	g = Activity( uid='g:1' )

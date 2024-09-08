@@ -163,6 +163,10 @@ class Resource:
 	def uid_obj( self ) -> UID:
 		return self.uid
 
+	@cached_property
+	def as_uid( self ) -> UID:
+		return UID( self.uid.classifier, self.uid.local_id, self.path or self.uid.path )
+
 	# todo: rename, that's not a good name
 	@property
 	def uidpath( self ) -> str:

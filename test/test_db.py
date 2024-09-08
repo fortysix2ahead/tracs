@@ -81,6 +81,10 @@ def test_insert_upsert_remove( db ):
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_contains( db ):
+	assert db.contains( 'polar:1001' )
+	assert db.contains( 'polar:1005' )
+	assert not db.contains( 'polar:999' )
+
 	assert db.contains_activity( uid='polar:1001' )
 	assert not db.contains_activity( uid='polar:999' )
 

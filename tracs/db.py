@@ -341,23 +341,24 @@ class ActivityDb:
 		"""
 		return first_true( self.activities, pred=lambda a: a.uid == uid )
 
+	def get_for_uid( self, uid: UID|str ) -> Optional[Activity]:
+		"""
+		Returns the first activity for the given uid.
+		This includes activities with the uid equal to the provided uid as well as activities
+		where the uid appears as member (groups and multiparts).
+		:param uid:
+		:return:
+		"""
+		return first_true( self._activities, pred=lambda a: uid in [ a.uid, *a.metadata.members ] )
+
 	def get_group_for_uid( self, uid: Optional[str] ) -> Optional[Activity]:
 		"""
-		Returns all groups for the given uid.
-		This includes does not include activities with the uid equal to the provided.
+		Returns the first group where the given uid appears as member.
+		This does not include activities with the uid equal to the provided.
 		:param uid:
 		:return:
 		"""
-		return first_true( self.activities, pred=lambda a: uid in a.metadata.members )
-
-	def get_groups_for_uid( self, uid: Optional[str] ) -> List[Activity]:
-		"""
-		Returns all groups for the given uid.
-		This includes does not include activities with the uid equal to the provided.
-		:param uid:
-		:return:
-		"""
-		return [a for a in self.activities if uid in a.metadata.members ] if uid else []
+		return first_true( self._activities, pred=lambda a: uid in a.metadata.members )
 
 	def get_resources_by_uid( self, uid: str ) -> List[Resource]:
 		"""
@@ -434,6 +435,15 @@ class ActivityDb:
 		:return:
 		"""
 		return [ a for a in self.activities if ( uid in [ a.uid, *a.metadata.members ] ) ] if uid else []
+
+	def find_groups_for_uid( self, uid: Optional[str] ) -> List[Activity]:
+		"""
+		Returns all groups for the given uid.
+		This includes does not include activities with the uid equal to the provided.
+		:param uid:
+		:return:
+		"""
+		return [a for a in self.activities if uid in a.metadata.members ] if uid else []
 
 	def find_by_classifier( self, classifier: str ) -> List[Activity]:
 		"""

@@ -66,6 +66,14 @@ def test_resource():
 	assert r.local_id == 1001 and r.local_id_str == '1001'
 	assert r.uidpath == 'polar:1001/recording.gpx'
 
+	# creation with relative path
+	r = Resource( name='recording', type='application/gpx+xml', path='polar/1/0/0/1001/recording.gpx', uid='polar:1001' )
+	assert r.uid == 'polar:1001' and r.uid == UID( 'polar:1001' )
+	assert r.classifier == 'polar'
+	assert r.local_id == 1001 and r.local_id_str == '1001'
+	assert r.fpath == 'recording.gpx'
+	assert r.uidpath == 'polar:1001/recording.gpx'
+
 	# this works, but is not supposed to be used
 	r = Resource( uid=UID( classifier='polar', local_id=1001, path='recording.gpx' ) )
 	assert r.uid == 'polar:1001' and r.path == 'recording.gpx'

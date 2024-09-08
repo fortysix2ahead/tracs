@@ -10,6 +10,7 @@ from attrs import Attribute, define, field, fields
 from cattrs import Converter, GenConverter
 from cattrs.gen import make_dict_unstructure_fn, override
 from fs.base import FS
+from fs.path import split
 from more_itertools import unique
 
 from tracs.protocols import Exporter, Importer
@@ -160,17 +161,21 @@ class Resource:
 		return str( self.local_id )
 
 	@cached_property
+	def fpath( self ) -> Optional[str]:
+		return split( self.path )[1] if self.path else None
+
+	@cached_property
 	def uid_obj( self ) -> UID:
 		return self.uid
 
 	@cached_property
 	def as_uid( self ) -> UID:
-		return UID( self.uid.classifier, self.uid.local_id, self.path or self.uid.path )
+		return UID( self.uid.classifier, self.uid.local_id, self.fpath or self.uid.path )
 
 	# todo: rename, that's not a good name
-	@property
+	@cached_property
 	def uidpath( self ) -> str:
-		return f'{self.uid}/{self.path}'
+		return str( self.as_uid )
 
 	def as_text( self, encoding: str = 'UTF-8' ) -> Optional[str]:
 		return self.content.decode( encoding )

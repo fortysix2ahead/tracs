@@ -109,7 +109,7 @@ def ungroup_activities( ctx: ApplicationContext,
 	all_groups, all_members = [], []
 	for a in groups( activities ):
 		if force or Confirm.ask( f'Ungroup activity {a.id} ({a.name})?' ):
-			members = [ Service.as_activity( r ) for r in ctx.db.find_summaries_for( a ) ]
+			members = [ Service.as_activity( r ) for r in ctx.db.find_summaries( a.uid ) ]
 			for m in members:
 				m.resources.extend( [ r for r in a.resources_for( None, uid=m.uid ) if r.path != m.resources[0].path ] )
 			all_groups.append( a )

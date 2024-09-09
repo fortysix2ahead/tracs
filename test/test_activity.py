@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from pytest import mark, raises
 
+from core import Metadata
 from tracs.activity import Activities, Activity, ActivityPart, groups
 from tracs.activity_types import ActivityTypes
 from tracs.core import VirtualField
@@ -247,18 +248,33 @@ def test_activities():
 	activities.replace( Activity( name='a6', uid='a:5' ) )
 	assert len( activities ) == 1 and activities.idget( 1 ).name == 'a6'
 
-	# test iter
-	activities.idget( 1 ).resources = Resources( Resource( uid='a:1', path='a1.gpx' ), Resource( uid='a:1', path='a1.json' ) )
-	a10 = Activity(
-		name='a10', uid='a:10',
-		resources = Resources( Resource( uid='a:10', path='a10.gpx' ), Resource( uid='a:10', path='a10.json' ) )
+def test_iter_activities():
+	activities = Activities()
+	a1 = Activity(
+		name='a1', uid='a:1',
+		resources = Resources( Resource( uid='a:1', path='a1.gpx' ), Resource( uid='a:1', path='a1.json' ) )
 	)
-	activities.add( a10 )
-	assert len( activities ) == 2
+	a2 = Activity(
+		name='a2', uid='a:2',
+		resources = Resources( Resource( uid='a:2', path='a2.gpx' ), Resource( path='a2.json' ) ) # no uid in a2.json!!
+	)
+	g1 = Activity(
+		name='g34', uid='g:34',
+		metadata = Metadata( members = [ UID( 'a:3' ), UID( 'a:4' ) ] ),
+		resources = Resources( Resource( uid='a:3', path='a3.gpx' ), Resource( uid='a:4', path='a4.gpx' ) )
+	)
 
-	assert [ it.uid for it in iter( activities ) ] == [ 'a:5', 'a:10' ]
-	assert [ it.uid for it in activities.iter() ] == [ 'a:5', 'a:10' ]
-	assert [ it.path for it in activities.iter_resources() ] == ['a1.gpx', 'a1.json', 'a10.gpx', 'a10.json']
+	activities.add( a1 )
+	activities.add( a2 )
+	activities.add( g1 )
+
+	assert [ it.uid for it in iter( activities ) ] == [ 'a:1', 'a:2', 'g:34' ]
+	assert [ it.uid for it in activities.iter() ] == [ 'a:1', 'a:2', 'g:34' ]
+	assert [ it.path for it in activities.iter_resources() ] == ['a1.gpx', 'a1.json', 'a2.gpx', 'a2.json', 'a3.gpx', 'a4.gpx']
+	assert [ str( uid ) for uid in activities.iter_uids() ] == ['a:1', 'a:2', 'g:34', 'a:3', 'a:4']
+	assert [ str( uid ) for uid in activities.iter_resource_uids() ] == [
+		'a:1/a1.gpx', 'a:1/a1.json', 'a:2/a2.gpx', 'a:2/a2.json', 'a:3/a3.gpx', 'a:4/a4.gpx'
+	]
 
 def test_groups():
 	g = Activity( uid='g:1' )

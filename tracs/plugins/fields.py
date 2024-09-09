@@ -9,7 +9,7 @@ from tracs.pluginmgr import virtualfield
 @virtualfield
 def classifiers() -> VirtualField:
 	return VirtualField( 'classifiers', List[str], display_name='Classifiers', description='list of classifiers of an activity',
-	                     factory=lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.uids ) ) )
+	                     factory=lambda a: list( map( lambda s: s.split( ':', 1 )[0], a.iter_uid_heads ) ) )
 
 @virtualfield
 def weekday() -> VirtualField:

@@ -12,6 +12,7 @@ from fs.errors import ResourceNotFound
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
+from fs.path import basename
 from more_itertools import first_true, unique
 from orjson import dumps, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
@@ -21,9 +22,10 @@ from rule_engine import Rule
 
 from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
-from tracs.fsio import load_activities, load_resources, load_schema, Schema, write_activities, write_resources
+from tracs.fsio import load_activities, load_schema, Schema, write_activities
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.resources import Resource, Resources
+from tracs.uid import UID
 
 log = getLogger( __name__ )
 
@@ -291,18 +293,26 @@ class ActivityDb:
 		else:
 			return list( set( [r.uid for r in self.resources] ) )
 
-	# def contains( self, id: Optional[int] = None, raw_id: Optional[int] = None, classifier: Optional[str] = None, uid: Optional[str] = None, filters: Union[List[str], List[Filter], str, Filter] = None ) -> bool:
-	# 	filters = parse_filters( filters ) if filters else self._create_filter( id, raw_id, classifier, uid )
-	# 	for a in self.activities.all():
-	# 		if all( [f( a ) for f in filters] ):
-	# 			return True
-	# 	return False
+	def contains( self, uid: UID|str ) -> bool:
+		uid = uid if isinstance( uid, UID ) else UID.from_str( uid )
+		if uid.denotes_activity():
+			return self.contains_activity( uid )
+		elif uid.denotes_resource():
+			return self.contains_resource( uid, None )
+		else:
+			return False
 
-	def contains_activity( self, uid: str ) -> bool:
-		return any( [ uid == a.uid for a in self.activities ] )
+	def contains_activity( self, uid: UID|str ) -> bool:
+		uid = uid if isinstance( uid, UID ) else UID.from_str( uid )
+		return any( u == uid for u in self._activities.iter_uids() )
 
-	def contains_resource( self, uid: str, path: str ) -> bool:
-		return True if self.get_resource_by_uid_path( uid, path ) else False
+	def contains_resource( self, uid: UID|str, path: Optional[str] ) -> bool:
+		# todo: we might also accept paths with directories, but then we need to iterate over resources below
+		if isinstance( uid, UID ):
+			uid = UID( uid.classifier, uid.local_id, uid.path or basename( path ) )
+		else:
+			uid = UID( uid, path=basename( path ) if path else None )
+		return any( u == uid for u in self._activities.iter_resource_uids() )
 
 	# get methods
 
@@ -317,99 +327,47 @@ class ActivityDb:
 
 	def get_by_id( self, id: int ) -> Optional[Activity]:
 		"""
-		Returns the activity with the provided id.
+		Returns the (first and only) activity with the provided id.
+		There should never be two activities with the same id.
+		:param id: id of the activity
 		"""
 		return first_true( self.activities, pred=lambda a: a.id == id )
 
-	def get_by_ids( self, ids: Optional[List[int]] ) -> List[Activity]:
-		"""
-		Returns all activities with ids contained in the provided list of ids
-		:param ids:
-		:return:
-		"""
-		return [ a for a in self.activities if a.id in ( ids or [] ) ]
-
-	def get_by_uid( self, uid: str ) -> Optional[Activity]:
+	def get_by_uid( self, uid: UID|str ) -> Optional[Activity]:
 		"""
 		Returns the activity with the uid equal to the provided uid.
 		This method does not treat any uids which appear as group members.
+		:param uid: uid of the activity
 		"""
 		return first_true( self.activities, pred=lambda a: a.uid == uid )
 
-	def get_by_uids( self, uids: Optional[List[str]] ) -> List[Activity]:
+	def get_for_uid( self, uid: UID|str ) -> Optional[Activity]:
 		"""
-		Returns all activities with uids contained in the provided list of uids
-		This method does not treat any uids which appear as group members.
-		:param uids:
-		:return:
-		"""
-		return [ a for a in self.activities if a.uid in ( uids or [] ) ]
-
-	def get_for_uid( self, uid: Optional[str] ) -> List[Activity]:
-		"""
-		Returns all activities for the given uid.
-		This includes activities with the uid equal to the provided as well as activities
-		where the uid appears as member (groups and multiparts)
+		Returns the first activity for the given uid.
+		This includes activities with the uid equal to the provided uid as well as activities
+		where the uid appears as member (groups and multiparts).
 		:param uid:
 		:return:
 		"""
-		return [ a for a in self.activities if ( uid in [ a.uid, *a.metadata.members ] ) ]
+		return first_true( self._activities, pred=lambda a: uid in [ a.uid, *a.metadata.members ] )
 
-	def get_group_for_uid( self, uid: Optional[str] ) -> Optional[Activity]:
+	def get_group_for_uid( self, uid: UID|str ) -> Optional[Activity]:
 		"""
-		Returns all groups for the given uid.
-		This includes does not include activities with the uid equal to the provided.
+		Returns the first group where the given uid appears as member.
+		This does not include activities with the uid equal to the provided.
 		:param uid:
 		:return:
 		"""
-		return first_true( self.activities, pred=lambda a: uid in a.metadata.members )
+		return first_true( self._activities, pred=lambda a: uid in a.metadata.members )
 
-	def get_groups_for_uid( self, uid: Optional[str] ) -> List[Activity]:
-		"""
-		Returns all groups for the given uid.
-		This includes does not include activities with the uid equal to the provided.
-		:param uid:
-		:return:
-		"""
-		return [a for a in self.activities if uid in a.metadata.members ]
-
-	def get_resources_by_uid( self, uid: str ) -> List[Resource]:
-		"""
-		Returns all resources with the provided uid.
-		:param uid:
-		:return:
-		"""
-		return a.resources if ( a:= self.get_by_uid( uid ) ) else []
-
-	def get_resources_by_uids( self, uids: List[str] ) -> List[Resource]:
-		"""
-		Returns all resources with the provided uids.
-		:param uids:
-		:return:
-		"""
-		return [r for rl in [self.get_resources_by_uid( uid ) for uid in uids] for r in rl]
-
-	def get_resource_by_uid_path( self, uid: str, path: str ) -> Optional[Resource]:
+	def get_resource_by_uid_path( self, uid: UID|str, path: str ) -> Optional[Resource]:
 		"""
 		Returns the resource with the provided uid and path.
 		:param uid:
 		:param path:
 		:return:
 		"""
-		return next( (r for r in self.get_resources_by_uid( uid ) if r.path == path), None )
-
-	def get_resource_of_type( self, uids: List[str], type: str ) -> Optional[Resource]:
-		return next( iter( [ r for r in self.find_all_resources( uids ) if r.type == type] ), None )
-
-	def get_resources_for_uid( self, uid: str ) -> List[Resource]:
-		activity_resources = [(a, r) for a in self.get_for_uid( uid ) for r in a.resources]
-		return list( unique( [r for a, r in activity_resources if (a.uid == uid or r.uid == uid)], key=lambda r: r.path ) )
-
-	def get_resources_for_uids( self, uids: List[str] ) -> List[Resource]:
-		return list( chain( *[ self.get_resources_for_uid( uid ) for uid in uids ] ) )
-
-	def get_summary( self, uid ) -> Resource:
-		return next( iter( self.find_summaries( uid ) ), None )
+		return next( (r for r in self.find_resources_by_uid( uid ) if r.path == path), None )
 
 	# several find methods to make life easier
 
@@ -422,11 +380,47 @@ class ActivityDb:
 			all_activities = r.filter( all_activities )
 		return list( all_activities )
 
+	def find_by_id( self, ids: List[int] ) -> List[Activity]:
+		"""
+		Returns all activities with ids contained in the provided list of ids
+		:param ids:
+		:return:
+		"""
+		return [ a for a in self._activities if a.id in ( ids or [] ) ]
+
+	def find_by_uid( self, uids: List[str] ) -> List[Activity]:
+		"""
+		Returns all activities with uids contained in the provided list of uids
+		This method does not treat any uids which appear as group members.
+		:param uids:
+		:return:
+		"""
+		return [ a for a in self._activities if a.uid in ( uids or [] ) ]
+
+	def find_for_uid( self, uid: UID|str ) -> List[Activity]:
+		"""
+		Returns all activities for the given uid.
+		This includes activities with the uid equal to the provided uid as well as activities
+		where the uid appears as member (groups and multiparts)
+		:param uid:
+		:return:
+		"""
+		return [ a for a in self._activities if ( uid in [ a.uid, *a.metadata.members ] ) ] if uid else []
+
+	def find_groups_for_uid( self, uid: Optional[str] ) -> List[Activity]:
+		"""
+		Returns all groups for the given uid.
+		This includes does not include activities with the uid equal to the provided.
+		:param uid:
+		:return:
+		"""
+		return [a for a in self._activities if uid in a.metadata.members ] if uid else []
+
 	def find_by_classifier( self, classifier: str ) -> List[Activity]:
 		"""
 		Finds all activities, which have a certain classifier (originate from a certain service, i.e. polar).
 		"""
-		return [a for a in self.activities if any( uid.startswith( classifier ) for uid in a.uids ) ]
+		return [a for a in self._activities if any( uid.startswith( classifier ) for uid in a.iter_uid_heads )]
 
 	def find_first( self, classifier: Optional[str] = None ) -> Optional[Activity]:
 		"""
@@ -444,6 +438,7 @@ class ActivityDb:
 
 	# find resources
 
+	# todo: create a universal method, like get from above
 	def find_resources( self, uid: str, path: Optional[str] = None ) -> List[Resource]:
 		"""
 		Finds resources having the given uid and optionally the given path.
@@ -453,59 +448,49 @@ class ActivityDb:
 			resources = [ r for r in resources if r.path == path ]
 		return resources
 
-	def find_resources_of_type( self, resource_type: str ) -> List[Resource]:
+	def find_resources_by_uid( self, uid: UID|str ) -> Resources:
+		"""
+		Returns all resources of the activity with the provided uid.
+		:param uid:
+		:return:
+		"""
+		return a.resources if ( a:= self.get_by_uid( uid ) ) else []
+
+	def find_resources_by_uids( self, uids: List[UID|str] ) -> Resources:
+		"""
+		Returns all resources with the provided uids.
+		:param uids:
+		:return:
+		"""
+		return Resources( *chain( *[self.find_resources_by_uid( uid ) for uid in uids] ) )
+
+	def find_resources_of_type( self, *types: str ) -> Resources:
 		"""
 		Finds all resources of the given type.
 		"""
-		return [r for r in self.resources if r.type == resource_type]
+		return Resources( *[r for r in self._activities.iter_resources() if r.type in types] )
 
-	def find_resources_for( self, activity: Activity ) -> List[Resource]:
+	def find_resources_for( self, uid: UID|str ) -> Resources:
 		"""
-		Finds all resources related to a given activity.
+		Finds all resources for a given UID. This included all resources when the activity is part of a group.
 		"""
-		resources = [r for r in self.resources if r.uid in [uid.head for uid in activity.as_uids()]]
-		# simplifiy this?
-		return [r for r in resources if r.uidpath in activity.uids or r.uid in activity.uids]
+		uid = uid if isinstance( uid, UID ) else UID( uid )
+		resources = [r for a in self.find_for_uid( uid ) for r in a.resources if uid in [a.uid.head, r.uid.head if r.uid else None ] ]
+		return Resources( *unique( resources, key=lambda r: r.path ) )
 
-	def find_all_resources( self, uids: List[str] ) -> List[Resource]:
+	def find_recordings( self, *uids: Optional[UID|str] ) -> Resources:
 		"""
-		Finds all resources having an uid contained in the provided list of uids.
+		Finds all recording resources. Optinally restricts the result to the provided UIDs.
 		"""
-		return [r for r in self.resources if r.uid in uids]
+		resources = Resources( *chain( *[self.find_resources_for( uid ) for uid in uids] ) ) if uids else self._activities.iter_resources()
+		return Resources( *[r for r in resources if r.type in self._recording_types] )
 
-	def find_recordings( self, uid: str ) -> List[Resource]:
+	def find_summaries( self, *uids: Optional[UID|str] ) -> Resources:
 		"""
-		Finds all recording resources having the provided uid.
+		Finds all summary resources. Optinally restricts the result to the provided UIDs.
 		"""
-		return [r for r in self.get_resources_for_uid( uid ) if r.type in self._recording_types]
-
-	def find_all_recordings( self, uids: List[str] ) -> List[Resource]:
-		"""
-		Finds all recording resources having an uid contained in the provided list.
-		"""
-		return [ r for r in self.find_all_resources( uids ) if r.type in self._recording_types ]
-
-	def find_summaries( self, uid: str ) -> List[Resource]:
-		"""
-		Finds all summary resources having the provided uid.
-		"""
-		return [r for r in self.get_resources_for_uid( uid ) if r.type in self._summary_types]
-
-	def find_summaries_for( self, *activities: Activity ) -> List[Resource]:
-		"""
-		Finds all summary resources having the provided uid.
-		"""
-		return [r for a in activities for r in a.resources if r.type in self._summary_types]
-
-	def find_all_summaries( self, uids: List[str] ) -> List[Resource]:
-		"""
-		Finds all summary resources having an uid contained in the provided list.
-		"""
-		return [ r for r in self.get_resources_for_uids( uids ) if r.type in self._summary_types ]
-
-	def find_all_resources_for( self, activities: Union[Activity, List[Activity]] ) -> List[Resource]:
-		activities = [activities] if type( activities ) is Activity else activities
-		return self.find_all_resources( list( chain( *[a.uids for a in activities] ) ) )
+		resources = Resources( *chain( *[self.find_resources_for( uid ) for uid in uids] ) ) if uids else self._activities.iter_resources()
+		return Resources( *[r for r in resources if r.type in self._summary_types] )
 
 # ---- DB Operations ----
 

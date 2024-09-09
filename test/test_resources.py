@@ -66,6 +66,14 @@ def test_resource():
 	assert r.local_id == 1001 and r.local_id_str == '1001'
 	assert r.uidpath == 'polar:1001/recording.gpx'
 
+	# creation with relative path
+	r = Resource( name='recording', type='application/gpx+xml', path='polar/1/0/0/1001/recording.gpx', uid='polar:1001' )
+	assert r.uid == 'polar:1001' and r.uid == UID( 'polar:1001' )
+	assert r.classifier == 'polar'
+	assert r.local_id == 1001 and r.local_id_str == '1001'
+	assert r.fpath == 'recording.gpx'
+	assert r.uidpath == 'polar:1001/recording.gpx'
+
 	# this works, but is not supposed to be used
 	r = Resource( uid=UID( classifier='polar', local_id=1001, path='recording.gpx' ) )
 	assert r.uid == 'polar:1001' and r.path == 'recording.gpx'
@@ -111,13 +119,22 @@ def test_resources():
 	assert r1a not in rl
 
 	# iterators
-	assert rl.uids() == ['polar:1234', 'strava:1234']
-	assert rl.paths() == ['test1.gpx', 'test1.json', 'test2.gpx', 'test2.json', 'title.jpeg']
+	assert [ r for r in rl ] == [ r1, r2, r3, r4, r5 ]
+	assert rl.iter_for( 'polar:1234/something_to_be_removed' ) == [ r1, r3, r5 ]
+	assert rl.iter_types( ['application/gpx+xml'] ) == [ r1, r2 ]
+	assert rl.iter_for( 'polar:1234' ).iter_types( ['application/gpx+xml'] ) == [ r1 ]
 
-	# todo: enable these tests later
-	# assert rl.summary() == r3
-	# assert rl.summaries() == [r4, r5]
-	# assert rl.recording() == r1
-	# assert rl.recordings() == [r1, r2, r3]
-	# assert rl.image() == r5
-	# assert rl.images() == [r5]
+	assert rl.iter_uids() == [
+		'polar:1234/test1.gpx',
+		'strava:1234/test2.gpx',
+		'polar:1234/test1.json',
+		'strava:1234/test2.json',
+		'polar:1234/title.jpeg',
+	]
+	assert rl.iter_uids_for( 'polar:1234/something_to_be_removed' ) == [
+		'polar:1234/test1.gpx',
+		'polar:1234/test1.json',
+		'polar:1234/title.jpeg',
+	]
+	assert rl.iter_uid_heads() == ['polar:1234', 'strava:1234']
+	assert rl.iter_paths() == ['test1.gpx', 'test2.gpx', 'test1.json', 'test2.json', 'title.jpeg']

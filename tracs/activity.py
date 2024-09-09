@@ -462,8 +462,14 @@ class Activities( Container[Activity] ):
 	def iter( self ):
 		return iter( self.data )
 
-	def iter_resources( self ):
-		return chain( *[ a.resources for a in self.data ] )
+	def iter_resources( self ) -> Resources:
+		return Resources( *chain( *[ a.resources for a in self.data ] ) )
+
+	def iter_uids( self ):
+		return chain( *[ [ a.uid, *a.metadata.members ] for a in self.data ] )
+
+	def iter_resource_uids( self ):
+		return chain( *[ [ r.as_uid if r.uid else UID( *a.uid.as_tuple, r.path ) for r in a.resources ] for a in self.data ] )
 
 	# serialization
 

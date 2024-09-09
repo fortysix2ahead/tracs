@@ -414,9 +414,9 @@ class Activities( list[Activity] ):
 
 	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
 
-	def __init__( self, *activities: Activity, lst: Optional[List[Activity]] = None ):
+	def __init__( self, *activities: Activity, lst: Optional[List[Activity]] = None, skip_checks: bool = False ):
 		super().__init__()
-		self.add( *activities, lst=lst )
+		self.add( *activities, lst=lst, skip_checks=skip_checks )
 
 	# calculation of next id
 	def __next_id__( self ) -> int:
@@ -452,13 +452,17 @@ class Activities( list[Activity] ):
 	# 		new.id = old_obj.id
 	# 		self.data.append( new )
 
-	def add( self, *activities: Activity, lst: Optional[List[Activity]] = None ) -> List[int]:
+	def add( self, *activities: Activity, lst: Optional[List[Activity]] = None, skip_checks: bool = False ) -> List[int]:
 		activities = [ *activities, *(lst if lst else []) ]
 		for a in activities:
-			if self.__contains_uid__( a.uid ):
-				raise KeyError( f'activity with UID {a.uid} already contained in activities' )
+			if not skip_checks:
+				if a.uid is None:
+					raise KeyError( f'activity must have a valid UID to be added (UID = {a.uid})' )
+				if self.__contains_uid__( a.uid ):
+					raise KeyError( f'activity with UID {a.uid} already contained in activities' )
 
-			a.id = self.__next_id__()
+				a.id = self.__next_id__()
+
 			self.append( a )
 
 		return [a.id for a in activities]
@@ -520,7 +524,7 @@ class Activities( list[Activity] ):
 
 	@classmethod
 	def from_dict( cls, obj: List[Dict] ) -> Activities:
-		return Activities( data=[Activity.from_dict( o ) for o in obj] )
+		return Activities( *[Activity.from_dict( o ) for o in obj], skip_checks=True )
 
 	def to_dict( self ) -> List[Dict]:
 		return [ Activity.to_dict( a ) for a in self.all( sort=True ) ]

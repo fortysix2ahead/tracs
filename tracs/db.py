@@ -433,7 +433,7 @@ class ActivityDb:
 		"""
 		Finds all activities, which have a certain classifier (originate from a certain service, i.e. polar).
 		"""
-		return [a for a in self._activities if any( uid.startswith( classifier ) for uid in a.uids ) ]
+		return [a for a in self._activities if any( uid.startswith( classifier ) for uid in a.iter_uid_heads )]
 
 	def find_first( self, classifier: Optional[str] = None ) -> Optional[Activity]:
 		"""

@@ -208,9 +208,18 @@ class Resources( list[Resource] ):
 		self.extend( [r for l in lists or [] for r in l] )
 
 	def iter( self ):
+		"""
+		Iterates over all resources in the resource list.
+		:return:
+		"""
 		return iter( self )
 
 	def iter_for( self, uid: UID|str ) -> Resources:
+		"""
+		Iterates over all resources in this list where the head of the uid matches the provided UID's head.
+		:param uid:
+		:return:
+		"""
 		uid = uid if isinstance( uid, UID ) else UID( uid )
 		return Resources( *[r for r in self if r.uid.head == uid.head] )
 		# return [ r for r in self if r.uid.head == uid.head ]

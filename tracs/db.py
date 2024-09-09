@@ -216,7 +216,7 @@ class ActivityDb:
 
 	@property
 	def activity_keys( self ) -> List[int]:
-		return sorted( list( self._activities.id_keys() ) )
+		return sorted( list( self._activities.ids() ) )
 
 	@property
 	def activity_ids( self ) -> List[int]:
@@ -251,8 +251,8 @@ class ActivityDb:
 		else:
 			return self.insert_activity( activity )
 
-	def replace_activity( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
-		self._activities.replace( new, old, id, uid )
+	# def replace_activity( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
+	# 	self._activities.replace( new, old, id, uid )
 
 	# remove items
 

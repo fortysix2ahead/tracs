@@ -216,7 +216,7 @@ class ActivityDb:
 
 	@property
 	def activity_keys( self ) -> List[int]:
-		return sorted( list( self._activities.id_keys() ) )
+		return sorted( list( self._activities.ids() ) )
 
 	@property
 	def activity_ids( self ) -> List[int]:

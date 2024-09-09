@@ -55,7 +55,7 @@ def test_activities( dbfs ):
 	activities = load_activities( dbfs )
 
 	assert len( activities ) == 1
-	a1 = activities.values()[0]
+	a1 = activities[0]
 	assert a1.id == 1 and a1.uid == 'polar:101'
 	assert a1.duration == timedelta( hours=2 )
 	assert a1.starttime == datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC )

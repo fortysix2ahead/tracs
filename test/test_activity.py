@@ -1,15 +1,12 @@
 
 from datetime import datetime, time, timedelta
 from logging import getLogger
-from typing import List, Optional
 
 from pytest import mark, raises
-from dateutil.tz import UTC
 
-from tracs.core import Metadata
 from tracs.activity import Activities, Activity, ActivityPart, groups
 from tracs.activity_types import ActivityTypes
-from tracs.core import VirtualField
+from tracs.core import Metadata, VirtualField
 from tracs.pluginmgr import virtualfield
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
@@ -205,6 +202,12 @@ def test_activities():
 	# re-adding will fail
 	with raises( KeyError ):
 		activities.add( a1 )
+
+	# skip checks
+	with raises( KeyError ):
+		unchecked = Activities( Activity( id=10 ) )
+	unchecked = Activities( Activity( id=10 ), skip_checks=True )
+	assert unchecked[0].id is 10 and unchecked[0].uid is None
 
 	# get
 	assert activities.get_by_id( 1 ) == a1

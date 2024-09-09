@@ -10,7 +10,7 @@ from attrs import Attribute, define, field, fields
 from cattrs import Converter, GenConverter
 from cattrs.gen import make_dict_unstructure_fn, override
 from fs.base import FS
-from fs.path import split
+from fs.path import basename, split
 from more_itertools import unique
 
 from tracs.protocols import Exporter, Importer
@@ -210,35 +210,26 @@ class Resources( list[Resource] ):
 	def iter( self ):
 		return iter( self )
 
-	def iter_uids( self ):
-		return iter( self.iter_uids() )
+	def iter_for( self, uid: UID|str ) -> Resources:
+		uid = uid if isinstance( uid, UID ) else UID( uid )
+		return Resources( *[r for r in self if r.uid.head == uid.head] )
+		# return [ r for r in self if r.uid.head == uid.head ]
 
-	def uids( self ) -> List[Union[str, UID]]:
+	def iter_types( self, types:List[str] ) -> Resources:
+		return Resources( *[r for r in self if r.type in types] )
+
+	def iter_uids( self ) -> List[UID]:
+		return [UID( r.uid.classifier, r.uid.local_id, basename( r.path ) or basename( r.uid.path ) ) for r in self]
+
+	def iter_uids_for( self, uid: UID|str ) -> List[UID]:
+		uid = uid if isinstance( uid, UID ) else UID( uid )
+		return [ u for u in self.iter_uids() if u.head == uid.head ]
+
+	def iter_uid_heads( self ) -> List[UID]:
 		return [r.uid for r in unique( self, key=lambda r: r.uid )]
 
-	def iter_paths( self ):
-		return iter( self.iter_paths() )
-
-	def paths( self ) -> List[str]:
-		return [r.path for r in unique( self, key=lambda r: r.path )]
-
-	def summary( self ) -> Optional[Resource]:
-		return next( (r for r in self if r.summary), None )
-
-	def summaries( self ) -> List[Resource]:
-		return [r for r in self if r.summary]
-
-	def recording( self ) -> Resource:
-		return next( (r for r in self if r.recording), None )
-
-	def recordings( self ) -> List[Resource]:
-		return [r for r in self if r.recording]
-
-	def image( self ) -> Optional[Resource]:
-		return next( (r for r in self if r.image), None )
-
-	def images( self ) -> List[Resource]:
-		return [r for r in self if r.image]
+	def iter_paths( self ) -> List[str]:
+		return [r.path or r.uid.path for r in self]
 
 	# access
 

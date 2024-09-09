@@ -119,13 +119,22 @@ def test_resources():
 	assert r1a not in rl
 
 	# iterators
-	assert rl.uids() == ['polar:1234', 'strava:1234']
-	assert rl.paths() == ['test1.gpx', 'test1.json', 'test2.gpx', 'test2.json', 'title.jpeg']
+	assert [ r for r in rl ] == [ r1, r2, r3, r4, r5 ]
+	assert rl.iter_for( 'polar:1234/something_to_be_removed' ) == [ r1, r3, r5 ]
+	assert rl.iter_types( ['application/gpx+xml'] ) == [ r1, r2 ]
+	assert rl.iter_for( 'polar:1234' ).iter_types( ['application/gpx+xml'] ) == [ r1 ]
 
-	# todo: enable these tests later
-	# assert rl.summary() == r3
-	# assert rl.summaries() == [r4, r5]
-	# assert rl.recording() == r1
-	# assert rl.recordings() == [r1, r2, r3]
-	# assert rl.image() == r5
-	# assert rl.images() == [r5]
+	assert rl.iter_uids() == [
+		'polar:1234/test1.gpx',
+		'strava:1234/test2.gpx',
+		'polar:1234/test1.json',
+		'strava:1234/test2.json',
+		'polar:1234/title.jpeg',
+	]
+	assert rl.iter_uids_for( 'polar:1234/something_to_be_removed' ) == [
+		'polar:1234/test1.gpx',
+		'polar:1234/test1.json',
+		'polar:1234/title.jpeg',
+	]
+	assert rl.iter_uid_heads() == ['polar:1234', 'strava:1234']
+	assert rl.iter_paths() == ['test1.gpx', 'test2.gpx', 'test1.json', 'test2.json', 'title.jpeg']

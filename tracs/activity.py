@@ -131,7 +131,6 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	# init variables
 	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
 	# todo: move this into a factory method?
-	others = field( default=None )
 	other_parts = field( default=None )
 
 	## internal fields
@@ -194,9 +193,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	# post init, this contains mostly convenience things
 	def __attrs_post_init__( self ):
 		# convenience: allow init from other activities
-		if self.others:
-			self.union( self.others )
-		elif self.other_parts:
+		if self.other_parts:
 			self.add( self.other_parts )
 
 	# additional methods

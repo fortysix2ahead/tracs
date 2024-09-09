@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import List, Union
 
 from fs.memoryfs import MemoryFS
 from fs.osfs import OSFS
+from dateutil.tz import UTC
 from pytest import mark
 
 from objects import DEFAULT_ONE
@@ -64,20 +66,20 @@ def test_insert_upsert_remove( db ):
 	assert len( db.activities ) == 0 and len( db.resources ) == 0
 
 	# insert activities and check keys
-	id = db.insert( Activity() )
+	id = db.insert( Activity( starttime=datetime( 2024, 3, 1, 10, 0, 0, tzinfo=UTC ) ) )
 	assert len( db.activities ) == 1 and id == [1]
 	ids = db.insert( Activity(), Activity() )
 	assert len( db.activities ) == 3 and ids == [2, 3]
 	assert db.activity_keys == [1, 2, 3]
 
 	# upsert
-	a = Activity( name='one', uid='one:101' )
+	a = Activity( name='one', uid='one:101', starttime=datetime( 2024, 3, 1, 10, 0, 0, tzinfo=UTC ) )
 	id = db.upsert_activity( a )
 	assert db.get_by_id( id )
-	a = Activity( name='two', uid='one:101', calories=100 )
+	a = Activity( name='two', uid='one:101', calories=100, starttime=datetime( 2024, 3, 1, 10, 0, 0, tzinfo=UTC ) )
 	id = db.upsert_activity( a )
 	a = db.get_by_id( id )
-	assert a.name == 'one' and a.uid == 'one:101' and a.calories == 100
+	assert a.name == 'one' and a.uid == 'group:240301100000' and a.calories == 100
 
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_contains( db ):

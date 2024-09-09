@@ -4,8 +4,9 @@ from logging import getLogger
 from typing import List, Optional
 
 from pytest import mark, raises
+from dateutil.tz import UTC
 
-from core import Metadata
+from tracs.core import Metadata
 from tracs.activity import Activities, Activity, ActivityPart, groups
 from tracs.activity_types import ActivityTypes
 from tracs.core import VirtualField
@@ -169,40 +170,6 @@ def test_multipart_activity2():
 	assert a.uids == [ 'polar:101' ]
 	assert a.as_uids() == [ UID( 'polar:101' ) ]
 	assert a.classifiers == [ 'polar' ]
-
-def test_union():
-	src1 = Activity( id=1, name='One', uid='a:1' )
-	src2 = Activity( id=2, distance=10, calories=20, uid='a:2' )
-	src3 = Activity( id=3, calories=100, heartrate= 100, uid='g:1' )
-	src3.metadata.members = UID.from_strs( [ 'a1', 'a2' ] )
-
-	target = src1.union( [src2, src3], copy=True )
-	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
-	assert target.id == 1
-	assert target.uid == 'a:1'
-	assert target.uids == [ 'a:1' ]
-	assert src1.distance is None # source should be untouched
-
-	target = src1.union( others=[src2, src3], force=True, copy=True )
-	assert target.name == 'One' and target.distance == 10 and target.calories == 100 and target.heartrate == 100
-	assert target.id == 3
-	assert target.uid == 'g:1'
-	#assert target.uids == [ 'a:1', 'a:2' ]
-	assert src1.distance is None # source should be untouched
-
-	src1.union( [src2, src3], copy=False )
-	assert src1.name == 'One' and src1.distance == 10 and src1.calories == 20 and src1.heartrate == 100
-	assert src1.id == 1
-	assert src1.uid == UID.from_str( 'a:1' )
-	# assert src1.uids == []
-
-	# test constructor
-	src1 = Activity( id=1, name='One' )
-	target = Activity( others=[src1, src2, src3] )
-	assert target.name == 'One' and target.distance == 10 and target.calories == 20 and target.heartrate == 100
-	assert target.id is None
-	assert target.uid is None
-	# assert target.uids == []
 
 def test_add():
 	src1 = Activity( starttime=datetime( 2022, 2, 22, 7 ), distance=10, duration=timedelta( hours=1 ), heartrate_max=180, heartrate_min=100 )

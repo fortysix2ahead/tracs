@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from functools import cached_property
+from inspect import isfunction
 from itertools import chain
 from logging import getLogger
-from typing import Any, ClassVar, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar, Union
 
 from attrs import define, evolve, Factory, field
 from cattrs import Converter, GenConverter
@@ -14,10 +15,10 @@ from more_itertools import first_true, unique
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import Container, FormattedFieldsBase, Metadata, VirtualFieldsBase
+from tracs.core import FormattedFieldsBase, Metadata, VirtualFieldsBase
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
-from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unchain, unique_sorted
+from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unique_sorted
 
 log = getLogger( __name__ )
 
@@ -406,73 +407,124 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	def to_dict( self ) -> Dict[str, Any]:
 		return Activity.converter.unstructure( self )
 
-@define
-class Activities( Container[Activity] ):
+class Activities( list[Activity] ):
+	"""
+	Extended list of activities.
+	"""
 
 	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
 
-	"""
-	Dict-like container for activities.
-	"""
+	def __init__( self, *activities: Activity, lst: Optional[List[Activity]] = None, skip_checks: bool = False ):
+		super().__init__()
+		self.add( *activities, lst=lst, skip_checks=skip_checks )
 
-	# def __attrs_post_init__( self ):
-	#	super().__attrs_post_init__()
+	# calculation of next id
+	def __next_id__( self ) -> int:
+		existing_ids = [a.id for a in self]
+		id_range = range( 1, max( existing_ids ) + 2 ) if len( existing_ids ) > 0 else [1]
+		return set( id_range ).difference( set( existing_ids ) ).pop()
 
-	def add( self, *activities: Union[Activity, List[Activity]] ) -> List[int]:
-		for a in unchain( *activities ):
-			# todo: activate insertion checker later
-			#if a.uid in self.__uid_map__:
-			#	raise KeyError( f'activity with UID {a.uid} already contained in activities' )
+	def __contains__( self, item: Activity|UID ) -> bool:
+		if isinstance( item, Activity ):
+			return super().__contains__( item )
+		elif isinstance( item, UID ):
+			return self.__contains_uid__( item )
+		else:
+			return False
 
-			a.id = self.__next_id__()
-			self.data.append( a )
-			# self.__uid_map__[a.uid] = a
-			self.__id_map__[a.id] = a
+	def __contains_uid__( self, uid: UID ):
+		return any( [a.uid == uid for a in self] )
+
+	# def replace( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
+	# 	if not new:
+	# 		return
+	#
+	# 	old_obj = None
+	# 	if old in self.data:
+	# 		old_obj = old
+	# 	elif id or new.id:
+	# 		old_obj = self.idget( id or new.id )
+	# 	elif uid or new.uid:
+	# 		old_obj = self.get( uid or new.uid )
+	#
+	# 	if old_obj:
+	# 		self.data.remove( old_obj )
+	# 		new.id = old_obj.id
+	# 		self.data.append( new )
+
+	def add( self, *activities: Activity, lst: Optional[List[Activity]] = None, skip_checks: bool = False ) -> List[int]:
+		activities = [ *activities, *(lst if lst else []) ]
+		for a in activities:
+			if not skip_checks:
+				if a.uid is None:
+					raise KeyError( f'activity must have a valid UID to be added (UID = {a.uid})' )
+				if self.__contains_uid__( a.uid ):
+					raise KeyError( f'activity with UID {a.uid} already contained in activities' )
+
+				a.id = self.__next_id__()
+
+			self.append( a )
 
 		return [a.id for a in activities]
 
-	def replace( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
-		if not new:
-			return
+	def remove( self, item: Any ):
+		if isinstance( item, UID ):
+			if a:= self.get_by_uid( item ):
+				self.remove( a )
+		else:
+			super().remove( item )
 
-		old_obj = None
-		if old in self.data:
-			old_obj = old
-		elif id or new.id:
-			old_obj = self.idget( id or new.id )
-		elif uid or new.uid:
-			old_obj = self.get( uid or new.uid )
+	def all( self, sort: bool|Callable = False, reverse: bool = False ) -> List[Activity]:
+		if sort is True:
+			return sorted( self, key=lambda a: a.id, reverse=reverse )
+		elif isfunction( sort ):
+			return sorted( self, key=sort, reverse=reverse )
+		else:
+			return list( self )
 
-		if old_obj:
-			self.data.remove( old_obj )
-			new.id = old_obj.id
-			self.data.append( new )
+	def ids( self ) -> List[int]:
+		return [a.id for a in self]
 
-	def remove( self, *ids: Union[int, List[int]] ) -> None:
-		for id in unchain( *ids ):
-			try:
-				self.data.remove( self.idget( id ) )
-				del self.__id_map__[id]
-			except KeyError:
-				pass
+	def uids( self ) -> List[UID]:
+		return [a.uid for a in self]
+
+	@property
+	def id_map( self ) -> Dict[int, Activity]:
+		return { a.id: a for a in self }
+
+	@property
+	def uid_map( self ) -> Dict[UID, Activity]:
+		return { a.uid: a for a in self }
+
+	def get( self, uid: UID|str ) -> Optional[Activity]:
+		return self.get_by_uid( uid )
+
+	def get_by_id( self, id: int ) -> Optional[Activity]:
+		return first_true( self, pred=lambda a: a.id == id )
+
+	def get_by_uid( self, uid: UID|str ) -> Optional[Activity]:
+		return first_true( self, pred=lambda a: a.uid == uid )
+
+	def idget( self, id: int ) -> Optional[Activity]:
+		return self.get_by_id( id )
 
 	def iter( self ):
-		return iter( self.data )
+		return self.__iter__()
 
 	def iter_resources( self ) -> Resources:
-		return Resources( *chain( *[ a.resources for a in self.data ] ) )
+		return Resources( *chain( *[ a.resources for a in self ] ) )
 
 	def iter_uids( self ):
-		return chain( *[ [ a.uid, *a.metadata.members ] for a in self.data ] )
+		return chain( *[ [ a.uid, *a.metadata.members ] for a in self ] )
 
 	def iter_resource_uids( self ):
-		return chain( *[ [ r.as_uid if r.uid else UID( *a.uid.as_tuple, r.path ) for r in a.resources ] for a in self.data ] )
+		return chain( *[ [ r.as_uid if r.uid else UID( *a.uid.as_tuple, r.path ) for r in a.resources ] for a in self ] )
 
 	# serialization
 
 	@classmethod
 	def from_dict( cls, obj: List[Dict] ) -> Activities:
-		return Activities( data=[Activity.from_dict( o ) for o in obj] )
+		return Activities( *[Activity.from_dict( o ) for o in obj], skip_checks=True )
 
 	def to_dict( self ) -> List[Dict]:
 		return [ Activity.to_dict( a ) for a in self.all( sort=True ) ]

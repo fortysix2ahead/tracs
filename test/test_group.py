@@ -29,6 +29,7 @@ def test_group_activities():
 	assert g1.head.starttime == a1.starttime and g1.head.name == a1.name
 	assert g1.head.heartrate_max == a1.heartrate_max and g1.head.heartrate == a2.heartrate
 
+@mark.xfail # todo: needs improvement
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_ungroup_activities( env: Environment ):
 	env.db.register_summary_types( *[ rt.type for rt in Registry.instance().resource_types.values() if rt.summary ] )

@@ -380,9 +380,15 @@ class Service( Plugin ):
 		summaries = self.fetch_summary_resources( skip_fetch, force, pretend, **{ 'range_from': range_from, 'range_to': range_to, **kwargs } )
 		summaries = self.postprocess_summaries( summaries, **kwargs )  # post process summaries
 
+		log.debug( f'fetched {len( summaries)} from service {self.display_name}' )
+
 		# filter out summaries that are already known
 		if not force:
 			summaries = [s for s in summaries if not self.ctx.db.contains_resource( s.uid, s.path )]
+			# this should also work
+			# summaries = [s for s in summaries if not self.ctx.db.contains_activity( s.uid )]
+
+		log.debug( f'downloading activity data for {len( summaries)}' )
 
 		# mark task as done
 		self.ctx.complete( 'done' )

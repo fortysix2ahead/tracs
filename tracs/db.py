@@ -25,7 +25,7 @@ from tracs.config import ApplicationContext
 from tracs.fsio import load_activities, load_schema, Schema, write_activities
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.resources import Resource, Resources
-from uid import UID
+from tracs.uid import UID
 
 log = getLogger( __name__ )
 
@@ -379,7 +379,7 @@ class ActivityDb:
 	def get_resources_for_uids( self, uids: List[str] ) -> List[Resource]:
 		return list( chain( *[ self.get_resources_for_uid( uid ) for uid in uids ] ) )
 
-	def get_summary( self, uid ) -> Resource:
+	def get_summary( self, uid ) -> Optional[Resource]:
 		return next( iter( self.find_summaries( uid ) ), None )
 
 	# several find methods to make life easier

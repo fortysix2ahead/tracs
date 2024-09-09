@@ -122,11 +122,8 @@ def test_get( db ):
 	assert db.get_group_for_uid( None ) is None
 	assert db.get_group_for_uid( 'polar:1001' ).id == 1
 
-	# get resources
+	# get resource
 	assert db.get_resource_by_uid_path( 'polar:1001', 'polar/1/0/0/1001/1001.gpx' ) == db.get_by_id( 2 ).resources[0]
-
-	# get_for resources
-	assert [ r.path for r in db.get_resources_for_uid( 'polar:1001' ) ] == ['polar/1/0/0/1001/1001.gpx', 'polar/1/0/0/1001/1001.json']
 
 @mark.context( env='default', persist='clone', cleanup=True )
 @mark.db( summary_types=[POLAR_FLOW_TYPE, STRAVA_TYPE], recording_types=[GPX_TYPE, TCX_TYPE] )
@@ -160,38 +157,16 @@ def test_find( db ):
 
 	summaries = db.find_summaries( 'polar:1001' )
 	assert len( summaries ) == 1 and summaries[0].path == 'polar/1/0/0/1001/1001.json'
-	summaries = db.find_all_summaries( ['polar:1001', 'strava:1001'] )
+	summaries = db.find_summaries( 'polar:1001', 'strava:1001' )
 	assert [s.path for s in summaries] == ['polar/1/0/0/1001/1001.json', 'strava/1/0/0/1001/1001.json']
+
+	recordings = db.find_recordings()
+	assert all( [ r.type in [GPX_TYPE, TCX_TYPE] for r in recordings ] )
 
 	recordings = db.find_recordings( 'polar:1001' )
 	assert len( recordings ) == 1 and recordings[0].path == 'polar/1/0/0/1001/1001.gpx'
-	recordings = db.find_all_recordings( ['polar:1001', 'strava:1001'] )
+	recordings = db.find_recordings( 'polar:1001', 'strava:1001' )
 	assert [r.path for r in recordings] == ['polar/1/0/0/1001/1001.gpx', 'strava/1/0/0/1001/1001.gpx']
-
-@mark.xfail
-@mark.context( env='parts', persist='clone', cleanup=True )
-def test_find_multipart( db ):
-	assert ids( db.find_by_classifier( 'strava' ) ) == [ 2, 4, 6 ]
-	assert ids( db.find_by_classifier( 'polar' ) ) == [ 1, 3, 5, 6 ]
-
-	# test for strava run 1
-	a = db.get_by_id( 2 )
-	assert a.uids == ['strava:1001']
-	assert ids( db.find_resources_for( a ) ) == [ 7, 8, 9 ]
-
-	# test for the multipart polar activity
-	a = db.get_by_id( 1 )
-	assert a.uids == ['polar:1001'] and a.multipart
-	assert ids( db.find_resources_for( a ) ) == [ 1, 2, 3, 4, 5, 6 ]
-
-	# test for the polar run 1
-	a = db.get_by_id( 3 )
-	assert all( uid.startswith( 'polar:1001/' ) for uid in a.uids ) and not a.multipart
-	assert ids( db.find_resources_for( a ) ) == [ 3, 5 ]
-
-	# test for run 2
-	a = db.get_by_id( 6 )
-	assert ids( db.find_resources_for( a ) ) == [ 4, 6, 10, 11, 12 ]
 
 # helper
 

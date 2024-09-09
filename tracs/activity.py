@@ -15,10 +15,10 @@ from more_itertools import first_true, unique
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import Container, FormattedFieldsBase, Metadata, VirtualFieldsBase
+from tracs.core import FormattedFieldsBase, Metadata, VirtualFieldsBase
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
-from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unchain, unique_sorted
+from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unique_sorted
 
 log = getLogger( __name__ )
 

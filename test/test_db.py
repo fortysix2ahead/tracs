@@ -66,9 +66,9 @@ def test_insert_upsert_remove( db ):
 	assert len( db.activities ) == 0 and len( db.resources ) == 0
 
 	# insert activities and check keys
-	id = db.insert( Activity( starttime=datetime( 2024, 3, 1, 10, 0, 0, tzinfo=UTC ) ) )
+	id = db.insert( Activity( uid='a:1', starttime=datetime( 2024, 3, 1, 10, 0, 0, tzinfo=UTC ) ) )
 	assert len( db.activities ) == 1 and id == [1]
-	ids = db.insert( Activity(), Activity() )
+	ids = db.insert( Activity( uid='a:2' ), Activity( uid='a:3' ) )
 	assert len( db.activities ) == 3 and ids == [2, 3]
 	assert db.activity_keys == [1, 2, 3]
 

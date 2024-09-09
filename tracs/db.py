@@ -251,8 +251,8 @@ class ActivityDb:
 		else:
 			return self.insert_activity( activity )
 
-	def replace_activity( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
-		self._activities.replace( new, old, id, uid )
+	# def replace_activity( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
+	# 	self._activities.replace( new, old, id, uid )
 
 	# remove items
 

@@ -87,6 +87,12 @@ def test_resource():
 	with raises( AttributeError ):
 		Resource( uid='polar', path='recording.gpx' ) # local_id missing: not allowed
 
+	# evolve
+	r = Resource( path='recording.gpx', content=b'0123', text='0123', raw={ 'data': '0123' }, data={ 'data': '0123' } )
+	e = r.evolve()
+	assert r.path == e.path
+	assert [e.content, e.text, e.raw, e.data] == [None, None, None, None]
+
 def test_resources():
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )
 	r2 = Resource( uid='strava:1234', name='test2.gpx', type='application/gpx+xml', path='test2.gpx' )

@@ -6,7 +6,7 @@ from logging import getLogger
 from re import compile, Pattern
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
-from attrs import Attribute, define, field, fields
+from attrs import Attribute, define, evolve, field, fields
 from cattrs import Converter, GenConverter
 from cattrs.gen import make_dict_unstructure_fn, override
 from fs.base import FS
@@ -197,6 +197,9 @@ class Resource:
 
 	def to_dict( self ) -> Dict[str, Any]:
 		return Resource.converter.unstructure( self )
+
+	def evolve( self ) -> Resource:
+		return evolve( self, content=None, text=None, raw=None, data=None )
 
 class Resources( list[Resource] ):
 

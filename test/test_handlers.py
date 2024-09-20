@@ -22,6 +22,15 @@ from tracs.plugins.tcx import Activity as TCXActivity
 from tracs.plugins.waze import WAZE_TYPE, WazeImporter
 from tracs.plugins.waze import WazeActivity
 
+@mark.file( 'templates/polar/2020.json' )
+def test_resource_handler( path ):
+	handler = JSONHandler() # use json handler instead of base class
+	content = b'{"data":1}'
+	json = { 'data': 1 }
+
+	assert handler.load_from_content( content ) == content
+	assert handler.load( content=content ).data == json
+
 @mark.file( 'environments/default/takeouts/waze/2020-09/account_activity_3.csv' )
 def test_csv_handler( path ):
 	handler = CSVHandler()

@@ -1,4 +1,4 @@
-
+from fs.osfs import OSFS
 from gpxpy.gpx import GPX
 from lxml.etree import tostring
 from lxml.objectify import ObjectifiedElement
@@ -29,7 +29,18 @@ def test_resource_handler( path ):
 	json = { 'data': 1 }
 
 	assert handler.load_from_content( content ) == content
+	assert 'trainingLoadProInterpretation' in handler.load_from_path( path ).decode( 'UTF-8' )
+	fs = OSFS( str( path.parent ) )
+	assert 'trainingLoadProInterpretation' in handler.load_from_fs( fs, path.name ).decode( 'UTF-8' )
+	assert handler.load_raw( content ) == json
+	assert handler.load_data( json ) == json
+
+	# unified load method
 	assert handler.load( content=content ).data == json
+	data = handler.load( path ).data
+	assert isinstance( data, list ) and all( [ isinstance( l, dict ) for l in data ] )
+	data = handler.load( fs=fs, path=path.name ).data
+	assert isinstance( data, list ) and all( [ isinstance( l, dict ) for l in data ] )
 
 @mark.file( 'environments/default/takeouts/waze/2020-09/account_activity_3.csv' )
 def test_csv_handler( path ):

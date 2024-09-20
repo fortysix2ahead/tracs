@@ -41,9 +41,10 @@ def teardown_context( *args, **kwargs ) -> None:
 @option( '-v', '--verbose', is_flag=True, default=None, required=False, help='be more verbose when logging' )
 @option( '-d', '--debug', is_flag=True, default=None, required=False, help='enable output of debug messages' )
 @option( '-f', '--force', is_flag=True, default=None, required=False, help='forces operations to be carried out' )
+@option( '--feature', required=False, multiple=True, help='forces operations to be carried out', type=str )
 @option( '-p', '--pretend', is_flag=True, default=None, required=False, help='pretends to work, only simulates everything and does not persist any changes' )
 @pass_context
-def cli( ctx: ClickContext, configuration, library, force, verbose, pretend, debug ):
+def cli( ctx: ClickContext, configuration, library, force, verbose, pretend, debug, feature: Tuple[str] ):
 
 	ctx.call_on_close( teardown_context )
 
@@ -54,7 +55,8 @@ def cli( ctx: ClickContext, configuration, library, force, verbose, pretend, deb
 		verbose=verbose,
 		debug=debug,
 		force=force,
-		pretend=pretend
+		pretend=pretend,
+		features=list( feature )
 	)
 
 	ctx.obj = APPLICATION_INSTANCE.ctx # save newly created context object

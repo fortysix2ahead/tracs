@@ -1,16 +1,26 @@
-
+from io import UnsupportedOperation
 from logging import getLogger
 from pathlib import Path
 from shutil import copy2 as copy, move
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 from urllib.request import url2pathname
+from uuid import uuid1
 
+from fs.base import FS
+from fs.copy import copy_file
+from fs.osfs import OSFS
+from fs.subfs import SubFS
+from fs.zipfs import ZipFS
+
+from config import ApplicationContext
+from plugins.gpx import GPXImporter
 from tracs.activity import Activity
 from tracs.plugin import Plugin
 from tracs.pluginmgr import service
-from tracs.resources import Resource
+from tracs.resources import Resource, Resources
 from tracs.service import Service
+from tracs.utils import abspath
 
 log = getLogger( __name__ )
 
@@ -27,6 +37,8 @@ class Local( Service, Plugin ):
 
 	def __init__( self, **kwargs  ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
+
+		self._gpx_importer = GPXImporter()
 
 	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] ) -> Path:
 		local_id = str( local_id )
@@ -102,3 +114,39 @@ class Local( Service, Plugin ):
 			imported_data = None
 
 		return imported_data
+
+	def unified_import( self, ctx: ApplicationContext, force: bool = False, pretend: bool = False, **kwargs ) -> Tuple[FS, Resources]:
+		root_fs = OSFS( '/' )
+		import_path = f'imports/{self.name}_{str( uuid1() )[0:8]}'
+		ctx.tmp_fs.makedir( 'imports', recreate=True )
+		ctx.tmp_fs.makedir( import_path, recreate=True )
+		tmp_fs = SubFS( ctx.tmp_fs, import_path )
+		resources = Resources()
+
+		classifier = kwargs.get( 'classifier' )
+		location = abspath( kwargs.get( 'location' ) )
+		location_info = root_fs.getinfo( location )
+
+		if location_info.is_dir:
+			fs = OSFS( location )
+
+		elif location_info.is_file and location_info.suffix == '.zip':
+			fs = ZipFS( location )
+
+		else:
+			log.error( f'unsupported location: {location}' )
+			raise UnsupportedOperation
+
+		for path, dirs, files in fs.walk.walk( '/', filter=[ '*.gpx' ], exclude_dirs=[ '__MACOSX' ] ):
+			for f in files:
+				try:
+					src_path = f'{path}/{f.name}'
+					a = self._gpx_importer.load_as_activity( fs=fs, path=src_path )
+					dst_path = f'{a.starttime.strftime( "%y%m%d%H%M%S" )}{f.suffix}'
+					copy_file( fs, src_path, tmp_fs, dst_path ) # todo: avoid file collisions
+					resources.extend( a.resources )
+					log.debug( f'copy {fs}/{src_path} to {fs}/{dst_path}' )
+				except AttributeError:
+					log.error( f'unable to read GPX file from FS {fs}, path {path}/{f.name}' )
+
+		return tmp_fs, resources

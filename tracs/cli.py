@@ -93,7 +93,8 @@ def fields():
 
 @cli.command( 'import', hidden=True, help='imports activities' )
 @option( '-a', '--fetch-all', required=False, hidden=True, default=False, is_flag=True, type=bool, help='always fetch all activities instead of the most recent ones' )
-# @option( '-l', '--from-local', required=False, hidden=True, default=True, is_flag=True, type=bool, help='import from local file system' )
+@option( '-c', '--classifier', required=False, type=str, help='classifier to use during import' )
+@option( '-f', '--from', 'location', required=False, type=str, help='import from local file system' )
 @option( '-m', '--move', required=False, hidden=True, is_flag=True, help='remove resources after import (dangerous, applies for imports from takeouts only)' )
 @option( '-o', '--as-overlay', required=False, hidden=True, is_flag=False, type=int, help='import as overlay for an existing resource (experimental, local imports only)' )
 @option( '-r', '--as-resource', required=False, hidden=True, is_flag=False, help='import as resource for an existing activity (experimental, local imports only)' )
@@ -101,10 +102,20 @@ def fields():
 @option( '-t', '--from-takeouts', required=False, is_flag=True, help='imports activities from takeouts folder (plugin needs to support this)' )
 @argument( 'sources', nargs=-1 )
 @pass_context
-def imprt( ctx, sources, fetch_all: bool, skip_download: bool = False, move: bool = False,
-      as_overlay: str = None, as_resource: str = None, from_takeouts: str = None ):
+def imprt( ctx,
+           sources,
+           fetch_all: bool,
+           skip_download: bool = False,
+           move: bool = False,
+           as_overlay: str = None,
+           as_resource: str = None,
+           from_takeouts: str = None,
+           classifier: str = None,
+           location: str = None,
+           ):
 	import_activities( ctx.obj, sources=sources, fetch_all=fetch_all, skip_download=skip_download, move=move,
-	   as_overlay=as_overlay, as_resource=as_resource, from_takeouts=from_takeouts )
+	   as_overlay=as_overlay, as_resource=as_resource, from_takeouts=from_takeouts, classifier=classifier, location=location
+	)
 
 @cli.command( help='fetches activity summaries', hidden=True )
 @argument( 'sources', nargs=-1 )

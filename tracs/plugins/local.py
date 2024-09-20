@@ -123,7 +123,7 @@ class Local( Service, Plugin ):
 		tmp_fs = SubFS( ctx.tmp_fs, import_path )
 		resources = Resources()
 
-		classifier = kwargs.get( 'classifier' )
+		classifier = kwargs.get( 'classifier', self.name )
 		location = abspath( kwargs.get( 'location' ) )
 		location_info = root_fs.getinfo( location )
 

@@ -32,15 +32,17 @@ class ResourceHandler:
 		self.raw: Any = None
 		self.data: Any = None
 
-	def load( self, path: Optional[Union[Path, str]] = None, url: Optional[str] = None, content: Optional[bytes] = None, fs: Optional[FS] = None, **kwargs ) -> Optional[Resource]:
+	def load( self, path: Optional[Path|str] = None, url: Optional[str] = None, content: Optional[bytes] = None, fs: Optional[FS] = None, **kwargs ) -> Optional[Resource]:
 		# load from either from path, url or provided content
 		if content:
 			self.content = self.load_from_content( content, **kwargs )
+
 		elif path:
 			if fs:
 				self.content = self.load_from_fs( fs, path, **kwargs )
 			else:
 				self.content = self.load_from_path( path, **kwargs )
+
 		elif url:
 			self.content = self.load_from_url( url, **kwargs )
 
@@ -65,14 +67,12 @@ class ResourceHandler:
 
 			if resource.raw is not None and resource.data is None:
 				resource.data = self.load_data( resource.raw )
-
-			if resource.data:
-				return self.as_activity( resource )
-			else:
-				return None
-
 		else:
-			return self.as_activity( self.load( path=path, url=url, fs=fs, **kwargs ) )
+			resource = self.load( path=path, url=url, fs=fs, **kwargs )
+
+		activity = self.as_activity( resource )
+		activity.resources.append( resource )
+		return activity
 
 	# todo: leave this method empty?
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
@@ -84,6 +84,9 @@ class ResourceHandler:
 	def load_from_content( self, content: Union[bytes,str], **kwargs ) -> Optional[Union[bytes, str]]:
 		"""
 		By default, this does nothing. Only returns the content, subclasses may override.
+
+		:param content: low-level content to read
+		:return: bytes or str read from the provided path
 		"""
 		return content
 
@@ -91,15 +94,34 @@ class ResourceHandler:
 	def load_from_path( self, path: Path, **kwargs ) -> Optional[bytes]:
 		"""
 		Reads from the provided path and returns the files content as bytes.
+
+		:param path: OS path to read from
+		:param kwargs: n/a
+		:return: bytes read from the provided path
 		"""
 		return path.read_bytes()
 
 	# noinspection PyMethodMayBeStatic
 	def load_from_fs( self, fs: FS, path: str, **kwargs ) -> Optional[bytes]:
+		"""
+		Reads data from a path in the provided file system.
+
+		:param fs: FS to read from
+		:param path:  path to read from
+		:param kwargs: n/a
+		:return: bytes read from the provided path
+		"""
 		return fs.readbytes( path )
 
 	# noinspection PyMethodMayBeStatic
 	def load_from_url( self, url: str, **kwargs ) -> Optional[bytes]:
+		"""
+		Loads data from a url.
+
+		:param url: URL to load data from
+		:param kwargs: session, headers, allow_redirects, stream
+		:return: bytes read from the provided URL
+		"""
 		session: Session = kwargs.get( 'session' )
 		headers = kwargs.get( 'headers' )
 		allow_redirects: bool = kwargs.get( 'allow_redirects', True )
@@ -110,18 +132,25 @@ class ResourceHandler:
 	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		"""
 		Loads raw data from provided content.
-		Example: load a json from a string and return a dict.
+		Example: load a json from a string and return a dict. The default implementation of this method
+		returns the content without any transformation. Subclasses should override this method.
+
+		:param content: content to be transformed into structured data
+		:return: transformed structured data
 		"""
-		pass
+		return content
 
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		"""
-		Transforms raw data into structured data.
-		This assumes that self._factory is a function which can be called with raw data as an argument.
-		The function should follow the convention: fn( raw_data, **kwargs ). kwargs will contain activity_cls as optional arg.
-		This method will return raw if the call to the factory function fails.
+		Transforms raw structured data into well-defined structured data.
+		Example: raw data is an arbitrary JSON document (a dict), while well-defined data is an instance of GeoJSON.
+		The transformation from JSON to an actual GeoJSON object shall be done in this method.
+		By default, this method simply return the provided raw data.
+
+		:param raw: structured raw data to be transformed
+		:return: well-defined structured data
 		"""
-		if self._factory is not None:
+		if self._factory is not None: # todo: remove factory or move it into a subclass?
 			try:
 				return self._factory( raw, activity_cls=self._activity_cls )
 			except RuntimeError:

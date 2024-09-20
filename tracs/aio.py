@@ -30,18 +30,27 @@ MAXIMUM_OPEN = 8
 # also nice: https://github.com/luka1199/geo-heatmap
 
 def import_activities( ctx: ApplicationContext, sources: List[str], **kwargs ):
-	for src in (sources or ctx.registry.service_names() ):
-		if service := ctx.registry.services.get( src ):
+	if 'unified_import' in ctx.config.features:
+		log.info( 'enabling feature unified_import' )
+
+		for src in (sources or ctx.registry.service_names()):
 			log.debug( f'importing activities from service {src}' )
-			service.import_activities(
-				ctx=ctx,
-				force=ctx.force,
-				pretend=ctx.pretend,
-				first_year=ctx.config['import'].first_year,
-				days_range=ctx.config['import'].range,
-				**kwargs )
-		else:
-			log.error( f'skipping import from service {src}, either service is unknown or disabled' )
+			if service := ctx.registry.services.get( src ):
+				service.unified_import( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
+
+	else:
+		for src in (sources or ctx.registry.service_names() ):
+			if service := ctx.registry.services.get( src ):
+				log.debug( f'importing activities from service {src}' )
+				service.import_activities(
+					ctx=ctx,
+					force=ctx.force,
+					pretend=ctx.pretend,
+					first_year=ctx.config['import'].first_year,
+					days_range=ctx.config['import'].range,
+					**kwargs )
+			else:
+				log.error( f'skipping import from service {src}, either service is unknown or disabled' )
 
 def open_activities( ctx: ApplicationContext, activities: List[Activity] ) -> None:
 	if len( activities ) > MAXIMUM_OPEN:

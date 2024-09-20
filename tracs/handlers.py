@@ -91,15 +91,16 @@ class ResourceHandler:
 		return content
 
 	# noinspection PyMethodMayBeStatic
-	def load_from_path( self, path: Path, **kwargs ) -> Optional[bytes]:
+	def load_from_path( self, path: str|Path, **kwargs ) -> Optional[bytes]:
 		"""
 		Reads from the provided path and returns the files content as bytes.
 
 		:param path: OS path to read from
 		:param kwargs: n/a
 		:return: bytes read from the provided path
+		:raise: FileNotFoundError, ResourceNotFound
 		"""
-		return path.read_bytes()
+		return (Path( path ) if isinstance( path, str ) else path).read_bytes()
 
 	# noinspection PyMethodMayBeStatic
 	def load_from_fs( self, fs: FS, path: str, **kwargs ) -> Optional[bytes]:
@@ -162,7 +163,7 @@ class ResourceHandler:
 	def transform_data( self, raw: Any, **kwargs ):
 		return raw
 
-	def load_resource( self, path: Optional[Union[Path,str]] = None, url: Optional[str] = None, **kwargs ) -> Resource:
+	def load_resource( self, path: Optional[Path|str] = None, url: Optional[str] = None, **kwargs ) -> Resource:
 		if isinstance( path, Path ):
 			path, source = path.name, path.as_uri()
 		elif isinstance( path, str ):

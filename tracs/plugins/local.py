@@ -153,7 +153,6 @@ class Local( Service, Plugin ):
 					dst_path = f'{classifier}/{path_for_date( activity.starttime )}/{activity.starttime.strftime( "%y%m%d%H%M%S" )}{f.suffix}'
 
 					if not self.db.contains_resource( activity.uid, dst_path ):
-
 						import_fs.makedirs( dirname( dst_path ), recreate=True )
 						copy_file( fs, src_path, import_fs, dst_path, preserve_time=True ) # todo: avoid file collisions
 						log.debug( f'copy {fs}/{src_path} to {fs}/{dst_path}' )
@@ -164,9 +163,6 @@ class Local( Service, Plugin ):
 						resource.uid = UID( classifier, int( activity.starttime.strftime( "%y%m%d%H%M%S" ) ) )
 						resource.unload()
 						activities.append( activity )
-
-						if len( activities ) >= 1: # dev only
-							break
 
 					else:
 						log.info( f'skipping import of {fs}/{src_path}, resource already exists' )

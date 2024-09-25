@@ -4,14 +4,16 @@ from enum import Enum
 from functools import cached_property
 from logging import getLogger
 from re import compile, Pattern
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Union
 
 from attrs import Attribute, define, evolve, field, fields
 from cattrs import Converter, GenConverter
 from cattrs.gen import make_dict_unstructure_fn, override
 from fs.base import FS
+from fs.errors import ResourceNotFound
 from fs.path import basename, split
 from more_itertools import unique
+from more_itertools.more import first
 
 from tracs.protocols import Exporter, Importer
 from tracs.uid import UID
@@ -185,8 +187,29 @@ class Resource:
 
 	# serialization
 
-	def load( self, fs: FS, path: str, importer: Importer ) -> None:
-		importer.load( path, fs=fs, resource=self ) # todo: add exception handling here
+	# todo: path argument can be removed later
+	def load( self, fs: FS, path: str, importer: Importer, resolver: Optional[Callable] = None ) -> None:
+		path = path or self.path
+		path = resolver( path ) if resolver else path
+		try:
+			importer.load( fs=fs, path=path, resource=self )
+		except (FileNotFoundError, ResourceNotFound):
+			log.error( f'unable to load resource {self} from FS {fs}' )
+
+	def unload( self ) -> None:
+		"""
+		Removes any content from this resource.
+
+		:return: None
+		"""
+		self.content, self.text, self.raw, self.data = None, None, None, None
+
+	def unload_to( self, fs: FS, path: str ) -> None:
+		try:
+			fs.writebytes( path, self.content )
+			self.unload()
+		except TypeError:
+			log.error( f'unable to unload resource {self} to {fs}/{path}' )
 
 	def save( self, fs: FS, path: str, exporter: Exporter ) -> None:
 		exporter.save( data=self.data, path=path, fs=fs, resource=self ) # todo: add exception handling here
@@ -253,6 +276,9 @@ class Resources( list[Resource] ):
 		_all = filter( lambda r: r.uid == uid, self ) if uid else self
 		_all = filter( lambda r: r.path == path, _all ) if path else _all
 		return list( _all )
+
+	def first( self ) -> Optional[Resource]:
+		return first( self, None )
 
 	@classmethod
 	def from_list( cls, *lists: Resources ) -> Resources:

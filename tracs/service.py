@@ -14,7 +14,7 @@ from fs.base import FS
 from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from fs.path import combine, dirname, frombase, isabs, join, parts, split
+from fs.path import combine, dirname, isabs, join, parts, split
 
 from tracs.activity import Activity
 from tracs.config import current_ctx, DB_DIRNAME
@@ -35,6 +35,7 @@ class Service( Plugin ):
 		# paths + plugin filesystem area
 		self._fs: FS = kwargs.get( 'fs' ) or ( self.ctx.plugin_fs( self.name ) if self.ctx else None )
 		self._dbfs = kwargs.get( 'dbfs' ) or ( self.ctx.db_fs if self.ctx else None )
+		self._tmpfs = kwargs.get( 'tmp_fs' ) or ( self.ctx.tmp_fs if self.ctx else None )
 		self._rootfs = OSFS( '/' )
 		self._base_url = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
@@ -427,3 +428,13 @@ def path_for_id( local_id: Union[int, str], base_path: Optional[Path] = None, re
 	path = Path( base_path, path ) if base_path else path
 	path = Path( path, resource_path ) if resource_path else path
 	return path
+
+def path_for_date( date_id: Union[int, str, datetime] ) -> str:
+	if isinstance( date_id, int ):
+		date_id = str( date_id )
+	elif isinstance( date_id, datetime ):
+		date_id = date_id.strftime( "%y%m%d%H%M%S" )
+
+	date_id = str( date_id ).rjust( 6, '0' )
+	return f'{date_id[0:2]}/{date_id[2:4]}/{date_id[4:6]}/{date_id}'
+

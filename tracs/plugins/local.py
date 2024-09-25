@@ -10,16 +10,20 @@ from uuid import uuid1
 from fs.base import FS
 from fs.copy import copy_file
 from fs.osfs import OSFS
+from fs.path import basename, dirname
 from fs.subfs import SubFS
 from fs.zipfs import ZipFS
 
+from activity import Activities
 from config import ApplicationContext
 from plugins.gpx import GPXImporter
+from service import path_for_date
 from tracs.activity import Activity
 from tracs.plugin import Plugin
 from tracs.pluginmgr import service
 from tracs.resources import Resource, Resources
 from tracs.service import Service
+from tracs.uid import UID
 from tracs.utils import abspath
 
 log = getLogger( __name__ )
@@ -28,6 +32,8 @@ log = getLogger( __name__ )
 
 SERVICE_NAME = 'local'
 DISPLAY_NAME = 'Local'
+
+IMPORT_PATH = 'imports'
 
 class LocalActivity( Activity ):
 	pass
@@ -115,18 +121,17 @@ class Local( Service, Plugin ):
 
 		return imported_data
 
-	def unified_import( self, ctx: ApplicationContext, force: bool = False, pretend: bool = False, **kwargs ) -> Tuple[FS, Resources]:
-		root_fs = OSFS( '/' )
-		import_path = f'imports/{self.name}_{str( uuid1() )[0:8]}'
-		ctx.tmp_fs.makedir( 'imports', recreate=True )
-		ctx.tmp_fs.makedir( import_path, recreate=True )
-		tmp_fs = SubFS( ctx.tmp_fs, import_path )
-		resources = Resources()
+	def unified_import( self, ctx: ApplicationContext, force: bool = False, pretend: bool = False, **kwargs ) -> Tuple[Activities, FS]:
+		# prepare for import
+		ctx.tmp_fs.makedirs( IMPORT_PATH, recreate=True )
+		import_fs = SubFS( ctx.tmp_fs, IMPORT_PATH )
 
+		# classifier + location
 		classifier = kwargs.get( 'classifier', self.name )
 		location = abspath( kwargs.get( 'location' ) )
-		location_info = root_fs.getinfo( location )
+		location_info = self._rootfs.getinfo( location )
 
+		# check from where to import
 		if location_info.is_dir:
 			fs = OSFS( location )
 
@@ -137,16 +142,36 @@ class Local( Service, Plugin ):
 			log.error( f'unsupported location: {location}' )
 			raise UnsupportedOperation
 
+		activities = Activities() # list of imported activities
+
 		for path, dirs, files in fs.walk.walk( '/', filter=[ '*.gpx' ], exclude_dirs=[ '__MACOSX' ] ):
 			for f in files:
 				try:
 					src_path = f'{path}/{f.name}'
-					a = self._gpx_importer.load_as_activity( fs=fs, path=src_path )
-					dst_path = f'{a.starttime.strftime( "%y%m%d%H%M%S" )}{f.suffix}'
-					copy_file( fs, src_path, tmp_fs, dst_path ) # todo: avoid file collisions
-					resources.extend( a.resources )
-					log.debug( f'copy {fs}/{src_path} to {fs}/{dst_path}' )
+					activity = self._gpx_importer.load_as_activity( fs=fs, path=src_path )
+					activity.uid = UID( classifier, int( activity.starttime.strftime( "%y%m%d%H%M%S" ) ) )
+					dst_path = f'{classifier}/{path_for_date( activity.starttime )}/{activity.starttime.strftime( "%y%m%d%H%M%S" )}{f.suffix}'
+
+					if not self.db.contains_resource( activity.uid, dst_path ):
+
+						import_fs.makedirs( dirname( dst_path ), recreate=True )
+						copy_file( fs, src_path, import_fs, dst_path, preserve_time=True ) # todo: avoid file collisions
+						log.debug( f'copy {fs}/{src_path} to {fs}/{dst_path}' )
+
+						resource = activity.resources.first()
+						resource.path = dst_path
+						resource.source = f'{fs}/{src_path}'
+						resource.uid = UID( classifier, int( activity.starttime.strftime( "%y%m%d%H%M%S" ) ) )
+						resource.unload()
+						activities.append( activity )
+
+						if len( activities ) >= 1: # dev only
+							break
+
+					else:
+						log.info( f'skipping import of {fs}/{src_path}, resource already exists' )
+
 				except AttributeError:
 					log.error( f'unable to read GPX file from FS {fs}, path {path}/{f.name}' )
 
-		return tmp_fs, resources
+		return activities, import_fs

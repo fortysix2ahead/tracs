@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<gpx version="1.1" creator="Drivey">
+    <trk>
+        <trkseg>        <trkpt lat="52.21502139999999" lon="14.0107141">
+            <ele>40.0</ele>
+            <time>2024-08-28T07:36:34+02:00</time>
+            <speed>0.6173333333333333</speed>
+        </trkpt>        <trkpt lat="52.21501709999999" lon="14.010708399999999">
+            <ele>39.9</ele>
+            <time>2024-08-28T07:36:34+02:00</time>
+            <speed>0.463</speed>
+        </trkpt>        <trkpt lat="52.21501539999999" lon="14.010706299999999">
+            <ele>39.8</ele>
+            <time>2024-08-28T07:36:35+02:00</time>
+            <speed>0.0</speed>
+        </trkpt>        <trkpt lat="52.2150158" lon="14.0107068">
+            <ele>39.9</ele>
+            <time>2024-08-28T07:36:36+02:00</time>
+            <speed>0.15433333333333332</speed>
+        </trkpt>        <trkpt lat="52.2150191" lon="14.0107112">
+            <ele>40.2</ele>
+            <time>2024-08-28T07:36:37+02:00</time>
+            <speed>0.6687777777777779</speed>
+        </trkpt>        <trkpt lat="52.21502399999999" lon="14.010717900000001">
+            <ele>40.0</ele>
+            <time>2024-08-28T07:36:39+02:00</time>
+            <speed>0.7202222222222222</speed>
+        </trkpt>        <trkpt lat="52.215029" lon="14.0107242">
+            <ele>39.8</ele>
+            <time>2024-08-28T07:36:39+02:00</time>
+            <speed>0.30866666666666664</speed>
+        </trkpt>        <trkpt lat="52.215029" lon="14.010724100000001">
+            <ele>39.7</ele>
+            <time>2024-08-28T07:36:40+02:00</time>
+            <speed>0.25722222222222224</speed>
+        </trkpt>        <trkpt lat="52.215025200000014" lon="14.010719700000001">
+            <ele>39.6</ele>
+            <time>2024-08-28T07:36:41+02:00</time>
+            <speed>0.7202222222222222</speed>
+        </trkpt>        <trkpt lat="52.21501880000001" lon="14.010711800000003">
+            <ele>39.5</ele>
+            <time>2024-08-28T07:36:43+02:00</time>
+            <speed>0.8745555555555556</speed>
+        </trkpt>        <trkpt lat="52.2150119" lon="14.010704099999998">
+            <ele>39.1</ele>
+            <time>2024-08-28T07:36:43+02:00</time>
+            <speed>0.8231111111111112</speed>
+        </trkpt>        <trkpt lat="52.215007799999995" lon="14.010700000000002">
+            <ele>39.3</ele>
+            <time>2024-08-28T07:36:44+02:00</time>
+            <speed>0.3601111111111111</speed>
+        </trkpt>        <trkpt lat="52.2150053" lon="14.010697599999999">
+            <ele>39.0</ele>
+            <time>2024-08-28T07:36:45+02:00</time>
+            <speed>0.2057777777777778</speed>
+        </trkpt>        <trkpt lat="52.21500460000001" lon="14.010696900000001">
+            <ele>38.5</ele>
+            <time>2024-08-28T07:36:46+02:00</time>
+            <speed>0.0</speed>
+        </trkpt>        <trkpt lat="52.21500460000001" lon="14.010696900000001">
+            <ele>38.5</ele>
+            <time>2024-08-28T07:36:47+02:00</time>
+            <speed>0.0</speed>
+        </trkpt>        <trkpt lat="52.21500460000001" lon="14.010696900000001">
+            <ele>38.6</ele>
+            <time>2024-08-28T07:36:48+02:00</time>
+            <speed>0.0</speed>
+        </trkpt>        <trkpt lat="52.21500460000001" lon="14.010696900000001">
+            <ele>38.6</ele>
+            <time>2024-08-28T07:36:49+02:00</time>
+            <speed>0.0</speed>
+        </trkpt>        <trkpt lat="52.21500460000001" lon="14.010696900000001">
+            <ele>38.6</ele>
+            <time>2024-08-28T07:36:50+02:00</time>
+            <speed>0.0</speed>
+        </trkpt>        <trkpt lat="52.21500460000001" lon="14.010696900000001">
+            <ele>38.6</ele>
+            <time>2024-08-28T07:36:51+02:00</time>
+            <speed>0.0</speed>
+        </trkpt>        <trkpt lat="52.21500460000001" lon="14.010696900000001">
+            <ele>38.6</ele>
+            <time>2024-08-28T07:36:52+02:00</time>
+            <speed>0.0</speed>
+        </trkpt>        </trkseg>
+    </trk>
+</gpx>

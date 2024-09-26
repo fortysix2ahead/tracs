@@ -9,6 +9,7 @@ from uuid import uuid1
 
 from fs.base import FS
 from fs.copy import copy_file
+from fs.errors import ResourceNotFound
 from fs.osfs import OSFS
 from fs.path import basename, dirname
 from fs.subfs import SubFS
@@ -128,19 +129,21 @@ class Local( Service, Plugin ):
 
 		# classifier + location
 		classifier = kwargs.get( 'classifier', self.name )
-		location = abspath( kwargs.get( 'location' ) )
-		location_info = self._rootfs.getinfo( location )
 
-		# check from where to import
-		if location_info.is_dir:
-			fs = OSFS( location )
+		try:
+			location = abspath( kwargs.get( 'location' ) )
+			location_info = self._rootfs.getinfo( location )
 
-		elif location_info.is_file and location_info.suffix == '.zip':
-			fs = ZipFS( location )
+			if location_info.is_dir:
+				fs = OSFS( location )
+			elif location_info.is_file and location_info.suffix == '.zip':
+				fs = ZipFS( location )
+			else:
+				raise UnsupportedOperation
 
-		else:
-			log.error( f'unsupported location: {location}' )
-			raise UnsupportedOperation
+		except (ResourceNotFound, FileNotFoundError):
+				log.error( f'unsupported location: {location}' )
+				raise UnsupportedOperation
 
 		activities = Activities() # list of imported activities
 

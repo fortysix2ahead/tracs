@@ -33,46 +33,18 @@ MAXIMUM_OPEN = 8
 # also nice: https://github.com/luka1199/geo-heatmap
 
 def import_activities( ctx: ApplicationContext, sources: List[str], **kwargs ):
-	if 'unified_import' in ctx.config.features:
-		log.info( 'enabling feature unified_import' )
-
-		for src in (sources or ctx.registry.service_names()):
+	for src in (sources or ctx.registry.service_names() ):
+		if service := ctx.registry.services.get( src ):
 			log.debug( f'importing activities from service {src}' )
-			if service := ctx.registry.services.get( src ):
-				activities, import_fs = service.unified_import( ctx=ctx, force=ctx.force, pretend=ctx.pretend, **kwargs )
-
-				for a in activities:
-					# move imported resources
-					for r in a.resources:
-						if not ctx.db_fs.exists( r.path ):
-							ctx.db_fs.makedirs( dirname( r.path ), recreate=True )
-							copy_file( import_fs, r.path, ctx.db_fs, r.path, preserve_time=True )
-							import_fs.remove( r.path )
-							# don't know why move_file fails, maybe a bug?
-							# move_file( import_fs, r.path, ctx.db_fs, r.path, preserve_time=True )
-							log.debug( f'moved {import_fs}/{r.path} to {ctx.db_fs}/{r.path}' )
-
-					# insert / upsert newly created activities
-					if ctx.db.contains_activity( a.uid ):
-						ctx.db.upsert_activity( a )
-					else:
-						ctx.db.insert( a )
-
-			ctx.db.commit()
-
-	else:
-		for src in (sources or ctx.registry.service_names() ):
-			if service := ctx.registry.services.get( src ):
-				log.debug( f'importing activities from service {src}' )
-				service.import_activities(
-					ctx=ctx,
-					force=ctx.force,
-					pretend=ctx.pretend,
-					first_year=ctx.config['import'].first_year,
-					days_range=ctx.config['import'].range,
-					**kwargs )
-			else:
-				log.error( f'skipping import from service {src}, either service is unknown or disabled' )
+			service.import_activities(
+				ctx=ctx,
+				force=ctx.force,
+				pretend=ctx.pretend,
+				first_year=ctx.config['import'].first_year,
+				days_range=ctx.config['import'].range,
+				**kwargs )
+		else:
+			log.error( f'skipping import from service {src}, either service is unknown or disabled' )
 
 def open_activities( ctx: ApplicationContext, activities: List[Activity] ) -> None:
 	if len( activities ) > MAXIMUM_OPEN:

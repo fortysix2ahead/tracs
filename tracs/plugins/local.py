@@ -5,25 +5,21 @@ from shutil import copy2 as copy, move
 from typing import Any, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 from urllib.request import url2pathname
-from uuid import uuid1
 
 from fs.base import FS
 from fs.copy import copy_file
 from fs.errors import ResourceNotFound
 from fs.osfs import OSFS
-from fs.path import basename, dirname
+from fs.path import dirname
 from fs.subfs import SubFS
 from fs.zipfs import ZipFS
 
-from activity import Activities
-from config import ApplicationContext
-from plugins.gpx import GPXImporter
-from service import path_for_date
-from tracs.activity import Activity
-from tracs.plugin import Plugin
+from tracs.activity import Activities, Activity
+from tracs.config import ApplicationContext
 from tracs.pluginmgr import service
-from tracs.resources import Resource, Resources
-from tracs.service import Service
+from tracs.plugins.gpx import GPXImporter
+from tracs.resources import Resource
+from tracs.service import path_for_date, Service
 from tracs.uid import UID
 from tracs.utils import abspath
 
@@ -40,7 +36,7 @@ class LocalActivity( Activity ):
 	pass
 
 @service
-class Local( Service, Plugin ):
+class Local( Service ):
 
 	def __init__( self, **kwargs  ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )

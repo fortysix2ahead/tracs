@@ -6,6 +6,7 @@ from logging import getLogger
 
 from pytest import mark, raises
 
+from tracs.aio import import_activities
 from tracs.plugins.local import Local
 
 log = getLogger( __name__ )
@@ -23,6 +24,8 @@ def test_unified_import_from_zip( service ):
 	assert sorted( fs.listdir( 'drivey/24/08' ) ) == ['25', '26', '27', '28']
 	assert sorted( fs.listdir( 'drivey/24/08/27/240827145524' ) ) == [ '240827145524.gpx' ]
 	assert all( [ f.endswith( '.gpx' ) for f in fs.walk.files() ] )
+
+	# test import with a resource already existing
 
 	service.db._activities.add( activities[0] )
 	activities2, fs = service.unified_import( service.ctx, classifier='drivey', location=location )
@@ -49,6 +52,13 @@ def test_unified_import_from_file( service ):
 	activities, fs = service.unified_import( service.ctx, classifier='drivey', location=location )
 	assert len( activities ) == 1
 	assert all( [ f.endswith( '.gpx' ) for f in fs.walk.files() ] )
+
+# noinspection PyUnresolvedReferences
+@mark.context( env='default', persist='clone', cleanup=True )
+@mark.service( cls=Local, init=True, register=True )
+def test_unified_import( service ):
+	location = service.ctx.config_fs.getsyspath( 'takeouts/drivey.zip' )
+	import_activities( service.ctx, [ 'local' ], location=location )
 
 # noinspection PyUnresolvedReferences
 

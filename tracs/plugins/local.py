@@ -16,6 +16,7 @@ from fs.zipfs import ReadZipFS
 
 from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
+from tracs.errors import ResourceImportException
 from tracs.pluginmgr import service
 from tracs.plugins.gpx import GPXImporter
 from tracs.resources import Resource
@@ -173,7 +174,7 @@ class Local( Service ):
 					else:
 						log.info( f'skipping import of {fs}/{src_path}, resource already exists' )
 
-				except AttributeError:
+				except (AttributeError, ResourceImportException):
 					log.error( f'unable to read GPX file from FS {fs}, path {path}/{f.name}' )
 
 		return activities, import_fs

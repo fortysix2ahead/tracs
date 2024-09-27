@@ -435,12 +435,16 @@ class Service( Plugin ):
 			# move imported resources
 			for r in a.resources:
 				if force or not self.ctx.db_fs.exists( r.path ):
-					self.ctx.db_fs.makedirs( dirname( r.path ), recreate=True )
-					copy_file( import_fs, r.path, self.ctx.db_fs, r.path, preserve_time=True )
-					import_fs.remove( r.path )
-					# don't know why move_file fails, maybe a bug?
-					# move_file( import_fs, r.path, ctx.db_fs, r.path, preserve_time=True )
-					log.info( f'imported resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
+					try:
+						self.ctx.db_fs.makedirs( dirname( r.path ), recreate=True )
+						info = import_fs.getinfo( r.path )
+						copy_file( import_fs, r.path, self.ctx.db_fs, r.path, preserve_time=True )
+						import_fs.remove( r.path )
+						# don't know why move_file fails, maybe a bug?
+						# move_file( import_fs, r.path, ctx.db_fs, r.path, preserve_time=True )
+						log.info( f'imported resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
+					except ResourceNotFound:
+						log.error( f'error importing from resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
 
 				else:
 					log.info( f'skipping import of resource {r}, file already exists, use option -f/--force to force overwrite' )

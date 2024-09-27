@@ -36,14 +36,20 @@ class GPXImporter( ResourceHandler ):
 
 		if not ( bounds.start_time and bounds.end_time ):
 			raise ResourceImportException( 'GPX file is empty', None )
+		elif bounds.start_time == bounds.end_time:
+			raise ResourceImportException( 'GPX start and end times may not be identical', None )
 		else:
 			gpx_activity.starttime= bounds.start_time.astimezone( UTC )
 			gpx_activity.endtime= bounds.end_time.astimezone( UTC )
 			gpx_activity.starttime_local= bounds.start_time.astimezone( tzlocal() )
 			gpx_activity.endtime_local= bounds.end_time.astimezone( tzlocal() )
 
+			if (d := gpx.get_duration() ) > 0.0:
+				gpx_activity.duration = timedelta( seconds=round( d ) )
+			else:
+				gpx_activity.duration = None
+
 		gpx_activity.distance = round( gpx.length_2d(), 1 )
-		gpx_activity.duration = timedelta( seconds=round( gpx.get_duration() ) ) if gpx.get_duration() == 0.0 else None
 
 		if pd := gpx.get_points_data():
 			gpx_activity.location_latitude_start=pd[0].point.latitude

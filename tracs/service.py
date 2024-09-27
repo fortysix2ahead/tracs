@@ -15,7 +15,7 @@ from fs.copy import copy_file
 from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from fs.path import combine, dirname, isabs, join, parts, split
+from fs.path import basename, combine, dirname, isabs, join, parts, split
 
 from tracs.activity import Activity
 from tracs.config import current_ctx, DB_DIRNAME
@@ -440,7 +440,7 @@ class Service( Plugin ):
 					import_fs.remove( r.path )
 					# don't know why move_file fails, maybe a bug?
 					# move_file( import_fs, r.path, ctx.db_fs, r.path, preserve_time=True )
-					log.info( f'imported resource from {import_fs}/{r.path} to {self.ctx.db_fs}/{r.path}' )
+					log.info( f'imported resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
 
 				else:
 					log.info( f'skipping import of resource {r}, file already exists, use option -f/--force to force overwrite' )

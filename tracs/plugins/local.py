@@ -12,7 +12,7 @@ from fs.errors import ResourceNotFound
 from fs.osfs import OSFS
 from fs.path import dirname
 from fs.subfs import SubFS
-from fs.zipfs import ZipFS
+from fs.zipfs import ReadZipFS
 
 from tracs.activity import Activities, Activity
 from tracs.config import ApplicationContext
@@ -134,7 +134,7 @@ class Local( Service ):
 				fs, filters = OSFS( location ), [ '*.gpx' ]
 			elif location_info.is_file:
 				if location_info.suffix == '.zip':
-					fs, filters = ZipFS( location ), [ '*.gpx' ]
+					fs, filters = ReadZipFS( location ), [ '*.gpx' ]
 				elif location_info.suffix in [ '.gpx' ]:
 					fs, filters = OSFS( dirname( location ) ), [ location_info.name ]
 				else:
@@ -159,12 +159,14 @@ class Local( Service ):
 					if force or not self.db.contains_resource( activity.uid, dst_path ):
 						import_fs.makedirs( dirname( dst_path ), recreate=True )
 						copy_file( fs, src_path, import_fs, dst_path, preserve_time=True ) # todo: avoid file collisions
-						log.debug( f'copy {fs}/{src_path} to {fs}/{dst_path}' )
+						log.debug( f'copy {fs}/{src_path} to {import_fs}/{dst_path}' )
 
 						resource = activity.resources.first()
 						resource.path = dst_path
-						resource.source = f'{fs}/{src_path}'
-						resource.uid = UID( classifier, int( activity.starttime.strftime( "%y%m%d%H%M%S" ) ) )
+						# source URL is better than before, but maybe not final
+						resource.source = fs.geturl( src_path, purpose='fs' ) if isinstance( fs, ReadZipFS ) else fs.geturl( src_path, purpose='download' )
+						# don't need to set the resource uid as activity uid is set
+						# resource.uid = UID( classifier, int( activity.starttime.strftime( "%y%m%d%H%M%S" ) ) )
 						resource.unload()
 						activities.append( activity )
 

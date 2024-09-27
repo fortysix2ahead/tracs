@@ -5,6 +5,7 @@ from lxml.etree import tostring
 from lxml.objectify import ObjectifiedElement
 from pytest import mark, raises
 
+from tracs.errors import ResourceImportException
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensActivity, BikecitizensImporter
 from tracs.plugins.csv import CSV_TYPE, CSVHandler
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
@@ -83,6 +84,16 @@ def test_gpx_importer( path ):
 
 	activity = handler.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2012-10-24T23:29:40+00:00'
+
+@mark.file( 'environments/default/takeouts/drivey/drive-20240913-182956.gpx' )
+def test_gpx_importer_empty( path ):
+	handler = GPXImporter()
+	resource = handler.load( path=path )
+	assert type( resource.raw ) is GPX
+	assert resource.raw is resource.data
+
+	with raises( ResourceImportException ):
+		handler.load_as_activity( path=path )
 
 @mark.file( 'templates/tcx/sample.tcx' )
 def test_tcx_importer( path ):

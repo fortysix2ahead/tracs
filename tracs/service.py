@@ -11,6 +11,7 @@ from typing import Any, cast, List, Optional, Tuple, Union
 from arrow import utcnow
 from dateutil.tz import UTC
 from fs.base import FS
+from fs.copy import copy_file
 from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
@@ -358,6 +359,10 @@ class Service( Plugin ):
 		[ self._db.upsert_activity( a ) for a in activities ]
 
 	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ):
+		if 'unified_import' in dir( self ):
+			log.info( f'using feature unified_import for service {self.name}' )
+			self._import_activities( force, **kwargs )
+
 		fetch_all = kwargs.get( 'fetch_all', False )
 		first_year = kwargs.get( 'first_year', 2000 )
 		days_range = kwargs.get( 'days_range', 90 )
@@ -419,6 +424,34 @@ class Service( Plugin ):
 		# mark download task as done
 		self._db.commit()
 		self.ctx.complete( 'done' )
+
+	def _import_activities( self, force: bool = False, **kwargs ):
+		# call to import of service
+		# assumption: new/updated activities with new/updated resources are returned + fs which is used to resolve paths in resources
+		activities, import_fs = self.unified_import( force=force, **kwargs )
+
+		# process activities
+		for a in activities:
+			# move imported resources
+			for r in a.resources:
+				if force or not self.ctx.db_fs.exists( r.path ):
+					self.ctx.db_fs.makedirs( dirname( r.path ), recreate=True )
+					copy_file( import_fs, r.path, self.ctx.db_fs, r.path, preserve_time=True )
+					import_fs.remove( r.path )
+					# don't know why move_file fails, maybe a bug?
+					# move_file( import_fs, r.path, ctx.db_fs, r.path, preserve_time=True )
+					log.info( f'imported resource from {import_fs}/{r.path} to {self.ctx.db_fs}/{r.path}' )
+
+				else:
+					log.info( f'skipping import of resource {r}, file already exists, use option -f/--force to force overwrite' )
+
+			# insert / upsert newly created activities
+			if self.ctx.db.contains_activity( a.uid ):
+				self.ctx.db.upsert_activity( a )
+			else:
+				self.ctx.db.insert( a )
+
+			self.ctx.db.commit()
 
 # helper functions
 

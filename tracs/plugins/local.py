@@ -135,19 +135,24 @@ class Local( Service, Plugin ):
 			location_info = self._rootfs.getinfo( location )
 
 			if location_info.is_dir:
-				fs = OSFS( location )
-			elif location_info.is_file and location_info.suffix == '.zip':
-				fs = ZipFS( location )
+				fs, filters = OSFS( location ), [ '*.gpx' ]
+			elif location_info.is_file:
+				if location_info.suffix == '.zip':
+					fs, filters = ZipFS( location ), [ '*.gpx' ]
+				elif location_info.suffix in [ '.gpx' ]:
+					fs, filters = OSFS( dirname( location ) ), [ location_info.name ]
+				else:
+					raise UnsupportedOperation
 			else:
 				raise UnsupportedOperation
 
 		except (ResourceNotFound, FileNotFoundError):
-				log.error( f'unsupported location: {location}' )
-				raise UnsupportedOperation
+			log.error( f'unsupported location: {location}' )
+			raise UnsupportedOperation
 
 		activities = Activities() # list of imported activities
 
-		for path, dirs, files in fs.walk.walk( '/', filter=[ '*.gpx' ], exclude_dirs=[ '__MACOSX' ] ):
+		for path, dirs, files in fs.walk.walk( '/', filter=filters, exclude_dirs=[ '__MACOSX' ] ):
 			for f in files:
 				try:
 					src_path = f'{path}/{f.name}'
@@ -155,7 +160,7 @@ class Local( Service, Plugin ):
 					activity.uid = UID( classifier, int( activity.starttime.strftime( "%y%m%d%H%M%S" ) ) )
 					dst_path = f'{classifier}/{path_for_date( activity.starttime )}/{activity.starttime.strftime( "%y%m%d%H%M%S" )}{f.suffix}'
 
-					if not self.db.contains_resource( activity.uid, dst_path ):
+					if force or not self.db.contains_resource( activity.uid, dst_path ):
 						import_fs.makedirs( dirname( dst_path ), recreate=True )
 						copy_file( fs, src_path, import_fs, dst_path, preserve_time=True ) # todo: avoid file collisions
 						log.debug( f'copy {fs}/{src_path} to {fs}/{dst_path}' )

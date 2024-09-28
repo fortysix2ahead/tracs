@@ -437,7 +437,6 @@ class Service( Plugin ):
 				if force or not self.ctx.db_fs.exists( r.path ):
 					try:
 						self.ctx.db_fs.makedirs( dirname( r.path ), recreate=True )
-						info = import_fs.getinfo( r.path )
 						copy_file( import_fs, r.path, self.ctx.db_fs, r.path, preserve_time=True )
 						import_fs.remove( r.path )
 						# don't know why move_file fails, maybe a bug?
@@ -474,4 +473,3 @@ def path_for_date( date_id: Union[int, str, datetime] ) -> str:
 
 	date_id = str( date_id ).rjust( 6, '0' )
 	return f'{date_id[0:2]}/{date_id[2:4]}/{date_id[4:6]}/{date_id}'
-

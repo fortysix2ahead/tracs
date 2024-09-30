@@ -1,5 +1,7 @@
+from fs.osfs import OSFS
 from pytest import mark, raises
 
+from plugins.gpx import GPXImporter
 from tracs.resources import Resource, Resources, ResourceType, ResourceTypes
 from tracs.uid import UID
 
@@ -92,6 +94,14 @@ def test_resource():
 	e = r.evolve()
 	assert r.path == e.path
 	assert [e.content, e.text, e.raw, e.data] == [None, None, None, None]
+
+@mark.file( 'environments/default/db/polar/1/0/0/100001/100001.gpx' )
+def test_resource_io( path ):
+	handler = GPXImporter()
+	fs, name = OSFS( str( path.parent ) ), path.name
+
+	r1 = Resource( uid='polar:100001', name='100001.gpx', type='application/gpx+xml', path='100001.gpx' )
+	r1.load( fs, None, handler )
 
 def test_resources():
 	r1 = Resource( uid='polar:1234', name='test1.gpx', type='application/gpx+xml', path='test1.gpx' )

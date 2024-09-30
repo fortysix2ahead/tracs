@@ -1,26 +1,47 @@
-
+from fs.errors import ResourceNotFound
+from fs.osfs import OSFS
 from gpxpy.gpx import GPX
 from lxml.etree import tostring
 from lxml.objectify import ObjectifiedElement
-from pytest import mark
+from pytest import mark, raises
 
-from tracs.plugins.gpx import GPX_TYPE, GPXImporter
-from tracs.plugins.polar import PolarFlowExercise, PolarFlowImporter
-from tracs.plugins.tcx import Author, Creator, Lap, Plan, TCX_TYPE, TCXImporter, Trackpoint, Training, TrainingCenterDatabase
-from tracs.registry import Registry
-from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensImporter
-from tracs.plugins.bikecitizens import BikecitizensActivity
+from tracs.errors import ResourceImportException
+from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensActivity, BikecitizensImporter
 from tracs.plugins.csv import CSV_TYPE, CSVHandler
+from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.plugins.json import JSON_TYPE, JSONHandler
+from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE, POLAR_FLOW_TYPE, PolarExerciseDataActivity, PolarFlowExercise, PolarFlowImporter
+from tracs.plugins.strava import STRAVA_TYPE, StravaActivity, StravaHandler
+from tracs.plugins.tcx import Activity as TCXActivity, Author, Creator, Lap, Plan, TCX_TYPE, TCXImporter, Trackpoint, Training, TrainingCenterDatabase
+from tracs.plugins.waze import WAZE_TYPE, WazeActivity, WazeImporter
 from tracs.plugins.xml import XML_TYPE, XMLHandler
-from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE
-from tracs.plugins.polar import POLAR_FLOW_TYPE
-from tracs.plugins.polar import PolarExerciseDataActivity
-from tracs.plugins.strava import STRAVA_TYPE, StravaHandler
-from tracs.plugins.strava import StravaActivity
-from tracs.plugins.tcx import Activity as TCXActivity
-from tracs.plugins.waze import WAZE_TYPE, WazeImporter
-from tracs.plugins.waze import WazeActivity
+from tracs.registry import Registry
+
+@mark.file( 'templates/polar/2020.json' )
+def test_resource_handler( path ):
+	handler = JSONHandler() # use json handler instead of base class
+	content = b'{"data":1}'
+	json = { 'data': 1 }
+
+	assert handler.load_from_content( content ) == content
+	assert 'trainingLoadProInterpretation' in handler.load_from_path( path ).decode( 'UTF-8' )
+	fs = OSFS( str( path.parent ) )
+	assert 'trainingLoadProInterpretation' in handler.load_from_fs( fs, path.name ).decode( 'UTF-8' )
+	assert handler.load_raw( content ) == json
+	assert handler.load_data( json ) == json
+
+	# unified load method
+	assert handler.load( content=content ).data == json
+	data = handler.load( path ).data
+	assert isinstance( data, list ) and all( [ isinstance( l, dict ) for l in data ] )
+	data = handler.load( fs=fs, path=path.name ).data
+	assert isinstance( data, list ) and all( [ isinstance( l, dict ) for l in data ] )
+
+	with raises( FileNotFoundError ):
+		handler.load( path='/some_non_existing_path' )
+
+	with raises( ResourceNotFound ):
+		handler.load( fs=fs, path='some_non_existing_path' )
 
 @mark.file( 'environments/default/takeouts/waze/2020-09/account_activity_3.csv' )
 def test_csv_handler( path ):
@@ -63,6 +84,16 @@ def test_gpx_importer( path ):
 
 	activity = handler.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2012-10-24T23:29:40+00:00'
+
+@mark.file( 'environments/default/takeouts/drivey/drive-20240913-182956.gpx' )
+def test_gpx_importer_empty( path ):
+	handler = GPXImporter()
+	resource = handler.load( path=path )
+	assert type( resource.raw ) is GPX
+	assert resource.raw is resource.data
+
+	with raises( ResourceImportException ):
+		handler.load_as_activity( path=path )
 
 @mark.file( 'templates/tcx/sample.tcx' )
 def test_tcx_importer( path ):

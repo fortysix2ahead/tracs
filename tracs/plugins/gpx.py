@@ -7,6 +7,7 @@ from gpxpy import parse as parse_gpx
 from gpxpy.gpx import GPX
 
 from tracs.activity import Activity
+from tracs.errors import ResourceImportException
 from tracs.handlers import ResourceHandler
 from tracs.pluginmgr import importer, resourcetype
 from tracs.resources import Resource, ResourceType
@@ -30,17 +31,31 @@ class GPXImporter( ResourceHandler ):
 
 	def as_activity( self, resource: Resource ) -> Optional[Activity]:
 		gpx: GPX = resource.raw
-		return Activity(
-			name = gpx.name,
-			starttime= gpx.get_time_bounds().start_time.astimezone( UTC ),
-			endtime= gpx.get_time_bounds().end_time.astimezone( UTC ),
-			starttime_local= gpx.get_time_bounds().start_time.astimezone( tzlocal() ),
-			endtime_local= gpx.get_time_bounds().end_time.astimezone( tzlocal() ),
-			distance = round( gpx.length_2d(), 1 ),
-			duration = timedelta( seconds=round( d ) ) if (d := gpx.get_duration() ) else None,
-			location_latitude_start=gpx.get_points_data()[0].point.latitude,
-			location_longitude_start=gpx.get_points_data()[0].point.longitude,
-			location_latitude_end=gpx.get_points_data()[-1].point.latitude,
-			location_longitude_end=gpx.get_points_data()[-1].point.longitude,
-			uid = f'gpx:{gpx.get_time_bounds().start_time.astimezone( UTC ).strftime( "%y%m%d%H%M%S" )}',
-		)
+		gpx_activity = Activity( name = gpx.name )
+		bounds = gpx.get_time_bounds()
+
+		if not ( bounds.start_time and bounds.end_time ):
+			raise ResourceImportException( 'GPX file is empty', None )
+		elif bounds.start_time == bounds.end_time:
+			raise ResourceImportException( 'GPX start and end times may not be identical', None )
+		else:
+			gpx_activity.starttime= bounds.start_time.astimezone( UTC )
+			gpx_activity.endtime= bounds.end_time.astimezone( UTC )
+			gpx_activity.starttime_local= bounds.start_time.astimezone( tzlocal() )
+			gpx_activity.endtime_local= bounds.end_time.astimezone( tzlocal() )
+
+			if (d := gpx.get_duration() ) > 0.0:
+				gpx_activity.duration = timedelta( seconds=round( d ) )
+			else:
+				gpx_activity.duration = None
+
+		gpx_activity.distance = round( gpx.length_2d(), 1 )
+
+		if pd := gpx.get_points_data():
+			gpx_activity.location_latitude_start=pd[0].point.latitude
+			gpx_activity.location_longitude_start=pd[0].point.longitude
+			gpx_activity.location_latitude_end=pd[-1].point.latitude
+			gpx_activity.location_longitude_end=pd[-1].point.longitude
+		gpx_activity.uid = f'gpx:{bounds.start_time.astimezone( UTC ).strftime( "%y%m%d%H%M%S" )}'
+
+		return gpx_activity

@@ -11,10 +11,11 @@ from typing import Any, cast, List, Optional, Tuple, Union
 from arrow import utcnow
 from dateutil.tz import UTC
 from fs.base import FS
+from fs.copy import copy_file
 from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from fs.path import combine, dirname, frombase, isabs, join, parts, split
+from fs.path import basename, combine, dirname, isabs, join, parts, split
 
 from tracs.activity import Activity
 from tracs.config import current_ctx, DB_DIRNAME
@@ -35,6 +36,7 @@ class Service( Plugin ):
 		# paths + plugin filesystem area
 		self._fs: FS = kwargs.get( 'fs' ) or ( self.ctx.plugin_fs( self.name ) if self.ctx else None )
 		self._dbfs = kwargs.get( 'dbfs' ) or ( self.ctx.db_fs if self.ctx else None )
+		self._tmpfs = kwargs.get( 'tmp_fs' ) or ( self.ctx.tmp_fs if self.ctx else None )
 		self._rootfs = OSFS( '/' )
 		self._base_url = kwargs.get( 'base_url' )
 		self._logged_in: bool = False
@@ -357,6 +359,10 @@ class Service( Plugin ):
 		[ self._db.upsert_activity( a ) for a in activities ]
 
 	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ):
+		if 'unified_import' in dir( self ):
+			log.info( f'using feature unified_import for service {self.name}' )
+			self._import_activities( force, **kwargs )
+
 		fetch_all = kwargs.get( 'fetch_all', False )
 		first_year = kwargs.get( 'first_year', 2000 )
 		days_range = kwargs.get( 'days_range', 90 )
@@ -419,6 +425,37 @@ class Service( Plugin ):
 		self._db.commit()
 		self.ctx.complete( 'done' )
 
+	def _import_activities( self, force: bool = False, **kwargs ):
+		# call to import of service
+		# assumption: new/updated activities with new/updated resources are returned + fs which is used to resolve paths in resources
+		activities, import_fs = self.unified_import( force=force, **kwargs )
+
+		# process activities
+		for a in activities:
+			# move imported resources
+			for r in a.resources:
+				if force or not self.ctx.db_fs.exists( r.path ):
+					try:
+						self.ctx.db_fs.makedirs( dirname( r.path ), recreate=True )
+						copy_file( import_fs, r.path, self.ctx.db_fs, r.path, preserve_time=True )
+						import_fs.remove( r.path )
+						# don't know why move_file fails, maybe a bug?
+						# move_file( import_fs, r.path, ctx.db_fs, r.path, preserve_time=True )
+						log.info( f'imported resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
+					except ResourceNotFound:
+						log.error( f'error importing from resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
+
+				else:
+					log.info( f'skipping import of resource {r}, file already exists, use option -f/--force to force overwrite' )
+
+			# insert / upsert newly created activities
+			if self.ctx.db.contains_activity( a.uid ):
+				self.ctx.db.upsert_activity( a )
+			else:
+				self.ctx.db.insert( a )
+
+			self.ctx.db.commit()
+
 # helper functions
 
 def path_for_id( local_id: Union[int, str], base_path: Optional[Path] = None, resource_path: Optional[Path] = None ) -> Path:
@@ -427,3 +464,12 @@ def path_for_id( local_id: Union[int, str], base_path: Optional[Path] = None, re
 	path = Path( base_path, path ) if base_path else path
 	path = Path( path, resource_path ) if resource_path else path
 	return path
+
+def path_for_date( date_id: Union[int, str, datetime] ) -> str:
+	if isinstance( date_id, int ):
+		date_id = str( date_id )
+	elif isinstance( date_id, datetime ):
+		date_id = date_id.strftime( "%y%m%d%H%M%S" )
+
+	date_id = str( date_id ).rjust( 6, '0' )
+	return f'{date_id[0:2]}/{date_id[2:4]}/{date_id[4:6]}/{date_id}'

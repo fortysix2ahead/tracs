@@ -4,6 +4,7 @@ from difflib import SequenceMatcher
 from enum import Enum
 from functools import wraps
 from itertools import chain
+from os.path import abspath as abs_path, expanduser, expandvars, normpath
 from re import compile as rxcompile, match
 from time import gmtime, perf_counter
 from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, TypeVar, Union
@@ -337,6 +338,11 @@ def urlparse( url ) -> ParseResult:
 		scheme, path = url.path.split( ':', maxsplit=1 )
 		url = ParseResultBytes( scheme=scheme, netloc=url.netloc, path=path, params=url.params, query=url.query, fragment=url.fragment )
 	return url
+
+# fs related
+
+def abspath( path: str ) -> str:
+	return normpath( abs_path( expanduser( expandvars( path ) ) ) )
 
 # styling helpers
 

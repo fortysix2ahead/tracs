@@ -1,16 +1,28 @@
-
+from io import UnsupportedOperation
 from logging import getLogger
 from pathlib import Path
 from shutil import copy2 as copy, move
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
-from tracs.activity import Activity
-from tracs.plugin import Plugin
+from fs.base import FS
+from fs.copy import copy_file
+from fs.errors import ResourceNotFound
+from fs.osfs import OSFS
+from fs.path import dirname
+from fs.subfs import SubFS
+from fs.zipfs import ReadZipFS
+
+from tracs.activity import Activities, Activity
+from tracs.config import ApplicationContext
+from tracs.errors import ResourceImportException
 from tracs.pluginmgr import service
+from tracs.plugins.gpx import GPXImporter
 from tracs.resources import Resource
-from tracs.service import Service
+from tracs.service import path_for_date, Service
+from tracs.uid import UID
+from tracs.utils import abspath
 
 log = getLogger( __name__ )
 
@@ -19,14 +31,18 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'local'
 DISPLAY_NAME = 'Local'
 
+IMPORT_PATH = 'imports'
+
 class LocalActivity( Activity ):
 	pass
 
 @service
-class Local( Service, Plugin ):
+class Local( Service ):
 
 	def __init__( self, **kwargs  ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
+
+		self._gpx_importer = GPXImporter()
 
 	def path_for_id( self, local_id: Union[int, str], base_path: Optional[Path] ) -> Path:
 		local_id = str( local_id )
@@ -102,3 +118,63 @@ class Local( Service, Plugin ):
 			imported_data = None
 
 		return imported_data
+
+	def unified_import( self, ctx: ApplicationContext, force: bool = False, pretend: bool = False, **kwargs ) -> Tuple[Activities, FS]:
+		# prepare for import
+		ctx.tmp_fs.makedirs( IMPORT_PATH, recreate=True )
+		import_fs = SubFS( ctx.tmp_fs, IMPORT_PATH )
+
+		# classifier + location
+		classifier = kwargs.get( 'classifier', self.name )
+
+		try:
+			location = abspath( kwargs.get( 'location' ) )
+			location_info = self._rootfs.getinfo( location )
+
+			if location_info.is_dir:
+				fs, filters = OSFS( location ), [ '*.gpx' ]
+			elif location_info.is_file:
+				if location_info.suffix == '.zip':
+					fs, filters = ReadZipFS( location ), [ '*.gpx' ]
+				elif location_info.suffix in [ '.gpx' ]:
+					fs, filters = OSFS( dirname( location ) ), [ location_info.name ]
+				else:
+					raise UnsupportedOperation
+			else:
+				raise UnsupportedOperation
+
+		except (ResourceNotFound, FileNotFoundError):
+			log.error( f'unsupported location: {location}' )
+			raise UnsupportedOperation
+
+		activities = Activities() # list of imported activities
+
+		for path, dirs, files in fs.walk.walk( '/', filter=filters, exclude_dirs=[ '__MACOSX' ] ):
+			for f in files:
+				try:
+					src_path = f'{path}/{f.name}'
+					activity = self._gpx_importer.load_as_activity( fs=fs, path=src_path )
+					activity.uid = UID( classifier, int( activity.starttime.strftime( "%y%m%d%H%M%S" ) ) )
+					dst_path = f'{classifier}/{path_for_date( activity.starttime )}/{activity.starttime.strftime( "%y%m%d%H%M%S" )}{f.suffix}'
+
+					if force or not self.db.contains_resource( activity.uid, dst_path ):
+						import_fs.makedirs( dirname( dst_path ), recreate=True )
+						copy_file( fs, src_path, import_fs, dst_path, preserve_time=True ) # todo: avoid file collisions
+						log.debug( f'copy {fs}/{src_path} to {import_fs}/{dst_path}' )
+
+						resource = activity.resources.first()
+						resource.path = dst_path
+						# source URL is better than before, but maybe not final
+						resource.source = fs.geturl( src_path, purpose='fs' ) if isinstance( fs, ReadZipFS ) else fs.geturl( src_path, purpose='download' )
+						# don't need to set the resource uid as activity uid is set
+						# resource.uid = UID( classifier, int( activity.starttime.strftime( "%y%m%d%H%M%S" ) ) )
+						resource.unload()
+						activities.append( activity )
+
+					else:
+						log.info( f'skipping import of {fs}/{src_path}, resource already exists' )
+
+				except (AttributeError, ResourceImportException):
+					log.error( f'unable to read GPX file from FS {fs}, path {path}/{f.name}' )
+
+		return activities, import_fs

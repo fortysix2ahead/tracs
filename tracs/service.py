@@ -281,7 +281,8 @@ class Service( Plugin ):
 						dst_fs.remove( r.path )
 						# don't know why move_file fails, maybe a bug?
 						# move_file( import_fs, r.path, ctx.db_fs, r.path, preserve_time=True )
-						log.info( f'imported resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
+						log.debug( f'imported resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
+
 					except ResourceNotFound:
 						log.error( f'error importing from resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
 
@@ -309,7 +310,7 @@ class Service( Plugin ):
 	def supports_remote_import( self ) -> bool:
 		return False
 
-	def import_from_remote( self, dst_fs: FS, range_from, range_to ) -> Activities:
+	def import_from_remote( self, dst_fs: FS, range_from: datetime, range_to: datetime ) -> Activities:
 		return Activities()
 
 # helper functions

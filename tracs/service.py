@@ -263,9 +263,11 @@ class Service( Plugin ):
 			activities = self.import_from_fs( src_fs, dst_fs, path=src_path, classifier=classifier, type=type )
 
 		elif self.supports_remote_import():
+			log.debug( f'service {self.name} supports remote import' )
 			activities = self.import_from_remote( dst_fs, range_from=range_from, range_to=range_to )
 
 		else:
+			log.debug( f'service {self.name} does not support remote import nor import from {src_fs} or not suitable file to import have been found' )
 			activities = Activities()
 
 		# post-process activities
@@ -298,17 +300,17 @@ class Service( Plugin ):
 		# return imported activities
 		return activities
 
-	# noinspection PyMethodMayBeStatic
 	def supports_fs_import( self, fs: FS | None, path: str | None ) -> bool:
 		return False
 
-	# noinspection PyMethodMayBeStatic
 	def import_from_fs( self, src_fs: FS, dst_fs: FS, **kwargs ) -> Activities:
 		return Activities()
 
-	# noinspection PyMethodMayBeStatic
 	def supports_remote_import( self ) -> bool:
 		return False
+
+	def import_from_remote( self, dst_fs: FS, range_from, range_to ) -> Activities:
+		return Activities()
 
 # helper functions
 

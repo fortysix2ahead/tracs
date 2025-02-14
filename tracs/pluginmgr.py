@@ -2,21 +2,42 @@
 from __future__ import annotations
 
 from importlib import import_module
-from inspect import getmembers, isclass, signature as getsignature
+from inspect import currentframe, FrameInfo, getmembers, isclass, signature as getsignature
 from logging import getLogger
 from pkgutil import extend_path, iter_modules
 from types import ModuleType
 from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
 
+from attrs import define, field
 from fs.osfs import OSFS
 
 log = getLogger( __name__ )
 
 factory_plugins = [ 'csv', 'json', 'xml', 'gpx', 'tcx' ]
 
+@define
+class Decorator:
+
+	fncls: Callable|Type = field( default=None )
+	args: Tuple = field( factory=tuple )
+	kwargs: Dict = field( factory=dict )
+	frame = field( default=None )
+	name: str = field( default=None )
+
+	def __attrs_post_init__( self ):
+		self.name = self.caller_name # automatically set name
+
+	@property
+	def caller_name( self ) -> str|None:
+		try:
+			return self.frame.f_code.co_name
+		except AttributeError:
+			return None
+
 class PluginManager:
 
 	plugins: ClassVar[Dict[str, ModuleType]] = {}
+	decorators: ClassVar[List[Decorator]] = []
 
 	importers: ClassVar[List[Tuple[Type, Tuple, Dict]]] = []
 	keywords: ClassVar[List[Tuple]] = []
@@ -27,7 +48,13 @@ class PluginManager:
 	virtual_fields: ClassVar[List[Tuple]] = []
 
 	@classmethod
-	def init( cls, plugin_paths: Optional[List[str]] = None ):
+	def init( cls, plugin_paths: Optional[List[str]] = None, reinit: bool = False ):
+		# this is just for debug/dev purposes
+		if reinit:
+			log.debug( f'clearing plugin manager content' )
+			cls.plugins.clear()
+			cls.decorators.clear()
+
 		# noinspection PyUnresolvedReferences
 		import tracs.plugins
 
@@ -45,6 +72,11 @@ class PluginManager:
 			if name not in factory_plugins:
 				log.debug( f'importing plugin [bold green]{name}[/bold green] from {finder.path}' )
 				cls.plugins[name] = import_module( f'tracs.plugins.{name}' )
+
+	@classmethod
+	def add_decorator( cls, fncls: Callable|Type, args: Tuple, kwargs: Dict, frame: FrameInfo = None ) -> Decorator:
+		cls.decorators.append( dec := Decorator( fncls, args, kwargs, frame ) )
+		return dec
 
 def _lname( fncls: Union[Callable, Type] ) -> str:
 	return fncls.__name__.lower()
@@ -74,23 +106,20 @@ def _fnspec( fncls: Union[Callable, Type] ) -> Tuple[str, str, str, Mapping, Any
 # decorators
 
 def _register( *args, **kwargs ) -> Callable:
-	_fncls_list = kwargs.pop( '__fncls_list__' )
-	_decorator_name = kwargs.pop( '__decorator_name__' )
+	_current_frame = kwargs.pop( '_current_frame', None )
 
 	def _inner( fncls ):
-		# def _wrapper( *wrapper_args, **wrapper_kwargs ):
-		#	fn( *wrapper_args, **wrapper_kwargs )
-
 		if fncls is not None:
-			_fncls_list.append( (fncls, args, kwargs) )
-			log.debug( f'registered {_decorator_name} function/class from {fncls} in module {_fnspec( fncls )[1]}' )
+			# noinspection PyShadowingNames
+			dec = PluginManager.add_decorator( fncls, args, kwargs, _current_frame )
+			log.debug( f'registered {dec.name} function/class from {fncls} in module {_fnspec( fncls )[1]}' )
 			return fncls
 		else:
 			return args[0]()
 
 	if args and not kwargs and callable( args[0] ):
-		_fncls_list.append( (args[0], (), {}) )
-		log.debug( f'registered {_decorator_name} function from {args[0]} in module {_fnspec( args[0] )[1]}' )
+		dec = PluginManager.add_decorator( args[0], (), {}, _current_frame )
+		log.debug( f'registered {dec.name} function from {args[0]} in module {_fnspec( args[0] )[1]}' )
 
 		if isclass( args[0] ):
 			return args[0]
@@ -100,22 +129,22 @@ def _register( *args, **kwargs ) -> Callable:
 # actual real-world decorators below
 
 def keyword( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = PluginManager.keywords, __decorator_name__='keyword' )
+	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
 
 def normalizer( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = PluginManager.normalizers, __decorator_name__='normalizer' )
+	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
 
 def virtualfield( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = PluginManager.virtual_fields, __decorator_name__='virtualfield' )
+	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
 
 def importer( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = PluginManager.importers, __decorator_name__='importer' )
+	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
 
 def resourcetype( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = PluginManager.resource_types, __decorator_name__='resourcetype' )
+	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
 
 def service( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = PluginManager.services, __decorator_name__='service' )
+	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
 
 def setup( *args, **kwargs ):
-	return _register( *args, **kwargs, __fncls_list__ = PluginManager.setups, __decorator_name__='setup' )
+	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )

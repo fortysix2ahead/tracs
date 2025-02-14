@@ -1,5 +1,8 @@
 # sample code for generic decorating:
-from inspect import isclass, isfunction
+from inspect import currentframe, FrameInfo, isclass, isfunction, getframeinfo, getouterframes, stack
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+from attrs import define, field
 
 DECORATIONS = list()
 
@@ -76,3 +79,90 @@ def test_decorators():
 	assert c1.value == 'c1'
 	assert isclass( C1 )
 	assert isinstance( c1, C1 )
+
+# taken from plugin manager
+
+@define
+class Decorator:
+
+	fncls: Any = field( default=None )
+	args: Tuple = field( factory=tuple )
+	kwargs: Dict = field( factory=dict )
+	frame = field( default=None )
+
+	@property
+	def caller_name( self ) -> str|None:
+		return self.frame.f_code.co_name if self.frame else None
+
+@define
+class DecoratorRegistry:
+
+	decorators: List = field( factory=list )
+	call_counter: int = field( default=0 )
+
+	def add( self, fncls: Any, args: Tuple, kwargs: Dict, frame: FrameInfo = None ):
+		self.decorators.append( Decorator( fncls, args, kwargs, frame ) )
+
+REGISTRY = DecoratorRegistry()
+
+def _register( *args, **kwargs ) -> Callable:
+	_current_frame = kwargs.pop( '_current_frame', None )
+
+	def _inner( fncls ):
+		if fncls is not None:
+			REGISTRY.add( fncls, args, kwargs, _current_frame )
+			return fncls
+		else:
+			return args[0]()
+
+	if args and not kwargs and callable( args[0] ):
+		REGISTRY.add( args[0], (), {}, _current_frame )
+		if isclass( args[0] ):
+			return args[0]
+
+	return _inner
+
+def register( *args, **kwargs ):
+	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
+
+def register_1( *args, **kwargs ):
+	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
+
+@register
+def f_01():
+	REGISTRY.call_counter += 1
+
+@register( 'arg_01' )
+def f_02():
+	REGISTRY.call_counter += 1
+
+@register( param='param_01' )
+def f_03():
+	REGISTRY.call_counter += 1
+
+@register( 'arg_02', param='param_02' )
+def f_04():
+	REGISTRY.call_counter += 1
+
+@register_1
+class C01:
+	...
+
+@register_1( 'arg_01' )
+class C02:
+	...
+
+@register_1( param='param_01' )
+class C03:
+	...
+
+@register_1( 'arg_02', param='param_02' )
+class C04:
+	...
+
+def test_decorators_2():
+	assert len( REGISTRY.decorators ) == 8
+	assert REGISTRY.call_counter == 0
+
+	callers = [ d.caller_name for d in REGISTRY.decorators ]
+	assert callers == ['register', 'register', 'register', 'register', 'register_1', 'register_1', 'register_1', 'register_1']

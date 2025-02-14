@@ -58,24 +58,26 @@ class PluginManager:
 		# noinspection PyUnresolvedReferences
 		import tracs.plugins
 
-		# import factory plugins
-		for fp in factory_plugins:
-			log.debug( f'importing factory plugin [bold green]{fp}[/bold green]' )
-			cls.plugins[fp] = import_module( f'tracs.plugins.{fp}' )
-
 		# extend plugin path and load additional, non-optional plugins
 		for pp in plugin_paths or []:
 			plugin_path = OSFS( root_path=pp, expand_vars=True ).getsyspath( '/tracs/plugins' )
 			tracs.plugins.__path__ = extend_path( [plugin_path], 'tracs.plugins' )
+			log.debug( f'adding {plugin_path} to list of plugin search paths' )
 
+		# load plugin modules
 		for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
-			if name not in factory_plugins:
-				log.debug( f'importing plugin [bold green]{name}[/bold green] from {finder.path}' )
+			try:
 				cls.plugins[name] = import_module( f'tracs.plugins.{name}' )
+			except ImportError:
+				log.error( f'failed to import module tracs.plugins.{name}', exc_info=True )
+				continue
 
 	@classmethod
-	def add_decorator( cls, fncls: Callable|Type, args: Tuple, kwargs: Dict, frame: FrameInfo = None ) -> Decorator:
-		cls.decorators.append( dec := Decorator( fncls, args, kwargs, frame ) )
+	def register_decorator( cls, fncls: Callable | Type, args: Tuple, kwargs: Dict, frame: FrameInfo = None ) -> Decorator:
+		dec = Decorator( fncls, args, kwargs, frame )
+		cls.decorators.append( dec )
+
+		log.debug( f'registered decorator [green]{dec.name}[/green] from {fncls} in module {_fnspec( fncls )[1]}' )
 		return dec
 
 def _lname( fncls: Union[Callable, Type] ) -> str:
@@ -110,17 +112,13 @@ def _register( *args, **kwargs ) -> Callable:
 
 	def _inner( fncls ):
 		if fncls is not None:
-			# noinspection PyShadowingNames
-			dec = PluginManager.add_decorator( fncls, args, kwargs, _current_frame )
-			log.debug( f'registered {dec.name} function/class from {fncls} in module {_fnspec( fncls )[1]}' )
+			PluginManager.register_decorator( fncls, args, kwargs, _current_frame )
 			return fncls
 		else:
 			return args[0]()
 
 	if args and not kwargs and callable( args[0] ):
-		dec = PluginManager.add_decorator( args[0], (), {}, _current_frame )
-		log.debug( f'registered {dec.name} function from {args[0]} in module {_fnspec( args[0] )[1]}' )
-
+		PluginManager.register_decorator( args[0], (), {}, _current_frame )
 		if isclass( args[0] ):
 			return args[0]
 

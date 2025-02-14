@@ -11,6 +11,8 @@ from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple
 from attrs import define, field
 from fs.osfs import OSFS
 
+from tracs.core import Keyword
+
 log = getLogger( __name__ )
 
 @define
@@ -20,10 +22,17 @@ class Decorator:
 	args: Tuple = field( factory=tuple )
 	kwargs: Dict = field( factory=dict )
 	frame = field( default=None )
+	clazz = field( default=None )
+
 	name: str = field( default=None )
+	type: str = field( default=None )
 
 	def __attrs_post_init__( self ):
-		self.name = self.caller_name # automatically set name
+		self.name = self.lname
+		self.type = self.caller_name # automatically set type
+
+	def __call__( self, *args, **kwargs ) -> Any:
+		return self.fncls( *args, **kwargs )
 
 	@property
 	def caller_name( self ) -> str|None:
@@ -65,19 +74,17 @@ class Decorator:
 		rval = next( (m[1].get( 'return' ) for m in members if m[0] == '__annotations__'), None )
 		return name, module, qname, params, rval
 
+@define
+class Registry:
+
+	_keyword: Dict[str, Keyword] = field( factory=dict, alias='_keyword' )
 
 class PluginManager:
 
 	plugins: ClassVar[Dict[str, ModuleType]] = {}
 	decorators: ClassVar[List[Decorator]] = []
 
-	importers: ClassVar[List[Tuple[Type, Tuple, Dict]]] = []
-	keywords: ClassVar[List[Tuple]] = []
-	normalizers: ClassVar[List[Tuple]] = []
-	resource_types: ClassVar[List[Tuple[Type, Tuple, Dict]]] = []
-	services: ClassVar[List[Tuple[Type, Tuple, Dict]]] = []
-	setups: ClassVar[List[Tuple]] = []
-	virtual_fields: ClassVar[List[Tuple]] = []
+	_registry: ClassVar[Registry] = Registry()
 
 	@classmethod
 	def init( cls, plugin_paths: Optional[List[str]] = None, reinit: bool = False ):
@@ -105,25 +112,40 @@ class PluginManager:
 				continue
 
 	@classmethod
-	def register_decorator( cls, fncls: Callable | Type, args: Tuple, kwargs: Dict, frame: FrameInfo = None ) -> Decorator:
-		cls.decorators.append( d := Decorator( fncls, args, kwargs, frame ) )
+	def registry( cls ) -> Registry:
+		for decorator_type in [ 'keyword' ]:
+			for d in filter( lambda dec:  dec.type == decorator_type, cls.decorators ):
+				try:
+					inst = d()
+					getattr( cls._registry, f'_{d.type}' )[d.name] = inst
+					log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
+
+				except AttributeError: # need to be extended
+					log.error( f'error calling decorated object {d.fncls}' )
+
+		return cls._registry
+
+	@classmethod
+	def register_decorator( cls, fncls: Callable | Type, args: Tuple, kwargs: Dict, frame: FrameInfo = None, clazz: Type = None ) -> Decorator:
+		cls.decorators.append( d := Decorator( fncls, args, kwargs, frame, clazz ) )
 		log.debug( f'registered decorator [green]{d.name}[/green] from {d.fncls} in module [green]{d.module}[/green]' )
 		return d
 
 # decorators
 
 def _register( *args, **kwargs ) -> Callable:
+	_class = kwargs.pop( '_class', None )
 	_current_frame = kwargs.pop( '_current_frame', None )
 
 	def _inner( fncls ):
 		if fncls is not None:
-			PluginManager.register_decorator( fncls, args, kwargs, _current_frame )
+			PluginManager.register_decorator( fncls, args, kwargs, _current_frame, _class )
 			return fncls
 		else:
 			return args[0]()
 
 	if args and not kwargs and callable( args[0] ):
-		PluginManager.register_decorator( args[0], (), {}, _current_frame )
+		PluginManager.register_decorator( args[0], (), {}, _current_frame, _class )
 		if isclass( args[0] ):
 			return args[0]
 
@@ -132,7 +154,7 @@ def _register( *args, **kwargs ) -> Callable:
 # actual real-world decorators below
 
 def keyword( *args, **kwargs ):
-	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
+	return _register( *args, **(kwargs | { '_current_frame': currentframe(), '_class': Keyword } ) )
 
 def normalizer( *args, **kwargs ):
 	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )

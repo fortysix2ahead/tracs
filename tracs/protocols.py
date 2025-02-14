@@ -7,6 +7,50 @@ from typing import Any, Dict, List, Optional, Protocol, Tuple, Type, Union
 
 log = getLogger( __name__ )
 
+class Keyword( Protocol ):
+
+	@property
+	def name( self ) -> str:
+		...
+
+	@property
+	def description( self ) -> str:
+		...
+
+	def __call__( self, *args, **kwargs ) -> str:
+		...
+
+class Normalizer( Protocol ):
+
+	@property
+	def name( self ) -> str:
+		...
+
+	@property
+	def type( self ) -> str:
+		...
+
+	@property
+	def description( self ) -> str:
+		...
+
+	def __call__( self, *args, **kwargs ) -> str:
+		...
+
+class VirtualField( Protocol ):
+
+	...
+
+class ResourceType( Protocol ):
+
+	@property
+	def name( self ) -> str:
+		...
+
+	@property
+	def type( self ) -> str:
+		...
+
 class Resource( Protocol ):
 
 	...

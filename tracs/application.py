@@ -89,21 +89,9 @@ class Application:
 		# print context configuration
 		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
 
-		# init plugin manager/load plugins
+		# init plugin manager and registry
 		PluginManager.init( (self._config.pluginpath or '').split( ' ' ) )
 		self._registry = PluginManager.registry()
-
-		# create registry
-		self._registry = Registry.create(
-			keywords=PluginManager.keywords,
-			normalizers=PluginManager.normalizers,
-			resource_types=PluginManager.resource_types,
-			importers=PluginManager.importers,
-			virtual_fields=PluginManager.virtual_fields,
-			setups=PluginManager.setups,
-			services=PluginManager.services,
-			ctx=self._ctx,
-		)
 
 		# open db from config_dir
 		self._db = ActivityDb(

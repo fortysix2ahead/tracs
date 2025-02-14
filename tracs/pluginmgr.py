@@ -13,8 +13,6 @@ from fs.osfs import OSFS
 
 log = getLogger( __name__ )
 
-factory_plugins = [ 'csv', 'json', 'xml', 'gpx', 'tcx' ]
-
 @define
 class Decorator:
 
@@ -33,6 +31,40 @@ class Decorator:
 			return self.frame.f_code.co_name
 		except AttributeError:
 			return None
+
+	@property
+	def lname( self ) -> str:
+		return self.fncls.__name__.lower()
+
+	@property
+	def module( self ) -> str:
+		return self.fncls.__module__
+
+	@property
+	def qname( self ) -> str:
+		return f'{self.fncls.__module__}.{self.fncls.__name__}'
+
+	@property
+	def params( self ) -> Tuple[Mapping, Any]:
+		return getsignature( self.fncls ).parameters, next( (m[1].get( 'return' ) for m in getmembers( self.fncls ) if m[0] == '__annotations__'), None )
+
+	@property
+	def spec( self ) -> Tuple[str, str, str, Mapping, Any]:
+		"""
+		Helper for examining a provided function. Returns a tuple containing
+		(function name, module name, qualified name, return value type)
+
+		:param fncls: function to be examined
+		:return: tuple
+		"""
+		members, signature = getmembers( self.fncls ), getsignature( self.fncls )
+		name = self.fncls.__name__
+		module = self.fncls.__module__
+		qname = f'{self.fncls.__module__}.{self.fncls.__name__}'
+		params = signature.parameters
+		rval = next( (m[1].get( 'return' ) for m in members if m[0] == '__annotations__'), None )
+		return name, module, qname, params, rval
+
 
 class PluginManager:
 
@@ -74,36 +106,9 @@ class PluginManager:
 
 	@classmethod
 	def register_decorator( cls, fncls: Callable | Type, args: Tuple, kwargs: Dict, frame: FrameInfo = None ) -> Decorator:
-		dec = Decorator( fncls, args, kwargs, frame )
-		cls.decorators.append( dec )
-
-		log.debug( f'registered decorator [green]{dec.name}[/green] from {fncls} in module {_fnspec( fncls )[1]}' )
-		return dec
-
-def _lname( fncls: Union[Callable, Type] ) -> str:
-	return fncls.__name__.lower()
-
-def _qname( fncls: Union[Callable, Type] ) -> str:
-	return f'{fncls.__module__}.{fncls.__name__}'
-
-def _params( fncls: Union[Callable, Type] ) -> Tuple[Mapping, Any]:
-	return getsignature( fncls ).parameters, next( (m[1].get( 'return' ) for m in getmembers( fncls ) if m[0] == '__annotations__'), None )
-
-def _fnspec( fncls: Union[Callable, Type] ) -> Tuple[str, str, str, Mapping, Any]:
-	"""
-	Helper for examining a provided function. Returns a tuple containing
-	(function name, module name, qualified name, return value type)
-
-	:param fncls: function to be examined
-	:return: tuple
-	"""
-	members, signature = getmembers( fncls ), getsignature( fncls )
-	name = fncls.__name__
-	module = fncls.__module__
-	qname = f'{fncls.__module__}.{fncls.__name__}'
-	params = signature.parameters
-	rval = next( (m[1].get( 'return' ) for m in members if m[0] == '__annotations__'), None )
-	return name, module, qname, params, rval
+		cls.decorators.append( d := Decorator( fncls, args, kwargs, frame ) )
+		log.debug( f'registered decorator [green]{d.name}[/green] from {d.fncls} in module [green]{d.module}[/green]' )
+		return d
 
 # decorators
 

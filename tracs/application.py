@@ -91,6 +91,7 @@ class Application:
 
 		# init plugin manager/load plugins
 		PluginManager.init( (self._config.pluginpath or '').split( ' ' ) )
+		self._registry = PluginManager.registry()
 
 		# create registry
 		self._registry = Registry.create(

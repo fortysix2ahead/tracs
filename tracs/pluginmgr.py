@@ -78,6 +78,7 @@ class Decorator:
 class Registry:
 
 	_keyword: Dict[str, Keyword] = field( factory=dict, alias='_keyword' )
+	_normalizer: Dict[str, Keyword] = field( factory=dict, alias='_normalizer' )
 
 class PluginManager:
 
@@ -113,7 +114,7 @@ class PluginManager:
 
 	@classmethod
 	def registry( cls ) -> Registry:
-		for decorator_type in [ 'keyword' ]:
+		for decorator_type in [ 'keyword', 'normalizer' ]:
 			for d in filter( lambda dec:  dec.type == decorator_type, cls.decorators ):
 				try:
 					inst = d()

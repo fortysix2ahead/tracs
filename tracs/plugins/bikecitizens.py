@@ -106,8 +106,8 @@ class BikecitizensActivity:
 @resourcetype
 def bikecitizens_resource_types() -> List[ResourceType]:
 	return [
-		ResourceType( type=BIKECITIZENS_RECORDING_TYPE, recording=True ),
-		ResourceType( type=BIKECITIZENS_TYPE, summary=True ),
+		ResourceType( name=BIKECITIZENS_RECORDING_TYPE, recording=True ),
+		ResourceType( name=BIKECITIZENS_TYPE, summary=True ),
 	]
 
 # resource handlers

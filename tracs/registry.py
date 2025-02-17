@@ -101,12 +101,12 @@ class Registry:
 		for fncls, args, kwargs in resource_types:
 			try:
 				if isfunction( fncls ):
-					self.resource_types[rt.type] = (rt := fncls())
+					self.resource_types[rt.name] = (rt := fncls())
 				elif isclass( fncls ):
-					self.resource_types[rt.type] = (rt := ResourceType( **kwargs ) )
+					self.resource_types[rt.name] = (rt := ResourceType( **kwargs ))
 
 				# noinspection PyUnboundLocalVariable
-				log.debug( f'registered resource type [orange1]{_qname( fncls )}[/orange1] for type [orange1]{rt.type}[/orange1]' )
+				log.debug( f'registered resource type [orange1]{_qname( fncls )}[/orange1] for type [orange1]{rt.name}[/orange1]' )
 
 			except (RuntimeError, UnboundLocalError):
 				log.error( f'unable to register resource type from {fncls}' )
@@ -189,7 +189,7 @@ class Registry:
 	# resource types
 
 	def register_resource_type( self, resource_type ) -> None:
-		self.resource_types[resource_type.type] = resource_type
+		self.resource_types[resource_type.name] = resource_type
 
 	def summary_types( self ) -> List[ResourceType]:
 		return [ rt for rt in  self.resource_types.values() if rt.summary ]

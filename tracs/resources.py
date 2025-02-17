@@ -38,7 +38,6 @@ class ResourceType:
 	# type/subtype
 	# type "/" [tree "."] subtype ["+" suffix]* [";" parameter]
 
-	type: str = field( default=None )
 	name: str = field( default=None )
 
 	summary: bool = field( default=False )
@@ -46,20 +45,20 @@ class ResourceType:
 	image: bool = field( default=False )
 
 	def __attrs_post_init__( self ):
-		if not TYPE_PATTERN.match( self.type ):
+		if not TYPE_PATTERN.match( self.name ):
 			raise ValueError
 
 	@cached_property
 	def subtype( self ) -> Optional[str]:
-		return TYPE_PATTERN.match( self.type ).groupdict().get( 'subtype' )
+		return TYPE_PATTERN.match( self.name ).groupdict().get( 'subtype' )
 
 	@cached_property
 	def suffix( self ) -> Optional[str]:
-		return TYPE_PATTERN.match( self.type ).groupdict().get( 'suffix' )
+		return TYPE_PATTERN.match( self.name ).groupdict().get( 'suffix' )
 
 	@cached_property
 	def vendor( self ) -> Optional[str]:
-		return TYPE_PATTERN.match( self.type ).groupdict().get( 'vendor' )
+		return TYPE_PATTERN.match( self.name ).groupdict().get( 'vendor' )
 
 	@cached_property
 	def ext( self ) -> Optional[str]:
@@ -190,7 +189,7 @@ class Resource:
 		return self.content.decode( encoding )
 
 	def get_child( self, resource_type: str ) -> Optional[Resource]:
-		return next( (r for r in self.resources if r.type == resource_type), None )
+		return next( (r for r in self.resources if r.name == resource_type), None )
 
 	# helper for convenient data access (only when raw field contains a dict)
 

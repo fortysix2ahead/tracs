@@ -18,7 +18,7 @@ GPX_TYPE = 'application/gpx+xml'
 
 @resourcetype
 def gpx_resource_type() -> ResourceType:
-	return ResourceType( type=GPX_TYPE, recording=True )
+	return ResourceType( name=GPX_TYPE, recording=True )
 
 @importer( type=GPX_TYPE )
 class GPXImporter( ResourceHandler ):

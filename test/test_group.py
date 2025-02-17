@@ -32,6 +32,6 @@ def test_group_activities():
 @mark.xfail # todo: needs improvement
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_ungroup_activities( env: Environment ):
-	env.db.register_summary_types( *[ rt.type for rt in Registry.instance().resource_types.values() if rt.summary ] )
+	env.db.register_summary_types( *[rt.name for rt in Registry.instance().resource_types.values() if rt.summary] )
 	g = env.db.get_by_id( 2001 )
 	result = ungroup_activities( env.ctx, [g], force=True )

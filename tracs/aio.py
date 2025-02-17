@@ -116,8 +116,8 @@ def reimport_activities(
 		ctx.advance( f'{a.uids}' )
 
 		all_resources = ctx.db.find_all_resources( a.refs() )
-		resources = [ r for r in all_resources if ctx.registry.resource_types.get( r.type ).summary ]
-		resources.extend( [ r for r in all_resources if include_recordings and ctx.registry.resource_types.get( r.type ).recording ] )
+		resources = [r for r in all_resources if ctx.registry.resource_types.get( r.name ).summary]
+		resources.extend( [r for r in all_resources if include_recordings and ctx.registry.resource_types.get( r.name ).recording] )
 		src_activities = [ a2 for r in resources if ( a2:= Service.as_activity( r ) ) ]
 
 		new_activity = Activity.group_of( *src_activities, ignored_fields=ignore_fields )

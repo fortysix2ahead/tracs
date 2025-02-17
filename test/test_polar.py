@@ -20,7 +20,7 @@ def test_exercise( path ):
 	pfe = resource.data
 	assert pfe.local_id == 100001
 	assert pfe.title == '00:25:34;0.0 km'
-	assert pfe.type == 'EXERCISE'
+	assert pfe.name == 'EXERCISE'
 	assert pfe.distance == 12000.3
 	assert pfe.calories == 456
 

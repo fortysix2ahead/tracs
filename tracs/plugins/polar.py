@@ -608,9 +608,9 @@ class Polar( Service ):
 			session_activity.uid = uid
 
 			if not self._session_importer.remainders:
-				session = first_true( session_activity.resources, pred=lambda r: r.type == POLAR_SESSION_TYPE )
-				gpx = first_true( session_activity.resources, pred=lambda r: r.type == GPX_TYPE )
-				tcx = first_true( session_activity.resources, pred=lambda r: r.type == TCX_TYPE )
+				session = first_true( session_activity.resources, pred=lambda r: r.name == POLAR_SESSION_TYPE )
+				gpx = first_true( session_activity.resources, pred=lambda r: r.name == GPX_TYPE )
+				tcx = first_true( session_activity.resources, pred=lambda r: r.name == TCX_TYPE )
 
 				# update resource metadata
 				for r, ext in zip( [session, gpx, tcx], ['.session.json', '.gpx', '.tcx'] ):
@@ -630,9 +630,9 @@ class Polar( Service ):
 				remainders = sorted( self._session_importer.remainders, key=lambda r: r.starttime )
 
 				for i, a in enumerate( remainders ):
-					summary = first_true( a.resources, pred=lambda r: r.type == POLAR_SESSION_TYPE )
-					gpx = first_true( a.resources, pred=lambda r: r.type == GPX_TYPE )
-					tcx = first_true( a.resources, pred=lambda r: r.type == TCX_TYPE )
+					summary = first_true( a.resources, pred=lambda r: r.name == POLAR_SESSION_TYPE )
+					gpx = first_true( a.resources, pred=lambda r: r.name == GPX_TYPE )
+					tcx = first_true( a.resources, pred=lambda r: r.name == TCX_TYPE )
 
 					# update resource metadata
 					for r, ext in zip( [ summary, gpx, tcx ], [ '.session.json', '.gpx', '.tcx' ] ):
@@ -650,7 +650,7 @@ class Polar( Service ):
 					a.uid = UID( uid.classifier, uid.local_id, part=i + 1 )
 
 				# update and write session resource
-				session = first_true( session_activity.resources, pred=lambda r: r.type == POLAR_SESSION_TYPE )
+				session = first_true( session_activity.resources, pred=lambda r: r.name == POLAR_SESSION_TYPE )
 				session.path = path_for_id( id, self.name, f'{id}.session.json' )
 				session.uid, session.source = uid, src
 				dst_fs.writebytes( session.path, contents=session.content )

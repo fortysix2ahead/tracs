@@ -48,9 +48,9 @@ def test_resource_type():
 def test_resource_types():
 	# setup
 	ResourceTypes.inst().clear()
-	ResourceTypes.inst()[rt.type] = ( rt := ResourceType( 'application/vnd.polar+json', summary=True ) )
-	ResourceTypes.inst()[rt.type] = ( rt := ResourceType( 'application/gpx+xml', recording=True ) )
-	ResourceTypes.inst()[rt.type] = ( rt := ResourceType( 'image/jpeg', image=True ) )
+	ResourceTypes.inst()[rt.name] = (rt := ResourceType( 'application/vnd.polar+json', summary=True ))
+	ResourceTypes.inst()[rt.name] = (rt := ResourceType( 'application/gpx+xml', recording=True ))
+	ResourceTypes.inst()[rt.name] = (rt := ResourceType( 'image/jpeg', image=True ))
 
 	# actual test
 	assert len( ResourceTypes.inst() ) == 3

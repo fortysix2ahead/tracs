@@ -11,7 +11,7 @@ JPEG_TYPE = 'image/jpeg'
 
 @resourcetype
 def jpeg_resource_type() -> ResourceType:
-	return ResourceType( type=JPEG_TYPE, image=True )
+	return ResourceType( name=JPEG_TYPE, image=True )
 
 @importer( type=JPEG_TYPE )
 class JpegImporter( ResourceHandler ):

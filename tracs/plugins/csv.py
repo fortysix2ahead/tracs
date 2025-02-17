@@ -13,7 +13,7 @@ DEFAULT_FIELD_SIZE_LIMIT = 131072
 # register CSV type
 @resourcetype
 def csv_resource_type() -> ResourceType:
-	return ResourceType( type=CSV_TYPE )
+	return ResourceType( name=CSV_TYPE )
 
 # todo: replace with @importer / remove duplicate type/cls information from here
 @importer( type=CSV_TYPE )

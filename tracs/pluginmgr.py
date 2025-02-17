@@ -134,26 +134,26 @@ class PluginManager:
 	def registry( cls ) -> Registry:
 		decorator_types = [ att[1:] for att in dir( Registry ) if DECORATOR_TYPE.fullmatch( att ) ]
 		for decorator_type in decorator_types:
-			for d in filter( lambda dec:  dec.type == decorator_type, cls.decorators ):
+			for d in filter( lambda dec: dec.name == decorator_type, cls.decorators ):
 				try:
 					match d.init:
 						case Decorator.Init.call:
 							if isinstance( inst := d(), list ):
 								for i in inst:
 									# todo: improve as we rely on i having a name attribute -> what to do if not?
-									getattr( cls._registry, f'_{d.type}' )[i.name] = i
+									getattr( cls._registry, f'_{d.name}' )[i.name] = i
 									log.debug( f'registered {i} provided by decorated function/class {d.fncls}' )
 							else:
-								getattr( cls._registry, f'_{d.type}' )[d.name] = (inst := d())
+								getattr( cls._registry, f'_{d.name}' )[d.name] = (inst := d())
 								log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
 						case Decorator.Init.cls:
-							getattr( cls._registry, f'_{d.type}' )[d.name] = d.fncls
-							log.debug( f'registered {d.type} class {d.fncls}' )
+							getattr( cls._registry, f'_{d.name}' )[d.name] = d.fncls
+							log.debug( f'registered {d.name} class {d.fncls}' )
 						case Decorator.Init.fn:
-							getattr( cls._registry, f'_{d.type}' )[d.name] = d.fncls
-							log.debug( f'registered {d.type} function {d.fncls}' )
+							getattr( cls._registry, f'_{d.name}' )[d.name] = d.fncls
+							log.debug( f'registered {d.name} function {d.fncls}' )
 						case _:
-							log.warning( f'unknown descriptor type {d.type}' ) # should not happen
+							log.warning( f'unknown descriptor type {d.name}' ) # should not happen
 
 				except (AttributeError, TypeError): # need to be extended
 					log.error( f'error calling decorated object {d.fncls}' )

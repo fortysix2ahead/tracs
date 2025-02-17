@@ -313,7 +313,7 @@ class TrainingCenterDatabase:
 
 @resourcetype
 def tcx_resource_type() -> ResourceType:
-	return ResourceType( type=TCX_TYPE, recording=True )
+	return ResourceType( name=TCX_TYPE, recording=True )
 
 @importer
 class TCXImporter( XMLHandler ):

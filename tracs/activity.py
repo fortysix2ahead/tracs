@@ -295,7 +295,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 		resource.__parent_activity__ = self
 
 	def resource_of_type( self, resource_type: str ) -> Optional[Resource]:
-		return first_true( self.resources.iter(), default=None, pred=lambda r: r.type == resource_type )
+		return first_true( self.resources.iter(), default=None, pred=lambda r: r.name == resource_type )
 
 	def resources_for( self, classifier: Optional[str], uid: Optional[UID|str] ) -> List[Resource]:
 		if classifier:

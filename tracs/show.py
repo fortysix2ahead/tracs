@@ -32,7 +32,7 @@ def show_resources( activities: List[Activity], ctx: ApplicationContext, display
 
 			table.add_row( '[bright_blue]native fields[/bright_blue]', '' )
 			try:
-				act = Registry.importer_for( r.type ).load_as_activity( path=Service.path_for_resource( r ) )
+				act = Registry.importer_for( r.name ).load_as_activity( path=Service.path_for_resource( r ) )
 				for nf in fields( act ):
 					table.add_row( nf.name, pp( getattr( act, nf.name ), max_depth=1, no_wrap=True ) )
 			except AttributeError:
@@ -71,7 +71,7 @@ def show_raw_activity( a: Activity, ctx: ApplicationContext ):
 		for r in resources:
 			resource_path = Registry.services.get( r.classifier ).path_for( resource=r )
 			path_exists = '[bright_green]\u2713[/bright_green]' if resource_path.exists() else '[bright_red]\u2716[/bright_red]'
-			table.add_row( pp( r.id ), r.name, r.path, path_exists, r.type, r.uid, pp( r.status ), r.source )
+			table.add_row( pp( r.id ), r.name, r.path, path_exists, r.name, r.uid, pp( r.status ), r.source )
 	console.print( table )
 
 def show_activity( a: Activity, ctx: ApplicationContext, show_fields: List[str] ):
@@ -154,7 +154,7 @@ def show_tags( ctx: ApplicationContext ) -> None:
 
 def show_types( ctx: ApplicationContext, used_only: bool = False ) -> None:
 	if used_only:
-		all_type_names = sorted( set( [ a.type.name for a in ctx.db.activities if a.type is not None ] ) )
+		all_type_names = sorted( set( [a.name.name for a in ctx.db.activities if a.name is not None] ) )
 	else:
 		all_type_names = sorted( ActivityTypes.names() )
 	

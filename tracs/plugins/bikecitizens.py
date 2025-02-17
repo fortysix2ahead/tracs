@@ -18,7 +18,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, APPNAME
 from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.json import DataclassFactoryHandler, JSONHandler
-from tracs.resources import Resource
+from tracs.resources import Resource, ResourceType
 from tracs.service import Service
 
 log = getLogger( __name__ )
@@ -75,13 +75,11 @@ class Point:
 	delta: int = field( default=None )
 	ele: int = field( default=None )
 
-@resourcetype( type=BIKECITIZENS_RECORDING_TYPE, recording=False )
 @define
 class BikecitizensRecording:
 
 	points: List[Point] = field( factory=list )
 
-@resourcetype( type=BIKECITIZENS_TYPE, summary=True )
 @define
 class BikecitizensActivity:
 
@@ -104,6 +102,13 @@ class BikecitizensActivity:
 	@property
 	def uid( self ) -> str:
 		return f'{SERVICE_NAME}:{self.id}'
+
+@resourcetype
+def bikecitizens_resource_types() -> List[ResourceType]:
+	return [
+		ResourceType( type=BIKECITIZENS_RECORDING_TYPE, recording=True ),
+		ResourceType( type=BIKECITIZENS_TYPE, summary=True ),
+	]
 
 # resource handlers
 

@@ -138,8 +138,14 @@ class PluginManager:
 				try:
 					match d.init:
 						case Decorator.Init.call:
-							getattr( cls._registry, f'_{d.type}' )[d.name] = (inst := d())
-							log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
+							if isinstance( inst := d(), list ):
+								for i in inst:
+									# todo: improve as we rely on i having a name attribute -> what to do if not?
+									getattr( cls._registry, f'_{d.type}' )[i.name] = i
+									log.debug( f'registered {i} provided by decorated function/class {d.fncls}' )
+							else:
+								getattr( cls._registry, f'_{d.type}' )[d.name] = (inst := d())
+								log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
 						case Decorator.Init.cls:
 							getattr( cls._registry, f'_{d.type}' )[d.name] = d.fncls
 							log.debug( f'registered {d.type} class {d.fncls}' )
@@ -202,7 +208,7 @@ def importer( *args, **kwargs ):
 	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.cls } ) )
 
 def resourcetype( *args, **kwargs ):
-	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.cls } ) )
+	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.call } ) )
 
 def service( *args, **kwargs ):
 	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.cls } ) )

@@ -1,10 +1,12 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from importlib import import_module
 from inspect import currentframe, FrameInfo, getmembers, isclass, signature as getsignature
 from logging import getLogger
 from pkgutil import extend_path, iter_modules
+from re import compile
 from types import ModuleType
 from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
 
@@ -15,14 +17,25 @@ from tracs.core import Keyword
 
 log = getLogger( __name__ )
 
+DECORATOR_TYPE = compile( r'^_[a-z]+$' )
+
 @define
 class Decorator:
+
+	class Init( Enum ):
+		none = 0,
+		cls = 1,
+		inst = 2,
+		fn = 3,
+		call = 4
 
 	fncls: Callable|Type = field( default=None )
 	args: Tuple = field( factory=tuple )
 	kwargs: Dict = field( factory=dict )
 	frame = field( default=None )
-	clazz = field( default=None )
+
+	cls: Type = field( default=None )
+	init: Init = field( default=Init.call )
 
 	name: str = field( default=None )
 	type: str = field( default=None )
@@ -77,8 +90,12 @@ class Decorator:
 @define
 class Registry:
 
+	_importer: Dict[str, Keyword] = field( factory=dict, alias='_importer' )
 	_keyword: Dict[str, Keyword] = field( factory=dict, alias='_keyword' )
 	_normalizer: Dict[str, Keyword] = field( factory=dict, alias='_normalizer' )
+	_resourcetype: Dict[str, Keyword] = field( factory=dict, alias='_resourcetype' )
+	_service: Dict[str, Keyword] = field( factory=dict, alias='_service' )
+	_setup: Dict[str, Keyword] = field( factory=dict, alias='_setup' )
 	_virtualfield: Dict[str, Keyword] = field( factory=dict, alias='_virtualfield' )
 
 class PluginManager:
@@ -115,21 +132,37 @@ class PluginManager:
 
 	@classmethod
 	def registry( cls ) -> Registry:
-		for decorator_type in [ 'keyword', 'normalizer', 'virtualfield' ]:
+		decorator_types = [ att[1:] for att in dir( Registry ) if DECORATOR_TYPE.fullmatch( att ) ]
+		for decorator_type in decorator_types:
 			for d in filter( lambda dec:  dec.type == decorator_type, cls.decorators ):
 				try:
-					inst = d()
-					getattr( cls._registry, f'_{d.type}' )[d.name] = inst
-					log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
+					match d.init:
+						case Decorator.Init.call:
+							getattr( cls._registry, f'_{d.type}' )[d.name] = (inst := d())
+							log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
+						case Decorator.Init.cls:
+							getattr( cls._registry, f'_{d.type}' )[d.name] = d.fncls
+							log.debug( f'registered {d.type} class {d.fncls}' )
+						case Decorator.Init.fn:
+							getattr( cls._registry, f'_{d.type}' )[d.name] = d.fncls
+							log.debug( f'registered {d.type} function {d.fncls}' )
+						case _:
+							log.warning( f'unknown descriptor type {d.type}' ) # should not happen
 
-				except AttributeError: # need to be extended
+				except (AttributeError, TypeError): # need to be extended
 					log.error( f'error calling decorated object {d.fncls}' )
 
 		return cls._registry
 
-	@classmethod
-	def register_decorator( cls, fncls: Callable | Type, args: Tuple, kwargs: Dict, frame: FrameInfo = None, clazz: Type = None ) -> Decorator:
-		cls.decorators.append( d := Decorator( fncls, args, kwargs, frame, clazz ) )
+	@staticmethod
+	def register_decorator(
+			fncls: Callable | Type,
+			args: Tuple, kwargs: Dict,
+			frame: FrameInfo = None,
+			cls: Type = None,
+			init: Decorator.Init = Decorator.Init.call
+	) -> Decorator:
+		PluginManager.decorators.append( d := Decorator( fncls, args, kwargs, frame, cls, init ) )
 		log.debug( f'registered decorator [green]{d.name}[/green] from {d.fncls} in module [green]{d.module}[/green]' )
 		return d
 
@@ -137,17 +170,18 @@ class PluginManager:
 
 def _register( *args, **kwargs ) -> Callable:
 	_class = kwargs.pop( '_class', None )
-	_current_frame = kwargs.pop( '_current_frame', None )
+	_frame = kwargs.pop( '_frame', None )
+	_init = kwargs.pop( '_init', Decorator.Init.none )
 
 	def _inner( fncls ):
 		if fncls is not None:
-			PluginManager.register_decorator( fncls, args, kwargs, _current_frame, _class )
+			PluginManager.register_decorator( fncls, args, kwargs, _frame, _class, _init )
 			return fncls
 		else:
 			return args[0]()
 
 	if args and not kwargs and callable( args[0] ):
-		PluginManager.register_decorator( args[0], (), {}, _current_frame, _class )
+		PluginManager.register_decorator( args[0], (), {}, _frame, _class, _init )
 		if isclass( args[0] ):
 			return args[0]
 
@@ -156,22 +190,22 @@ def _register( *args, **kwargs ) -> Callable:
 # actual real-world decorators below
 
 def keyword( *args, **kwargs ):
-	return _register( *args, **(kwargs | { '_current_frame': currentframe(), '_class': Keyword } ) )
+	return _register( *args, **(kwargs | { '_frame': currentframe(), '_init': Decorator.Init.call } ) )
 
 def normalizer( *args, **kwargs ):
-	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
+	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.call } ) )
 
 def virtualfield( *args, **kwargs ):
-	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
+	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.call } ) )
 
 def importer( *args, **kwargs ):
-	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
+	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.cls } ) )
 
 def resourcetype( *args, **kwargs ):
-	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
+	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.cls } ) )
 
 def service( *args, **kwargs ):
-	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
+	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.cls } ) )
 
 def setup( *args, **kwargs ):
-	return _register( *args, **(kwargs | {'_current_frame': currentframe() } ) )
+	return _register( *args, **(kwargs | { '_frame': currentframe(), '_init': Decorator.Init.fn } ) )

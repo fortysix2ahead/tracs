@@ -194,8 +194,14 @@ class Registry:
 	def summary_types( self ) -> List[ResourceType]:
 		return [ rt for rt in  self.resource_types.values() if rt.summary ]
 
+	def summary_type_names( self ) -> List[str]:
+		return [ st.name for st in self.summary_types() ]
+
 	def recording_types( self ) -> List[ResourceType]:
 		return [ rt for rt in  self.resource_types.values() if rt.recording ]
+
+	def recording_type_names( self ) -> List[str]:
+		return [rt.name for rt in self.recording_types()]
 
 	def resource_type_for_extension( self, extension: str ) -> Optional[ResourceType]:
 		return next( (rt for rt in self.resource_types.values() if rt.extension() == extension), None )

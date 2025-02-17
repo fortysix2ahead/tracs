@@ -98,8 +98,8 @@ class Application:
 			path=self._ctx.db_dir_path,
 			read_only=self._ctx.pretend,
 			enable_index=self.ctx.config.db.index,
-			summary_types=[t.name for t in self._registry.summary_types()],
-			recording_types=[t.name for t in self._registry.recording_types()],
+			summary_types=self._registry.summary_type_names(),
+			recording_types=self._registry.recording_type_names()
 		)
 		self._ctx.db = self._db # todo: really put db into ctx? or keep it here?
 

@@ -49,8 +49,6 @@ PHOTO_SIZE = 2800
 TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
 TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
 
-# register Strava Activity type
-# register CSV type
 @resourcetype
 def strava_resource_type() -> ResourceType:
 	return ResourceType( name=STRAVA_TYPE, summary=True )

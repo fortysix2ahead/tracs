@@ -36,7 +36,7 @@ from tracs.plugins.polarconstants import ACCESSLINK_TYPES
 from tracs.plugins.polar_takeout import PolarFlowTakeoutImporter
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.plugins.xml import XMLHandler
-from tracs.resources import Resource
+from tracs.resources import Resource, ResourceType
 from tracs.service import Service, path_for_id
 from tracs.streams import Point, Stream
 from tracs.utils import seconds_to_time, to_isotime
@@ -147,7 +147,6 @@ class ResourcePartlist:
 	def end( self ) -> datetime:
 		return self.range.end_datetime
 
-@resourcetype( type=POLAR_FLOW_TYPE, summary=True )
 @define
 class PolarFlowExercise:
 
@@ -194,7 +193,6 @@ class PolarFlowExercise:
 	def get_type( self ) -> ActivityTypes:
 		return TYPES.get( self.iconUrl.rsplit( '/', 1 )[1], Types.unknown ) if self.iconUrl else Types.unknown
 
-@resourcetype( type=POLAR_FITNESS_TEST_TYPE )
 @define
 class PolarFitnessTest:
 
@@ -213,7 +211,6 @@ class PolarFitnessTest:
 	type: str = field( default=None )
 	url: str = field( default=None )
 
-@resourcetype( type=POLAR_ORTHOSTATIC_TEST_TYPE )
 @define
 class PolarOrthostaticTest:
 
@@ -230,7 +227,6 @@ class PolarOrthostaticTest:
 	def local_id( self ) -> int:
 		return int( self.__class__._RX_URL.fullmatch( self.url ).groups()[0] )
 
-@resourcetype( type=POLAR_RRRECORDING_TYPE )
 @define
 class PolarRRRecording:
 
@@ -247,26 +243,22 @@ class PolarRRRecording:
 	def local_id( self ) -> int:
 		return int( self.__class__._RX_URL.fullmatch( self.url ).groups()[0] )
 
-@resourcetype( type=POLAR_CSV_TYPE )
 @define
 class PolarFlowExerciseCsv:
 
 	pass
 
-@resourcetype( type=POLAR_HRV_TYPE )
 @define
 class PolarFlowExerciseHrv:
 
 	pass
 
-@resourcetype( type=POLAR_SESSION_TYPE )
 @define
 class PolarTrainingSession:
 
 	pass
 
 # todo: this needs an update, but has low priority
-@resourcetype( type=POLAR_EXERCISE_DATA_TYPE )
 class PolarExerciseDataActivity( Activity ):
 
 	def __raw_init__( self, raw: Any ) -> None:
@@ -274,6 +266,19 @@ class PolarExerciseDataActivity( Activity ):
 		self.time = datetime.strptime( self.raw.get( 'time' ), '%Y-%m-%d %H:%M:%S.%f' ).astimezone( UTC )  # 2016-09-15 16:50:27.0
 		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
 		self.uid = f'{self.classifier}:{self.raw_id}'
+
+@resourcetype
+def bikecitizens_resource_types() -> List[ResourceType]:
+	return [
+		ResourceType( name=POLAR_FLOW_TYPE, summary=True ),
+		ResourceType( name=POLAR_FITNESS_TEST_TYPE ),
+		ResourceType( name=POLAR_ORTHOSTATIC_TEST_TYPE ),
+		ResourceType( name=POLAR_RRRECORDING_TYPE ),
+		ResourceType( name=POLAR_CSV_TYPE ),
+		ResourceType( name=POLAR_HRV_TYPE ),
+		ResourceType( name=POLAR_SESSION_TYPE ),
+		ResourceType( name=POLAR_EXERCISE_DATA_TYPE ),
+	]
 
 @importer
 class PolarFlowImporter( DataclassFactoryHandler ):

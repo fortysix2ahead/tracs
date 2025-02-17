@@ -20,7 +20,7 @@ from tracs.handlers import ResourceHandler
 from tracs.pluginmgr import importer, resourcetype, service
 from tracs.plugins.csv import CSVHandler
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
-from tracs.resources import Resource
+from tracs.resources import Resource, ResourceType
 from tracs.service import Service
 from tracs.utils import as_datetime
 
@@ -62,7 +62,6 @@ class Point:
 	def time_as_int( self ) -> int:
 		return int( self.time_as_str() )
 
-@resourcetype( type=WAZE_TYPE, summary=True )
 @define
 class WazeActivity:
 
@@ -232,7 +231,6 @@ class UserCounters:
 	points: str = field( default=None )
 	drive: str = field( default=None )
 
-@resourcetype( type=WAZE_ACCOUNT_ACTIVITY_TYPE )
 @define
 class AccountActivity:
 
@@ -248,7 +246,6 @@ class AccountActivity:
 	user_feedback: List[UserFeedback] = field( factory=list )
 	carpool_preferences: CarpoolPreferences = field( default=CarpoolPreferences() )
 
-@resourcetype( type=WAZE_ACCOUNT_INFO_TYPE )
 @define
 class AccountInfo:
 
@@ -268,6 +265,14 @@ class Takeout:
 
 	account_activity: AccountActivity = field( default=AccountActivity() )
 	account_info: AccountInfo = field( default=AccountInfo() )
+
+@resourcetype
+def bikecitizens_resource_types() -> List[ResourceType]:
+	return [
+		ResourceType( name=WAZE_TYPE, summary=True ),
+		ResourceType( name=WAZE_ACCOUNT_ACTIVITY_TYPE ),
+		ResourceType( name=WAZE_ACCOUNT_INFO_TYPE ),
+	]
 
 @importer( type=WAZE_ACCOUNT_ACTIVITY_TYPE )
 class WazeAccountActivityImporter( CSVHandler ):

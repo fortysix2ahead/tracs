@@ -21,7 +21,7 @@ from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSONHandler
 from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
-from tracs.resources import Resource
+from tracs.resources import Resource, ResourceType
 from tracs.service import Service
 from tracs.utils import to_isotime
 
@@ -62,7 +62,6 @@ HEADERS_API = { **HEADERS_TEMPLATE,
    'X-Requested-With': 'XMLHttpRequest',
 }
 
-@resourcetype( type=STRAVA_WEB_TYPE, summary=True )
 @define
 class StravaWebActivity:
 	activity_type_display_name: str = field( default=None )
@@ -105,6 +104,10 @@ class StravaWebActivity:
 	type: str = field( default=None )
 	visibility: str = field( default=None )
 	workout_type: Optional[int] = field( default=None )
+
+@resourcetype
+def stravaweb_resource_type() -> ResourceType:
+	return ResourceType( name=STRAVA_WEB_TYPE, summary=True )
 
 @define
 class ActivityPage:

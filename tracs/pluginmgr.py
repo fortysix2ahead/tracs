@@ -8,12 +8,13 @@ from logging import getLogger
 from pkgutil import extend_path, iter_modules
 from re import compile
 from types import ModuleType
-from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type
 
 from attrs import define, field
 from fs.osfs import OSFS
 
-from tracs.core import Keyword
+from tracs.core import Keyword, Normalizer
+from tracs.resources import ResourceType
 
 log = getLogger( __name__ )
 
@@ -92,11 +93,23 @@ class Registry:
 
 	_importer: Dict[str, Keyword] = field( factory=dict, alias='_importer' )
 	_keyword: Dict[str, Keyword] = field( factory=dict, alias='_keyword' )
-	_normalizer: Dict[str, Keyword] = field( factory=dict, alias='_normalizer' )
-	_resourcetype: Dict[str, Keyword] = field( factory=dict, alias='_resourcetype' )
+	_normalizer: Dict[str, Normalizer] = field( factory=dict, alias='_normalizer' )
+	_resourcetype: Dict[str, ResourceType] = field( factory=dict, alias='_resourcetype' )
 	_service: Dict[str, Keyword] = field( factory=dict, alias='_service' )
 	_setup: Dict[str, Keyword] = field( factory=dict, alias='_setup' )
 	_virtualfield: Dict[str, Keyword] = field( factory=dict, alias='_virtualfield' )
+
+	def keywords( self ) -> List[Keyword]:
+		return list( self._keyword.values() )
+
+	def normalizers( self ) -> List[Normalizer]:
+		return list( self._normalizer.values() )
+
+	def summary_types( self ) -> List[ResourceType]:
+		return [ rt for rt in self._resourcetype.values() if rt.summary ]
+
+	def recording_types( self ) -> List[ResourceType]:
+		return [rt for rt in self._resourcetype.values() if rt.recording]
 
 class PluginManager:
 
@@ -134,26 +147,26 @@ class PluginManager:
 	def registry( cls ) -> Registry:
 		decorator_types = [ att[1:] for att in dir( Registry ) if DECORATOR_TYPE.fullmatch( att ) ]
 		for decorator_type in decorator_types:
-			for d in filter( lambda dec: dec.name == decorator_type, cls.decorators ):
+			for d in filter( lambda dec: dec.type == decorator_type, cls.decorators ):
 				try:
 					match d.init:
 						case Decorator.Init.call:
 							if isinstance( inst := d(), list ):
 								for i in inst:
 									# todo: improve as we rely on i having a name attribute -> what to do if not?
-									getattr( cls._registry, f'_{d.name}' )[i.name] = i
+									getattr( cls._registry, f'_{d.type}' )[i.name] = i
 									log.debug( f'registered {i} provided by decorated function/class {d.fncls}' )
 							else:
-								getattr( cls._registry, f'_{d.name}' )[d.name] = (inst := d())
+								getattr( cls._registry, f'_{d.type}' )[d.name] = inst
 								log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
 						case Decorator.Init.cls:
-							getattr( cls._registry, f'_{d.name}' )[d.name] = d.fncls
-							log.debug( f'registered {d.name} class {d.fncls}' )
+							getattr( cls._registry, f'_{d.type}' )[d.name] = d.fncls
+							log.debug( f'registered {d.type} class {d.fncls}' )
 						case Decorator.Init.fn:
-							getattr( cls._registry, f'_{d.name}' )[d.name] = d.fncls
-							log.debug( f'registered {d.name} function {d.fncls}' )
+							getattr( cls._registry, f'_{d.type}' )[d.name] = d.fncls
+							log.debug( f'registered {d.type} function {d.fncls}' )
 						case _:
-							log.warning( f'unknown descriptor type {d.name}' ) # should not happen
+							log.warning( f'unknown descriptor type {d.type}' ) # should not happen
 
 				except (AttributeError, TypeError): # need to be extended
 					log.error( f'error calling decorated object {d.fncls}' )

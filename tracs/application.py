@@ -11,8 +11,7 @@ from tracs import setup_console_logging, setup_file_logging
 from tracs.activity import configure_formatters as configure_activity_formatters
 from tracs.config import ApplicationContext, set_current_ctx
 from tracs.db import ActivityDb
-from tracs.pluginmgr import PluginManager
-from tracs.registry import Registry
+from tracs.pluginmgr import PluginManager, Registry
 from tracs.rules import RuleParser
 from tracs.utils import UCFG
 
@@ -98,8 +97,8 @@ class Application:
 			path=self._ctx.db_dir_path,
 			read_only=self._ctx.pretend,
 			enable_index=self.ctx.config.db.index,
-			summary_types=self._registry.summary_type_names(),
-			recording_types=self._registry.recording_type_names()
+			summary_types=self.registry.summary_type_names(),
+			recording_types=self.registry.recording_type_names()
 		)
 		self._ctx.db = self._db # todo: really put db into ctx? or keep it here?
 

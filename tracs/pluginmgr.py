@@ -6,7 +6,7 @@ from importlib import import_module
 from inspect import currentframe, FrameInfo, getmembers, isclass, signature as getsignature
 from logging import getLogger
 from pkgutil import extend_path, iter_modules
-from re import compile
+from re import compile, match
 from types import ModuleType
 from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple, Type
 
@@ -100,14 +100,32 @@ class Registry:
 	_setup: Dict[str, Callable] = field( factory=dict, alias='_setup' )
 	_virtualfield: Dict[str, VirtualField] = field( factory=dict, alias='_virtualfield' )
 
+	@property
 	def keywords( self ) -> List[Keyword]:
 		return list( self._keyword.values() )
 
+	@property
 	def normalizers( self ) -> List[Normalizer]:
 		return list( self._normalizer.values() )
 
-	def resources_types( self ) -> List[ResourceType]:
+	def resource_types( self ) -> List[ResourceType]:
 		return list( self._resourcetype.values() )
+
+	def resource_type_for_extension( self, extension: str ) -> Optional[ResourceType]:
+		return next( (rt for rt in self.resource_types() if rt.extension() == extension), None )
+
+	def resource_type_for_suffix( self, suffix: str ) -> Optional[ResourceType]:
+		# first round: prefer suffix in special part of type: 'gpx' matches 'application/xml+gpx'
+		for key, rt in self._resourcetype.items():
+			if m := match( f'^(\w+)/(\w+)\+{suffix}$', key ):
+				return rt
+
+		# second round: suffix after slash: 'gpx' matches 'application/gpx'
+		for key, rt in self._resourcetype.items():
+			if m := match( f'^(\w+)/{suffix}(\+([\w-]+))?$', key ):
+				return rt
+
+		return None
 
 	def summary_types( self ) -> List[ResourceType]:
 		return [ rt for rt in self._resourcetype.values() if rt.summary ]

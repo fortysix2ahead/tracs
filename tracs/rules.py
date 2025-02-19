@@ -1,7 +1,6 @@
 
 from __future__ import annotations
 
-from attrs import define, field
 from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 from logging import getLogger
@@ -10,7 +9,9 @@ from sys import maxsize
 from typing import Any, Dict, List, Literal, Tuple, Type, Union
 
 from arrow import Arrow, get as getarrow
+from attrs import define, field
 from dateutil.tz import UTC
+from more_itertools.recipes import first_true
 from rule_engine import Context, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
 
 from tracs.activity import Activity
@@ -85,11 +86,23 @@ CONTEXT = Context( resolver=resolve_custom_attribute )
 @define
 class RuleParser:
 
-	keywords: Dict[str, Keyword] = field( factory=dict )
-	normalizers: Dict[str, Normalizer] = field( factory=dict )
+	keywords: List[Keyword] = field( factory=list )
+	normalizers: List[Normalizer] = field( factory=list )
+
+	def _keys( self ) -> List[str]:
+		return [k.name for k in self.keywords]
+
+	def _keyword( self, name: str ) -> Keyword|None:
+		return first_true( self.keywords, pred=lambda k: k.name == name )
+
+	def _normalizer_names( self ) -> List[str]:
+		return [n.name for n in self.normalizers]
+
+	def _normalizer( self, name: str ) -> Normalizer|None:
+		return first_true( self.normalizers, pred=lambda n: n.name == name )
 
 	def _rule_normalizer_type( self, name: str ) -> Any:
-		return n.type if ( n := self.normalizers.get( name ) ) else Activity.field_type( name )
+		return n.type if ( n := self._normalizer( name ) ) else Activity.field_type( name )
 
 	def parse_rules( self, *rules: str ) -> List[Rule]:
 		return [self.parse_rule( r ) for r in rules]
@@ -124,8 +137,8 @@ class RuleParser:
 			left, right, normalized_rule = 'id', rule, f'id in [{rule}]'
 
 		elif match( KEYWORD_PATTERN, rule ):  # keywords
-			if rule in self.keywords.keys():
-				right, normalized_rule = rule, self.keywords[rule]( rule )
+			if rule in self._keys():
+				right, normalized_rule = rule, self._keyword( rule )( rule )
 			else:
 				raise RuleSyntaxError( f'syntax error: unsupported keyword "{rule}"' )
 
@@ -177,8 +190,8 @@ class RuleParser:
 				normalized_rule = f'{left} {op} {right}'
 
 		# apply normalizer, if a normalizer for the left side of the expression exists
-		if left in self.normalizers.keys():
-			normalized_rule = self.normalizers[left]( left, op, right, normalized_rule )  # pass the already normalized rule, just in case a normalizer is interested
+		if left in self._normalizer_names():
+			normalized_rule = self._normalizer( left )( left, op, right, normalized_rule )  # pass the already normalized rule, just in case a normalizer is interested
 
 		# log rule
 		log.debug( f'normalized rule {rule} to {normalized_rule}' )
@@ -189,6 +202,7 @@ class RuleParser:
 
 		return normalized_rule
 
+	# noinspection PyMethodMayBeStatic
 	def preprocess( self, rule: str ) -> str:
 		"""
 		Reserved for future use, does nothing at the moment.
@@ -203,6 +217,7 @@ class RuleParser:
 
 		return preprocessed_rule
 
+	# noinspection PyMethodMayBeStatic
 	def process( self, rule: str ) -> Rule:
 		"""
 		Creates a rule from a normalized and preprocessed rule string.
@@ -212,6 +227,7 @@ class RuleParser:
 		"""
 		return Rule( rule, CONTEXT )
 
+	# noinspection PyMethodMayBeStatic
 	def postprocess( self, rule: Rule ) -> Rule:
 		"""
 		Reserved for future use, does nothing at the moment.

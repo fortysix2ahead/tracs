@@ -104,10 +104,7 @@ class Application:
 		self._ctx.db = self._db # todo: really put db into ctx? or keep it here?
 
 		# create parser
-		self._parser = RuleParser(
-			keywords=self.registry.keywords,
-			normalizers=self.registry.normalizers,
-		)
+		self._parser = RuleParser( keywords=self.registry.keywords, normalizers=self.registry.normalizers )
 
 		# ---- announce context/configuration to utils module + configure formatters ----
 		UCFG.reconfigure( self._ctx.config )

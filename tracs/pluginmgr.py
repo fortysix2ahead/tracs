@@ -14,6 +14,7 @@ from attrs import define, field
 from fs.osfs import OSFS
 
 from tracs.core import Keyword, Normalizer
+from tracs.protocols import Importer, Service, VirtualField
 from tracs.resources import ResourceType
 
 log = getLogger( __name__ )
@@ -91,13 +92,13 @@ class Decorator:
 @define
 class Registry:
 
-	_importer: Dict[str, Keyword] = field( factory=dict, alias='_importer' )
+	_importer: Dict[str, Importer] = field( factory=dict, alias='_importer' )
 	_keyword: Dict[str, Keyword] = field( factory=dict, alias='_keyword' )
 	_normalizer: Dict[str, Normalizer] = field( factory=dict, alias='_normalizer' )
 	_resourcetype: Dict[str, ResourceType] = field( factory=dict, alias='_resourcetype' )
-	_service: Dict[str, Keyword] = field( factory=dict, alias='_service' )
-	_setup: Dict[str, Keyword] = field( factory=dict, alias='_setup' )
-	_virtualfield: Dict[str, Keyword] = field( factory=dict, alias='_virtualfield' )
+	_service: Dict[str, Service] = field( factory=dict, alias='_service' )
+	_setup: Dict[str, Callable] = field( factory=dict, alias='_setup' )
+	_virtualfield: Dict[str, VirtualField] = field( factory=dict, alias='_virtualfield' )
 
 	def keywords( self ) -> List[Keyword]:
 		return list( self._keyword.values() )
@@ -105,11 +106,20 @@ class Registry:
 	def normalizers( self ) -> List[Normalizer]:
 		return list( self._normalizer.values() )
 
+	def resources_types( self ) -> List[ResourceType]:
+		return list( self._resourcetype.values() )
+
 	def summary_types( self ) -> List[ResourceType]:
 		return [ rt for rt in self._resourcetype.values() if rt.summary ]
 
+	def summary_type_names( self ) -> List[str]:
+		return [ rt.name for rt in self.summary_types() ]
+
 	def recording_types( self ) -> List[ResourceType]:
 		return [rt for rt in self._resourcetype.values() if rt.recording]
+
+	def recording_type_names( self ) -> List[str]:
+		return [rt.name for rt in self.recording_types()]
 
 class PluginManager:
 

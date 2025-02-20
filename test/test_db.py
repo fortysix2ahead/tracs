@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import List, Union
 
+from dateutil.tz import UTC
 from fs.memoryfs import MemoryFS
 from fs.osfs import OSFS
-from dateutil.tz import UTC
 from pytest import mark
 
-from objects import DEFAULT_ONE
+from test.objects import DEFAULT_ONE
 from tracs.activity import Activity
 from tracs.db import ActivityDb
 from tracs.plugins.gpx import GPX_TYPE

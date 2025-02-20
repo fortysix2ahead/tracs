@@ -23,7 +23,7 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 from yaml import safe_dump
 
-from protocols import Registry, ServiceManager
+from tracs.protocols import Registry, ServiceManager
 
 # string constants
 

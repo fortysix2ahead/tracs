@@ -94,6 +94,7 @@ class Decorator:
 @define
 class Registry:
 
+	# important: the names of the fields match the names of the decorators below + an underscore
 	_importer: Dict[str, Importer] = field( factory=dict, alias='_importer' )
 	_keyword: Dict[str, Keyword] = field( factory=dict, alias='_keyword' )
 	_normalizer: Dict[str, Normalizer] = field( factory=dict, alias='_normalizer' )
@@ -101,6 +102,13 @@ class Registry:
 	_service: Dict[str, Type[Service]] = field( factory=dict, alias='_service' )
 	_setup: Dict[str, Callable] = field( factory=dict, alias='_setup' )
 	_virtualfield: Dict[str, VirtualField] = field( factory=dict, alias='_virtualfield' )
+
+	@classmethod
+	def decorator_fields( cls ) -> List[str]:
+		return [ att for att in dir( cls ) if DECORATOR_TYPE.fullmatch( att ) ]
+
+	def is_initialized( self ) -> bool:
+		return any( [ len( getattr( self, att ) ) > 1 for att in self.__class__.decorator_fields() ] )
 
 	@property
 	def importers( self ) -> List[Importer]:
@@ -204,31 +212,36 @@ class PluginManager:
 		return self # for convenience
 
 	def registry( self ) -> Registry:
-		decorator_types = [ att[1:] for att in dir( Registry ) if DECORATOR_TYPE.fullmatch( att ) ]
-		for decorator_type in decorator_types:
-			for d in filter( lambda dec: dec.type == decorator_type, self._decorators ):
-				try:
-					match d.init:
-						case Decorator.Init.call:
-							if isinstance( inst := d(), list ):
-								for i in inst:
-									# todo: improve as we rely on i having a name attribute -> what to do if not?
-									getattr( self._registry, f'_{d.type}' )[i.name] = i
-									log.debug( f'registered {i} provided by decorated function/class {d.fncls}' )
-							else:
-								getattr( self._registry, f'_{d.type}' )[d.name] = inst
-								log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
-						case Decorator.Init.cls:
-							getattr( self._registry, f'_{d.type}' )[d.name] = d.fncls
-							log.debug( f'registered {d.type} class {d.fncls}' )
-						case Decorator.Init.fn:
-							getattr( self._registry, f'_{d.type}' )[d.name] = d.fncls
-							log.debug( f'registered {d.type} function {d.fncls}' )
-						case _:
-							log.warning( f'unknown descriptor type {d.type}' ) # should not happen
+		if not self._registry.is_initialized():
+			log.debug( 'registry is not initialized, evaluating decorators ...' )
+			decorator_types = [ f[1:] for f in Registry.decorator_fields() ]
+			for decorator_type in decorator_types:
+				for d in filter( lambda dec: dec.type == decorator_type, self._decorators ):
+					try:
+						match d.init:
+							case Decorator.Init.call:
+								if isinstance( inst := d(), list ):
+									for i in inst:
+										# todo: improve as we rely on i having a name attribute -> what to do if not?
+										getattr( self._registry, f'_{d.type}' )[i.name] = i
+										log.debug( f'registered {i} provided by decorated function/class {d.fncls}' )
+								else:
+									getattr( self._registry, f'_{d.type}' )[d.name] = inst
+									log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
+							case Decorator.Init.cls:
+								getattr( self._registry, f'_{d.type}' )[d.name] = d.fncls
+								log.debug( f'registered {d.type} class {d.fncls}' )
+							case Decorator.Init.fn:
+								getattr( self._registry, f'_{d.type}' )[d.name] = d.fncls
+								log.debug( f'registered {d.type} function {d.fncls}' )
+							case _:
+								log.warning( f'unknown descriptor type {d.type}' ) # should not happen
 
-				except (AttributeError, TypeError): # need to be extended
-					log.error( f'error calling decorated object {d.fncls}' )
+					except (AttributeError, TypeError): # need to be extended
+						log.error( f'error calling decorated object {d.fncls}', exc_info=True )
+
+		else:
+			log.debug( 'skipping registry initialization, decorators have already been evaluated' )
 
 		return self._registry
 

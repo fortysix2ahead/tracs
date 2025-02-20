@@ -17,6 +17,10 @@ class Keyword( Protocol ):
 	def description( self ) -> str:
 		...
 
+	@property
+	def expr( self ) -> str:
+		...
+
 	def __call__( self, *args, **kwargs ) -> str:
 		...
 
@@ -128,7 +132,9 @@ class ServiceManager( Protocol ):
 
 class Registry( Protocol ):
 
-	...
+	@property
+	def keywords( self ) -> List[Keyword]:
+		...
 
 class Handler( Protocol ):
 	"""

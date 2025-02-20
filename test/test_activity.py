@@ -359,20 +359,20 @@ def test_fields( registry ):
 	assert Activity.field_type( 'noexist' ) is None
 
 @virtualfield
-def lower_name( a: Activity ) -> str:
-	return a.name.lower()
+def lower_name() -> VirtualField:
+	return VirtualField( 'lower_name', str, display_name='lower_name', factory=lambda a: a.name.lower() )
 
-@virtualfield( name='upper_name' )
-def uppercase_name( a: Activity ) -> str:
-	return a.name.upper()
+@virtualfield
+def uppercase_name() -> VirtualField:
+	return VirtualField( 'upper_name', str, display_name='upper_name', factory=lambda a: a.name.upper() )
 
-@virtualfield( name='title_name', type=str, description='titled activity name' )
-def title_name( a: Activity ):
-	return a.name.title()
+@virtualfield
+def title_name() -> VirtualField:
+	return VirtualField( 'title_name', str, display_name='title_name', factory=lambda a: a.name.title() )
 
-@virtualfield( name='cap_name', description='capitalized activity name', type=str, display_name='Cap Name' )
-def capitalized_name( a: Activity ):
-	return a.name.capitalize()
+@virtualfield
+def capitalized_name() -> VirtualField:
+	return VirtualField( 'cap_name', str, display_name='cap_name', factory=lambda a: a.name.capitalize() )
 
 def test_virtual_activity_fields( registry ):
 
@@ -409,8 +409,8 @@ def test_virtual_activity_fields( registry ):
 		assert a.getattr( 'does_not_exist' ) is None
 
 @virtualfield
-def name( a: Activity ) -> str:
-	return 'override attempt for run'
+def name() -> VirtualField:
+	return VirtualField( 'name', str, display_name='name', factory=lambda a: 'override attempt for run' )
 
 # don't allow overriding fields
 def test_virtual_activity_field_override( registry ):

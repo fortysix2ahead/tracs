@@ -1,14 +1,14 @@
 from datetime import timedelta
 
-from fs.osfs import OSFS
 from dateutil.tz import UTC
-from plugins.json import JSONHandler
+from fs.osfs import OSFS
 from pytest import mark, raises
 
-from plugins.gpx import GPXImporter
+from tracs.plugins.gpx import GPXImporter
+from tracs.plugins.json import JSONHandler
 from tracs.resources import Resource, Resources, ResourceType, ResourceTypes
 from tracs.uid import UID
-from utils import to_isotime
+from tracs.utils import to_isotime
 
 def test_resource_type():
 	rt = ResourceType( 'application/xml' )

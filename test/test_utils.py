@@ -8,6 +8,7 @@ from dateutil.tz import gettz
 from fs.errors import ResourceNotFound
 from fs.path import issamedir
 from fs.zipfs import ReadZipFS
+from more_itertools.more import first
 from pytest import mark, raises
 
 from tracs.activity_types import ActivityTypes
@@ -222,7 +223,8 @@ def test_gzip_fs( path ):
 	fs = ReadGzipFS( str( path ) )
 	assert fs.listdir( '/' ) == [ 'drive-20240825-161341.gpx' ]
 	assert fs.readtext( '/' ).startswith( '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>' )
-	assert [f for p, d, f in fs.walk.walk( '/' )] == []
+	w = [(p, d, f) for p, d, f in fs.walk.walk( '/' )]
+	assert first( first( w )[2] ).name == 'drive-20240825-161341.gpx'
 
 @mark.file( 'environments/default/takeouts' )
 def test_fspath( path ):

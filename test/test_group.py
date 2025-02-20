@@ -4,10 +4,9 @@ from pytest import mark
 
 from test.conftest import Environment
 from tracs.activity import Activity
-from tracs.config import ApplicationContext
 from tracs.group import group_activities2
 from tracs.group import ungroup_activities
-from tracs.registry import Registry
+from tracs.pluginmgr import Registry
 
 @mark.xfail # todo: needs improvement
 def test_group_activities():

@@ -17,7 +17,7 @@ from tracs.plugins.strava import STRAVA_TYPE, StravaActivity, StravaHandler
 from tracs.plugins.tcx import Activity as TCXActivity, Author, Creator, Lap, Plan, TCX_TYPE, TCXImporter, Trackpoint, Training, TrainingCenterDatabase
 from tracs.plugins.waze import WAZE_TYPE, WazeActivity, WazeImporter
 from tracs.plugins.xml import XML_TYPE, XMLHandler
-from tracs.registry import Registry
+from tracs.pluginmgr import Registry
 
 @mark.file( 'templates/polar/2020.json' )
 def test_resource_handler( path ):

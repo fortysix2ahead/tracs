@@ -16,8 +16,7 @@ from pytest import fixture
 from tracs.activity import Activity
 from tracs.config import ApplicationContext, DB_DIRNAME, set_current_ctx
 from tracs.db import ActivityDb
-from tracs.pluginmgr import PluginManager
-from tracs.registry import Registry
+from tracs.pluginmgr import PluginManager, Registry
 from tracs.rules import RuleParser
 from tracs.service import Service
 from tracs.utils import FsPath

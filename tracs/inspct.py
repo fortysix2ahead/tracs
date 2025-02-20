@@ -6,8 +6,7 @@ from rich.table import Table
 
 from tracs.activity import Activity
 from tracs.config import ApplicationContext, console
-from tracs.pluginmgr import PluginManager
-from tracs.registry import Registry
+from tracs.pluginmgr import PluginManager, Registry
 from tracs.ui import CONSOLE as cs
 from tracs.ui.utils import style
 

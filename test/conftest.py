@@ -13,6 +13,7 @@ from fs.osfs import OSFS
 from fs.subfs import SubFS
 from pytest import fixture
 
+from tracs.activity import Activity
 from tracs.config import ApplicationContext, DB_DIRNAME, set_current_ctx
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager
@@ -94,7 +95,7 @@ def db_path( request, fs: FS ) -> Path:
 	if isinstance( fs, OSFS ):
 		path = Path( fs.getsyspath( DB_DIRNAME ) )
 		path.mkdir( parents=True, exist_ok=True )
-		yield path
+		return path
 	else:
 		raise ValueError
 	#env = marker( request, 'context', 'env', 'empty' )
@@ -113,7 +114,7 @@ def db( request, fs: FS ) -> ActivityDb:
 	summary_types = marker( request, 'db', 'summary_types', [] )
 	recording_types = marker( request, 'db', 'recording_types', [] )
 
-	yield ActivityDb( fs=db_fs, summary_types=summary_types, recording_types=recording_types )
+	return ActivityDb( fs=db_fs, summary_types=summary_types, recording_types=recording_types )
 	#db_path = Path( env_fs.getsyspath( '/' ), DB_DIRNAME )
 	#yield ActivityDb( path=db_path, read_only=False )
 
@@ -141,20 +142,13 @@ def ctx( request, fs: FS ) -> ApplicationContext:
 
 @fixture
 def registry( request, ctx: ApplicationContext ) -> Registry:
-	resource_types = marker( request, 'resource_type', 'types', [] )
+	PluginManager.inst().init( [] )
+	reg = PluginManager.inst().registry()
 
-	PluginManager.init()
+	for vf in reg.virtual_fields:
+		Activity.VF().add( vf )
 
-	yield Registry.create(
-		ctx=ctx,
-		keywords=PluginManager.keywords,
-		normalizers=PluginManager.normalizers,
-		resource_types=PluginManager.resource_types,
-		importers=PluginManager.importers,
-		virtual_fields=PluginManager.virtual_fields,
-		setups=PluginManager.setups,
-		services=PluginManager.services,
-	)
+	return reg
 
 @fixture
 def env( request, ctx: ApplicationContext, db: ActivityDb, registry: Registry ) -> Environment:

@@ -225,6 +225,10 @@ class PluginManager:
 		return self._registry
 
 	@property
+	def plugins( self ) -> List[ModuleType]:
+		return list( self._modules.values() )
+
+	@property
 	def service_mgr( self ) -> ServiceManager:
 		return self._service_mgr
 

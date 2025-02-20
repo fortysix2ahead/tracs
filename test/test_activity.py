@@ -15,8 +15,8 @@ log = getLogger( __name__ )
 
 # noinspection PyUnresolvedReferences
 def setup_module( module ):
-	import tracs.plugins.rule_extensions
-	log.info( 'importing tracs.plugins.rule_extensions' )
+	import tracs.plugins.keywords
+	log.info( 'importing tracs.plugins.keywords' )
 
 def test_activity():
 	a = Activity( uid='polar:100' )

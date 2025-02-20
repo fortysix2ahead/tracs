@@ -41,7 +41,7 @@ def marker( request, name, key, default = None ):
 			return m.args[0]
 
 	except (AttributeError, IndexError, KeyError, TypeError):
-		log.error( f'unable to access marker {name}.{key}', exc_info=True )
+		log.info( f'unable to access marker {name}.{key}', exc_info=True )
 		return default
 
 # shared fixtures
@@ -119,15 +119,12 @@ def db( request, fs: FS ) -> ActivityDb:
 
 @fixture
 def ctx( request, fs: FS ) -> ApplicationContext:
-
 	json = marker( request, 'context', 'json', False )
 	verbose = marker( request, 'context', 'verbose', False )
 	debug = marker( request, 'context', 'debug', False )
 	flags = { 'verbose': verbose, 'debug': debug, 'json': json }
 
-	context = set_current_ctx( ApplicationContext( config_fs=fs, __kwargs__=flags ) )
-
-	yield context
+	return set_current_ctx( ApplicationContext( config_fs=fs, __kwargs__=flags ) )
 
 #	try:
 #		db_path = db.underlay_fs.getsyspath( '' )

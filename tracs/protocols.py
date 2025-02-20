@@ -121,6 +121,14 @@ class Service( Protocol ):
 	def link( self, activity: Activity, resource: Resource, force: bool, pretend: bool ) -> None:
 		...
 
+class ServiceManager( Protocol ):
+
+	...
+
+class Registry( Protocol ):
+
+	...
+
 class Handler( Protocol ):
 	"""
 	A handler defines the protocol for loading and saving documents, transforming them into a dict-like structure.

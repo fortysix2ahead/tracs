@@ -1,11 +1,9 @@
 from datetime import datetime, timedelta
-from typing import Optional
 
-from pytest import mark, raises
+from pytest import mark
 
 from tracs.handlers import ResourceHandler
-from tracs.pluginmgr import importer, resourcetype
-from tracs.registry import Registry
+from tracs.pluginmgr import importer, Registry, resourcetype
 from tracs.resources import ResourceType
 
 def setup_module( module ):

@@ -14,7 +14,7 @@ from tracs.activity import Activities, Activity, ActivityTypes
 from tracs.config import ApplicationContext
 from tracs.db import ActivityDb
 from tracs.plugins.gpx import GPX_TYPE
-from tracs.registry import Registry
+from tracs.pluginmgr import Registry
 from tracs.resources import Resource
 from tracs.service import Service
 from tracs.streams import as_str

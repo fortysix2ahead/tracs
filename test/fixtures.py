@@ -8,10 +8,6 @@ from pytest import fixture
 from yaml import SafeLoader
 from yaml import load as load_yaml
 
-from tracs.config import ApplicationConfig as cfg
-from tracs.config import ApplicationState as state
-from tracs.config import CLASSIFIER
-from tracs.registry import Registry
 from .helpers import var_run_path
 
 @fixture

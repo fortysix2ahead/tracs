@@ -105,6 +105,8 @@ class Service( Plugin ):
 		Returns the relative path for a given uid.
 		A service with the classifier of the uid has to exist, otherwise None will be returned.
 		"""
+		log.warning( 'call to deprecated method classmethod Service.path_for_uid()' )
+
 		uid = UID( uid ) if isinstance( uid, str ) else uid
 		ctx = ctx if ctx else current_ctx()
 
@@ -322,8 +324,9 @@ class ServiceManager:
 	def add( self, service_instance: Service ):
 		self.services[service_instance.name] = service_instance
 
+	# noinspection PyMethodMayBeStatic
 	def path_for( self, resource: Resource ) -> str:
-		...
+		return resource.path # todo: this might be removed
 
 	def url_for( self, uid: UID|str ) -> Optional[str]:
 		uid: UID = UID( uid ) if isinstance( uid, str ) else uid

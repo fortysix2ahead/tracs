@@ -28,9 +28,9 @@ def inspect_resources() -> None:
 def inspect_plugins( ctx: ApplicationContext ) -> None:
 	table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
 	table.add_column( '[bold bright_blue]name[/bold bright_blue]' )
-	table.add_column( '[bold bright_blue]plugin[/bold bright_blue]' )
+	table.add_column( '[bold bright_blue]module[/bold bright_blue]' )
 
-	[ table.add_row( n, str( p ) ) for n, p in PluginManager.plugins.items() ]
+	[ table.add_row( p.__name__, str( p ) ) for p in PluginManager.inst().plugins ]
 
 	ctx.console.print( table )
 

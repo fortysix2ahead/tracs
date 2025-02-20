@@ -8,10 +8,10 @@ from attrs import define, field
 from dynaconf import Dynaconf as Configuration
 
 from tracs import setup_console_logging, setup_file_logging
-from tracs.activity import configure_formatters as configure_activity_formatters
+from tracs.activity import Activity, configure_formatters as configure_activity_formatters
 from tracs.config import ApplicationContext, set_current_ctx
 from tracs.db import ActivityDb
-from tracs.pluginmgr import PluginManager, Registry
+from tracs.pluginmgr import PluginManager, Registry, ServiceManager
 from tracs.rules import RuleParser
 from tracs.utils import UCFG
 
@@ -23,6 +23,9 @@ class Application:
 	_instance: ClassVar[Application] = None  # application singleton
 
 	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
+
+	_plugin_mgr: PluginManager = field( default=None, alias='_plugin_mgr' )
+	_service_mgr: ServiceManager = field( default=None, alias='_service_mgr' )
 	_db: ActivityDb = field( default=None, alias='_db' )
 	_registry: Registry = field( default=None, alias='_registry' )
 	_parser: RuleParser = field( default=None, alias='_parser' )
@@ -54,28 +57,6 @@ class Application:
 		# log command line flags
 		log.debug( f'triggered CLI with flags {kwargs}' )
 
-		# config_dir, config_file = _config_dir_file( kwargs.get( 'configuration' ) )
-
-		# try:
-		# 	configuration = expanduser( expandvars( kwargs.pop( 'configuration', None ) ) )
-		# 	if configuration and Path( configuration ).is_dir():
-		# 		kwargs['config_dir'] = configuration
-		# 	elif configuration and Path( configuration ).is_file():
-		# 		kwargs['config_file'] = configuration
-		# 	else:
-		# 		pass
-		# except TypeError:
-		# 	pass
-		#
-		# try:
-		# 	library = expanduser( expandvars( kwargs.pop( 'library', None ) ) )
-		# 	if library and Path( library ).is_dir():
-		# 		kwargs['lib_dir'] = library
-		# 	else:
-		# 		pass
-		# except TypeError:
-		# 	pass
-
 		# create context, based on cfg_dir
 		self._ctx = ApplicationContext( __args__=args, __kwargs__=kwargs )
 		self._config = self._ctx.config
@@ -88,11 +69,14 @@ class Application:
 		# print context configuration
 		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
 
-		# init plugin manager and registry
-		PluginManager.init( (self._config.pluginpath or '').split( ' ' ) )
-		self._registry = PluginManager.registry()
+		# init plugin manager
+		self._plugin_mgr = PluginManager.inst().init( (self._config.pluginpath or '').split( ' ' ) )
 
-		# open db from config_dir
+		# init registry
+		self._registry = PluginManager.inst().registry()
+		self._ctx.registry = self._registry
+
+		# init db from config_dir
 		self._db = ActivityDb(
 			path=self._ctx.db_dir_path,
 			read_only=self._ctx.pretend,
@@ -100,10 +84,20 @@ class Application:
 			summary_types=self.registry.summary_type_names(),
 			recording_types=self.registry.recording_type_names()
 		)
-		self._ctx.db = self._db # todo: really put db into ctx? or keep it here?
+		self._ctx.db = self._db
 
-		# create parser
+		# create rule parser
 		self._parser = RuleParser( keywords=self.registry.keywords, normalizers=self.registry.normalizers )
+
+		# announce virtual fields to activity class
+		for vf in self.registry.virtual_fields:
+			Activity.VF().add( vf )
+
+		# init service manager
+		for s in self.registry.services:
+			# noinspection PyArgumentList
+			self._plugin_mgr.service_mgr.add( s( ctx=self._ctx ) )
+		self._ctx.service_mgr = self._plugin_mgr.service_mgr
 
 		# ---- announce context/configuration to utils module + configure formatters ----
 		UCFG.reconfigure( self._ctx.config )
@@ -126,6 +120,10 @@ class Application:
 	@property
 	def registry( self ) -> Registry:
 		return self._registry
+
+	@property
+	def service_mgr( self ) -> ServiceManager:
+		return self._service_mgr
 
 	@property
 	def parser( self ) -> RuleParser:

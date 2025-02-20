@@ -6,9 +6,10 @@ from datetime import datetime, timedelta
 from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
-from typing import Any, cast, List, Optional, Tuple, Union
+from typing import Any, cast, Dict, List, Optional, Tuple, Union
 
 from arrow import utcnow
+from attrs import define, field
 from dateutil.tz import UTC
 from fs.base import FS
 from fs.copy import copy_file
@@ -312,6 +313,21 @@ class Service( Plugin ):
 
 	def import_from_remote( self, dst_fs: FS, range_from: datetime, range_to: datetime ) -> Activities:
 		return Activities()
+
+@define
+class ServiceManager:
+
+	services: Dict[str, Service] = field( factory=dict )
+
+	def add( self, service_instance: Service ):
+		self.services[service_instance.name] = service_instance
+
+	def url_for( self, uid: UID|str ) -> Optional[str]:
+		uid: UID = UID( uid ) if isinstance( uid, str ) else uid
+		if service := self.services.get( uid.classifier ):
+			return service.url_for( local_id=uid.local_id )
+		else:
+			return None
 
 # helper functions
 

@@ -5,7 +5,7 @@ from babel.numbers import format_decimal
 from pytest import mark, raises
 
 from tracs.core import FieldFormatter, FieldFormatters, FormattedFieldsBase, Metadata, VirtualField, VirtualFieldsBase
-from uid import UID
+from tracs.uid import UID
 
 def test_virtual_field():
 

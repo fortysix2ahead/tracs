@@ -103,6 +103,10 @@ class Registry:
 	_virtualfield: Dict[str, VirtualField] = field( factory=dict, alias='_virtualfield' )
 
 	@property
+	def importers( self ) -> List[Importer]:
+		return list( self._importer.values() )
+
+	@property
 	def keywords( self ) -> List[Keyword]:
 		return list( self._keyword.values() )
 
@@ -144,6 +148,10 @@ class Registry:
 	@property
 	def services( self ) -> List[Type[Service]]:
 		return [s for s in self._service.values()]
+
+	@property
+	def setups( self ) -> List[Callable]:
+		return [s for s in self._setup.values()]
 
 	@property
 	def virtual_fields( self ) -> List[VirtualField]:

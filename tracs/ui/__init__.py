@@ -12,6 +12,8 @@ from rich.text import Text, TextType
 from tracs.config import console as cs
 from tracs.utils import colored_diff, colored_diff_2, fmt
 
+CONSOLE = Console( tab_size=2 )
+
 def dict_table( d: Dict, header: Tuple[str, str] = None, sort_entries: bool = False ) -> Table:
 	table = Table( box=None, show_header=True, show_footer=False )
 	left_header = header[0] if header else 'Key'

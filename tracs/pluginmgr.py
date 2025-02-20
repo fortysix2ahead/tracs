@@ -13,9 +13,11 @@ from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple
 from attrs import define, field
 from fs.osfs import OSFS
 
+from tracs.constants import PLUGIN_NS, PLUGIN_PATH
 from tracs.core import Keyword, Normalizer
-from tracs.protocols import Importer, Service, VirtualField
+from tracs.protocols import Importer, VirtualField
 from tracs.resources import ResourceType
+from tracs.service import Service, ServiceManager
 
 log = getLogger( __name__ )
 
@@ -96,7 +98,7 @@ class Registry:
 	_keyword: Dict[str, Keyword] = field( factory=dict, alias='_keyword' )
 	_normalizer: Dict[str, Normalizer] = field( factory=dict, alias='_normalizer' )
 	_resourcetype: Dict[str, ResourceType] = field( factory=dict, alias='_resourcetype' )
-	_service: Dict[str, Service] = field( factory=dict, alias='_service' )
+	_service: Dict[str, Type[Service]] = field( factory=dict, alias='_service' )
 	_setup: Dict[str, Callable] = field( factory=dict, alias='_setup' )
 	_virtualfield: Dict[str, VirtualField] = field( factory=dict, alias='_virtualfield' )
 
@@ -139,59 +141,80 @@ class Registry:
 	def recording_type_names( self ) -> List[str]:
 		return [rt.name for rt in self.recording_types()]
 
+	@property
+	def services( self ) -> List[Type[Service]]:
+		return [s for s in self._service.values()]
+
+	@property
+	def virtual_fields( self ) -> List[VirtualField]:
+		return [ vf for vf in self._virtualfield.values() ]
+
+@define
 class PluginManager:
 
-	plugins: ClassVar[Dict[str, ModuleType]] = {}
-	decorators: ClassVar[List[Decorator]] = []
+	_instance: ClassVar[PluginManager] = None
 
-	_registry: ClassVar[Registry] = Registry()
+	_modules: Dict[str, ModuleType] = field( factory=dict, alias='_modules' )
+	_decorators: List[Decorator] = field( factory=list, alias='_decorators' )
+	_registry: Registry = field( factory=Registry, alias='_registry' )
+	_service_mgr: ServiceManager = field( factory=ServiceManager, alias='_service_mgr' )
+
+	_plugin_paths: List[str] = field( factory=list, alias='_plugin_paths' )
 
 	@classmethod
-	def init( cls, plugin_paths: Optional[List[str]] = None, reinit: bool = False ):
+	def inst( cls ) -> PluginManager:
+		if not PluginManager._instance:
+			PluginManager._instance = PluginManager()
+		return PluginManager._instance
+
+	def init( self, plugin_paths: Optional[List[str]], reinit: bool = False ) -> PluginManager:
+		self._plugin_paths = plugin_paths or []
+
 		# this is just for debug/dev purposes
 		if reinit:
 			log.debug( f'clearing plugin manager content' )
-			cls.plugins.clear()
-			cls.decorators.clear()
+			self._modules.clear()
+			self._decorators.clear()
 
 		# noinspection PyUnresolvedReferences
 		import tracs.plugins
 
 		# extend plugin path and load additional, non-optional plugins
 		for pp in plugin_paths or []:
-			plugin_path = OSFS( root_path=pp, expand_vars=True ).getsyspath( '/tracs/plugins' )
-			tracs.plugins.__path__ = extend_path( [plugin_path], 'tracs.plugins' )
+			plugin_path = OSFS( root_path=pp, expand_vars=True ).getsyspath( PLUGIN_PATH )
+			tracs.plugins.__path__ = extend_path( [plugin_path], PLUGIN_NS )
 			log.debug( f'adding {plugin_path} to list of plugin search paths' )
 
 		# load plugin modules
 		for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
 			try:
-				cls.plugins[name] = import_module( f'tracs.plugins.{name}' )
+				self._modules[name] = import_module( f'tracs.plugins.{name}' )
 			except ImportError:
 				log.error( f'failed to import module tracs.plugins.{name}', exc_info=True )
 				continue
 
-	@classmethod
-	def registry( cls ) -> Registry:
+		return self # for convenience
+
+	def registry( self ) -> Registry:
 		decorator_types = [ att[1:] for att in dir( Registry ) if DECORATOR_TYPE.fullmatch( att ) ]
 		for decorator_type in decorator_types:
-			for d in filter( lambda dec: dec.type == decorator_type, cls.decorators ):
+			for d in filter( lambda dec: dec.type == decorator_type, self._decorators ):
 				try:
 					match d.init:
 						case Decorator.Init.call:
 							if isinstance( inst := d(), list ):
 								for i in inst:
 									# todo: improve as we rely on i having a name attribute -> what to do if not?
-									getattr( cls._registry, f'_{d.type}' )[i.name] = i
+									getattr( self._registry, f'_{d.type}' )[i.name] = i
 									log.debug( f'registered {i} provided by decorated function/class {d.fncls}' )
 							else:
-								getattr( cls._registry, f'_{d.type}' )[d.name] = inst
+								getattr( self._registry, f'_{d.type}' )[d.name] = inst
 								log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
 						case Decorator.Init.cls:
-							getattr( cls._registry, f'_{d.type}' )[d.name] = d.fncls
+							getattr( self._registry, f'_{d.type}' )[d.name] = d.fncls
 							log.debug( f'registered {d.type} class {d.fncls}' )
 						case Decorator.Init.fn:
-							getattr( cls._registry, f'_{d.type}' )[d.name] = d.fncls
+							getattr( self._registry, f'_{d.type}' )[d.name] = d.fncls
 							log.debug( f'registered {d.type} function {d.fncls}' )
 						case _:
 							log.warning( f'unknown descriptor type {d.type}' ) # should not happen
@@ -199,7 +222,11 @@ class PluginManager:
 				except (AttributeError, TypeError): # need to be extended
 					log.error( f'error calling decorated object {d.fncls}' )
 
-		return cls._registry
+		return self._registry
+
+	@property
+	def service_mgr( self ) -> ServiceManager:
+		return self._service_mgr
 
 	@staticmethod
 	def register_decorator(
@@ -209,7 +236,7 @@ class PluginManager:
 			cls: Type = None,
 			init: Decorator.Init = Decorator.Init.call
 	) -> Decorator:
-		PluginManager.decorators.append( d := Decorator( fncls, args, kwargs, frame, cls, init ) )
+		PluginManager.inst()._decorators.append( d := Decorator( fncls, args, kwargs, frame, cls, init ) )
 		log.debug( f'registered decorator [green]{d.name}[/green] from {d.fncls} in module [green]{d.module}[/green]' )
 		return d
 

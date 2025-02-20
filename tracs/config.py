@@ -23,6 +23,8 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 from yaml import safe_dump
 
+from protocols import Registry, ServiceManager
+
 # string constants
 
 APPNAME = 'tracs'
@@ -73,7 +75,7 @@ NAMESPACE_SERVICES = f'{NAMESPACE_BASE}.services'
 # default logger + console
 log = getLogger( __name__ )
 
-# one´console, reuse this in application context -> this needs to be consolidated
+# one console, reuse this in application context -> this needs to be consolidated
 CONSOLE = Console( tab_size=2 )
 console = CONSOLE
 cs = CONSOLE
@@ -133,7 +135,10 @@ class ApplicationContext:
 	plugins: Dict[str, Any] = field( factory=dict )
 
 	# registry
-	registry: Any = field( default=None )
+	registry: Registry = field( default=None )
+
+	# service manager
+	service_mgr: ServiceManager = field( default=None )
 
 	# kwargs fields, not used, but needed for
 

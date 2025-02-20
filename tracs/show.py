@@ -11,10 +11,10 @@ from rich.table import Table
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.config import ApplicationContext, console
-from tracs.registry import Registry
+from tracs.pluginmgr import Registry
 from tracs.resources import Resource
 from tracs.service import Service
-from tracs.uid import UID
+from tracs.ui import CONSOLE as cs
 from tracs.utils import fmt
 
 log = getLogger( __name__ )
@@ -52,7 +52,7 @@ def show_activities( activities: [Activity], ctx: ApplicationContext, display_ra
 			show_raw_activity( a, ctx )
 		else:
 			if verbose:
-				show_verbose_activity( a, ctx, show_fields )
+				show_verbose_activity( a, show_fields, ctx=ctx )
 			else:
 				show_activity( a, ctx, show_fields )
 
@@ -69,7 +69,7 @@ def show_raw_activity( a: Activity, ctx: ApplicationContext ):
 	for uid in a.uids:
 		resources = ctx.db.find_resources( uid )
 		for r in resources:
-			resource_path = Registry.services.get( r.classifier ).path_for( resource=r )
+			resource_path = ctx.registry.services.get( r.classifier ).path_for( resource=r )
 			path_exists = '[bright_green]\u2713[/bright_green]' if resource_path.exists() else '[bright_red]\u2716[/bright_red]'
 			table.add_row( pp( r.id ), r.name, r.path, path_exists, r.name, r.uid, pp( r.status ), r.source )
 	console.print( table )
@@ -85,7 +85,7 @@ def show_activity( a: Activity, ctx: ApplicationContext, show_fields: List[str] 
 	console.print( table )
 	# console.print( '\u00b9 Proper timezone support is currently missing, local timezone is displayed' )
 
-def show_verbose_activity( a: Activity, ctx: ApplicationContext, show_fields: List[str] ) -> None:
+def show_verbose_activity( a: Activity, show_fields: List[str], ctx: ApplicationContext ) -> None:
 	# activity data
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False, title='Activity Data:', **TITLE_STYLE )
 	rows = [[field, getattr( a, field )] for field in show_fields]
@@ -98,11 +98,12 @@ def show_verbose_activity( a: Activity, ctx: ApplicationContext, show_fields: Li
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False, title='URLs and Locations:', **TITLE_STYLE )
 	uids = a.metadata.members if a.group else [ a.uid ]
 	for uid in uids:
-		uid = UID( uid ) if isinstance( uid, str ) else uid
-		table.add_row( uid.classifier, Service.url_for_uid( str( uid )  ) )
+#		uid = UID( uid ) if isinstance( uid, str ) else uid
+#		table.add_row( uid.classifier, Service.url_for_uid( str( uid )  ) )
+		table.add_row( uid.classifier, ctx.service_mgr.url_for( uid ) )
 	for r in a.resources:
 		table.add_row( 'local db', ctx.db_fs.getsyspath( r.path ) )
-	console.print( table )
+	cs.print( table )
 
 	# attached resources
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False, title='Resources:', **TITLE_STYLE )

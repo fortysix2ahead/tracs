@@ -136,7 +136,7 @@ class StravaWebImporter( JSONHandler ):
 		)
 
 @service
-class Strava( Service ):
+class StravaWeb( Service ):
 
 	def __init__( self, **kwargs ):
 		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL }, **kwargs } )

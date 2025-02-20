@@ -324,6 +324,9 @@ class ServiceManager:
 	def add( self, service_instance: Service ):
 		self.services[service_instance.name] = service_instance
 
+	def service_names( self ) -> List[str]:
+		return list( self.services.keys() )
+
 	# noinspection PyMethodMayBeStatic
 	def path_for( self, resource: Resource ) -> str:
 		return resource.path # todo: this might be removed

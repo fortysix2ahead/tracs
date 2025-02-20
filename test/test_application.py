@@ -117,7 +117,7 @@ def test_default_environment():
 
 	names = ['bikecitizens', 'local', 'polar', 'strava', 'stravaweb', 'waze']
 	# noinspection PyTestUnpassedFixture
-	assert all( n in current_ctx().registry.service_names() for n in names )
+	assert all( n in current_ctx().service_mgr.service_names() for n in names )
 
 @mark.context( env='debug', persist='clone', cleanup=True )
 def test_debug_environment( ctx ):

@@ -324,6 +324,9 @@ class ServiceManager:
 	def add( self, service_instance: Service ):
 		self.services[service_instance.name] = service_instance
 
+	def get( self, name: str ) -> Service|None:
+		return self.services.get( name )
+
 	def service_names( self ) -> List[str]:
 		return list( self.services.keys() )
 

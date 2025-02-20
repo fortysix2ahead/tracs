@@ -127,7 +127,13 @@ class Service( Protocol ):
 
 class ServiceManager( Protocol ):
 
+	def get( self, name: str ) -> Service|None:
+		...
+
 	def path_for( self, resource: Resource ) -> str:
+		...
+
+	def service_names( self ) -> List[str]:
 		...
 
 class Registry( Protocol ):

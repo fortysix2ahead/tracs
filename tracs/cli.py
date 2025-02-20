@@ -278,6 +278,11 @@ def untag( ctx: ApplicationContext, filters, tags ):
 	untag_activities( _flt( *filters ), tags=tags, ctx=ctx )
 	ctx.db.commit()
 
+@cli.command( help='displays all existing tags' )
+@pass_obj
+def tags( ctx ):
+	show_tags( ctx )
+
 @cli.command( help='Add equipment to an activity' )
 @option( '-a', '--all', 'all_equipments', is_flag=True, required=False, help='lists all equipments' )
 @option( '-e', '--equipment', 'equipments', is_flag=False, required=False, multiple=True, help='equipment to add to an activity' )

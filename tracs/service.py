@@ -322,6 +322,9 @@ class ServiceManager:
 	def add( self, service_instance: Service ):
 		self.services[service_instance.name] = service_instance
 
+	def path_for( self, resource: Resource ) -> str:
+		...
+
 	def url_for( self, uid: UID|str ) -> Optional[str]:
 		uid: UID = UID( uid ) if isinstance( uid, str ) else uid
 		if service := self.services.get( uid.classifier ):

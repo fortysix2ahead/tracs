@@ -123,7 +123,8 @@ class Service( Protocol ):
 
 class ServiceManager( Protocol ):
 
-	...
+	def path_for( self, resource: Resource ) -> str:
+		...
 
 class Registry( Protocol ):
 

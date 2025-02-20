@@ -57,7 +57,6 @@ def show_activities( activities: [Activity], ctx: ApplicationContext, display_ra
 				show_activity( a, ctx, show_fields )
 
 def show_raw_activity( a: Activity, ctx: ApplicationContext ):
-
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False, title='Fields and Values:', **TITLE_STYLE )
 	table.add_row( '[blue]field[/blue]', '[blue]value[/blue]' )
 	for f in sorted( Activity.fields(), key=lambda field: field.name ):
@@ -65,13 +64,12 @@ def show_raw_activity( a: Activity, ctx: ApplicationContext ):
 	console.print( table )
 
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False, title='Resources:', **TITLE_STYLE )
-	table.add_row( '[blue]id[/blue]', '[blue]name[/blue]', '[blue]path[/blue]', '[blue]exists[/blue]', '[blue]type[/blue]', '[blue]uid[/blue]', '[blue]status[/blue]', '[blue]source[/blue]' )
+	table.add_row( '[blue]name[/blue]', '[blue]path[/blue]', '[blue]exists[/blue]', '[blue]type[/blue]', '[blue]uid[/blue]', '[blue]status[/blue]', '[blue]source[/blue]' )
 	for uid in a.uids:
 		resources = ctx.db.find_resources( uid )
 		for r in resources:
-			resource_path = ctx.registry.services.get( r.classifier ).path_for( resource=r )
-			path_exists = '[bright_green]\u2713[/bright_green]' if resource_path.exists() else '[bright_red]\u2716[/bright_red]'
-			table.add_row( pp( r.id ), r.name, r.path, path_exists, r.name, r.uid, pp( r.status ), r.source )
+			path_exists = '[bright_green]\u2713[/bright_green]' if ctx.db_fs.exists( r.path ) else '[bright_red]\u2716[/bright_red]'
+			table.add_row( r.name, r.path, path_exists, r.name, str( r.uid ), pp( r.status ), r.source )
 	console.print( table )
 
 def show_activity( a: Activity, ctx: ApplicationContext, show_fields: List[str] ):

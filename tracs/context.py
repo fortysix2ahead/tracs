@@ -1,0 +1,436 @@
+
+from __future__ import annotations
+
+from datetime import datetime
+from logging import getLogger
+from os.path import abspath, expanduser, expandvars, split
+from pathlib import Path
+from typing import Any, cast, Dict, Optional, Tuple
+
+from attrs import define, field
+from dateutil.tz import tzlocal, UTC
+from dynaconf import Dynaconf as Configuration
+from dynaconf.utils.boxing import DynaBox
+from dynaconf.vendor.box.exceptions import BoxKeyError
+from fs.appfs import UserCacheFS, UserConfigFS, UserDataFS, UserLogFS
+from fs.base import FS
+from fs.errors import NoSysPath
+from fs.multifs import MultiFS
+from fs.osfs import OSFS
+from fs.subfs import SubFS
+from yaml import safe_dump
+
+from tracs.constants import *
+from tracs.pluginmgr import PluginManager
+from tracs.protocols import ActivityDb, Registry, ServiceManager
+
+log = getLogger( __name__ )
+
+# default user locations are the following
+
+# Mac OS:
+# UserConfigFS ~/Application Support/tracs/
+# UserDataFS ~/Library/Application Support/tracs/
+# SiteDataFS /Library/Application Support/tracs
+# SiteConfigFS /Library/Application Support/tracs
+# UserCacheFS ~/Library/Caches/tracs/
+# UserLogFS ~/Library/Logs/tracs/
+
+USER_CONFIG_FS: FS = UserConfigFS( APPNAME, create=True )
+USER_DATA_FS: FS = UserDataFS( APPNAME, create=True )
+USER_CACHE_FS: FS = UserCacheFS( APPNAME, create=True )
+USER_LOG_FS: FS = UserLogFS( APPNAME, create=True )
+
+def _set_config_fs( inst, att, val ):
+	if isinstance( val, FS ):
+		value = val
+	elif isinstance( val, str ):
+		path = abspath( expandvars( expanduser( val ) ) )
+		head, tail = split( path )
+		value = OSFS( root_path=head if tail == CONFIG_FILENAME else path, expand_vars=True, create=True )
+	else:
+		value = UserConfigFS( APPNAME, create=True )
+
+	# noinspection PyProtectedMember
+	cast( ApplicationContext, inst )._setup_aux_fs( config_fs=value )
+
+	return value
+
+def _set_lib_fs( inst, att, val ):
+	if isinstance( val, FS ):
+		value: FS = val
+	elif isinstance( val, str ):
+		value = OSFS( root_path=abspath( expandvars( expanduser( val ) ) ), expand_vars=True, create=True )
+	else:
+		value: FS = UserDataFS( APPNAME, create=True )
+
+	# noinspection PyProtectedMember
+	cast( ApplicationContext, inst )._setup_aux_fs( lib_fs=value )
+
+	return value
+
+@define
+class ApplicationContext:
+
+	# configuration + state
+	config: Configuration = field( default=None )
+	state: Configuration = field( default=None )
+
+	# configuration fs
+	config_fs: FS = field( default=USER_CONFIG_FS, on_setattr=_set_config_fs )
+
+	# library fs
+	lib_fs: FS = field( default=USER_DATA_FS, on_setattr=_set_lib_fs )
+
+	# database / fs
+	_db: ActivityDb = field( default=None, alias='_db' )
+	_db_fs: FS = field( default=None, alias='_db_fs' )
+
+	# additional FS
+	_overlay_fs: FS = field( default=None, alias='_overlay_fs' )
+	_takeouts_fs: FS = field( default=None, alias='_takeout_fs' )
+	_log_fs: FS = field( default=None, alias='_log_fs' )
+	_var_fs: FS = field( default=None, alias='_var_fs' )
+	_backup_fs: FS = field( default=None, alias='_backup_fs' )
+	_cache_fs: FS = field( default=None, alias='_cache_fs' )
+	_tmp_fs: FS = field( default=None, alias='_tmp_fs' )
+	_imports_fs: FS = field( default=None, alias='_imports_fs' )
+
+	# plugin manager, registry, service manager
+	plugin_mgr: PluginManager = field( default=None )
+	registry: Registry = field( default=None )
+	service_mgr: ServiceManager = field( default=None )
+
+	# internal fields
+
+	__args__: Tuple[Any, ...] = field( default=(), alias='__args__' )
+	__kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )
+
+	# __root_fs__: OSFS = field( default=OSFS( root_path='/', expand_vars=True ), alias='__root_fs__' )
+	__init_fs__: bool = field( default=True, alias='__init_fs__' )
+	__apptime__: datetime = field( default=datetime.now( UTC ), alias='__apptime__' )
+
+	apptime: datetime = field( default=None )
+
+	def load_configuration( self ):
+		settings_files = [ f'{INSTALL_PATH}/{APP_PKG_NAME}/{DEFAULT_CONFIG_FILENAME}' ]
+		appstate_files = [ f'{INSTALL_PATH}/{APP_PKG_NAME}/{DEFAULT_STATE_FILENAME}' ]
+
+		try:
+			settings_files.append( self.config_fs.getsyspath( CONFIG_FILENAME ) )
+		except NoSysPath:
+			log.warning( f'no configuration file found in {self.config_fs}' )
+
+		try:
+			appstate_files.append( self.config_fs.getsyspath( STATE_FILENAME ) )
+		except NoSysPath:
+			log.warning( f'no appstate file found in {self.config_fs}' )
+
+		self.config = Configuration( settings_files=settings_files, merge_enabled=True )
+		self.state = Configuration( settings_files=appstate_files, merge_enabled=True )
+
+	def _setup_aux_fs( self, config_fs: FS = None, lib_fs: FS = None ) -> None:
+		if config_fs:
+			self._takeouts_fs = _subfs( config_fs, TAKEOUT_DIRNAME )
+			self._log_fs = _subfs( config_fs, LOG_DIRNAME )
+			self._var_fs = _subfs( config_fs, VAR_DIRNAME )
+			self._backup_fs = _subfs( config_fs, BACKUP_DIRNAME )
+			self._cache_fs = _subfs( config_fs, CACHE_DIRNAME )
+			self._tmp_fs = _subfs( self.var_fs, TMP_DIRNAME )
+			self._imports_fs = _subfs( self.var_fs, IMPORT_DIRNAME )
+
+		if lib_fs:
+			self._db_fs = _subfs( lib_fs, DB_DIRNAME )
+			self._overlay_fs = _subfs( lib_fs, OVERLAY_DIRNAME )
+
+	def __attrs_post_init__( self ):
+		# create config fs
+		log.debug( f'config FS configured to {self.config_fs}' )
+		log.debug( f'library FS configured to {self.lib_fs}' )
+
+		# setup auxillary fs which depend on config + lib fs
+		self._setup_aux_fs( self.config_fs, self.lib_fs )
+
+		# read configuration/appstate
+		self.load_configuration()
+
+	# main properties
+
+	@property
+	def cfg( self ) -> Configuration:
+		"""
+		Alias for self.config
+
+		:return: configuration object
+		"""
+		return self.config
+
+	@property
+	def settings( self ) -> Configuration:
+		"""
+		Alias for self.config
+
+		:return: configuration object
+		"""
+		return self.config
+
+	@property
+	def debug( self ) -> bool:
+		return self.config.debug
+
+	@property
+	def verbose( self ) -> bool:
+		return self.config.verbose
+
+	@property
+	def pretend( self ) -> bool:
+		return self.config.pretend
+
+	@property
+	def force( self ) -> bool:
+		return self.config.force
+
+	@property
+	def json( self ) -> bool:
+		return self.config.json
+
+	# lib/config related properties
+
+	@property
+	def config_dir( self ) -> str:
+		return self.config_fs.getsyspath( '' )
+
+	@property
+	def config_file( self ) -> str:
+		return self.config_fs.getsyspath( CONFIG_FILENAME )
+
+	@property
+	def state_file( self ) -> str:
+		return self.config_fs.getsyspath( STATE_FILENAME )
+
+	@property
+	def lib_dir( self ) -> str:
+		return self.lib_fs.getsyspath( '' )
+
+	@property
+	def lib_dir_path( self ) -> Path:
+		return Path( self.lib_dir )
+
+	@property
+	def config_file_path( self ) -> Path:
+		return Path( self.config_file )
+
+	@property
+	def state_file_path( self ) -> Path:
+		return Path( self.config_fs.getsyspath( STATE_FILENAME ) )
+
+	# db related fs/dirs
+
+	@property
+	def db_fs( self ) -> FS:
+		return self._db_fs
+
+	@property
+	def db_dir( self ) -> str:
+		return self.db_fs.getsyspath( '/' )
+
+	@property
+	def db_dir_path( self ) -> Path:
+		return Path( self.db_dir )
+
+	def db_fs_for( self, name: str ) -> FS:
+		try:
+			return OSFS( root_path=self.db_fs.getsyspath( name ), create=True )
+		except (AttributeError, NoSysPath):
+			return SubFS( self.db_fs, f'/{name}' )
+
+	def plugin_fs( self, name: str ) -> FS:
+		fs = MultiFS()
+		fs.add_fs( name=OVERLAY_DIRNAME, fs=self.overlay_fs_for( name ), write=False )
+		fs.add_fs( name=DB_DIRNAME, fs=self.db_fs_for( name ), write=True )
+		return fs
+
+	def plugin_dir( self, name: str ) -> str:
+		return cast( MultiFS, self.plugin_fs( name ) ).get_fs( DB_DIRNAME ).getsyspath( '' )
+
+	def plugin_dir_path( self, name ) -> Path:
+		return Path( self.plugin_dir( name ) )
+
+	# overlay
+
+	@property
+	def overlay_fs( self ) -> FS:
+		return self._overlay_fs
+
+	@property
+	def overlay_dir( self ) -> str:
+		return self.overlay_fs.getsyspath( '' )
+
+	def overlay_fs_for( self, name: str ) -> FS:
+		try:
+			return OSFS( root_path=self.overlay_fs.getsyspath( name ), create=True )
+		except (AttributeError, NoSysPath):
+			return SubFS( self.overlay_fs, f'/{name}' )
+
+	@property
+	def db_overlay_path( self ) -> Path:
+		return Path( self.overlay_dir )
+
+	# takeouts
+
+	@property
+	def takeouts_fs( self ) -> FS:
+		return self._takeouts_fs
+
+	@property
+	def takeouts_dir( self ) -> str:
+		return self.takeouts_fs.getsyspath( '/' )
+
+	@property
+	def takeouts_dir_path( self ) -> Path:
+		return Path( self.takeouts_dir )
+
+	def takeout_fs( self, name: str ) -> FS:
+		return OSFS( root_path=self.takeouts_fs.getsyspath( f'{name}' ), create=True )
+
+	def takeout_dir( self, name: str ) -> str:
+		return self.takeout_fs( name ).getsyspath( '' )
+
+	def takeout_dir_path( self, name ) -> Path:
+		return Path( self.takeout_dir( name ) )
+
+	# var/log/etc.
+
+	@property
+	def log_fs( self ) -> FS:
+		return self._log_fs
+
+	@property
+	def log_dir( self ) -> str:
+		return self.log_fs.getsyspath( '' )
+
+	@property
+	def log_file( self ) -> str:
+		return self.log_fs.getsyspath( LOG_FILENAME )
+
+	@property
+	def log_file_path( self ) -> Path:
+		return Path( self.log_file )
+
+	# var
+
+	@property
+	def var_fs( self ) -> FS:
+		return self._var_fs
+
+	@property
+	def var_dir( self ) -> str:
+		return self.var_fs.getsyspath( '' )
+
+	@property
+	def var_path( self ) -> Path:
+		return Path( self.var_dir )
+
+	# imports
+
+	@property
+	def imports_fs( self ) -> FS:
+		return self._imports_fs
+
+	@property
+	def imports_dir( self ) -> str:
+		return self.imports_fs.getsyspath( '' )
+
+	@property
+	def imports_path( self ) -> Path:
+		return Path( self.imports_dir )
+
+	def import_fs( self ) -> FS:
+		return self.imports_fs.makedirs( f'{datetime.now( tz=tzlocal() ).strftime( "%y%m%d_%H%M%S" )}', recreate=True )
+
+	# backup
+
+	@property
+	def backup_fs( self ) -> FS:
+		return self._backup_fs
+
+	@property
+	def backup_dir( self ) -> str:
+		return self.backup_fs.getsyspath( '' )
+
+	@property
+	def backup_path( self ) -> Path:
+		return Path( self.backup_dir )
+
+	# plugin configuration helpers
+
+	def plugin_config_state( self, name, as_dict: bool = False ) -> Tuple[DynaBox, DynaBox]:
+		name = name.lower()
+		try:
+			cfg = self.config.plugins[name] or DynaBox()
+		except BoxKeyError:
+			log.error( f'unable to find configuration area for plugin {name}' )
+			cfg = DynaBox()
+
+		try:
+			state = self.state.plugins[name] or DynaBox()
+		except BoxKeyError:
+			log.error( f'unable to find app state area for plugin {name}' )
+			state = DynaBox()
+
+		return cfg, state
+
+	def dump_config_state( self ) -> None:
+		self.dump_config()
+		self.dump_state()
+
+	def dump_config( self ) -> None:
+		self._dump_settings( self.config, CONFIG_FILENAME )
+
+	def dump_state( self ) -> None:
+		self._dump_settings( self.state, STATE_FILENAME )
+
+	def _dump_settings( self, settings: Configuration, filename: str ):
+		s = safe_dump( self._lower_dict( settings.as_dict() ), sort_keys=True, allow_unicode=True )
+		self.config_fs.writetext( filename, s )
+
+	def _lower_dict( self, d: Dict ) -> Dict:
+		for k, v in d.copy().items():
+			if isinstance( v, dict ):
+				d.pop( k )
+				d[f'{k.lower()}'] = v
+				self._lower_dict( v )
+			else:
+				d.pop( k )
+				d[f'{k.lower()}'] = v
+		return d
+
+# convenience helper
+
+def _subfs( parent: FS, path: str ) -> SubFS:
+	parent.makedirs( path, recreate=True )
+	return SubFS( parent_fs=parent, path=path )
+
+# global application context
+
+CURRENT_CONTEXT: Optional[ApplicationContext] = None
+
+def current_ctx() -> ApplicationContext:
+	"""
+	Returns the currently active context.
+
+	:return: active application context
+	"""
+	global CURRENT_CONTEXT
+	return CURRENT_CONTEXT
+
+def set_current_ctx( ctx: ApplicationContext ) -> ApplicationContext:
+	"""
+	Sets the current application context.
+
+	:param ctx: context to set
+	:return: current context, for convenience
+	"""
+	global CURRENT_CONTEXT
+	CURRENT_CONTEXT = ctx if ctx else CURRENT_CONTEXT
+	return CURRENT_CONTEXT

@@ -233,3 +233,7 @@ class Exporter( Protocol ):
 
 		"""
 		...
+
+class ActivityDb( Protocol ):
+
+	...

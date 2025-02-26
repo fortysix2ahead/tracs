@@ -13,7 +13,7 @@ from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple
 from attrs import define, field
 from fs.osfs import OSFS
 
-from tracs.constants import PLUGIN_NS, PLUGIN_PATH
+from tracs.constants import PLUGINS_PKG, PLUGIN_PATH
 from tracs.core import Keyword, Normalizer
 from tracs.protocols import Importer, VirtualField
 from tracs.resources import ResourceType
@@ -198,7 +198,7 @@ class PluginManager:
 		# extend plugin path and load additional, non-optional plugins
 		for pp in plugin_paths or []:
 			plugin_path = OSFS( root_path=pp, expand_vars=True ).getsyspath( PLUGIN_PATH )
-			tracs.plugins.__path__ = extend_path( [plugin_path], PLUGIN_NS )
+			tracs.plugins.__path__ = extend_path( [plugin_path], PLUGINS_PKG )
 			log.debug( f'adding {plugin_path} to list of plugin search paths' )
 
 		# load plugin modules

@@ -21,8 +21,8 @@ from fs.subfs import SubFS
 from yaml import safe_dump
 
 from tracs.constants import *
-from tracs.pluginmgr import PluginManager
-from tracs.protocols import ActivityDb, Registry, ServiceManager
+from tracs.pluginmgr import PluginManager, Registry, ServiceManager
+from tracs.protocols import ActivityDb
 
 log = getLogger( __name__ )
 

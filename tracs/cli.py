@@ -1,9 +1,9 @@
 
 from itertools import chain
 from logging import getLogger
-from typing import List, Optional, Tuple
+from typing import ClassVar, Dict, List, Optional, Tuple
 
-from click import argument, Choice, Context as ClickContext, group, option, pass_context, pass_obj, Path as ClickPath
+from click import argument, Choice, Command, Context as ClickContext, group, Group, option, pass_context, pass_obj, Path as ClickPath
 from click_shell import make_click_shell
 from rule_engine import RuleSyntaxError
 
@@ -31,6 +31,21 @@ def setup_context( *args, **kwargs ) -> None:
 
 def teardown_context( *args, **kwargs ) -> None:
 	pass
+
+class ExtensionGroup( Group ):
+
+	context: ClassVar[ApplicationContext] = None
+
+	def __init__( self, *args, **kwargs ):
+		super().__init__( *args, **kwargs )
+
+	def list_commands( self, ctx ):
+		# noinspection PyUnresolvedReferences
+		return sorted( [ c for c in ctx.command.commands.keys() ] )
+
+	def get_command( self, ctx, cmd_name ):
+		# noinspection PyUnresolvedReferences
+		return ctx.command.commands.get( cmd_name )
 
 @group()
 # @shell( prompt=f'{APPNAME} > ', intro=f'Starting interactive shell mode, enter <exit> to leave this mode again, use <{APPNAME} --help> for help ...' )
@@ -365,6 +380,11 @@ def version( ctx: ApplicationContext ):
 		console.print_json( data={ 'version': '0.1.0' } )
 	else:
 		console.print( '0.1.0' )
+
+@cli.group( cls=ExtensionGroup, help="extension point for externally provided extra commands, no intended to be called directly" )
+@pass_obj
+def ext( ctx: ApplicationContext ):
+	pass
 
 def main( args=None ):
 	cli()  # trigger cli

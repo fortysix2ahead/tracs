@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from atexit import register as register_atexit
 from logging import getLogger
 from typing import ClassVar, Optional, Tuple
 
 from attrs import define, field
-from dynaconf import Dynaconf as Configuration, inspect_settings
-from rich.pretty import pprint
+from dynaconf import Dynaconf as Configuration
 
 from tracs.activity import Activity, configure_formatters as configure_activity_formatters
 from tracs.context import ApplicationContext
@@ -70,6 +68,7 @@ class Application:
 
 		# init plugin manager
 		self._plugin_mgr = PluginManager.inst().init( (self._config.pluginpath or '').split( ' ' ) )
+		self._ctx.plugin_mgr = self._plugin_mgr
 
 		# init registry
 		self._registry = PluginManager.inst().registry()
@@ -119,6 +118,10 @@ class Application:
 	@property
 	def registry( self ) -> Registry:
 		return self._registry
+
+	@property
+	def plugin_mgr( self ) -> PluginManager:
+		return self._plugin_mgr
 
 	@property
 	def service_mgr( self ) -> ServiceManager:

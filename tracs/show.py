@@ -10,11 +10,11 @@ from rich.table import Table
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
-from tracs.protocols import ApplicationContext
+from tracs.context import ApplicationContext
 from tracs.pluginmgr import Registry
 from tracs.resources import Resource
 from tracs.service import Service
-from tracs.ui import CONSOLE as cs
+from tracs.ui import CONSOLE as console
 from tracs.utils import fmt
 
 log = getLogger( __name__ )
@@ -134,22 +134,22 @@ def show_aggregate( activities: [Activity], ctx: ApplicationContext ) -> None:
 	console.print( table )
 
 def show_keywords( ctx: ApplicationContext ) -> None:
-	keywords = sorted( ctx.registry.keywords.keys() )
-	if ctx.verbose:
+	keywords = sorted( ctx.registry.keywords, key=lambda k: k.name )
+	if ctx.config.verbose:
 		table = Table( box=box.MINIMAL, show_header=True, show_footer=False )
 		[ table.add_column( f'[blue]{c}[/blue]' ) for c in [ 'keyword', 'description' ] ]
-		[ table.add_row( k, ctx.registry.keywords[k].description ) for k in keywords ]
-		ctx.console.print( table )
+		[ table.add_row( k.name, k.description ) for k in keywords ]
+		console.print( table )
 	else:
-		ctx.console.print( Columns( keywords, padding=(0, 4), equal=True, column_first=True ) )
+		console.print( Columns( keywords, padding=(0, 4), equal=True, column_first=True ) )
 
 def show_equipments( ctx: ApplicationContext ) -> None:
 	all_equipments = sorted( set().union( *[a.equipment for a in ctx.db.activities] ) )
-	ctx.console.print( Columns( all_equipments, padding=(0, 4), equal=True, column_first=True ) )
+	console.print( Columns( all_equipments, padding=(0, 4), equal=True, column_first=True ) )
 
 def show_tags( ctx: ApplicationContext ) -> None:
 	all_tags = sorted( set().union( *[a.tags for a in ctx.db.activities] ) )
-	ctx.console.print( Columns( all_tags, padding=(0, 4), equal=True, column_first=True ) )
+	console.print( Columns( all_tags, padding=(0, 4), equal=True, column_first=True ) )
 
 def show_types( ctx: ApplicationContext, used_only: bool = False ) -> None:
 	if used_only:
@@ -159,4 +159,4 @@ def show_types( ctx: ApplicationContext, used_only: bool = False ) -> None:
 	
 	title = '[blue bold]Activity Types:[/blue bold] [green]value[/green] (display name)'
 	types = [f'[green]{t}[/green] ({ActivityTypes.get( t ).display_name})' for t in all_type_names ]
-	ctx.console.print( Columns( types, padding=(0, 4), equal=True, column_first=True, title=title ) )
+	console.print( Columns( types, padding=(0, 4), equal=True, column_first=True, title=title ) )

@@ -40,32 +40,21 @@ def teardown_context( *args, **kwargs ) -> None:
 @option( '-d', '--debug', is_flag=True, default=None, required=False, help='enable output of debug messages' )
 @option( '-f', '--force', is_flag=True, default=None, required=False, help='forces operations to be carried out' )
 @option( '-j', '--json', is_flag=True, default=None, required=False, help='forces operations to be carried out' )
-@option( '--feature', required=False, multiple=True, help='forces operations to be carried out', type=str )
 @option( '-p', '--pretend', is_flag=True, default=None, required=False, help='pretends to work, only simulates everything and does not persist any changes' )
 @pass_context
-def cli( ctx: ClickContext, configuration, library, force, verbose, pretend, debug, json, feature: Tuple[str] ):
+def cli( ctx: ClickContext, configuration, library, force, verbose, pretend, debug, json ):
 
 	ctx.call_on_close( teardown_context )
 
-
-	# APPLICATION_INSTANCE = Application.instance(
-	# 	configuration=configuration,
-	# 	library=library,
-	# 	verbose=verbose,
-	# 	debug=debug,
-	# 	force=force,
-	# 	pretend=pretend,
-	# 	json=json,
-	# 	features=list( feature )
-	# )
-
-	from tracs import APPLICATION
-
-	global APPLICATION
-	ctx.obj = APPLICATION.ctx # save newly created context object
-	ctx.obj.load_configuration()
-
-	print()
+	ctx.obj = Application.instance(
+		configuration=configuration,
+		library=library,
+		verbose=verbose,
+		debug=debug,
+		force=force,
+		pretend=pretend,
+		json=json
+	)
 
 	# migrate_application( ctx.obj, None ) # check if migration is necessary
 

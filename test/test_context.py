@@ -26,7 +26,7 @@ def test_context( fs: FS ):
 	assert ctx.lib_dir == std_lib_fs.getsyspath( '' )
 	assert ctx.db_dir == std_lib_fs.getsyspath( 'db' )
 
-	ctx.load_configuration()
+	ctx._load_configuration()
 
 	# adjust fs after creation
 

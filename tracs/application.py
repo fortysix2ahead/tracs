@@ -55,10 +55,10 @@ class Application:
 		# setup_console_logging( kwargs.get( 'verbose', False ), kwargs.get( 'debug', False ), kwargs.get( 'json', False ) )
 
 		# log command line flags
-		log.debug( f'triggered CLI with flags {kwargs}' )
+		log.debug( f'parameters provided from command line: {kwargs}' )
 
 		# create context, based on cfg_dir
-		self._ctx = ApplicationContext( __args__=args, __kwargs__=kwargs )
+		self._ctx = ApplicationContext( _cli_args=args, _cli_kwargs=kwargs )
 		self._config = self._ctx.config
 		self._state = self._ctx.state
 

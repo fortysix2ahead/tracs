@@ -87,6 +87,7 @@ class ApplicationContext:
 	_db_fs: FS = field( default=None, alias='_db_fs' )
 
 	# additional FS
+	_root_fs: FS = field( default=OSFS( root_path='/', expand_vars=True ), alias='_root_fs' )
 	_overlay_fs: FS = field( default=None, alias='_overlay_fs' )
 	_takeouts_fs: FS = field( default=None, alias='_takeout_fs' )
 	_log_fs: FS = field( default=None, alias='_log_fs' )
@@ -103,16 +104,10 @@ class ApplicationContext:
 
 	# internal fields
 
-	__args__: Tuple[Any, ...] = field( default=(), alias='__args__' )
-	__kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )
+	_cli_args: Tuple[Any, ...] = field( default=(), alias='_cli_args' )
+	_cli_kwargs: Dict[str, Any] = field( factory=dict, alias='_cli_kwargs' )
 
-	# __root_fs__: OSFS = field( default=OSFS( root_path='/', expand_vars=True ), alias='__root_fs__' )
-	__init_fs__: bool = field( default=True, alias='__init_fs__' )
-	__apptime__: datetime = field( default=datetime.now( UTC ), alias='__apptime__' )
-
-	apptime: datetime = field( default=None )
-
-	def load_configuration( self ):
+	def _load_configuration( self ):
 		settings_files = [ f'{INSTALL_PATH}/{DEFAULT_CONFIG_FILENAME}' ]
 		appstate_files = [ f'{INSTALL_PATH}/{DEFAULT_STATE_FILENAME}' ]
 
@@ -151,8 +146,11 @@ class ApplicationContext:
 		# setup auxillary fs which depend on config + lib fs
 		self._setup_aux_fs( self.config_fs, self.lib_fs )
 
-		# read configuration/appstate
-		self.load_configuration()
+		# load configuration/appstate + apply command line args to configuration
+		if cli_config := self._cli_kwargs.pop( KEY_CONFIGURATION, None ):
+			self.config_fs = cli_config
+		self._load_configuration()
+		self.config.update( { k: v for k, v in self._cli_kwargs.items() if v is not None } )
 
 	# main properties
 

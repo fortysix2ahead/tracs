@@ -14,7 +14,6 @@ from dateutil.tz import tzlocal, UTC
 from fs.base import FS
 from fs.path import dirname
 from lxml.etree import tostring
-from orjson import dumps
 from requests import get as rqget
 from rich.prompt import Prompt
 from stravalib.client import Client
@@ -23,13 +22,13 @@ from stravalib.model import DetailedActivity as StravaActivity
 from tracs.activity import Activities, Activity
 from tracs.activity_types import ActivityTypes
 from tracs.constants import APPNAME
-from tracs.protocols import ApplicationContext
 from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.image import JPEG_TYPE
 from tracs.plugins.json import JSONHandler
 from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
+from tracs.protocols import ApplicationContext
 from tracs.resources import Resource, ResourceType
 from tracs.service import Service
 from tracs.streams import Point, Stream
@@ -153,22 +152,22 @@ class Strava( Service ):
 
 	def login( self ):
 		# check if access/refresh tokens are available
-		if not self.state_value( 'access_token' ) and not self.state_value( 'refresh_token' ):
+		if not self._state.access_token and not self._state.refresh_token:
 			log.error( f"application setup not complete for {SERVICE_NAME}, consider running {APPNAME} setup --strava" )
 			sysexit( -1 )
 
-		self._client = Client( access_token=self.state_value( 'access_token' ) )
+		self._client = Client( access_token=self._state.access_token )
 
 		if time() > self.state_value( 'expires_at' ):
 			log.debug( f"access token has expired, attempting to fetch new one" )
-			client_id = self.cfg_value( 'client_id' )
-			client_secret = self.cfg_value( 'client_secret' )
-			refresh_token = self.state_value( 'refresh_token' )
+			client_id = self._cfg.client_id
+			client_secret = self._cfg.client_secret
+			refresh_token = self._state.refresh_token
 			refresh_response = self._client.refresh_access_token( client_id=client_id, client_secret=client_secret, refresh_token=refresh_token )
 
-			self.set_state_value( 'access_token', refresh_response.get( 'access_token' ) )
-			self.set_state_value( 'refresh_token', refresh_response.get( 'refresh_token' ) )
-			self.set_state_value( 'expires_at', refresh_response.get( 'expires_at' ) )
+			self._state['access_token'] = refresh_response.get( 'access_token' )
+			self._state['refresh_token'] = refresh_response.get( 'refresh_token' )
+			self._state['expires_at'] = refresh_response.get( 'expires_at' )
 
 		# todo: how to detect unsuccessful login?
 		return True
@@ -179,7 +178,7 @@ class Strava( Service ):
 
 		after = kwargs.get( 'range_from' )
 		before = kwargs.get( 'range_to' )
-		first_year = self.ctx.config['import'].first_year
+		first_year = self._ctx.config['import'].first_year
 
 		if after is None or before is None:
 			after, before = datetime( first_year, 1, 1 ), datetime.now( UTC ) + timedelta( days = 1 )
@@ -188,7 +187,7 @@ class Strava( Service ):
 
 		# sa = SummaryActivity, da = DetailedActivity
 		for sa in self._client.get_activities( after=after, before=before ):
-			self.ctx.advance( f'activity {sa.id}' )
+			# self.ctx.advance( f'activity {sa.id}' )
 
 			uid = f'{self.name}:{sa.id}'
 			path = f'{self.path_for_id( sa.id, self.name )}/{sa.id}.json'

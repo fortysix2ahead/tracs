@@ -69,7 +69,7 @@ def cli( ctx: ClickContext, configuration, library, force, verbose, pretend, deb
 		force=force,
 		pretend=pretend,
 		json=json
-	)
+	).ctx
 
 	# migrate_application( ctx.obj, None ) # check if migration is necessary
 

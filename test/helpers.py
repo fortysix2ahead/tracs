@@ -6,12 +6,8 @@ from json import load as load_json
 from logging import getLogger
 from pathlib import Path
 from re import compile, fullmatch, split
-from shutil import copy
-from shutil import copytree
-from shutil import rmtree
-from typing import Dict, List
-from typing import Optional
-from typing import Tuple
+from shutil import copy, copytree, rmtree
+from typing import Dict, List, Optional, Tuple
 
 from attr import define, field
 from click.testing import CliRunner, Result
@@ -20,9 +16,8 @@ from orjson.orjson import JSONDecodeError, loads
 from pytest import mark
 
 from tracs.cli import cli
-from tracs.config import ApplicationContext
-from tracs.config import DB_DIRNAME
-from tracs.config import TAKEOUT_DIRNAME
+from tracs.constants import DB_DIRNAME, TAKEOUT_DIRNAME
+from tracs.context import ApplicationContext
 from tracs.db import ActivityDb
 
 log = getLogger( __name__ )

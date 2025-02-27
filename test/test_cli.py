@@ -10,8 +10,8 @@ from click.testing import Result
 from pytest import mark
 
 from tracs.cli import cli
-from tracs.config import ApplicationContext
-from .helpers import skip_live
+from tracs.context import ApplicationContext
+from test.helpers import skip_live
 
 cfg_path: Optional[Path] = None
 lib_path: Optional[Path] = None

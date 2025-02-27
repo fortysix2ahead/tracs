@@ -50,7 +50,8 @@ class Application:
 	# 'None' as default value means value has not been provided from the outside (via command line switch)
 	def __setup__( self, *args, **kwargs ):
 		# console logging setup --
-		# setup_console_logging( kwargs.get( 'verbose', False ), kwargs.get( 'debug', False ), kwargs.get( 'json', False ) )
+		from tracs.__log__ import LogManager
+		LogManager.instance().set_console_log( kwargs.get( 'verbose', False ), kwargs.get( 'debug', False ), kwargs.get( 'json', False ) )
 
 		# log command line flags
 		log.debug( f'parameters provided from command line: {kwargs}' )
@@ -61,7 +62,7 @@ class Application:
 		self._state = self._ctx.state
 
 		# file logging setup after configuration has been loaded --
-		# setup_file_logging( self._ctx.verbose, self._ctx.debug, self._ctx.log_file_path )
+		LogManager.instance().set_file_log( self._ctx.config.verbose, self._ctx.config.debug, self._ctx.log_file_path )
 
 		# print context configuration
 		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )

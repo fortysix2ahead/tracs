@@ -249,8 +249,8 @@ class Service( Plugin ):
 			range_from = datetime.now( UTC ) - timedelta( days = days_range )
 		range_to = datetime.now( UTC ) + timedelta( days=1 )
 
-		src_fs = kwargs.get( 'fs' )
-		src_path = kwargs.get( 'path' )
+		src_fs: FS = kwargs.get( 'fs' )
+		src_path: str = kwargs.get( 'path' )
 
 		classifier = kwargs.get( 'classifier' ) or self.name
 		type = kwargs.get( 'type' )
@@ -262,7 +262,7 @@ class Service( Plugin ):
 
 		# actual import from local fs or remote
 		if src_fs and self.supports_fs_import( src_fs, src_path ):
-			log.debug( f'service {self.name} supports import from {src_fs}' )
+			log.debug( f'service {self.name} supports import from {src_fs.getsyspath( "" )}' )
 			activities = self.import_from_fs( src_fs, dst_fs, path=src_path, classifier=classifier, type=type )
 
 		elif self.supports_remote_import():
@@ -270,7 +270,7 @@ class Service( Plugin ):
 			activities = self.import_from_remote( dst_fs, range_from=range_from, range_to=range_to )
 
 		else:
-			log.debug( f'service {self.name} does not support remote import nor import from {src_fs} or not suitable file to import have been found' )
+			log.info( f'service [bold]{self.name}[/bold] does not support neither remote nor local import from {src_fs} or no suitable file(s) to import have been found' )
 			activities = Activities()
 
 		# post-process activities

@@ -21,6 +21,7 @@ from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.json import DataclassFactoryHandler, JSONHandler
 from tracs.resources import Resource, ResourceType
 from tracs.service import Service
+from tracs.ui import CONSOLE as console
 
 log = getLogger( __name__ )
 
@@ -221,15 +222,15 @@ class Bikecitizens( Service ):
 		else:
 			log.debug( f"Found authenticity token for {self.name}: {token}" )
 
-		if not self.config_value( 'username' ) and not self.cfg_value( 'password' ):
+		if not self._cfg.username and not self._cfg.password:
 			log.error( f'setup not complete for {self.display_name}, consider running {APPNAME} setup' )
 			sysexit( -1 )
 
 		data = {
 			'utf8': '✓',
 			'authenticity_token': token,
-			'user[login]': self.config_value( 'username' ),
-			'user[password]': self.config_value( 'password' ),
+			'user[login]': self._cfg.username,
+			'user[password]': self._cfg.password,
 			'commit': 'Login'
 		}
 
@@ -275,7 +276,7 @@ class Bikecitizens( Service ):
 		range_to = kwargs.get( 'range_to' )
 
 		# start fetch task
-		self.ctx.start( f'fetching activity data from {self.display_name}' )
+		# self.ctx.start( f'fetching activity data from {self.display_name}' )
 
 		activities = Activities()
 
@@ -355,9 +356,9 @@ INTRO = f'For Bikecitizens we will use their Web API to download activity data, 
 
 @setup
 def setup( ctx: ApplicationContext, config: Dict, state: Dict ) -> Tuple[Dict, Dict]:
-	ctx.console.print( INTRO, width=120 )
+	console.print( INTRO, width=120 )
 
-	user = Prompt.ask( 'Enter your user name', console=ctx.console, default=config.get( 'username', '' ) )
-	password = Prompt.ask( 'Enter your password', console=ctx.console, default=config.get( 'password' ), password=True )
+	user = Prompt.ask( 'Enter your user name', console=console, default=config.get( 'username', '' ) )
+	password = Prompt.ask( 'Enter your password', console=console, default=config.get( 'password' ), password=True )
 
 	return { 'username': user, 'password': password }, {}

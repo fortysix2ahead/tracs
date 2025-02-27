@@ -1,19 +1,20 @@
 
 from logging import getLogger
-from pathlib import Path
 from re import split
 from typing import List
 
+from dynaconf import inspect_settings
 from dynaconf.vendor.box.exceptions import BoxKeyError
 from rich import box
 from rich.pretty import Pretty as pp
 from rich.table import Table
 
 from tracs.activity import Activity
-from tracs.protocols import ApplicationContext
+from tracs.context import ApplicationContext
 from tracs.core import VirtualField
+from tracs.ui import CONSOLE as console
 from tracs.ui.tables import create_table
-from tracs.utils import fmt, red
+from tracs.utils import red
 
 log = getLogger( __name__ )
 
@@ -88,11 +89,6 @@ def show_config( ctx: ApplicationContext ):
 
 	table.add_section()
 
-	for s in ctx.registry.services.values():
-		table.add_row( f'{s.name} activities:', pp( Path( ctx.db_dir, s.name ) ) )
-
-	table.add_section()
-
 	#table.add_row( 'plugins dir', pp( ctx.plugins_dir ) )
 	#table.add_row( 'overlay dir', pp( ctx.overlay_dir ) )
 
@@ -100,10 +96,10 @@ def show_config( ctx: ApplicationContext ):
 	console.print( table )
 
 	console.print( 'Configuration', style='bold' )
-	console.print( ctx.config.dump() )
+	console.print( inspect_settings( ctx.config, history_limit=1 ) )
 
 	console.print( 'State', style='bold' )
-	console.print( ctx.state.dump() )
+	console.print( inspect_settings( ctx.state, history_limit=1 ) )
 
 def shorten( s: str ) -> str:
 	max_length = 120

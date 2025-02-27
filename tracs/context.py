@@ -225,6 +225,10 @@ class ApplicationContext:
 	# db related fs/dirs
 
 	@property
+	def db( self ) -> ActivityDb:
+		return self._db
+
+	@property
 	def db_fs( self ) -> FS:
 		return self._db_fs
 

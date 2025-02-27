@@ -58,6 +58,7 @@ GLOBAL_KWARGS = [ 'debug', 'force', 'verbose', 'json', 'pretend' ]
 CLASSIFIER = 'classifier'
 CLASSIFIERS = 'classifiers'
 
+KEY_CONFIGURATION = 'configuration'
 KEY_CLASSIFER = 'classifier'
 KEY_GROUP = 'group'
 KEY_GROUPS = 'groups'

@@ -79,7 +79,3 @@ def setup_file_logging( verbose: bool = False, debug: bool = False, log_path: Pa
 		log.addHandler( FILE_HANDLER )
 
 setup_console_logging( verbose=False, debug=False ) # activate default console logging
-
-# global application object
-
-APPLICATION: Application = Application.instance()

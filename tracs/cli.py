@@ -1,9 +1,9 @@
 
 from itertools import chain
 from logging import getLogger
-from typing import ClassVar, Dict, List, Optional, Tuple
+from typing import ClassVar, List, Tuple
 
-from click import argument, Choice, Command, Context as ClickContext, group, Group, option, pass_context, pass_obj, Path as ClickPath
+from click import argument, Choice, Context as ClickContext, group, Group, option, pass_context, pass_obj, Path as ClickPath
 from click_shell import make_click_shell
 from rule_engine import RuleSyntaxError
 
@@ -21,8 +21,8 @@ from tracs.link import link_activities
 from tracs.list import list_activities, show_config, show_fields, show_filters
 from tracs.setup import setup as setup_application
 from tracs.show import show_activities, show_aggregate, show_equipments, show_keywords, show_resources, show_tags, show_types
-from tracs.validate import validate_activities
 from tracs.ui import CONSOLE as console
+from tracs.validate import validate_activities
 
 log = getLogger( __name__ )
 
@@ -121,7 +121,7 @@ def imprt( ctx: ApplicationContext, sources, fetch_all: bool, skip_download: boo
 	activities = import_activities( ctx, sources, fetch_all=fetch_all, skip_download=skip_download, move=move, from_takeouts=from_takeouts, classifier=classifier, type=type )
 
 	if ctx.json:
-		ctx.console.print_json( data=activities.to_dict() )
+		console.print_json( data=activities.to_dict() )
 
 @cli.command( help='fetches activity summaries', hidden=True )
 @argument( 'sources', nargs=-1 )
@@ -152,7 +152,7 @@ def link( ctx: ApplicationContext, filters ):
 @argument('filters', nargs=-1)
 @pass_obj
 def ls( ctx: ApplicationContext, sort, reverse, format_name, fields, filters ):
-	list_activities( _flt( *filters ), sort=sort, reverse=reverse, format_name=format_name, fields=fields, ctx=ctx )
+	list_activities( _flt( ctx, *filters ), sort=sort, reverse=reverse, format_name=format_name, fields=fields, ctx=ctx )
 
 @cli.command( help='shows details about activities and resources' )
 @option( '-f', '--format', 'format_name', is_flag=False, required=False, type=str, hidden=True, help='uses the format with the provided name when printing', metavar='FORMAT' )
@@ -394,14 +394,14 @@ if __name__ == '__main__':
 
 # helper
 
-def _flt( *rules: str ) -> List[Activity]:
+def _flt( ctx: ApplicationContext, *rules: str ) -> List[Activity]:
 	try:
-		rules = APPLICATION_INSTANCE.parser.parse_rules( *rules )
-		activities = APPLICATION_INSTANCE.db.activities
+		rules = ctx.parser.parse_rules( *rules )
+		activities = ctx.db.activities
 		for r in rules:
 			activities = r.filter( activities )
 		return list( activities )
 
 	except RuleSyntaxError as rse:
-		APPLICATION_INSTANCE.ctx.console.print( rse )
+		console.print( rse )
 		return []

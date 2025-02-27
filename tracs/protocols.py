@@ -238,9 +238,14 @@ class Exporter( Protocol ):
 		"""
 		...
 
-class ActivityDb( Protocol ):
+class RuleParser( Protocol ):
 
 	...
+
+class ActivityDb( Protocol ):
+
+	def commit( self ) -> None:
+		...
 
 class ApplicationContext( Protocol ):
 

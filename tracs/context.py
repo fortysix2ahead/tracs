@@ -22,7 +22,7 @@ from yaml import safe_dump
 
 from tracs.constants import *
 from tracs.pluginmgr import PluginManager, Registry, ServiceManager
-from tracs.protocols import ActivityDb
+from tracs.protocols import ActivityDb, RuleParser
 
 log = getLogger( __name__ )
 
@@ -101,6 +101,7 @@ class ApplicationContext:
 	plugin_mgr: PluginManager = field( default=None )
 	registry: Registry = field( default=None )
 	service_mgr: ServiceManager = field( default=None )
+	parser: RuleParser = field( default=None )
 
 	# internal fields
 
@@ -151,6 +152,9 @@ class ApplicationContext:
 			self.config_fs = cli_config
 		self._load_configuration()
 		self.config.update( { k: v for k, v in self._cli_kwargs.items() if v is not None } )
+
+		if self.config.library is not None:
+			self.lib_fs = self.config.library
 
 	# main properties
 

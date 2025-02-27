@@ -22,14 +22,10 @@ class Application:
 
 	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
 
-	_plugin_mgr: PluginManager = field( default=None, alias='_plugin_mgr' )
 	_service_mgr: ServiceManager = field( default=None, alias='_service_mgr' )
 	_db: ActivityDb = field( default=None, alias='_db' )
 	_registry: Registry = field( default=None, alias='_registry' )
 	_parser: RuleParser = field( default=None, alias='_parser' )
-
-	_config: Configuration = field( default=None, alias='_config' )
-	_state: Configuration = field( default=None, alias='_state' )
 
 	@classmethod
 	def instance( cls, *args, **kwargs ):
@@ -58,8 +54,6 @@ class Application:
 
 		# create context, based on cfg_dir
 		self._ctx = ApplicationContext( _cli_args=args, _cli_kwargs=kwargs )
-		self._config = self._ctx.config
-		self._state = self._ctx.state
 
 		# file logging setup after configuration has been loaded --
 		LogManager.instance().set_file_log( self._ctx.config.verbose, self._ctx.config.debug, self._ctx.log_file_path )
@@ -68,8 +62,8 @@ class Application:
 		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
 
 		# init plugin manager
-		self._plugin_mgr = PluginManager.inst().init( (self._config.pluginpath or '').split( ' ' ) )
-		self._ctx.plugin_mgr = self._plugin_mgr
+		self._ctx.plugin_mgr = PluginManager.inst().init( (self._ctx.config.pluginpath or '').split( ' ' ) )
+		self._ctx.service_mgr = self._ctx.plugin_mgr.service_mgr
 
 		# init registry
 		self._registry = PluginManager.inst().registry()
@@ -87,6 +81,7 @@ class Application:
 
 		# create rule parser
 		self._parser = RuleParser( keywords=self.registry.keywords, normalizers=self.registry.normalizers )
+		self._ctx.parser = self._parser
 
 		# announce virtual fields to activity class
 		for vf in self.registry.virtual_fields:
@@ -95,8 +90,7 @@ class Application:
 		# init service manager
 		for s in self.registry.services:
 			# noinspection PyArgumentList
-			self._plugin_mgr.service_mgr.add( s( ctx=self._ctx ) )
-		self._ctx.service_mgr = self._plugin_mgr.service_mgr
+			self._ctx.service_mgr.add( s( ctx=self._ctx ) )
 
 		# ---- announce context/configuration to utils module + configure formatters ----
 		UCFG.reconfigure( self._ctx.config )
@@ -122,11 +116,11 @@ class Application:
 
 	@property
 	def plugin_mgr( self ) -> PluginManager:
-		return self._plugin_mgr
+		return self._ctx.plugin_mgr
 
 	@property
 	def service_mgr( self ) -> ServiceManager:
-		return self._service_mgr
+		return self._ctx.service_mgr
 
 	@property
 	def parser( self ) -> RuleParser:
@@ -134,11 +128,11 @@ class Application:
 
 	@property
 	def config( self ) -> Configuration:
-		return self._config
+		return self._ctx.config
 
 	@property
 	def state( self ) -> Configuration:
-		return self._state
+		return self._ctx.state
 
 	@property
 	def as_tuple( self ) -> Tuple[ApplicationContext, ActivityDb]:

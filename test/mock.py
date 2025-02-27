@@ -8,7 +8,7 @@ from attrs import define, field
 from dateutil.tz import tzlocal
 
 from tracs.activity import Activity
-from tracs.config import ApplicationContext
+from tracs.context import ApplicationContext
 from tracs.handlers import ResourceHandler
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.pluginmgr import importer, service

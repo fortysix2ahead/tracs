@@ -9,7 +9,8 @@ from fs.subfs import SubFS
 from pytest import mark
 
 from tracs.application import Application
-from tracs.config import ApplicationContext, APPNAME, current_ctx
+from tracs.context import ApplicationContext, current_ctx
+from tracs.constants import APPNAME
 
 @mark.context( env='empty', persist='clone', cleanup=True )
 def test_context( fs: FS ):

@@ -2,8 +2,8 @@ from logging import getLogger
 
 from pytest import mark
 
-from helpers import invoke_cli as invoke
-from tracs.config import ApplicationContext as Context
+from test.helpers import invoke_cli as invoke
+from tracs.context import ApplicationContext as Context
 
 log = getLogger( __name__ )
 

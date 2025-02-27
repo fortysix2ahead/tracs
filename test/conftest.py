@@ -14,7 +14,8 @@ from fs.subfs import SubFS
 from pytest import fixture
 
 from tracs.activity import Activity
-from tracs.config import ApplicationContext, DB_DIRNAME, set_current_ctx
+from tracs.constants import DB_DIRNAME
+from tracs.context import ApplicationContext, set_current_ctx
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager, Registry
 from tracs.rules import RuleParser

@@ -10,7 +10,7 @@ from rich.table import Table
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
-from tracs.config import ApplicationContext, console
+from tracs.protocols import ApplicationContext
 from tracs.pluginmgr import Registry
 from tracs.resources import Resource
 from tracs.service import Service

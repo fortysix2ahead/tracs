@@ -5,11 +5,11 @@ from logging import getLogger
 from typing import ClassVar, Optional, Tuple
 
 from attrs import define, field
-from dynaconf import Dynaconf as Configuration
+from dynaconf import Dynaconf as Configuration, inspect_settings
+from rich.pretty import pprint
 
-from tracs import setup_console_logging, setup_file_logging
 from tracs.activity import Activity, configure_formatters as configure_activity_formatters
-from tracs.config import ApplicationContext, set_current_ctx
+from tracs.context import ApplicationContext
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager, Registry, ServiceManager
 from tracs.rules import RuleParser
@@ -52,7 +52,7 @@ class Application:
 	# 'None' as default value means value has not been provided from the outside (via command line switch)
 	def __setup__( self, *args, **kwargs ):
 		# console logging setup --
-		setup_console_logging( kwargs.get( 'verbose', False ), kwargs.get( 'debug', False ), kwargs.get( 'json', False ) )
+		# setup_console_logging( kwargs.get( 'verbose', False ), kwargs.get( 'debug', False ), kwargs.get( 'json', False ) )
 
 		# log command line flags
 		log.debug( f'triggered CLI with flags {kwargs}' )
@@ -61,10 +61,9 @@ class Application:
 		self._ctx = ApplicationContext( __args__=args, __kwargs__=kwargs )
 		self._config = self._ctx.config
 		self._state = self._ctx.state
-		set_current_ctx( self._ctx )
 
 		# file logging setup after configuration has been loaded --
-		setup_file_logging( self._ctx.verbose, self._ctx.debug, self._ctx.log_file_path )
+		# setup_file_logging( self._ctx.verbose, self._ctx.debug, self._ctx.log_file_path )
 
 		# print context configuration
 		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
@@ -84,7 +83,7 @@ class Application:
 			summary_types=self.registry.summary_type_names(),
 			recording_types=self.registry.recording_type_names()
 		)
-		self._ctx.db = self._db
+		self._ctx._db = self._db
 
 		# create rule parser
 		self._parser = RuleParser( keywords=self.registry.keywords, normalizers=self.registry.normalizers )
@@ -104,8 +103,8 @@ class Application:
 		configure_activity_formatters( self._ctx.config.formats )
 
 		# ---- register cleanup functions ----
-		register_atexit( self._ctx.db.close )
-		register_atexit( self._ctx.dump_state )
+#		register_atexit( self._ctx.db.close )
+#		register_atexit( self._ctx.dump_state )
 
 	# properties
 

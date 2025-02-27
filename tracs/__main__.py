@@ -1,7 +1,7 @@
 
 from logging import getLogger
 
-from .cli import main as main_cli
+from tracs.cli import main as main_cli
 
 log = getLogger( __name__ )
 

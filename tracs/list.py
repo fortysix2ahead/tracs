@@ -10,7 +10,7 @@ from rich.pretty import Pretty as pp
 from rich.table import Table
 
 from tracs.activity import Activity
-from tracs.config import ApplicationContext, console
+from tracs.protocols import ApplicationContext
 from tracs.core import VirtualField
 from tracs.ui.tables import create_table
 from tracs.utils import fmt, red

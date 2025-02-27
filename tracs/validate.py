@@ -9,7 +9,7 @@ from rich import box
 from rich.table import Table
 
 from tracs.activity import Activity
-from tracs.config import ApplicationContext, console
+from tracs.protocols import ApplicationContext
 from tracs.service import Service
 
 log = getLogger( __name__ )

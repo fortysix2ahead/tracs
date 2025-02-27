@@ -7,7 +7,7 @@ from rich.pretty import Pretty as pp
 from rich.prompt import Confirm
 from rich.table import Table
 
-from tracs.config import ApplicationContext, console
+from tracs.protocols import ApplicationContext
 
 log = getLogger( __name__ )
 

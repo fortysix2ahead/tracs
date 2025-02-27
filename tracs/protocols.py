@@ -142,6 +142,10 @@ class Registry( Protocol ):
 	def keywords( self ) -> List[Keyword]:
 		...
 
+class PluginManager( Protocol ):
+
+	...
+
 class Handler( Protocol ):
 	"""
 	A handler defines the protocol for loading and saving documents, transforming them into a dict-like structure.
@@ -237,3 +241,13 @@ class Exporter( Protocol ):
 class ActivityDb( Protocol ):
 
 	...
+
+class ApplicationContext( Protocol ):
+
+	...
+
+class Application( Protocol ):
+
+	@property
+	def ctx( self ) -> ApplicationContext:
+		...

@@ -11,7 +11,7 @@ from rich.prompt import Confirm
 from tzlocal import get_localzone_name
 
 from tracs.activity import Activities, Activity, ActivityTypes
-from tracs.config import ApplicationContext
+from tracs.protocols import ApplicationContext
 from tracs.db import ActivityDb
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.pluginmgr import Registry

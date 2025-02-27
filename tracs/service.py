@@ -19,7 +19,7 @@ from fs.osfs import OSFS
 from fs.path import basename, combine, dirname, isabs, join, parts, split
 
 from tracs.activity import Activity, Activities
-from tracs.config import current_ctx, DB_DIRNAME
+from tracs.constants import DB_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.resources import Resource, Resources

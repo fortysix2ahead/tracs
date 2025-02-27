@@ -9,7 +9,7 @@ from rich.prompt import IntPrompt
 
 from .activity import Activity
 from .activity_types import ActivityTypes
-from .config import ApplicationContext
+from tracs.protocols import ApplicationContext
 from .aio import load_all_resources
 from .aio import open_activities
 from .ui import Choice

@@ -7,7 +7,7 @@ from typing import List
 from orjson import dumps, loads, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich.pretty import pprint
 
-from tracs.config import ApplicationContext
+from tracs.protocols import ApplicationContext
 
 log = getLogger( __name__ )
 

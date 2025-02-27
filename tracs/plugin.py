@@ -3,7 +3,7 @@ from typing import Any, Tuple
 
 from dynaconf.utils.boxing import DynaBox
 
-from tracs.config import ApplicationContext
+from tracs.protocols import ApplicationContext
 from tracs.db import ActivityDb
 
 log = getLogger( __name__ )

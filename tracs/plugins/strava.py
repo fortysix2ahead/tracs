@@ -22,7 +22,8 @@ from stravalib.model import DetailedActivity as StravaActivity
 
 from tracs.activity import Activities, Activity
 from tracs.activity_types import ActivityTypes
-from tracs.config import ApplicationContext, APPNAME
+from tracs.constants import APPNAME
+from tracs.protocols import ApplicationContext
 from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.image import JPEG_TYPE

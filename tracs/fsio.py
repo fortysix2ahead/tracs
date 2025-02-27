@@ -14,7 +14,6 @@ from rich.prompt import Confirm
 
 from tracs.activity import Activities, Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
-from tracs.config import current_ctx as ctx
 from tracs.core import Metadata
 from tracs.resources import Resource, Resources
 from tracs.uid import UID

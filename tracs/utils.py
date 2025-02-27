@@ -31,7 +31,6 @@ from rich import box
 from rich.table import Table
 
 from tracs.activity_types import ActivityTypes
-from tracs.config import CONSOLE
 
 T = TypeVar('T')
 
@@ -447,4 +446,4 @@ def print_timers():
 	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
 	for name, total_time in TIMERS.items():
 		print( name, f'{total_time:.4f}s' )
-	CONSOLE.print( table )
+		print( table )

@@ -163,9 +163,9 @@ def ls( ctx: ApplicationContext, sort, reverse, format_name, fields, filters ):
 @pass_obj
 def show( ctx: ApplicationContext, filters, raw, format_name, resource, verbose ):
 	if resource:
-		show_resources( _flt( *filters ), ctx=ctx, display_raw=raw, verbose=verbose, format_name=format_name )
+		show_resources( _flt( ctx, *filters ), ctx=ctx, display_raw=raw, verbose=verbose, format_name=format_name )
 	else:
-		show_activities( _flt( *filters ), ctx=ctx, display_raw=raw, verbose=verbose, format_name=format_name )
+		show_activities( _flt( ctx, *filters ), ctx=ctx, display_raw=raw, verbose=verbose, format_name=format_name )
 
 @cli.command( help='groups activities' )
 @argument( 'filters', nargs=-1 )

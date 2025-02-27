@@ -4,7 +4,7 @@ from re import compile as rxcompile
 from typing import List
 
 from tracs.activity import Activity
-from tracs.config import ApplicationContext
+from tracs.protocols import ApplicationContext
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.service import Service
 from tracs.resources import Resource

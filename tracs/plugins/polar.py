@@ -28,7 +28,8 @@ from rich.prompt import Prompt
 from tracs.activity import Activities, Activity, ActivityPart
 from tracs.activity_types import ActivityTypes, ActivityTypes as Types
 from tracs.aio import load_resource
-from tracs.config import ApplicationContext, APPNAME
+from tracs.protocols import ApplicationContext
+from tracs.constants import APPNAME
 from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.plugins.json import DataclassFactoryHandler, JSONHandler

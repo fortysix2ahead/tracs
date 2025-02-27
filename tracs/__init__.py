@@ -9,9 +9,13 @@ from dateutil.tz import tzlocal
 from rich.logging import RichHandler
 from rich.text import Text
 
+from tracs.application import Application
+
 APPLICATION_START_TIME = datetime.utcnow()
 APPLICATION_START_TIME_LOCAL = APPLICATION_START_TIME.astimezone( tzlocal() )
 LAST_LOG_TIME = datetime.now()
+
+# setup logging
 
 LOG_FILE_FORMAT = '[%(asctime)s] %(levelname)s: %(message)s'
 LOG_FILE_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -75,3 +79,7 @@ def setup_file_logging( verbose: bool = False, debug: bool = False, log_path: Pa
 		log.addHandler( FILE_HANDLER )
 
 setup_console_logging( verbose=False, debug=False ) # activate default console logging
+
+# global application object
+
+APPLICATION: Application = Application.instance()

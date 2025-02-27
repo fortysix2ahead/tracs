@@ -10,7 +10,7 @@ from rule_engine import RuleSyntaxError
 from tracs.activity import Activity
 from tracs.aio import export_activities, import_activities, open_activities, reimport_activities
 from tracs.application import Application
-from tracs.config import ApplicationContext, APPNAME
+from tracs.context import ApplicationContext, APPNAME
 from tracs.db import maintain_db, status_db
 from tracs.edit import edit_activities, equip_activities, modify_activities, rename_activities, set_activity_type, tag_activities, unequip_activities, \
 	untag_activities
@@ -22,11 +22,9 @@ from tracs.list import list_activities, show_config, show_fields, show_filters
 from tracs.setup import setup as setup_application
 from tracs.show import show_activities, show_aggregate, show_equipments, show_keywords, show_resources, show_tags, show_types
 from tracs.validate import validate_activities
+from tracs.ui import CONSOLE as console
 
 log = getLogger( __name__ )
-
-# global application instance: we probably don't need this, but it's accessible from here
-APPLICATION_INSTANCE: Optional[Application] = None
 
 def setup_context( *args, **kwargs ) -> None:
 	pass
@@ -49,19 +47,25 @@ def cli( ctx: ClickContext, configuration, library, force, verbose, pretend, deb
 
 	ctx.call_on_close( teardown_context )
 
-	global APPLICATION_INSTANCE
-	APPLICATION_INSTANCE = Application.instance(
-		configuration=configuration,
-		library=library,
-		verbose=verbose,
-		debug=debug,
-		force=force,
-		pretend=pretend,
-		json=json,
-		features=list( feature )
-	)
 
-	ctx.obj = APPLICATION_INSTANCE.ctx # save newly created context object
+	# APPLICATION_INSTANCE = Application.instance(
+	# 	configuration=configuration,
+	# 	library=library,
+	# 	verbose=verbose,
+	# 	debug=debug,
+	# 	force=force,
+	# 	pretend=pretend,
+	# 	json=json,
+	# 	features=list( feature )
+	# )
+
+	from tracs import APPLICATION
+
+	global APPLICATION
+	ctx.obj = APPLICATION.ctx # save newly created context object
+	ctx.obj.load_configuration()
+
+	print()
 
 	# migrate_application( ctx.obj, None ) # check if migration is necessary
 
@@ -368,10 +372,10 @@ def types( ctx, used_only: bool = False ):
 @cli.command( help='Displays the version number and exits.' )
 @pass_obj
 def version( ctx: ApplicationContext ):
-	if ctx.json:
-		ctx.console.print_json( data={ 'version': '0.1.0' } )
+	if ctx.config.json:
+		console.print_json( data={ 'version': '0.1.0' } )
 	else:
-		ctx.console.print( '0.1.0' )
+		console.print( '0.1.0' )
 
 def main( args=None ):
 	cli()  # trigger cli

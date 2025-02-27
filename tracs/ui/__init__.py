@@ -9,7 +9,6 @@ from rich.prompt import Confirm, DefaultType, Prompt, PromptType
 from rich.table import Table
 from rich.text import Text, TextType
 
-from tracs.config import console as cs
 from tracs.utils import colored_diff, colored_diff_2, fmt
 
 CONSOLE = Console( tab_size=2 )

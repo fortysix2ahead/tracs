@@ -21,7 +21,7 @@ from rich.table import Table as RichTable
 from rule_engine import Rule
 
 from tracs.activity import Activities, Activity
-from tracs.config import ApplicationContext
+from tracs.protocols import ApplicationContext
 from tracs.fsio import load_activities, load_schema, Schema, write_activities
 from tracs.migrate import migrate_db, migrate_db_functions
 from tracs.resources import Resource, Resources

@@ -5,7 +5,7 @@ from rich.pretty import Pretty as pp
 from rich.table import Table
 
 from tracs.activity import Activity
-from tracs.config import ApplicationContext, console
+from tracs.protocols import ApplicationContext
 from tracs.pluginmgr import PluginManager, Registry
 from tracs.ui import CONSOLE as cs
 from tracs.ui.utils import style
@@ -19,7 +19,7 @@ def inspect_activities( activities: [Activity] ) -> None:
 		for f in sorted( Activity.fields(), key=lambda field: field.name ):
 			table.add_row( f.name, pp( f.type ), pp( getattr( a, f.name ) ) )
 
-		console.print( table )
+		cs.print( table )
 
 def inspect_resources() -> None:
 	raise NotImplementedError

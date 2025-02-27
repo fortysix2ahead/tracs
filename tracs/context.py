@@ -113,8 +113,8 @@ class ApplicationContext:
 	apptime: datetime = field( default=None )
 
 	def load_configuration( self ):
-		settings_files = [ f'{INSTALL_PATH}/{APP_PKG_NAME}/{DEFAULT_CONFIG_FILENAME}' ]
-		appstate_files = [ f'{INSTALL_PATH}/{APP_PKG_NAME}/{DEFAULT_STATE_FILENAME}' ]
+		settings_files = [ f'{INSTALL_PATH}/{DEFAULT_CONFIG_FILENAME}' ]
+		appstate_files = [ f'{INSTALL_PATH}/{DEFAULT_STATE_FILENAME}' ]
 
 		try:
 			settings_files.append( self.config_fs.getsyspath( CONFIG_FILENAME ) )
@@ -330,6 +330,12 @@ class ApplicationContext:
 	@property
 	def var_path( self ) -> Path:
 		return Path( self.var_dir )
+
+	# tmp
+
+	@property
+	def tmp_fs( self ) -> FS:
+		return self._tmp_fs
 
 	# imports
 

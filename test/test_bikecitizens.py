@@ -1,4 +1,6 @@
+from datetime import datetime
 
+from dateutil.tz import UTC
 from pytest import mark
 
 from tracs.plugins.bikecitizens import Bikecitizens
@@ -25,5 +27,6 @@ def test_service_creation( service: Bikecitizens ):
 @mark.context( env='live', persist='clone', cleanup=False )
 @mark.service( cls=Bikecitizens, init=True, register=True )
 def test_import( service: Service ):
-	activities = service.import_activities()
+	activities = service.import_activities( fetch_all=True )
+	# activities = service.import_activities( range_from=datetime( 2022, 1, 1, tzinfo=UTC ), range_to=datetime.now( UTC ) )
 	assert [ a.uid.to_str() for a in activities ] == ['bikecitizens:8201734', 'bikecitizens:8201735']

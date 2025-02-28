@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
-from typing import Any, cast, Dict, List, Optional, Tuple, Union
+from typing import cast, Dict, List, Optional, Union
 
 from arrow import utcnow
 from attrs import define, field
@@ -18,7 +18,7 @@ from fs.multifs import MultiFS
 from fs.osfs import OSFS
 from fs.path import basename, combine, dirname, isabs, join, parts, split
 
-from tracs.activity import Activity, Activities
+from tracs.activity import Activities, Activity
 from tracs.constants import DB_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin

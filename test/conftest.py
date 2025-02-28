@@ -126,10 +126,15 @@ def ctx( request, fs: FS ) -> ApplicationContext:
 	return set_current_ctx( ApplicationContext( config_fs=fs, lib_fs=fs, _cli_args=(), _cli_kwargs=flags ) )
 
 @fixture
-def registry( request, ctx: ApplicationContext ) -> Registry:
-	PluginManager.inst().init( [] )
-	reg = PluginManager.inst().registry()
+def plugin_mgr( request ) -> PluginManager:
+	# this needs to be made configurable
+	return PluginManager.inst().init( [], False )
 
+@fixture
+def registry( request, plugin_mgr: PluginManager, ctx: ApplicationContext ) -> Registry:
+	reg = plugin_mgr.registry()
+
+	# todo: make this configurable?
 	for vf in reg.virtual_fields:
 		Activity.VF().add( vf )
 
@@ -188,6 +193,5 @@ def keywords() -> List[str]:
 	return list( Registry.instance().virtual_fields.keys() )
 
 @fixture
-def rule_parser( request, ctx: ApplicationContext, registry: Registry ) -> RuleParser:
-
-	yield RuleParser( keywords=registry.keywords, normalizers=registry.normalizers )
+def parser( request, registry: Registry ) -> RuleParser:
+	return RuleParser( keywords=registry.keywords, normalizers=registry.normalizers )

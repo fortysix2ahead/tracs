@@ -137,7 +137,7 @@ def registry( request, ctx: ApplicationContext ) -> Registry:
 
 @fixture
 def env( request, ctx: ApplicationContext, db: ActivityDb, registry: Registry ) -> Environment:
-	ctx.db = db
+	ctx._db = db
 	ctx.registry = registry
 	return Environment( ctx, db, registry )
 
@@ -177,10 +177,10 @@ def service( request, env: Environment ) -> Optional[Service]:
 #	else:
 #		service = service_class( fs=fs )
 
-	if register:
-		env.registry.services[service_class_name] = service
+	if register and service not in env.registry.services:
+		env.registry.services.append( service )
 
-	yield service
+	return service
 
 @fixture
 def keywords() -> List[str]:

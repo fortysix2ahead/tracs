@@ -153,6 +153,7 @@ class ApplicationContext:
 		self._load_configuration()
 		self.config.update( { k: v for k, v in self._cli_kwargs.items() if v is not None } )
 
+		# apply library configuration + load library (actually there's nothing to load yet)
 		if self.config.library is not None:
 			self.lib_fs = self.config.library
 

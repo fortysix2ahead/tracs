@@ -120,25 +120,10 @@ def db( request, fs: FS ) -> ActivityDb:
 
 @fixture
 def ctx( request, fs: FS ) -> ApplicationContext:
-	json = marker( request, 'context', 'json', False )
-	verbose = marker( request, 'context', 'verbose', False )
-	debug = marker( request, 'context', 'debug', False )
-	flags = { 'verbose': verbose, 'debug': debug, 'json': json }
+	flag_keys = ['verbose', 'debug', 'json', 'force' ]
+	flags = { k: marker( request, 'context', k, False ) for k in flag_keys }
 
-	return set_current_ctx( ApplicationContext( config_fs=fs, __kwargs__=flags ) )
-
-#	try:
-#		db_path = db.underlay_fs.getsyspath( '' )
-#		context = ApplicationContext( config_dir=dirname( dirname( db_path ) ), verbose=True )
-#	except NoSysPath:
-#		context = ApplicationContext( config_fs=MemoryFS(), lib_fs=MemoryFS(), db_fs=db.underlay_fs, verbose=True )
-
-#	context.db = db  # attach db to ctx
-
-#	yield context
-
-#	if context.db is not None:
-#		context.db.close()
+	return set_current_ctx( ApplicationContext( config_fs=fs, lib_fs=fs, _cli_args=(), _cli_kwargs=flags ) )
 
 @fixture
 def registry( request, ctx: ApplicationContext ) -> Registry:

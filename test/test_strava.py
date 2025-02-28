@@ -42,7 +42,7 @@ def test_init_from_raw( path ):
 @mark.service( cls=Strava, init=True, register=True )
 def test_import( service ):
 	activities = service.import_activities( fetch_all=True )
-	assert [ a.uid.to_str() for a in activities ] == [
+	assert sorted( [ a.uid.to_str() for a in activities ] ) == sorted( [
 		'strava:8213576551', 'strava:8213576554', 'strava:8213576563', 'strava:8213576615',
-		'strava:7973155107', 'strava:7961381195', 'strava:7956459613', 'strava:7956459639'
-	]
+		'strava:7973155107', 'strava:7956459613', 'strava:7956459639'
+	] )

@@ -50,7 +50,7 @@ dev = [
     'bumpver~=2024.1130',
     'flit~=3.11.0',
     'mkdocs~=1.6.0',
-    'mkdocs-click~=0.8.1',
+    'mkdocs-click~=0.9.0',
     'mkdocs-material~=9.6.2',
     'pytest~=8.3.1',
 ]

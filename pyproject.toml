@@ -28,8 +28,8 @@ dependencies = [
     'geojson~=3.2.0',
     'gpxpy~=1.6.1',
     'isodate~=0.7.2',
-    'lxml>=5.4,<6.2',
-    'more-itertools~=10.8.0',
+    'lxml~=6.0.0',
+    'more-itertools~=10.7.0',
     'oauthlib~=3.3.1',
     'orjson~=3.11.2',
     'platformdirs~=4.3.8',
@@ -40,9 +40,9 @@ dependencies = [
     'requests-oauthlib~=2.0.0',
     'rich~=14.1.0',
     'rule-engine~=4.5.0',
-    'stravalib~=2.4',
-    'tcxreader~=0.4.4',
-    'tzlocal~=5.2',
+    'stravalib~=2.4.0',
+    'tcxreader~=0.4.11',
+    'tzlocal~=5.3.1',
 ]
 
 [project.optional-dependencies]

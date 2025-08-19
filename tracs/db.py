@@ -98,6 +98,7 @@ class ActivityDb:
 
 	def _init_fs( self ):
 		log.debug( f'initializing db file system from path = {self._path} and ready_only = {self._read_only}' )
+		log.debug( f'expected db schema version is {SCHEMA_VERSION}' )
 
 		# operating system fs as underlay (resp. memory when no path is provided)
 		if self._path:

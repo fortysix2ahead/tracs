@@ -4,12 +4,11 @@ from re import match
 from typing import cast
 
 from dateutil.tz import tzlocal, UTC
-from pytest import mark, raises
+from pytest import raises
 from rule_engine import Context, EvaluationError, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
-
-from tracs.core import Metadata
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
+from tracs.core import Metadata
 from tracs.plugins.keywords import TIME_FRAMES as TIME_FRAMES_EXT
 from tracs.rules import DATE_PATTERN, DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, INT_LIST, INT_PATTERN, KEYWORD_PATTERN, LIST_PATTERN, \
 	parse_date_range_as_str, RANGE_PATTERN, RULE_PATTERN, TIME_PATTERN, TIME_RANGE_PATTERN
@@ -17,7 +16,7 @@ from uid import UID
 
 log = getLogger( __name__ )
 
-NOW = datetime.utcnow()
+NOW = datetime.now( UTC )
 ATTRIBUTE_CONTEXT = Context( resolver=resolve_attribute )
 
 TIME_FRAMES_EXT_FROM_PLUGIN = TIME_FRAMES_EXT # this is to make sure the rule_extensions plugin is loaded
@@ -37,7 +36,7 @@ A1 = Activity(
 
 d2 = {
 	'heartrate': 180,
-	'time': datetime.utcnow(),
+	'time': datetime.now( UTC ),
 	'tags': ['morning', 'salomon', 'tired'],
 	'uids': ['polar:1234', 'strava:3456']
 }
@@ -250,8 +249,8 @@ def test_normalize( parser ):
 	assert p.normalize( 'time:10:30' ) == '__time__ >= d"0001-01-01T10:30:00+00:00" and __time__ <= d"0001-01-01T10:30:59.999999+00:00"'
 	assert p.normalize( 'time:10:30:50' ) == '__time__ >= d"0001-01-01T10:30:50+00:00" and __time__ <= d"0001-01-01T10:30:50.999999+00:00"'
 
-def test_parse( rule_parser ):
-	p = rule_parser
+def test_parse( parser ):
+	p = parser
 
 	assert (r := p.parse_rule( 'id=1000' ))
 	assert r.evaluate( Activity( id=1000 ) )
@@ -305,8 +304,8 @@ def test_evaluate( parser ):
 
 	# RuleSyntaxError should never happen ...
 
-def test_evaluate_multipart( rule_parser ):
-	p = rule_parser
+def test_evaluate_multipart( parser ):
+	p = parser
 
 	p1 = ActivityPart( uids=['polar:101' ], gap=time( 0, 0, 0 ) )
 	p2 = ActivityPart( uids=['polar:102', 'strava:102' ], gap=time( 1, 0, 0 ) )
@@ -318,19 +317,19 @@ def test_evaluate_multipart( rule_parser ):
 	assert p.parse_rule( 'multipart:true' ).evaluate( a )
 	assert not p.parse_rule( 'multipart:false' ).evaluate( a )
 
-def test_type( rule_parser ):
-	p = rule_parser
+def test_type( parser ):
+	p = parser
 	# assert parse_eval( 'type=run', A1 ) # todo: support this?
 	assert p.parse_rule( 'type:run' ).evaluate( A1 )
 	assert p.parse_rule( 'type:Run' ).evaluate( A1 )
 
-def test_list( rule_parser ):
-	p = rule_parser
+def test_list( parser ):
+	p = parser
 	assert p.parse_rule( '1000,1001,1002' ).evaluate( A1 )
 	assert not p.parse_rule( '100,101,102' ).evaluate( A1 )
 
-def test_range( rule_parser ):
-	p = rule_parser
+def test_range( parser ):
+	p = parser
 
 	assert not p.parse_rule( 'id=999..1001' ).evaluate( A1 )
 	assert p.parse_rule( 'id:999..1001' ).evaluate( A1 )
@@ -344,8 +343,8 @@ def test_range( rule_parser ):
 
 	assert p.parse_rule( 'heartrate:100.0..200.0' ).evaluate( A1 )
 
-def test_date_time( rule_parser ):
-	p = rule_parser
+def test_date_time( parser ):
+	p = parser
 
 	assert p.parse_rule( 'date:2023' ).evaluate( A1 )
 	assert p.parse_rule( 'date:2023-01' ).evaluate( A1 )

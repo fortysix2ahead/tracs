@@ -7,8 +7,10 @@ from attrs import define, field
 from cattrs.preconf.orjson import make_converter
 from fs.base import FS
 from fs.copy import copy_dir
+from fs.errors import FileExpected, ResourceNotFound
 from fs.walk import Walker
 from orjson import dumps, loads, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson.orjson import JSONDecodeError
 from rich.prompt import Confirm
 from tracs.activity import Activities
 
@@ -28,12 +30,18 @@ SCHEMA_CONVERTER = make_converter()
 # activity handling
 
 def load_activities( fs: FS ) -> Activities:
+	log.debug( f'loading activities from {ACTIVITIES_PATH} in {fs}' )
+
 	try:
-		activities = Activities.from_dict( loads( fs.readbytes( ACTIVITIES_PATH ) ) )
-		log.debug( f'loaded {len( activities )} activities from {ACTIVITIES_NAME}' )
-		return activities
-	except RuntimeError:
+		_bytes = fs.readbytes( ACTIVITIES_PATH )
+		_dicts = loads( _bytes )
+		_activities = Activities.from_dict( _dicts )
+	except (FileExpected, ResourceNotFound, JSONDecodeError):
 		log.error( f'error loading db', exc_info=True )
+		_activities = Activities()
+
+	log.debug( f'loaded {len( _activities )} activities' )
+	return _activities
 
 def write_activities( activities: Activities, fs: FS ) -> None:
 	fs.writebytes( ACTIVITIES_PATH, dumps( activities.to_dict(), option=ORJSON_OPTIONS ) )

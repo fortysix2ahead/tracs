@@ -37,12 +37,12 @@ def marker( request, name, key, default = None ):
 	try:
 		m = request.node.get_closest_marker( name )
 		if key:
-			return m.kwargs[key]
+				return m.kwargs[key]
 		elif not key:
 			return m.args[0]
 
 	except (AttributeError, IndexError, KeyError, TypeError):
-		log.info( f'unable to access marker {name}.{key}', exc_info=True )
+		log.info( f'unable to access marker {name}.{key}, falling back to default value = {default}', exc_info=True )
 		return default
 
 # shared fixtures

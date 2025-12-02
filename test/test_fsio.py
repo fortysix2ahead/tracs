@@ -4,12 +4,12 @@ from json import loads
 from dateutil.tz import UTC
 from pytest import mark
 
-from activity import Activities, ActivityPart
-from core import Metadata
-from fsio import load_activities, load_schema, write_activities
-from resources import Resources
 from test.objects import COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, COMPLETE_ACTIVITY_WITH_RESOURCE_DATA as AC
-from uid import UID
+from tracs.activity import Activities, ActivityPart
+from tracs.core import Metadata
+from tracs.fsio import load_activities, load_schema, write_activities
+from tracs.resources import Resources
+from tracs.uid import UID
 
 @mark.context( env='default', persist='mem' )
 def test_load_schema( dbfs ):

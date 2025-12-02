@@ -3,21 +3,21 @@ from fs.osfs import OSFS
 from gpxpy.gpx import GPX
 from lxml.etree import tostring
 from lxml.objectify import ObjectifiedElement
-from plugins.polar import POLAR_SESSION_TYPE, PolarTrainingSessionImporter
 from pytest import mark, raises
-from resources import Resource
 
 from tracs.errors import ResourceImportException
+from tracs.pluginmgr import Registry
 from tracs.plugins.bikecitizens import BIKECITIZENS_TYPE, BikecitizensActivity, BikecitizensImporter
 from tracs.plugins.csv import CSV_TYPE, CSVHandler
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.plugins.json import JSON_TYPE, JSONHandler
-from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE, POLAR_FLOW_TYPE, PolarExerciseDataActivity, PolarFlowExercise, PolarFlowImporter
+from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE, POLAR_FLOW_TYPE, POLAR_SESSION_TYPE, PolarExerciseDataActivity, PolarFlowExercise, PolarFlowImporter, \
+	PolarTrainingSessionImporter
 from tracs.plugins.strava import STRAVA_TYPE, StravaActivity, StravaHandler
 from tracs.plugins.tcx import Activity as TCXActivity, Author, Creator, Lap, Plan, TCX_TYPE, TCXImporter, Trackpoint, Training, TrainingCenterDatabase
 from tracs.plugins.waze import WAZE_TYPE, WazeActivity, WazeImporter
 from tracs.plugins.xml import XML_TYPE, XMLHandler
-from tracs.pluginmgr import Registry
+from tracs.resources import Resource
 
 @mark.file( 'templates/polar/2020.json' )
 def test_resource_handler( path ):

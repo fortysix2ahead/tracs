@@ -1,4 +1,4 @@
-from pluginmgr import PluginManager
+from tracs.pluginmgr import PluginManager
 
 def test_pluginmgr():
 	PluginManager.init()

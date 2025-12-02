@@ -1,5 +1,8 @@
+from pytest import mark
+
 from tracs.activity_types import ActivityTypes
 
+@mark.unit
 def test_activity_types():
 	assert ActivityTypes.get( 'run' ) == ActivityTypes.run
 	assert ActivityTypes.get( 'invalid' ) == ActivityTypes.unknown

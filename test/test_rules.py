@@ -6,13 +6,14 @@ from typing import cast
 from dateutil.tz import tzlocal, UTC
 from pytest import raises
 from rule_engine import Context, EvaluationError, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
+
 from tracs.activity import Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata
 from tracs.plugins.keywords import TIME_FRAMES as TIME_FRAMES_EXT
 from tracs.rules import DATE_PATTERN, DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, INT_LIST, INT_PATTERN, KEYWORD_PATTERN, LIST_PATTERN, \
 	parse_date_range_as_str, RANGE_PATTERN, RULE_PATTERN, TIME_PATTERN, TIME_RANGE_PATTERN
-from uid import UID
+from tracs.uid import UID
 
 log = getLogger( __name__ )
 

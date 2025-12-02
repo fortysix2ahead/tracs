@@ -18,6 +18,7 @@ def setup_module( module ):
 	import tracs.plugins.keywords
 	log.info( 'importing tracs.plugins.keywords' )
 
+@mark.unit
 def test_activity():
 	a = Activity( uid='polar:100' )
 	assert a.uid == UID( classifier='polar', local_id=100 )
@@ -32,6 +33,7 @@ def test_activity():
 	a = Activity( uid='polar:101', heartrate=150, calories=1000 )
 	assert a.values( 'uid', 'heartrate', 'calories', 'speed', 'xyz' ) == ['polar:101', 150, 1000, None, None]
 
+@mark.unit
 def test_activity_group():
 	a = Activity( uid = 'group:101' )
 	a.metadata.members = UID.from_strs( [ 'strava:100', 'polar:100', 'polar:100' ] )
@@ -44,6 +46,7 @@ def test_activity_group():
 	assert a.group
 	assert not a.multipart
 
+@mark.unit
 def test_group_of():
 	src1 = Activity(
 		id=1,
@@ -100,6 +103,7 @@ def test_group_of():
 	assert group.uid == 'group:240201100000' and group.uids == ['polar:1', 'polar:2']
 	assert group.type == ActivityTypes.walk
 
+@mark.unit
 def test_union_of():
 	a1 = Activity(
 		id=1,
@@ -131,6 +135,7 @@ def test_union_of():
 	assert u.uid == 'polar:2' and u.uids == ['polar:2']
 	assert u.type == ActivityTypes.run and u.tags == ['a', 'b']
 
+@mark.unit
 def test_activity_part():
 	p = ActivityPart( uids=[ 'polar:1234' ] )
 	assert p.as_uids == [ UID( classifier='polar', local_id=1234 ) ]
@@ -146,6 +151,7 @@ def test_activity_part():
 	assert p.activity_uids == [ 'polar:1234', 'polar:2345' ]
 	assert p.classifiers == [ 'polar' ]
 
+@mark.unit
 def test_multipart_activity():
 	from dateutil.tz import UTC
 	swim_start = datetime( 2023, 7, 1, 10, 0, 0, tzinfo=UTC )
@@ -178,6 +184,7 @@ def test_multipart_activity():
 
 	assert Activity.multipart_of( a1, a2 ).heartrate == 140
 
+@mark.unit
 @mark.skip
 def test_multipart_activity2():
 	p1 = ActivityPart( uids=['polar:101' ], gap=time( 0, 0, 0 ) )
@@ -199,6 +206,7 @@ def test_multipart_activity2():
 	assert a.as_uids() == [ UID( 'polar:101' ) ]
 	assert a.classifiers == [ 'polar' ]
 
+@mark.unit
 def test_add():
 	src1 = Activity( starttime=datetime( 2022, 2, 22, 7 ), distance=10, duration=timedelta( hours=1 ), heartrate_max=180, heartrate_min=100 )
 	src2 = Activity( starttime=datetime( 2022, 2, 22, 8 ), distance=20, duration=timedelta( hours=1, minutes=20 ) )
@@ -217,6 +225,7 @@ def test_add():
 	assert target.heartrate_max == 180
 	assert target.heartrate_min == 80
 
+@mark.unit
 def test_activities():
 	activities = Activities()
 	a1 = Activity( name='a1', uid='a:1' )
@@ -295,6 +304,7 @@ def test_activities():
 	# activities.replace( Activity( name='a6', uid='a:5' ) )
 	# assert len( activities ) == 1 and activities.idget( 1 ).name == 'a6'
 
+@mark.unit
 def test_iter_activities():
 	activities = Activities()
 	a1 = Activity(
@@ -323,6 +333,7 @@ def test_iter_activities():
 		'a:1/a1.gpx', 'a:1/a1.json', 'a:2/a2.gpx', 'a:2/a2.json', 'a:3/a3.gpx', 'a:4/a4.gpx'
 	]
 
+@mark.unit
 def test_groups():
 	g = Activity( uid='g:1' )
 	g.metadata.members=UID.from_strs( [ 'p:1', 's:1' ] )
@@ -331,6 +342,7 @@ def test_groups():
 	assert groups( None ) == []
 	assert groups( [g, ng] ) == [g]
 
+@mark.unit
 def test_resource():
 	some_string = 'some string value'
 	r = Resource( uid='polar:1', path='content.dat', content=some_string.encode( encoding='UTF-8' ) )

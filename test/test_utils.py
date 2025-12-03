@@ -16,6 +16,7 @@ from tracs.uid import UID
 from tracs.utils import as_datetime, floor_ceil_from, floor_ceil_str, fmt, fromisoformat, fspath, ReadGzipFS, seconds_to_time, str_to_timedelta, \
 	timedelta_to_iso8601, timedelta_to_str, toisoformat, unchain, unique_sorted, urlparse
 
+@mark.unit
 def test_fmt():
 	assert fmt( None ) == ''
 	assert fmt( '' ) == ''
@@ -55,6 +56,7 @@ def test_fmt():
 
 	assert fmt( ActivityTypes.drive ) == 'Driving'
 
+@mark.unit
 def test_localized_fmt():
 	assert fmt( 100.12345, 'de' ) == '100,1'
 	assert fmt( -100.12345, 'de' ) == '-100,1'
@@ -66,6 +68,7 @@ def test_localized_fmt():
 	assert fmt( time( 10, 19, 25 ), 'de' ) == '10:19:25'
 	assert fmt( time( 14, 19, 25 ), 'de' ) == '14:19:25'
 
+@mark.unit
 def test_seconds_to_time():
 	assert seconds_to_time( None ) is None
 	assert seconds_to_time( '' ) is None
@@ -74,6 +77,7 @@ def test_seconds_to_time():
 	assert seconds_to_time( 100.3 ) == time( 0, 1, 40 )
 	assert seconds_to_time( 121.7 ) == time( 0, 2, 2 )
 
+@mark.unit
 def test_fromisoformat():
 	assert fromisoformat( '2020-02-01T10:20:30+00:00' ) == datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc )
 	assert fromisoformat( '2020-02-01T10:20:30Z' ) == datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc )
@@ -83,6 +87,7 @@ def test_fromisoformat():
 	assert fromisoformat( 'invalid' ) is None
 	assert fromisoformat( None ) is None
 
+@mark.unit
 def test_toisoformat():
 	assert toisoformat( datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc ) ) == '2020-02-01T10:20:30+00:00'
 	assert toisoformat( time( 10, 20, 30 ) ) == '10:20:30'
@@ -94,6 +99,7 @@ def test_toisoformat():
 	assert toisoformat( timedelta( days=1, hours=2, minutes=8, seconds=32 ) ) == '01:02:08:32'
 	assert toisoformat( timedelta( hours=26, minutes=8, seconds=32 ) ) == '01:02:08:32'
 
+@mark.unit
 def test_as_time():
 	ts = 946684800 # new year 2000 UTC
 	assert as_datetime( ts=ts ) == datetime( 2000, 1, 1, 0, 0, 0, tzinfo=timezone.utc )
@@ -118,10 +124,12 @@ def test_as_time():
 	assert as_datetime( None ) is None
 	assert as_datetime( '' ) is None
 
+@mark.unit
 def test_timedelta_iso8601():
 	assert timedelta_to_iso8601( timedelta( hours=2, minutes=38, seconds=17 ) ) == 'PT02H38M17S'
 	assert timedelta_to_iso8601( timedelta( days=3, hours=2, minutes=38, seconds=17 ) ) == 'P03DT02H38M17S'
 
+@mark.unit
 def test_timedelta_str():
 	assert timedelta_to_str( timedelta( hours = 0, minutes = 0, seconds = 17 ) ) == '00:00:17'
 	assert timedelta_to_str( timedelta( hours = 2, minutes = 28, seconds = 17 ) ) == '02:28:17'
@@ -146,6 +154,7 @@ def test_timedelta_str():
 	assert str_to_timedelta( '00:00:17.2026' ) == timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=202, microseconds=600 )
 	assert str_to_timedelta( '00:00:17.111222' ) == timedelta( hours = 0, minutes = 0, seconds = 17, milliseconds=111, microseconds=222 )
 
+@mark.unit
 def test_uri_parsing():
 	result = urlparse( 'polar:1001' )
 	assert result.scheme == 'polar' and result.path == '1001'
@@ -165,6 +174,7 @@ def test_uri_parsing():
 	result = urlparse( '1001?gpx' )
 	assert result.path == '1001' and result.query == 'gpx'
 
+@mark.unit
 def test_unchain():
 	assert list( unchain( 1 ) ) == [1]
 	assert list( unchain( [1] ) ) == [1]
@@ -174,6 +184,7 @@ def test_unchain():
 	assert list( unchain( None ) ) == []
 	assert list( unchain( None, [None, None], None ) ) == []
 
+@mark.unit
 def test_unique_sorted():
 
 	assert unique_sorted( [ 3, 1, 2, 2 ] ) == [1, 2, 3]
@@ -183,6 +194,7 @@ def test_unique_sorted():
 	assert unique_sorted( uids ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ] # we can use this without key as UID supports __lt__
 	assert unique_sorted( uids, key=lambda uid: uid.uid ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
 
+@mark.unit
 def test_floor_ceil():
 
 	a = Arrow( 2020, 5, 13, 10, 30, 50 )

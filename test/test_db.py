@@ -16,6 +16,7 @@ from tracs.plugins.tcx import TCX_TYPE
 from tracs.resources import Resource
 from tracs.uid import UID
 
+@mark.unit
 def test_new_db_without_path():
 	db = ActivityDb( path=None )
 	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
@@ -34,12 +35,14 @@ def test_new_db_without_path():
 	assert db.fs.listdir( '/' ) == ['activities.json', 'schema.json']
 	assert db.schema.version == 14
 
+@mark.unit
 def test_new_db_with_fs():
 	db = ActivityDb( fs=MemoryFS() )
 	assert db.fs is not None and type( db.underlay_fs ) is MemoryFS and type( db.overlay_fs ) is MemoryFS
 	assert db.fs.listdir( '/' ) == ['activities.json', 'schema.json']
 	assert db.schema.version == 14
 
+@mark.unit
 @mark.context( env='empty', persist='clone', cleanup=True )
 def test_new_db_with_writable_path( db_path ):
 	db = ActivityDb( path=db_path, read_only=False )
@@ -47,6 +50,7 @@ def test_new_db_with_writable_path( db_path ):
 	assert db.fs.listdir( '/' ) == ['activities.json', 'schema.json']
 	assert db.schema.version == 14
 
+@mark.unit
 @mark.context( env='empty', persist='clone', cleanup=True )
 def test_new_db_with_readonly_path( db_path ):
 	db = ActivityDb( path=db_path, read_only=True )
@@ -54,6 +58,7 @@ def test_new_db_with_readonly_path( db_path ):
 	assert db.fs.listdir( '/' ) == ['activities.json', 'schema.json']
 	assert db.schema.version == 14
 
+@mark.unit
 @mark.xfail( reason='comparison of activities does not yet work correctly' )
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_open_db( db ):
@@ -62,6 +67,7 @@ def test_open_db( db ):
 	assert len( db.activities ) > 1
 	assert db.activities[0] == DEFAULT_ONE
 
+@mark.unit
 @mark.context( env='empty', persist='clone', cleanup=True )
 def test_insert_upsert_remove( db ):
 	assert len( db.activities ) == 0 and len( db.resources ) == 0
@@ -104,6 +110,7 @@ def test_insert_upsert_remove( db ):
 	a = db.get_by_id( 4 )
 	assert a.name == 'group' and a.uid == 'group:101' and a.calories == 100 and a.starttime == dt
 
+@mark.unit
 @mark.context( env='default', persist='clone', cleanup=True )
 def test_contains( db ):
 	assert db.contains( 'polar:1001' )
@@ -125,6 +132,7 @@ def test_contains( db ):
 	assert not db.contains_resource( uid='polar:1001', path='polar/1/0/0/1001/1001.xxx' )
 	assert not db.contains_resource( uid='polar:999', path='999.gpx' )
 
+@mark.unit
 @mark.context( env='default', persist='clone', cleanup=True )
 @mark.db( summary_types=[POLAR_FLOW_TYPE, STRAVA_TYPE], recording_types=[GPX_TYPE, TCX_TYPE] )
 def test_get( db ):
@@ -150,6 +158,7 @@ def test_get( db ):
 	# get resource
 	assert db.get_resource_by_uid_path( 'polar:1001', 'polar/1/0/0/1001/1001.gpx' ) == db.get_by_id( 2 ).resources[0]
 
+@mark.unit
 @mark.context( env='default', persist='clone', cleanup=True )
 @mark.db( summary_types=[POLAR_FLOW_TYPE, STRAVA_TYPE], recording_types=[GPX_TYPE, TCX_TYPE] )
 def test_find( db ):

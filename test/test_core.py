@@ -7,6 +7,7 @@ from pytest import mark, raises
 from tracs.core import FieldFormatter, FieldFormatters, FormattedFieldsBase, Metadata, VirtualField, VirtualFieldsBase
 from tracs.uid import UID
 
+@mark.unit
 def test_virtual_field():
 
 	vf = VirtualField( 'one', int, default=10, display_name='One', description='Field One' )
@@ -108,6 +109,7 @@ def test_virtual_fields():
 	names = ClassWithVirtualFields.field_names( include_internal=True, include_virtual=True, include_unexposed=True )
 	assert names == ['name', 'id', '__internal_name__', 'index', 'internal_index', 'upper_name']
 
+@mark.unit
 def test_formatted_field():
 
 	ff = FieldFormatter( name='lower', formatter=lambda v, f, l: v.lower() )
@@ -126,6 +128,7 @@ def test_formatted_field():
 	assert ff_uni( 1000, format='####' ) == '1000'
 	assert ff_uni( 1000, locale='de' ) == '1.000'
 
+@mark.unit
 def test_formatted_fields():
 
 	ffs = FieldFormatters()
@@ -164,6 +167,7 @@ def test_formatted_fields():
 	assert fdc.format_as_list( 'name', 'age', 'speed', 'height', suppress_errors=True ) == ['name', '10', '12,345.6', '']
 	assert fdc.format_as_list( 'name', 'age', 'speed', 'width', conv=lambda v: str( v ) ) == ['Name', '10', '12345.6', 'None']
 
+@mark.unit
 def test_metadata():
 
 	md = Metadata(

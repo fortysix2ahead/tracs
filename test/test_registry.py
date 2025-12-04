@@ -6,35 +6,32 @@ from tracs.handlers import ResourceHandler
 from tracs.pluginmgr import importer, Registry, resourcetype
 from tracs.resources import ResourceType
 
-def setup_module( module ):
-	# noinspection PyUnresolvedReferences
-	import tracs.plugins.rule_extensions
-
 # test cases
 
-@resourcetype( type='application/one', summary=True )
-class ActivityOne:
-	pass
+# resource types
 
-@resourcetype( type='application/two' )
-class ActivityTwo:
-	pass
+RT_ONE = ResourceType( name='application/one', summary=True )
+RT_TWO = ResourceType( name='application/two', recording=True )
 
-class ActivityThree:
-	pass
+@resourcetype
+def resource_type_one() -> ResourceType:
+	return RT_ONE
+
+@resourcetype
+def resource_type_two() -> ResourceType:
+	return RT_TWO
 
 @mark.resource_type( types=('application/one', 'application/two'), default=False )
 def test_resource_type( registry: Registry ):
-	assert 'application/one' in registry.resource_types.keys()
-	assert registry.resource_types['application/one'] == ResourceType( name='application/one', summary=True )
+	assert 'application/one' in [ r.name for r in registry.resource_types() ]
+	assert registry.resource_type( 'application/one' ) == RT_ONE
 
-	assert 'application/two' in registry.resource_types.keys()
-	assert registry.resource_types['application/two'] == ResourceType( name='application/two', summary=False )
+	assert 'application/two' in [ r.name for r in registry.resource_types() ]
+	assert registry.resource_type( 'application/two' ) == RT_TWO
 
-	registry.register_resource_type( ResourceType( name='application/three' ) )
+	assert registry.resource_type_for_extension( 'one' ) == RT_ONE
 
-	rt = registry.resource_type_for_extension( 'one' )
-	assert rt == registry.resource_types['application/one']
+# importers
 
 # plain importer without any specific resource type information
 @importer
@@ -47,8 +44,10 @@ class ImporterTwo( ResourceHandler ):
 	pass
 
 def test_importer( registry: Registry ):
-	assert type( registry.importer_for( 'TYPE_1' ) ) == ImporterOne
-	assert type( registry.importer_for( 'TYPE_2' ) ) == ImporterTwo
+	assert type( registry.importer( 'TYPE_1' ) ) == ImporterOne
+	assert type( registry.importer( 'TYPE_2' ) ) == ImporterTwo
+
+# activity fields
 
 def test_fields_and_types( registry ):
 	assert (f := registry.activity_field( 'name' )) is not None and f.type in [str, 'str']

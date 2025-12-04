@@ -9,7 +9,7 @@ from logging import getLogger
 from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar, Union
 
 from attrs import define, evolve, Factory, field
-from cattrs import Converter, GenConverter
+from cattrs import ClassValidationError, Converter, GenConverter
 from dateutil.tz import UTC
 from more_itertools import first, first_true, last, unique
 from tzlocal import get_localzone_name
@@ -551,7 +551,11 @@ class Activities( list[Activity] ):
 
 	@classmethod
 	def from_dict( cls, obj: List[Dict] ) -> Activities:
-		return Activities( *[Activity.from_dict( o ) for o in obj], skip_checks=True )
+		try:
+			return Activities( *[Activity.from_dict( o ) for o in obj], skip_checks=True )
+		except ClassValidationError as e:
+			log.error( f'invalid activity dict', exc_info=True )
+			return Activities()
 
 	def to_dict( self ) -> List[Dict]:
 		return [ Activity.to_dict( a ) for a in self.all( sort=True ) ]

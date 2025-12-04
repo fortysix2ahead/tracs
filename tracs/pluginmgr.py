@@ -12,6 +12,7 @@ from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple
 
 from attrs import define, field
 from fs.osfs import OSFS
+from more_itertools.recipes import first_true
 
 from tracs.constants import PLUGINS_PKG, PLUGIN_PATH
 from tracs.core import Keyword, Normalizer
@@ -110,9 +111,14 @@ class Registry:
 	def is_initialized( self ) -> bool:
 		return any( [ len( getattr( self, att ) ) > 1 for att in self.__class__.decorator_fields() ] )
 
+	# importer
+
 	@property
 	def importers( self ) -> List[Importer]:
 		return list( self._importer.values() )
+
+	def importer( self, type: str ) -> Optional[Importer]:
+		return first_true( self.importers, lambda i: i.type == type )
 
 	@property
 	def keywords( self ) -> List[Keyword]:
@@ -124,6 +130,9 @@ class Registry:
 
 	def resource_types( self ) -> List[ResourceType]:
 		return list( self._resourcetype.values() )
+
+	def resource_type( self, name: str ) -> Optional[ResourceType]:
+		return first_true( self._resourcetype.values(), pred=lambda rt: rt.name == name )
 
 	def resource_type_for_extension( self, extension: str ) -> Optional[ResourceType]:
 		return next( (rt for rt in self.resource_types() if rt.extension() == extension), None )
@@ -168,7 +177,7 @@ class Registry:
 @define
 class PluginManager:
 
-	_instance: ClassVar[PluginManager] = None
+	_instance: ClassVar[PluginManager|None] = None
 
 	_modules: Dict[str, ModuleType] = field( factory=dict, alias='_modules' )
 	_decorators: List[Decorator] = field( factory=list, alias='_decorators' )
@@ -213,7 +222,8 @@ class PluginManager:
 
 	def registry( self ) -> Registry:
 		if not self._registry.is_initialized():
-			log.debug( 'registry is not initialized, evaluating decorators ...' )
+			log.debug( f'registry is not yet initialized, evaluating {len( self._decorators )} decorators' )
+
 			decorator_types = [ f[1:] for f in Registry.decorator_fields() ]
 			for decorator_type in decorator_types:
 				for d in filter( lambda dec: dec.type == decorator_type, self._decorators ):

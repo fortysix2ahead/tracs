@@ -2,7 +2,7 @@
 name = "tracs"
 authors = [{ name = "fortysix2ahead", email = "fortysix2ahead@gmail.com" }]
 maintainers = [{ name = "fortysix2ahead", email = "fortysix2ahead@gmail.com" }]
-version = "0.1.0"
+version = "0.2.0"
 description = "Command Line Manager for GPS Tracks"
 readme = "README.md"
 keywords = ["cli", "terminal", "command line", "gps", "gpx", "tcx"]
@@ -73,7 +73,7 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.bumpver]
-current_version = "0.1.0"
+current_version = "0.2.0"
 version_pattern = "MAJOR.MINOR.PATCH[-INC0]"
 commit_message = "Increased version from {old_version} to {new_version}"
 tag_message = "release/{new_version}"

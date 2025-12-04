@@ -7,6 +7,7 @@ from click import argument, Choice, Context as ClickContext, group, Group, optio
 from click_shell import make_click_shell
 from rule_engine import RuleSyntaxError
 
+from tracs import __version__
 from tracs.activity import Activity
 from tracs.aio import export_activities, import_activities, open_activities, reimport_activities
 from tracs.application import Application
@@ -377,9 +378,9 @@ def types( ctx, used_only: bool = False ):
 @pass_obj
 def version( ctx: ApplicationContext ):
 	if ctx.config.json:
-		console.print_json( data={ 'version': '0.1.0' } )
+		console.print_json( data={ 'version': __version__ } )
 	else:
-		console.print( '0.1.0' )
+		console.print( __version__ )
 
 @cli.group( cls=ExtensionGroup, help="extension point for externally provided extra commands, no intended to be called directly" )
 @pass_obj

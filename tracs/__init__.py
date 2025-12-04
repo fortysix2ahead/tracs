@@ -7,3 +7,5 @@ from tracs.__log__ import LogManager
 # create root logger 'tracs' + log manager
 log = getLogger( __name__ )
 log_mgr = LogManager.instance( root=log, debug=False, verbose=False )
+
+__version__ = '0.2.0-dev'

@@ -101,7 +101,8 @@ class StravaHandler( JSONHandler ):
 class Strava( Service ):
 
 	def __init__( self, **kwargs ):
-		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
+		super().__init__( **kwargs )
+		# super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
 
 		self._client = Client()
 		self._session = None

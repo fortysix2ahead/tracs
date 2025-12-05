@@ -89,8 +89,9 @@ class Application:
 
 		# init service manager
 		for s in self.registry.services:
-			# noinspection PyArgumentList
-			self._ctx.service_mgr.add( s( ctx=self._ctx ) )
+			self.service_mgr.add_class( s )
+		for name, cfg in self._ctx.config.services.items():
+			self.service_mgr.add_from( self._ctx, name, cfg )
 
 		# ---- announce context/configuration to utils module + configure formatters ----
 		UCFG.reconfigure( self._ctx.config )

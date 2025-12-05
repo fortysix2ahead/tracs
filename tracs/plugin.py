@@ -14,18 +14,19 @@ class Plugin:
 		# configure name and display_name: this is optional
 		self._name: str = kwargs.get( 'name', self.__class__.__name__.lower() )
 		self._display_name: str = kwargs.get( 'display_name', self.__class__.__name__ )
+		self._qname: str = f'{self.__class__.__module__}.{self.__class__.__name__}'
 
 		# save the current context, to be able to access the context from sub-methods
 		self._ctx: ApplicationContext = kwargs.get( 'ctx' )
 		if self._ctx:
 			# configure config/state views: create empty configs if context is missing
 			try:
-				self._cfg: DynaBox = self._ctx.config.plugins[self.name]
+				self._cfg: DynaBox = self._ctx.config.services[self.name]
 			except AttributeError:
 				self._cfg = DynaBox()
 
 			try:
-				self._state: DynaBox = self._ctx.state.plugins[self.name]
+				self._state: DynaBox = self._ctx.state.services[self.name]
 			except AttributeError:
 				self._state = DynaBox()
 

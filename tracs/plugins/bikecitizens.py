@@ -150,7 +150,8 @@ class BikecitizensImporter( DataclassFactoryHandler ):
 class Bikecitizens( Service ):
 
 	def __init__( self, **kwargs ):
-		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
+		super().__init__( **kwargs )
+		# super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
 
 		self._saved_session = kwargs.get( 'session' )
 		self._user_id = kwargs.get( 'user_id' )

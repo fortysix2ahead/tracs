@@ -251,17 +251,22 @@ class ApplicationContext:
 		except (AttributeError, NoSysPath):
 			return SubFS( self.db_fs, f'/{name}' )
 
-	def plugin_fs( self, name: str ) -> FS:
+	def plugin_fs( self, name: str, user: Optional[str], slug: Optional[str] ) -> MultiFS:
+		if slug: # slug wins over name/user
+			fs_path = slug
+		else:
+			fs_path = f'{name}/{user}' if user else name
+
 		fs = MultiFS()
-		fs.add_fs( name=OVERLAY_DIRNAME, fs=self.overlay_fs_for( name ), write=False )
-		fs.add_fs( name=DB_DIRNAME, fs=self.db_fs_for( name ), write=True )
+		fs.add_fs( name=OVERLAY_DIRNAME, fs=self.overlay_fs_for( fs_path ), write=False )
+		fs.add_fs( name=DB_DIRNAME, fs=self.db_fs_for( fs_path ), write=True )
 		return fs
 
-	def plugin_dir( self, name: str ) -> str:
-		return cast( MultiFS, self.plugin_fs( name ) ).get_fs( DB_DIRNAME ).getsyspath( '' )
+	def plugin_dir( self, name: str, user: Optional[str], slug: Optional[str] ) -> str:
+		return cast( MultiFS, self.plugin_fs( name, user, slug ) ).get_fs( DB_DIRNAME ).getsyspath( '' )
 
-	def plugin_dir_path( self, name ) -> Path:
-		return Path( self.plugin_dir( name ) )
+	def plugin_dir_path( self, name, user: Optional[str], slug: Optional[str] ) -> Path:
+		return Path( self.plugin_dir( name, user, slug ) )
 
 	# overlay
 

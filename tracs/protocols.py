@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Protocol, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Protocol, Type, Union
+
+from dynaconf.utils.boxing import DynaBox
+from fs.base import FS
 
 log = getLogger( __name__ )
 
@@ -249,7 +252,28 @@ class ActivityDb( Protocol ):
 
 class ApplicationContext( Protocol ):
 
-	...
+	@property
+	def config( self ) -> DynaBox:
+		...
+
+	@property
+	def state( self ) -> DynaBox:
+		...
+
+	@property
+	def db_fs( self ) -> FS:
+		...
+
+	def plugin_fs( self, name: str, user: Optional[str], slug: Optional[str] ) -> FS:
+		...
+
+#	@property
+#	def root_fs( self ) -> FS:
+#		...
+
+	@property
+	def tmp_fs( self ) -> FS:
+		...
 
 class Application( Protocol ):
 

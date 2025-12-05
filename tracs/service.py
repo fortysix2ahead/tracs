@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
-from typing import cast, Dict, List, Optional, Union
+from typing import Any, cast, Dict, List, Optional, Type, Union
 
 from arrow import utcnow
 from attrs import define, field
@@ -19,7 +19,7 @@ from fs.osfs import OSFS
 from fs.path import basename, combine, dirname, isabs, join, parts, split
 
 from tracs.activity import Activities, Activity
-from tracs.constants import DB_DIRNAME
+from tracs.constants import DB_DIRNAME, OVERLAY_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.resources import Resource, Resources
@@ -35,17 +35,14 @@ class Service( Plugin ):
 		super().__init__( *args, **kwargs )
 
 		# paths + plugin filesystem area
-		self._fs: FS = kwargs.get( 'fs' ) or ( self.ctx.plugin_fs( self.name ) if self.ctx else None )
-		self._dbfs = kwargs.get( 'dbfs' ) or ( self.ctx.db_fs if self.ctx else None )
-		self._tmpfs = kwargs.get( 'tmp_fs' ) or ( self.ctx.tmp_fs if self.ctx else None )
-		self._rootfs = OSFS( '/' )
-		self._base_url = kwargs.get( 'base_url' )
+		# providing parameters via kwargs is for testing only and is not supposed to be used in production
+		# there's not check for ctx being null as a service shall not exist without a context
+		self._fs: FS = kwargs.get( '_fs' ) or self.ctx.plugin_fs( self.name, self._cfg.get( 'user' ), self._cfg.get( 'slug' ) )
+		self._dbfs = kwargs.get( '_dbfs' ) or self.ctx.db_fs
+		self._tmpfs = kwargs.get( '_tmpfs' ) or self.ctx.tmp_fs
+		self._rootfs = OSFS( '/' ) # needed ?
+		self._base_url = kwargs.get( '_base_url' )
 		self._logged_in: bool = False
-
-		# set service properties from kwargs, if a setter exists # todo: is this really needed?
-		for p in getmembers( self.__class__, lambda p: type( p ) is property and p.fset is not None ):
-			if p[0] in kwargs.keys() and not p[0].startswith( '_' ):
-				setattr( self, p[0], kwargs.get( p[0] ) )
 
 		log.debug( f'service instance {self._name} created with fs = {self._fs}' )
 
@@ -83,11 +80,11 @@ class Service( Plugin ):
 
 	@property
 	def base_fs( self ) -> FS:
-		return cast( MultiFS, self._fs ).get_fs( 'base' )
+		return cast( MultiFS, self._fs ).get_fs( DB_DIRNAME )
 
 	@property
 	def overlay_fs( self ) -> FS:
-		return cast( MultiFS, self._fs ).get_fs( 'overlay' )
+		return cast( MultiFS, self._fs ).get_fs( OVERLAY_DIRNAME )
 
 	# class methods for helping with various things
 
@@ -319,10 +316,18 @@ class Service( Plugin ):
 @define
 class ServiceManager:
 
+	services_classes: Dict[str, Type[Service]] = field( factory=dict )
 	services: Dict[str, Service] = field( factory=dict )
+
+	def add_class( self, cls: Type[Service] ):
+		self.services_classes[f'{cls.__module__}.{cls.__name__}'] = cls
 
 	def add( self, service_instance: Service ):
 		self.services[service_instance.name] = service_instance
+
+	def add_from( self, ctx, name: str, config: Dict[str, Any] ):
+		service_cls = self.services_classes[config['type']]
+		self.services[name] = service_cls( **{ **config, 'ctx': ctx, 'name': name } )
 
 	def get( self, name: str ) -> Service|None:
 		return self.services.get( name )

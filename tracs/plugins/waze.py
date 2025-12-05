@@ -458,7 +458,8 @@ class WazeImporter( ResourceHandler ):
 class Waze( Service ):
 
 	def __init__( self, **kwargs ):
-		super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME}, **kwargs } )
+		super().__init__( **kwargs )
+		# super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME}, **kwargs } )
 
 		self._takeout_importer: WazeAccountActivityImporter = WazeAccountActivityImporter()
 		self._info_importer: WazeAccountInfoImporter = WazeAccountInfoImporter()

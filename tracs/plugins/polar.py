@@ -509,7 +509,8 @@ class PersonalTrainerImporter( XMLHandler ):
 class Polar( Service ):
 
 	def __init__( self, **kwargs ):
-		super().__init__( **kwargs, display_name=DISPLAY_NAME, base_url=BASE_URL )
+		super().__init__( **kwargs )
+		# super().__init__( **kwargs, display_name=DISPLAY_NAME, base_url=BASE_URL )
 
 		self._session = None
 		self._logged_in = False

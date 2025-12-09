@@ -19,6 +19,7 @@ from tracs.plugins.waze import WAZE_TYPE, WazeActivity, WazeImporter
 from tracs.plugins.xml import XML_TYPE, XMLHandler
 from tracs.resources import Resource
 
+@mark.unit
 @mark.file( 'templates/polar/2020.json' )
 def test_resource_handler( path ):
 	handler = JSONHandler() # use json handler instead of base class
@@ -75,6 +76,7 @@ def test_resource_handler( path ):
 	activity = handler.load_as_activity( resource=resource, attach=False )
 	assert resource.data == json and activity.resources == []
 
+@mark.unit
 @mark.file( 'environments/default/takeouts/waze/2020-09/account_activity_3.csv' )
 def test_csv_handler( path ):
 	handler = CSVHandler()
@@ -84,6 +86,7 @@ def test_csv_handler( path ):
 	assert resource.type == CSV_TYPE
 	assert type( resource.raw ) is list and len( resource.raw ) == 38
 
+@mark.unit
 @mark.file( 'templates/polar/2020.json' )
 def test_json_handler( path ):
 	handler = JSONHandler()
@@ -94,6 +97,7 @@ def test_json_handler( path ):
 	assert type( resource.content ) is bytes and len( resource.content ) > 0
 	assert type( resource.raw ) is list
 
+@mark.unit
 @mark.file( 'templates/polar/empty.gpx' )
 def test_xml_importer( path ):
 	handler = XMLHandler()
@@ -105,6 +109,7 @@ def test_xml_importer( path ):
 	assert resource.raw.getroottree().getroot() is not None
 	assert resource.raw.tag == '{http://www.topografix.com/GPX/1/1}gpx'
 
+@mark.unit
 @mark.file( 'templates/gpx/mapbox.gpx' )
 def test_gpx_importer( path ):
 	handler = GPXImporter()
@@ -117,6 +122,7 @@ def test_gpx_importer( path ):
 	activity = handler.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2012-10-24T23:29:40+00:00'
 
+@mark.unit
 @mark.file( 'environments/default/takeouts/drivey/drive-20240913-182956.gpx' )
 def test_gpx_importer_empty( path ):
 	handler = GPXImporter()
@@ -127,6 +133,7 @@ def test_gpx_importer_empty( path ):
 	with raises( ResourceImportException ):
 		handler.load_as_activity( path=path )
 
+@mark.unit
 @mark.file( 'templates/tcx/sample.tcx' )
 def test_tcx_importer( path ):
 	handler = TCXImporter()
@@ -139,6 +146,7 @@ def test_tcx_importer( path ):
 	activity = handler.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2010-06-26T10:06:11+00:00'
 
+@mark.unit
 @mark.skip
 def test_tcx_export():
 	tcx = TrainingCenterDatabase(
@@ -196,6 +204,7 @@ def test_tcx_export():
 	print()
 	print( tostring( tcx.as_xml(), pretty_print=True ).decode( 'UTF-8' ) )
 
+@mark.unit
 @mark.file( 'environments/default/db/polar/1/0/0/100001/100001.json' )
 def test_polar_flow_importer( path ):
 	importer = PolarFlowImporter()
@@ -209,6 +218,7 @@ def test_polar_flow_importer( path ):
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2011-04-28T15:48:10+00:00'
 
+@mark.unit
 @mark.file( 'environments/default/takeouts/polar/training-session-2022-10-16-7505780534-1f8335dd-19e4-439e-a1ae-5c2039d3586c.json' )
 def test_polar_session_importer( path ):
 	importer = PolarTrainingSessionImporter()
@@ -219,6 +229,7 @@ def test_polar_session_importer( path ):
 	assert round( activity.distance ) == 1151
 	assert not activity.multipart
 
+@mark.unit
 @mark.skip
 @mark.file( 'templates/polar/personal_trainer/20160904.xml' )
 def test_polar_ped_importer( path ):
@@ -229,6 +240,7 @@ def test_polar_ped_importer( path ):
 	activity = importer.load_as_activity( path=path )
 	assert type( activity ) is PolarExerciseDataActivity and activity.uid == 'polar:160904124614'
 
+@mark.unit
 @mark.file( 'environments/default/db/strava/2/0/0/200002/200002.json' )
 def test_strava_importer( path ):
 	importer = StravaHandler()
@@ -242,6 +254,7 @@ def test_strava_importer( path ):
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2018-12-16T13:15:12+00:00'
 
+@mark.unit
 @mark.file( 'environments/default/db/bikecitizens/1/0/0/1000001/1000001.json' )
 def test_bikecitizens_importer( path ):
 	importer = BikecitizensImporter()
@@ -255,6 +268,7 @@ def test_bikecitizens_importer( path ):
 	activity = importer.load_as_activity( path=path )
 	assert activity.starttime.isoformat() == '2020-05-09T05:03:11+00:00'
 
+@mark.unit
 @mark.file( 'environments/default/db/waze/20/07/12/200712074743/200712074743.txt' )
 def test_waze_importer( path ):
 	importer = WazeImporter()

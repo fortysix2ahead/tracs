@@ -17,6 +17,7 @@ from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
 from fs.path import basename, combine, dirname, isabs, join, parts, split
+from more_itertools.recipes import first_true
 
 from tracs.activity import Activities, Activity
 from tracs.constants import DB_DIRNAME, OVERLAY_DIRNAME
@@ -324,12 +325,21 @@ class ServiceManager:
 	def add_class( self, cls: Type[Service] ):
 		self.services_classes[f'{cls.__module__}.{cls.__name__}'] = cls
 
-	def add( self, service_instance: Service ):
+	def add( self, service_instance: Service ) -> None:
+		"""
+		Adds an existing service to the manager.
+
+		:param service_instance: service instance to add
+		:return: None
+		"""
 		self.services[service_instance.name] = service_instance
 
 	def add_from( self, ctx, name: str, config: Dict[str, Any] ):
-		service_cls = self.services_classes[config['type']]
-		self.services[name] = service_cls( **{ **config, 'ctx': ctx, 'name': name } )
+		service_cls = first_true( self.services_classes.values(), pred=lambda sc: sc.SERVICE_NAME == config.get( 'type' ) )
+		if service_cls:
+			self.services[name] = service_cls( **{ **config, 'ctx': ctx, 'name': name } )
+		else:
+			log.error( f'unable to find service class for service type {name}' )
 
 	def get( self, name: str ) -> Service|None:
 		return self.services.get( name )

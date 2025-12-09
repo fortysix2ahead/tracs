@@ -30,7 +30,7 @@ class Local( Service ):
 	SERVICE_NAME: ClassVar[str] = SERVICE_NAME
 
 	def __init__( self, **kwargs  ):
-		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )
+		super().__init__( **kwargs )
 
 		self._gpx_importer = GPXImporter()
 

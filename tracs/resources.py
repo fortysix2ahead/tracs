@@ -101,7 +101,7 @@ class Resource:
 	type: str = field( default=None )
 	path: str = field( default=None )
 	source: str = field( default=None )
-	status: int = field( default=None )
+	status: Optional[int] = field( default=None )
 	# field type is actually UID, str is only allowed in constructor
 	uid: UID|str = field( default=None, converter=lambda u: UID.from_str( u ) if isinstance( u, str ) else u )
 

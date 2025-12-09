@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from logging import getLogger
 from re import DOTALL, match
 from sys import exit as sysexit
-from typing import Dict, List, Optional, Tuple, Union
+from typing import ClassVar, Dict, List, Optional, Tuple, Union
 
 from attrs import define, field
 from bs4 import BeautifulSoup
@@ -148,6 +148,8 @@ class BikecitizensImporter( DataclassFactoryHandler ):
 
 @service
 class Bikecitizens( Service ):
+
+	SERVICE_NAME: ClassVar[str] = SERVICE_NAME
 
 	def __init__( self, **kwargs ):
 		super().__init__( **kwargs )

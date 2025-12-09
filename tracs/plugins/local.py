@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Optional, Union
+from typing import ClassVar, Optional, Union
 
 from fs.base import FS
 from fs.copy import copy_file
@@ -26,6 +26,8 @@ class LocalActivity( Activity ):
 
 @service
 class Local( Service ):
+
+	SERVICE_NAME: ClassVar[str] = SERVICE_NAME
 
 	def __init__( self, **kwargs  ):
 		super().__init__( name=SERVICE_NAME, display_name=DISPLAY_NAME, **kwargs )

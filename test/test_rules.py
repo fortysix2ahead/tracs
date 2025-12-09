@@ -4,7 +4,7 @@ from re import match
 from typing import cast
 
 from dateutil.tz import tzlocal, UTC
-from pytest import raises
+from pytest import mark, raises
 from rule_engine import Context, EvaluationError, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
 
 from tracs.activity import Activity, ActivityPart
@@ -51,6 +51,7 @@ a2 = Activity(
 	)
 )
 
+@mark.unit
 def test_rule_engine():
 	# plain case does not work with classes, only with dictionaries
 	with raises( SymbolResolutionError ):
@@ -86,6 +87,7 @@ def test_rule_engine():
 	assert not Rule( '"polar" in uids', context=context ).matches( a2 )
 	assert Rule( '"polar" in uids.classifiers', context=context ).matches( a2 )
 
+@mark.unit
 def test_rule_pattern():
 	# special cases
 
@@ -198,6 +200,7 @@ def test_rule_pattern():
 # 	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx' )
 # 	assert match( RESOURCE_PATTERN, 'polar:1001#application/xml+gpx-polar' )
 
+@mark.unit
 def test_normalize( parser ):
 	p = parser
 
@@ -250,6 +253,7 @@ def test_normalize( parser ):
 	assert p.normalize( 'time:10:30' ) == '__time__ >= d"0001-01-01T10:30:00+00:00" and __time__ <= d"0001-01-01T10:30:59.999999+00:00"'
 	assert p.normalize( 'time:10:30:50' ) == '__time__ >= d"0001-01-01T10:30:50+00:00" and __time__ <= d"0001-01-01T10:30:50.999999+00:00"'
 
+@mark.unit
 def test_parse( parser ):
 	p = parser
 
@@ -267,6 +271,7 @@ def test_parse( parser ):
 	with raises( SymbolResolutionError ):
 		assert r.evaluate( Activity( id=1000 ) ) # evaluating is not ok -> error
 
+@mark.unit
 def test_evaluate( parser ):
 	p = parser
 
@@ -305,6 +310,7 @@ def test_evaluate( parser ):
 
 	# RuleSyntaxError should never happen ...
 
+@mark.unit
 def test_evaluate_multipart( parser ):
 	p = parser
 
@@ -318,17 +324,20 @@ def test_evaluate_multipart( parser ):
 	assert p.parse_rule( 'multipart:true' ).evaluate( a )
 	assert not p.parse_rule( 'multipart:false' ).evaluate( a )
 
+@mark.unit
 def test_type( parser ):
 	p = parser
 	# assert parse_eval( 'type=run', A1 ) # todo: support this?
 	assert p.parse_rule( 'type:run' ).evaluate( A1 )
 	assert p.parse_rule( 'type:Run' ).evaluate( A1 )
 
+@mark.unit
 def test_list( parser ):
 	p = parser
 	assert p.parse_rule( '1000,1001,1002' ).evaluate( A1 )
 	assert not p.parse_rule( '100,101,102' ).evaluate( A1 )
 
+@mark.unit
 def test_range( parser ):
 	p = parser
 
@@ -344,6 +353,7 @@ def test_range( parser ):
 
 	assert p.parse_rule( 'heartrate:100.0..200.0' ).evaluate( A1 )
 
+@mark.unit
 def test_date_time( parser ):
 	p = parser
 
@@ -373,6 +383,7 @@ def test_date_time( parser ):
 	assert p.parse_rule( 'time:09:00..11:00' ).evaluate( A1 )
 	assert p.parse_rule( 'time:09:00:05..10:00:50' ).evaluate( A1 )
 
+@mark.unit
 def test_parse_date_range():
 
 	assert parse_date_range_as_str( '2022..2023' ) == ('2022-01-01T00:00:00+00:00', '2023-12-31T23:59:59.999999+00:00')

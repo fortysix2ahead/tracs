@@ -6,7 +6,7 @@ from pathlib import Path
 from re import compile, match
 from sys import exit as sysexit
 from time import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 from webbrowser import open as open_url
 
 from dateutil.parser import parse as dtparse
@@ -99,6 +99,8 @@ class StravaHandler( JSONHandler ):
 
 @service
 class Strava( Service ):
+
+	SERVICE_NAME: ClassVar[str] = SERVICE_NAME
 
 	def __init__( self, **kwargs ):
 		super().__init__( **kwargs )

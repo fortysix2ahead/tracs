@@ -3,7 +3,7 @@ from enum import Enum
 from logging import getLogger
 from pathlib import Path
 from re import compile as regex_compile
-from typing import Any, cast, List, Optional, Tuple, Union
+from typing import Any, cast, ClassVar, List, Optional, Tuple, Union
 
 from attrs import define, field
 from dateutil.parser import parse as parse_datetime
@@ -456,6 +456,8 @@ class WazeImporter( ResourceHandler ):
 
 @service
 class Waze( Service ):
+
+	SERVICE_NAME: ClassVar[str] = SERVICE_NAME
 
 	def __init__( self, **kwargs ):
 		super().__init__( **kwargs )

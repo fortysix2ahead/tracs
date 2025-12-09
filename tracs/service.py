@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
-from typing import Any, cast, Dict, List, Optional, Type, Union
+from typing import Any, cast, ClassVar, Dict, List, Optional, Type, Union
 
 from arrow import utcnow
 from attrs import define, field
@@ -30,6 +30,8 @@ log = getLogger( __name__ )
 # ---- base class for a service ----
 
 class Service( Plugin ):
+
+	SERVICE_NAME: ClassVar[str] = '__UNKNOWN__' # this needs to be set to a proper value in subclasses
 
 	def __init__( self, *args, **kwargs ):
 		super().__init__( *args, **kwargs )

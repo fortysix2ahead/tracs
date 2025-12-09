@@ -5,7 +5,7 @@ from pathlib import Path
 from re import compile, match
 from sys import exit as sysexit
 from time import time as current_time
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
+from typing import Any, ClassVar, Dict, List, Mapping, Optional, Tuple, Union
 from zipfile import BadZipFile
 
 from attrs import define, field
@@ -507,6 +507,8 @@ class PersonalTrainerImporter( XMLHandler ):
 
 @service
 class Polar( Service ):
+
+	SERVICE_NAME: ClassVar[str] = SERVICE_NAME
 
 	def __init__( self, **kwargs ):
 		super().__init__( **kwargs )

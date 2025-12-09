@@ -1,7 +1,10 @@
 from attrs import define, field
 
+from pytest import mark
+
 from tracs.uid import UID
 
+@mark.unit
 def test_uid():
 	uid = UID( 'polar' )
 	assert uid.classifier == 'polar' and uid.local_id is None and uid.path is None
@@ -68,6 +71,7 @@ def test_uid():
 	# works, but does not make sense
 	assert UID( classifier='polar', local_id=101, path='recording.gpx', part=1 ).uid == 'polar:101/recording.gpx#1'
 
+@mark.unit
 def test_uid_path():
 	uid_short = UID( 'polar:101', path='recording.gpx' )
 	uid_rel = UID( 'polar:101', path='1/0/1/101/recording.gpx' )
@@ -83,6 +87,7 @@ def test_uid_path():
 
 	assert uid_short.resolve( resolver ) == 'polar:101/1/0/1/101/recording.gpx'
 
+@mark.unit
 def test_eq():
 	uid1 = UID( 'polar:101/recording.gpx' )
 	uid2 = UID( 'polar:101/recording.gpx' )
@@ -94,6 +99,7 @@ def test_eq():
 	assert 'polar:101/recording.gpx' == uid1
 	assert uid1 != uid3 and uid1 != uid4
 
+@mark.unit
 def test_lt():
 	uid1 = UID( 'polar:101' )
 	uid2 = UID( 'polar:102' )
@@ -106,6 +112,7 @@ def test_lt():
 
 	assert sorted( [uid2, uid3, uid1] ) == [uid1, uid2, uid3]
 
+@mark.unit
 def test_serialize():
 	uid_str = 'polar:101/recording.gpx#1'
 	uid = UID( uid_str )
@@ -117,6 +124,7 @@ class ClassWithUid:
 
 	uid: UID|str = field( default=None, converter=lambda u: UID( u ) if isinstance( u, str ) else u )
 
+@mark.unit
 def test_uid_class():
 	c = ClassWithUid( 'polar:101/recording.gpx' )
 	assert isinstance( c.uid, UID )

@@ -6,6 +6,7 @@ from pytest import mark
 from tracs.plugins.waze import AccountActivity, Waze, WazeAccountActivityImporter, WazeImporter
 from tracs.utils import fspath
 
+@mark.unit
 @mark.file( 'environments/default/takeouts/waze/2020-09/account_activity_3.csv' )
 def test_read_account_activity_2020( path ):
 	resource = WazeAccountActivityImporter().load( path=path )
@@ -13,6 +14,7 @@ def test_read_account_activity_2020( path ):
 	assert len( location_details ) == 1
 	assert len( location_details[0].as_point_list() ) == 25
 
+@mark.unit
 @mark.file( 'environments/default/takeouts/waze/2022-01/account_activity_3.csv' )
 def test_read_account_activity_2022( path ):
 	resource = WazeAccountActivityImporter().load( path=path )
@@ -21,6 +23,7 @@ def test_read_account_activity_2022( path ):
 	assert len( location_details[0].as_point_list() ) == 310
 	assert len( location_details[1].as_point_list() ) == 316
 
+@mark.unit
 @mark.file( 'environments/default/takeouts/waze/2023-04/account_activity_3.csv' )
 def test_read_account_activity_2023( path ):
 	resource = WazeAccountActivityImporter().load( path=path )
@@ -30,10 +33,12 @@ def test_read_account_activity_2023( path ):
 	assert len( location_details[1].as_point_list() ) == 71
 
 # dummy test case: can read, but data is not used anywhere
+@mark.unit
 @mark.file( 'environments/default/takeouts/waze/2023-04/account_activity_3.csv' )
 def test_read_account_info( path ):
 	resource = WazeAccountActivityImporter().load( path=path )
 
+@mark.unit
 @mark.file( 'environments/default/db/waze/20/07/12/200712074743/200712074743.txt' )
 def test_activity_from_raw( path ):
 	resource = WazeImporter().load( path )

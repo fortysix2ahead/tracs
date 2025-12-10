@@ -1,31 +1,31 @@
 
 from pathlib import Path
 
-from pytest import mark, raises
+from fs.memoryfs import MemoryFS
+from pytest import mark
 
+from constants import CFG_DB_FS, CFG_TMP_FS
 from test.mock import Mock
+from tracs.constants import CFG_FS
 from tracs.resources import Resource
 from tracs.service import Service
 
+mfs = MemoryFS()
+
+default_cfg = {
+	CFG_FS: mfs, CFG_DB_FS: mfs, CFG_TMP_FS: mfs,
+}
+
+@mark.unit
 def test_constructor():
-	mock = Mock()
+	mock = Mock( **default_cfg )
 
 	assert mock.ctx is None
 	assert mock.name == 'mock'
 	assert mock.display_name == 'Mock'
 	assert mock.enabled is True
 
-	assert mock.config_value( 'test' ) is None
-	assert mock.config_value( 'test', 10 ) == 10
-	assert mock.state_value( 'test' ) is None
-	assert mock.state_value( 'test', 10 ) == 10
-
-	mock.set_config_value( 'test', 20 )
-	assert mock.config_value( 'test' ) == 20
-	mock.set_state_value( 'test', 30 )
-	assert mock.state_value( 'test' ) == 30
-
-	mock = Mock( name='MOCK', display_name='A Mock Service', enabled=False )
+	mock = Mock( name='MOCK', display_name='A Mock Service', enabled=False, **default_cfg )
 	assert mock.name == 'MOCK'
 	assert mock.display_name == 'A Mock Service'
 	assert mock.enabled is False

@@ -1,18 +1,16 @@
 
 from datetime import datetime
-from typing import Any, List
-from typing import Optional
-from typing import Union
+from typing import Any, List, Optional, Union
 
 from attrs import define, field
 from dateutil.tz import tzlocal
 
 from tracs.activity import Activity
+from tracs.constants import CFG_USER_ID
 from tracs.context import ApplicationContext
 from tracs.handlers import ResourceHandler
+from tracs.pluginmgr import importer, resourcetype, service
 from tracs.plugins.gpx import GPX_TYPE
-from tracs.pluginmgr import importer, service
-from tracs.pluginmgr import resourcetype
 from tracs.resources import Resource
 from tracs.service import Service
 
@@ -57,6 +55,8 @@ class Mock( Service ):
 
 	def __init__( self, *args, **kwargs ):
 		super().__init__( *args, **kwargs )
+
+		self._user_id = 'user' if not self._cfg.get( CFG_USER_ID ) else self._cfg.get( CFG_USER_ID )
 
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		return [

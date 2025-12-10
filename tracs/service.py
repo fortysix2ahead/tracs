@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from datetime import datetime, timedelta
-from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
 from typing import Any, cast, ClassVar, Dict, List, Optional, Type, Union
@@ -19,8 +18,9 @@ from fs.osfs import OSFS
 from fs.path import basename, combine, dirname, isabs, join, parts, split
 from more_itertools.recipes import first_true
 
+from constants import CFG_BASE_URL, CFG_DB_FS, CFG_TMP_FS
 from tracs.activity import Activities, Activity
-from tracs.constants import DB_DIRNAME, OVERLAY_DIRNAME
+from tracs.constants import CFG_FS, CFG_PATH, CFG_USER_ID, DB_DIRNAME, OVERLAY_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.resources import Resource, Resources
@@ -40,11 +40,15 @@ class Service( Plugin ):
 		# paths + plugin filesystem area
 		# providing parameters via kwargs is for testing only and is not supposed to be used in production
 		# there's not check for ctx being null as a service shall not exist without a context
-		self._fs: FS = kwargs.get( '_fs' ) or self.ctx.plugin_fs( self.name, self._cfg.get( 'user' ), self._cfg.get( 'slug' ) )
-		self._dbfs = kwargs.get( '_dbfs' ) or self.ctx.db_fs
-		self._tmpfs = kwargs.get( '_tmpfs' ) or self.ctx.tmp_fs
+		self._user_id = kwargs.get( CFG_USER_ID ) or self._cfg.get( CFG_USER_ID )
+		self._path = kwargs.get( CFG_PATH ) or self._cfg.get( CFG_PATH )
+
+		self._fs: FS = kwargs.get( CFG_FS ) or self.ctx.plugin_fs( self.name, self._user_id, self._path )
+		self._dbfs = kwargs.get( CFG_DB_FS ) or self.ctx.db_fs
+		self._tmpfs = kwargs.get( CFG_TMP_FS ) or self.ctx.tmp_fs
 		self._rootfs = OSFS( '/' ) # needed ?
-		self._base_url = kwargs.get( '_base_url' )
+		self._base_url = kwargs.get( CFG_BASE_URL )
+
 		self._logged_in: bool = False
 
 		log.debug( f'service instance {self._name} created with fs = {self._fs}' )

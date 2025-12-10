@@ -3,7 +3,7 @@ from importlib.resources import path as pkg_path
 
 # version
 
-__version__ = '0.1.0-dev'
+__version__ = '0.2.0-dev'
 
 # general constants
 
@@ -71,3 +71,12 @@ KEY_SERVICE = KEY_CLASSIFER
 KEY_RAW = 'raw'
 KEY_RESOURCES = 'resources'
 KEY_VERSION = 'version'
+
+# configuration keys
+
+CFG_BASE_URL = '_base_url'
+CFG_DB_FS = '_db_fs'
+CFG_FS = '_fs'
+CFG_PATH = 'path'
+CFG_TMP_FS = '_tmp_fs'
+CFG_USER_ID = 'user_id'

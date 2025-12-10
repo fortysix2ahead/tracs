@@ -102,14 +102,6 @@ class Service( Plugin ):
 		except AttributeError:
 			log.error( f'unable to calculate resource path for {resource}', exc_info=True )
 
-	@classmethod
-	def url_for_uid( cls, uid: str ) -> Optional[str]:
-		classifier, local_id = uid.split( ':', 1 )
-		if service := current_ctx().registry.services.get( classifier ):
-			return service.url_for( local_id=local_id )
-		else:
-			return None
-
 	@staticmethod
 	def as_activity( resource: Resource, **kwargs ) -> Activity:
 		"""

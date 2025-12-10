@@ -104,7 +104,6 @@ class Strava( Service ):
 
 	def __init__( self, **kwargs ):
 		super().__init__( **kwargs )
-		# super().__init__( **{ **{'name': SERVICE_NAME, 'display_name': DISPLAY_NAME, 'base_url': BASE_URL}, **kwargs } )
 
 		self._client = Client()
 		self._session = None
@@ -125,7 +124,7 @@ class Strava( Service ):
 
 	def all_events_url( self, page: int ) -> str:
 		after = int( datetime( 1970, 1, 1, tzinfo=UTC ).timestamp() )
-		before = int( datetime( datetime.utcnow().year + 1, 1, 1, tzinfo=UTC ).timestamp() )
+		before = int( datetime( datetime.now( UTC ).year + 1, 1, 1, tzinfo=UTC ).timestamp() )
 		per_page = FETCH_PAGE_SIZE  # we might make this configurable later ...
 		return f'{self.base_url}/api/v3/athlete/activities?before={before}&after={after}&page={page}&per_page={per_page}'
 
@@ -193,7 +192,7 @@ class Strava( Service ):
 			# self.ctx.advance( f'activity {sa.id}' )
 
 			uid = f'{self.name}:{sa.id}'
-			path = f'{self.path_for_id( sa.id, self.name )}/{sa.id}.json'
+			path = self.svc_path_for_id( sa.id, f'{sa.id}.json' )
 
 			if self.ctx.force or not self.db.contains_resource( uid, path ):
 				da = self._client.get_activity( sa.id, include_all_efforts=True )  # get detailed data for activity

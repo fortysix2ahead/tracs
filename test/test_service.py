@@ -53,10 +53,10 @@ def test_path_for_id( service ):
 
 	# service path
 	# base + user + resource
-	assert service.svc_path_for_id( '1001', 'recording.gpx' ) == 'mock/1/0/0/1001/recording.gpx'
+	assert service.svc_path_for_id( '1001', 'recording.gpx' ) == 'mock/user/1/0/0/1001/recording.gpx'
 	service._name = 'MOCK'
-	service._user_id = 'user'
-	assert service.svc_path_for_id( '1001', 'recording.gpx' ) == 'MOCK/user/1/0/0/1001/recording.gpx'
+	service._user_id = 'USER'
+	assert service.svc_path_for_id( '1001', 'recording.gpx' ) == 'MOCK/USER/1/0/0/1001/recording.gpx'
 
 @mark.service( cls=Mock )
 def test_path_for( service ):

@@ -94,15 +94,6 @@ class Service( Plugin ):
 
 	# class methods for helping with various things
 
-	@staticmethod
-	def default_path_for_id( local_id: Union[int, str], base_path: Optional[str] = None, user_id: Optional[str] = None, resource_path: Optional[str] = None ) -> str:
-		local_id_rjust = str( local_id ).rjust( 3, '0' )
-		path = f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
-		path = combine( user_id, path ) if user_id else path
-		path = combine( base_path, path ) if base_path else path
-		path = combine( path, resource_path ) if resource_path else path
-		return path
-
 	@classmethod
 	def path_for_resource( cls, resource: Resource, absolute: bool = True, as_path: bool = True, ignore_overlay: bool = True ) -> Union[Path, str]:
 		try:

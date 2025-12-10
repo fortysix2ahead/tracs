@@ -265,6 +265,10 @@ class ApplicationContext( Protocol ):
 		...
 
 	@property
+	def db( self ) -> ActivityDb:
+		...
+
+	@property
 	def db_fs( self ) -> FS:
 		...
 

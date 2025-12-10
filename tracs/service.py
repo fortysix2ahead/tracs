@@ -217,9 +217,10 @@ class Service( Plugin ):
 		"""
 		return self.path_for_id( local_id, self.name, self._user_id, resource_path, as_path )
 
-	def path_for( self, resource: Resource, absolute: bool = False, omit_classifier: bool = False, ignore_overlay: bool = True, as_path: bool = False ) -> Optional[Union[Path, str]]:
+	def path_for( self, resource: Resource, absolute: bool = False, omit_classifier: bool = False,
+	              ignore_overlay: bool = True, as_path: bool = False ) -> Optional[Path|str]:
 		"""
-		Returns the path in the local file system where all artefacts of a provided activity are located.
+		Returns the path in the local file system for a provided resource.
 
 		:param resource: resource for which the path shall be calculated
 		:param ignore_overlay: if True ignores the overlay
@@ -236,7 +237,7 @@ class Service( Plugin ):
 			return path
 
 		if not head:
-			path = self.path_for_id( uid.local_id, uid.classifier, resource_path=path, as_path=False )
+			path = self.svc_path_for_id( uid.local_id, path, False )
 
 		if omit_classifier and not absolute:
 			path = join( *parts( path )[2:] )

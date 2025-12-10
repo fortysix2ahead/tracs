@@ -31,7 +31,7 @@ def test_constructor():
 
 	# absolute paths work, even with MemFS
 	r = Resource( uid='mock:1001', path='recording.gpx' )
-	assert mock.path_for( r, absolute=True, as_path=False ) == '/db/mock/1/0/0/1001/recording.gpx'
+	assert mock.path_for( r, absolute=True, as_path=False ) == '/db/MOCK/user/1/0/0/1001/recording.gpx'
 
 @mark.unit
 @mark.service( cls=Mock )

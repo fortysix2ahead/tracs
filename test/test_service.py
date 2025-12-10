@@ -51,6 +51,13 @@ def test_path_for_id( service ):
 	# as path
 	assert service.path_for_id( '1001', 'test', 'user', 'recording.gpx', as_path=True ) == Path( 'test/user/1/0/0/1001/recording.gpx' )
 
+	# service path
+	# base + user + resource
+	assert service.svc_path_for_id( '1001', 'recording.gpx' ) == 'mock/1/0/0/1001/recording.gpx'
+	service._name = 'MOCK'
+	service._user_id = 'user'
+	assert service.svc_path_for_id( '1001', 'recording.gpx' ) == 'MOCK/user/1/0/0/1001/recording.gpx'
+
 @mark.service( cls=Mock )
 def test_path_for( service ):
 	# case 1: uid without a path + path in resource with filename only

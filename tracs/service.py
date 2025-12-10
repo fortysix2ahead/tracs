@@ -179,8 +179,10 @@ class Service( Plugin ):
 	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, user_id: Optional[str] = None,
 	                 resource_path: Optional[str] = None, as_path: bool = False ) -> Union[Path, str]:
 		"""Calculates the path for a resource based on the provided information.
-		Note that this path is relative, but not yet relative to something particular. I.e. it might be relative to DB FS if a base path is provided.
+		Note that this path is relative, but not yet relative to something particular,
+		i.e. it might be relative to DB FS if a base path is provided.
 		This calls _path_for_id() which might be overwritten in subclasses.
+		Also note that this does not take service name or service user into account! Use svc_path_for_id() for this.
 
 		:param local_id: local id of a resource
 		:param base_path: base path is prepended to the calculated path, if provided. Usually this will be the name of the service instance.
@@ -205,6 +207,9 @@ class Service( Plugin ):
 		"""
 		local_id_rjust = str( local_id ).rjust( 3, '0' )
 		return f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
+
+	def svc_path_for_id( self, local_id: Union[int, str], resource_path: Optional[str] = None, as_path: bool = False ):
+		return self.path_for_id( local_id, self.name, self._user_id, resource_path, as_path )
 
 	def path_for( self, resource: Resource, absolute: bool = False, omit_classifier: bool = False, ignore_overlay: bool = True, as_path: bool = False ) -> Optional[Union[Path, str]]:
 		"""

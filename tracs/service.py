@@ -18,9 +18,8 @@ from fs.osfs import OSFS
 from fs.path import basename, combine, dirname, isabs, join, parts, split
 from more_itertools.recipes import first_true
 
-from constants import CFG_BASE_URL, CFG_DB_FS, CFG_TMP_FS
 from tracs.activity import Activities, Activity
-from tracs.constants import CFG_FS, CFG_PATH, CFG_USER_ID, DB_DIRNAME, OVERLAY_DIRNAME
+from tracs.constants import CFG_BASE_URL, CFG_DB_FS, CFG_FS, CFG_PATH, CFG_TMP_FS, CFG_USER_ID, DB_DIRNAME, OVERLAY_DIRNAME
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.resources import Resource, Resources
@@ -96,9 +95,10 @@ class Service( Plugin ):
 	# class methods for helping with various things
 
 	@staticmethod
-	def default_path_for_id( local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None ) -> str:
+	def default_path_for_id( local_id: Union[int, str], base_path: Optional[str] = None, user_id: Optional[str] = None, resource_path: Optional[str] = None ) -> str:
 		local_id_rjust = str( local_id ).rjust( 3, '0' )
 		path = f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
+		path = combine( user_id, path ) if user_id else path
 		path = combine( base_path, path ) if base_path else path
 		path = combine( path, resource_path ) if resource_path else path
 		return path
@@ -176,9 +176,35 @@ class Service( Plugin ):
 
 	# service methods
 
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = False ) -> Union[Path, str]:
-		path = Service.default_path_for_id( local_id, base_path, resource_path )
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, user_id: Optional[str] = None,
+	                 resource_path: Optional[str] = None, as_path: bool = False ) -> Union[Path, str]:
+		"""Calculates the path for a resource based on the provided information.
+		Note that this path is relative, but not yet relative to something particular. I.e. it might be relative to DB FS if a base path is provided.
+		This calls _path_for_id() which might be overwritten in subclasses.
+
+		:param local_id: local id of a resource
+		:param base_path: base path is prepended to the calculated path, if provided. Usually this will be the name of the service instance.
+		:param user_id: the user id is used as the second segment of the path, if provided.
+		:param resource_path: the path of the resource
+		:param as_path: if true, returns a Path instead of a string
+		:return: the calculated path
+		"""
+		path = self._path_for_id( local_id )
+		path = combine( user_id, path ) if user_id else path
+		path = combine( base_path, path ) if base_path else path
+		path = combine( path, resource_path ) if resource_path else path
 		return Path( path ) if as_path else path
+
+	# noinspection PyMethodMayBeStatic
+	def _path_for_id( self, local_id: int|str ) -> str:
+		"""Helper which transforms a provided ID into a default path.
+		The default behaviour is ABCD -> A/B/C/ABCD. Right justification will be applied (zero-based).
+
+		:param local_id: id to transform
+		:return: transformed id
+		"""
+		local_id_rjust = str( local_id ).rjust( 3, '0' )
+		return f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
 
 	def path_for( self, resource: Resource, absolute: bool = False, omit_classifier: bool = False, ignore_overlay: bool = True, as_path: bool = False ) -> Optional[Union[Path, str]]:
 		"""

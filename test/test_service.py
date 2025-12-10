@@ -4,9 +4,8 @@ from pathlib import Path
 from fs.memoryfs import MemoryFS
 from pytest import mark
 
-from constants import CFG_DB_FS, CFG_TMP_FS
 from test.mock import Mock
-from tracs.constants import CFG_FS
+from tracs.constants import CFG_DB_FS, CFG_FS, CFG_TMP_FS
 from tracs.resources import Resource
 from tracs.service import Service
 
@@ -34,16 +33,23 @@ def test_constructor():
 	r = Resource( uid='mock:1001', path='recording.gpx' )
 	assert mock.path_for( r, absolute=True, as_path=False ) == '/db/mock/1/0/0/1001/recording.gpx'
 
+@mark.unit
 @mark.service( cls=Mock )
 def test_path_for_id( service ):
+	# splitting of an id to segments
 	assert service.path_for_id( '1001' ) == '1/0/0/1001'
 	assert service.path_for_id( '1' ) == '0/0/1/1'
-	assert service.path_for_id( '1001', 'test' ) == 'test/1/0/0/1001'
+	# provide base path: prepend
+	assert service.path_for_id( '1001', base_path='test' ) == 'test/1/0/0/1001'
+	# provide resource path: append at end
 	assert service.path_for_id( '1001', resource_path='recording.gpx' ) == '1/0/0/1001/recording.gpx'
-	assert service.path_for_id( '1001', 'test', 'recording.gpx' ) == 'test/1/0/0/1001/recording.gpx'
+	# base + resource, without a user id
+	assert service.path_for_id( '1001', base_path='test', resource_path='recording.gpx' ) == 'test/1/0/0/1001/recording.gpx'
+	# base + user + resource
+	assert service.path_for_id( '1001', 'test', 'user', 'recording.gpx' ) == 'test/user/1/0/0/1001/recording.gpx'
 
 	# as path
-	assert service.path_for_id( '1001', 'test', 'recording.gpx', as_path=True ) == Path( 'test/1/0/0/1001/recording.gpx' )
+	assert service.path_for_id( '1001', 'test', 'user', 'recording.gpx', as_path=True ) == Path( 'test/user/1/0/0/1001/recording.gpx' )
 
 @mark.service( cls=Mock )
 def test_path_for( service ):

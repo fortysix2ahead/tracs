@@ -205,10 +205,16 @@ class Service( Plugin ):
 		:param local_id: id to transform
 		:return: transformed id
 		"""
-		local_id_rjust = str( local_id ).rjust( 3, '0' )
-		return f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
+		return path_for_id( local_id )
 
 	def svc_path_for_id( self, local_id: Union[int, str], resource_path: Optional[str] = None, as_path: bool = False ):
+		"""Returns the path for an id and takes service name and user into account (if set).
+
+		:param local_id: id to transform
+		:param resource_path: resource path
+		:param as_path: if true, returns a Path instead of a string
+		:return: transformed id
+		"""
 		return self.path_for_id( local_id, self.name, self._user_id, resource_path, as_path )
 
 	def path_for( self, resource: Resource, absolute: bool = False, omit_classifier: bool = False, ignore_overlay: bool = True, as_path: bool = False ) -> Optional[Union[Path, str]]:
@@ -395,12 +401,9 @@ class ServiceManager:
 
 # helper functions
 
-def path_for_id( local_id: int|str, base_path: str = None, resource_path: str = None ) -> str:
+def path_for_id( local_id: int|str ) -> str:
 	local_id_rjust = str( local_id ).rjust( 3, '0' )
-	path = f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
-	path = f'{base_path}/{path}' if base_path else path
-	path = f'{path}/{resource_path}' if resource_path else path
-	return path
+	return f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
 
 def path_for_date( date_id: Union[int, str, datetime] ) -> str:
 	if isinstance( date_id, int ):

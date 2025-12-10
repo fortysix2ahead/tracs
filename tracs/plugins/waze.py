@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from enum import Enum
 from logging import getLogger
-from pathlib import Path
 from re import compile as regex_compile
 from typing import Any, cast, ClassVar, List, Optional, Tuple, Union
 
@@ -21,7 +20,7 @@ from tracs.pluginmgr import importer, resourcetype, service
 from tracs.plugins.csv import CSVHandler
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.resources import Resource, ResourceType
-from tracs.service import Service
+from tracs.service import path_for_date, Service
 from tracs.utils import as_datetime
 
 log = getLogger( __name__ )
@@ -481,12 +480,14 @@ class Waze( Service ):
 		if hasattr( self, '_takeout_importer' ):
 			self._takeout_importer.field_size_limit = field_size_limit
 
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, resource_path: Optional[str] = None, as_path: bool = True ) -> Union[Path, str]:
-		id = str( local_id ).rjust( 6, '0' )
-		path = f'{id[0:2]}/{id[2:4]}/{id[4:6]}/{id}'
-		path = f'{base_path}/{path}' if base_path else path
-		path = f'{path}/{resource_path}' if resource_path else path
-		return Path( path ) if as_path else path
+	def _path_for_id( self, local_id: int|str ) -> str:
+		"""Helper which transforms a provided ID into a default path.
+		The default behaviour is ABCD -> A/B/C/ABCD. Right justification will be applied (zero-based).
+
+		:param local_id: id to transform
+		:return: transformed id
+		"""
+		return path_for_date( local_id )
 
 	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
 		return None
@@ -531,7 +532,7 @@ class Waze( Service ):
 					continue
 
 				uid = f'{self.name}:{ld.id()}'
-				path = f'{self.path_for_id( ld.id(), self.name )}/{ld.id()}.txt'
+				path = self.svc_path_for_id( ld.id(), f'{ld.id()}.txt' )
 				source = f'{self.name}{file}'
 
 				if self.ctx.force or not self.db.contains_resource( uid, path ):

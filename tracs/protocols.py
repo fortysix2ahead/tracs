@@ -261,10 +261,18 @@ class ApplicationContext( Protocol ):
 		...
 
 	@property
+	def force( self ) -> bool:
+		...
+
+	@property
 	def db_fs( self ) -> FS:
 		...
 
 	def plugin_fs( self, name: str, user: Optional[str], slug: Optional[str] ) -> FS:
+		...
+
+	@property
+	def service_mgr( self ) -> ServiceManager:
 		...
 
 #	@property

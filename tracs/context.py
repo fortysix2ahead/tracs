@@ -141,8 +141,7 @@ class ApplicationContext:
 
 	def __attrs_post_init__( self ):
 		# create config fs
-		log.debug( f'config FS configured to {self.config_fs}' )
-		log.debug( f'library FS configured to {self.lib_fs}' )
+		log.debug( f'config/library FS configured to {self.config_fs.getsyspath( "/" )} / {self.lib_fs.getsyspath( "/" )}' )
 
 		# setup auxillary fs which depend on config + lib fs
 		self._setup_aux_fs( self.config_fs, self.lib_fs )

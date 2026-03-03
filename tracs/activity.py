@@ -538,6 +538,12 @@ class Activities( list[Activity] ):
 	def iter( self ):
 		return self.__iter__()
 
+	def iter_groups( self ):
+		return filter( lambda a: a.group, self.__iter__() )
+
+	def iter_non_groups( self ):
+		return filter( lambda a: not a.group, self.__iter__() )
+
 	def iter_resources( self ) -> Resources:
 		return Resources( *chain( *[ a.resources for a in self ] ) )
 

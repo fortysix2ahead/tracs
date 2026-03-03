@@ -49,6 +49,18 @@ STATE_FILENAME = 'state.yaml'
 DEFAULT_CONFIG_FILENAME = 'defaults/config.yaml'
 DEFAULT_STATE_FILENAME = 'defaults/state.yaml'
 
+# db file names/paths
+
+ACTIVITIES_NAME = 'activities.json'
+ACTIVITIES_PATH = f'/{ACTIVITIES_NAME}'
+GROUPS_NAME = 'groups.json'
+GROUPS_PATH = f'/{GROUPS_NAME}'
+RESOURCES_NAME = 'resources.json'
+RESOURCES_PATH = f'/{RESOURCES_NAME}'
+SCHEMA_NAME = 'schema.json'
+SCHEMA_PATH = f'/{SCHEMA_NAME}'
+SCHEMA_VERSION = 15
+
 # global keyword arguments
 
 GLOBAL_KWARGS = [ 'debug', 'force', 'verbose', 'json', 'pretend' ]

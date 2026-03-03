@@ -53,12 +53,12 @@ def load_activities( fs: FS ) -> Activities:
 	return _activities
 
 def write_activities( activities: Activities, fs: FS ) -> None:
-	_activities = Activities( *sorted( activities.iter_non_groups(), key=lambda a: a.id ) )
+	_activities = Activities( *sorted( activities.iter_non_groups(), key=lambda a: a.id ), skip_checks=True )
 	fs.writebytes( ACTIVITIES_PATH, dumps( _activities.to_dict(), option=ORJSON_OPTIONS ) )
 
 	log.debug( f'wrote {len( _activities )} activities to {ACTIVITIES_PATH}' )
 
-	_activities = Activities( *sorted( activities.iter_groups(), key=lambda a: a.id, reverse=True ) )
+	_activities = Activities( *sorted( activities.iter_groups(), key=lambda a: a.id ), skip_checks=True )
 	fs.writebytes( GROUPS_PATH, dumps( _activities.to_dict(), option=ORJSON_OPTIONS ) )
 
 	log.debug( f'wrote {len( _activities )} activities to {GROUPS_PATH}' )

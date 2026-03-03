@@ -20,6 +20,8 @@ ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
 ACTIVITIES_NAME = 'activities.json'
 ACTIVITIES_PATH = f'/{ACTIVITIES_NAME}'
+GROUPS_NAME = 'groups.json'
+GROUPS_PATH = f'/{GROUPS_NAME}'
 RESOURCES_NAME = 'resources.json'
 RESOURCES_PATH = f'/{RESOURCES_NAME}'
 SCHEMA_NAME = 'schema.json'
@@ -29,18 +31,32 @@ SCHEMA_CONVERTER = make_converter()
 
 # activity handling
 
-def load_activities( fs: FS ) -> Activities:
-	log.debug( f'loading activities from {ACTIVITIES_PATH} in {fs}' )
+def _load_activities( fs: FS, path: str ) -> Activities:
+	"""
+	Loads activities from a provided file
+	:param fs: file system to load from
+	:param path: path to load from
+	:return: loaded activities
+	"""
+	log.debug( f'loading activities from {path} in {fs}' )
 
 	try:
-		_bytes = fs.readbytes( ACTIVITIES_PATH )
+		_bytes = fs.readbytes( path )
 		_dicts = loads( _bytes )
 		_activities = Activities.from_dict( _dicts )
+		log.debug( f'loaded {len( _activities )} activities from {path}' )
 	except (FileExpected, ResourceNotFound, JSONDecodeError):
-		log.error( f'error loading db', exc_info=True )
+		log.error( f'error loading activities', exc_info=True )
 		_activities = Activities()
 
-	log.debug( f'loaded {len( _activities )} activities' )
+	return _activities
+
+def load_activities( fs: FS ) -> Activities:
+	# load regular activities
+	_activities = _load_activities( fs, ACTIVITIES_PATH )
+	# load groups
+	_activities.add( lst=_load_activities( fs, GROUPS_PATH ), skip_checks=True )
+
 	return _activities
 
 def write_activities( activities: Activities, fs: FS ) -> None:

@@ -21,6 +21,7 @@ from rich.table import Table as RichTable
 from rule_engine import Rule
 
 from tracs.activity import Activities, Activity
+from tracs.constants import ACTIVITIES_NAME, GROUPS_NAME, SCHEMA_NAME, SCHEMA_VERSION
 from tracs.protocols import ApplicationContext
 from tracs.fsio import load_activities, load_schema, Schema, write_activities
 from tracs.migrate import migrate_db, migrate_db_functions
@@ -31,13 +32,9 @@ log = getLogger( __name__ )
 
 ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
-ACTIVITIES_NAME = 'activities.json'
-SCHEMA_NAME = 'schema.json'
-
-SCHEMA_VERSION = 14
-
 DB_FILES = {
 	ACTIVITIES_NAME: dumps( [] ),
+	GROUPS_NAME: dumps( [] ),
 	SCHEMA_NAME: dumps( { "version": SCHEMA_VERSION } )
 }
 

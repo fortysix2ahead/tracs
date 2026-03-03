@@ -12,20 +12,13 @@ from fs.walk import Walker
 from orjson import dumps, loads, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from orjson.orjson import JSONDecodeError
 from rich.prompt import Confirm
+
 from tracs.activity import Activities
+from tracs.constants import ACTIVITIES_NAME, ACTIVITIES_PATH, GROUPS_PATH, SCHEMA_PATH
 
 log = getLogger( __name__ )
 
 ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
-
-ACTIVITIES_NAME = 'activities.json'
-ACTIVITIES_PATH = f'/{ACTIVITIES_NAME}'
-GROUPS_NAME = 'groups.json'
-GROUPS_PATH = f'/{GROUPS_NAME}'
-RESOURCES_NAME = 'resources.json'
-RESOURCES_PATH = f'/{RESOURCES_NAME}'
-SCHEMA_NAME = 'schema.json'
-SCHEMA_PATH = f'/{SCHEMA_NAME}'
 
 SCHEMA_CONVERTER = make_converter()
 

@@ -13,6 +13,7 @@ from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
 from fs.path import basename
+from fs.wrap import read_only
 from more_itertools import first_true, unique
 from orjson import dumps, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 from rich import box
@@ -37,9 +38,6 @@ DB_FILES = {
 	GROUPS_NAME: dumps( [] ),
 	SCHEMA_NAME: dumps( { "version": SCHEMA_VERSION } )
 }
-
-UNDERLAY = 'underlay'
-OVERLAY = 'overlay'
 
 class ActivityDbIndex:
 
@@ -66,7 +64,7 @@ class ActivityDb:
 		"""
 		Creates an activity db, consisting of tiny db instances (meta + activities + resources + schema).
 
-		:param path: directory containing db files, may be a Path or a string
+		:param path: directory containing db files, may be a Path or a string, will be ignored if fs is provided
 		:param fs: instead of providing a path, it's also possible to provide the internally used filesystem object
 		:param read_only: read-only mode - does not allow write operations
 		:param enable_index: experimental, not used at the moment
@@ -77,7 +75,7 @@ class ActivityDb:
 		self._read_only = read_only
 
 		# initialize db file system(s)
-		self._fs = self._init_fs()
+		self._init_fs()
 
 		# load content from disk
 		self._load_db()
@@ -97,65 +95,22 @@ class ActivityDb:
 		log.debug( f'initializing db file system from path = {self._path} and ready_only = {self._read_only}' )
 		log.debug( f'expected db schema version is {SCHEMA_VERSION}' )
 
-		# operating system fs as underlay (resp. memory when no path is provided)
-		if self._path:
-			if self._read_only:
-				return self._init_readonly_filesystem( self._path )
-			else:
-				return self._init_filesystem( self._path )
-		else:
-			if self._fs:
-				return self._init_existing_fs( self._fs )
-			else:
-				return self._init_inmemory_filesystem()
+		# create OS FS if path is provided
+		if self._path and not self._fs:
+			self._fs = OSFS( root_path=str( self._path ), create=True, expand_vars=True )
 
-	def _init_filesystem( self, path: Path ) -> FS:
-		fs = MultiFS()
-		fs.add_fs( UNDERLAY, OSFS( root_path=str( self._path ), create=True ), write=False )
-		fs.add_fs( OVERLAY, MemoryFS(), write=True )
-
+		# init FS if not yet done
 		for file, content in DB_FILES.items():
-			if not fs.get_fs( UNDERLAY ).exists( f'/{file}' ):
-				fs.get_fs( UNDERLAY ).writebytes( f'/{file}', content )
-			# copy_file_if( self.pkgfs, f'/{f}', self.underlay_fs, f'/{f}', 'not_exists', preserve_time=True )
+			if not self._fs.exists( f'/{file}' ):
+				self._fs.writebytes( f'/{file}', content )
 
-		# todo: this is probably not needed?
-		for f in DB_FILES.keys():
-			copy_file( fs.get_fs( UNDERLAY ), f'/{f}', fs.get_fs( OVERLAY ), f'/{f}', preserve_time=True )
-
-		return fs
-
-	def _init_readonly_filesystem( self, path: Path ) -> FS:
-		if not path.exists():
-			log.error( f'error opening db from {self._path} in read-only mode: path does not exist' )
-			raise ResourceNotFound( str( path ) )
-
-		osfs = OSFS( root_path=str( self._path ) )
-		fs = MemoryFS()
-
-		for f in DB_FILES.keys():
-			try:
-				copy_file( osfs, f'/{f}', fs, f'/{f}', preserve_time=True )
-			except ResourceNotFound:
-				fs.writebytes( f, DB_FILES.get( f ) )
-
-		return fs
-
-	# noinspection PyMethodMayBeStatic
-	def _init_existing_fs( self, fs: FS ) -> FS:
-		for file, content in DB_FILES.items():
-			if not fs.exists( file ):
-				fs.writebytes( file, content )
-		return fs
-
-	# for development only ...
-	# noinspection PyMethodMayBeStatic
-	def _init_inmemory_filesystem( self ) -> FS:
-		return self._init_existing_fs( MemoryFS() )
+		# create read-only FS if needed
+		if self._read_only:
+			self._fs = read_only( self._fs )
 
 	def _load_db( self ):
-		self._schema = load_schema( self.fs )
-		self._activities: Activities = load_activities( self.fs )
+		self._schema = load_schema( self._fs )
+		self._activities: Activities = load_activities( self._fs )
 
 	def register_summary_types( self, *types: str ):
 		[ self._summary_types.add( t ) for t in types ]
@@ -163,19 +118,10 @@ class ActivityDb:
 	def register_recording_types( self, *types: str ):
 		[ self._recording_types.add( t ) for t in types ]
 
-	# todo: remove do_commit flag?
-	def commit( self, do_commit: bool = True ):
-		if do_commit:
-			write_activities( self._activities, self.overlay_fs )
-
 	def save( self ):
-		if self._read_only or self.underlay_fs is None:
-			return
-		for f in DB_FILES:
-			copy_file_if( self.overlay_fs, f'/{f}', self.underlay_fs, f'/{f}', 'newer' )
+		write_activities( self._activities, self._fs )
 
 	def close( self ):
-		# self.commit() # todo: really do auto-commit here?
 		self.save()
 
 	# ---- FS Properties ----

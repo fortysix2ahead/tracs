@@ -306,7 +306,7 @@ class Service( Plugin ):
 
 		# commit changes to db
 		if len( activities ) > 0:
-			self.ctx.db.commit()
+			self.ctx.db.save()
 
 		# return imported activities
 		return activities

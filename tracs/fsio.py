@@ -53,8 +53,15 @@ def load_activities( fs: FS ) -> Activities:
 	return _activities
 
 def write_activities( activities: Activities, fs: FS ) -> None:
-	fs.writebytes( ACTIVITIES_PATH, dumps( activities.to_dict(), option=ORJSON_OPTIONS ) )
-	log.debug( f'wrote {len( activities )} activities to {ACTIVITIES_NAME}' )
+	_activities = Activities( *sorted( activities.iter_non_groups(), key=lambda a: a.id ) )
+	fs.writebytes( ACTIVITIES_PATH, dumps( _activities.to_dict(), option=ORJSON_OPTIONS ) )
+
+	log.debug( f'wrote {len( _activities )} activities to {ACTIVITIES_PATH}' )
+
+	_activities = Activities( *sorted( activities.iter_groups(), key=lambda a: a.id, reverse=True ) )
+	fs.writebytes( GROUPS_PATH, dumps( _activities.to_dict(), option=ORJSON_OPTIONS ) )
+
+	log.debug( f'wrote {len( _activities )} activities to {GROUPS_PATH}' )
 
 def write_activities_as_list( activities: Activities ) -> List:
 	return activities.to_dict()

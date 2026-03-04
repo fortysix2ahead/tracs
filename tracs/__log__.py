@@ -48,6 +48,10 @@ class LogManager:
 		self._active_handler = _default_handler
 		self.root.addHandler( self._active_handler )
 
+		# workaround to silence stravalib warnings
+		from os import environ
+		environ['SILENCE_TOKEN_WARNINGS'] = 'true'
+
 	def set_console_log( self, verbose: bool = False, debug: bool = False, json: bool = False ):
 		self.root.removeHandler( self._active_handler )
 

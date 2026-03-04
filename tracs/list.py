@@ -6,7 +6,7 @@ from typing import List
 from dynaconf import inspect_settings
 from dynaconf.vendor.box.exceptions import BoxKeyError
 from rich import box
-from rich.pretty import Pretty as pp
+from rich.pretty import Pretty as pp, Pretty
 from rich.table import Table
 
 from tracs.activity import Activity
@@ -82,24 +82,20 @@ def show_config( ctx: ApplicationContext ):
 	table.add_row( 'configuration file', pp( ctx.config_file ) )
 	table.add_row( 'state file', pp( ctx.state_file ) )
 
-	table.add_section()
-
 	table.add_row( 'library', pp( ctx.lib_dir ) )
 	table.add_row( 'database dir', pp( ctx.db_dir ) )
-
-	table.add_section()
 
 	#table.add_row( 'plugins dir', pp( ctx.plugins_dir ) )
 	#table.add_row( 'overlay dir', pp( ctx.overlay_dir ) )
 
-	console.print( 'Locations', style='bold' )
+	console.print( 'Locations:', style='bold' )
 	console.print( table )
 
-	console.print( 'Configuration', style='bold' )
-	console.print( inspect_settings( ctx.config, history_limit=1 ) )
+	console.print( 'Configuration:', style='bold' )
+	console.print( Pretty( inspect_settings( ctx.config ).get( 'current' ), max_string=40, overflow='ellipsis' ) )
 
-	console.print( 'State', style='bold' )
-	console.print( inspect_settings( ctx.state, history_limit=1 ) )
+	console.print( 'State:', style='bold' )
+	console.print( Pretty( inspect_settings( ctx.state ).get( 'current' ), max_string=40, overflow='ellipsis' ) )
 
 def shorten( s: str ) -> str:
 	max_length = 120

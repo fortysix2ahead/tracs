@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from logging import DEBUG, FileHandler, Formatter, INFO, Logger, WARNING
+from logging import DEBUG, ERROR, FileHandler, Formatter, INFO, Logger, WARNING
 from pathlib import Path
 from typing import ClassVar
 
@@ -18,7 +18,7 @@ class LogManager:
 
 	_instance: ClassVar[LogManager] = None
 
-	root: Logger = field( default=None )
+	root: Logger = field( default=None ) # this is the tracs root logger, not the system-wide root logger
 	apptime: datetime = field( default=datetime.now( UTC ) )
 	last_log_time: datetime = field( default=datetime.now() )
 
@@ -51,6 +51,8 @@ class LogManager:
 		# workaround to silence stravalib warnings
 		from os import environ
 		environ['SILENCE_TOKEN_WARNINGS'] = 'true'
+
+		self.root.parent.setLevel( ERROR )
 
 	def set_console_log( self, verbose: bool = False, debug: bool = False, json: bool = False ):
 		self.root.removeHandler( self._active_handler )

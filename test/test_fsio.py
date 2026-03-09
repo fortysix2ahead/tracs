@@ -6,9 +6,10 @@ from orjson.orjson import dumps, loads
 from pytest import mark
 
 from constants import ORJSON_OPTIONS
-from objects import ACTIVITY_PART_OBJ, ACTIVITY_PART_OBJ_DUMP, RESOURCE_OBJ, RESOURCE_OBJ_DUMP
+from objects import ACTIVITY_OBJ, ACTIVITY_OBJ_DUMP, ACTIVITY_PART_OBJ, ACTIVITY_PART_OBJ_DUMP, RESOURCE_OBJ, RESOURCE_OBJ_DUMP, RESOURCES_OBJ, \
+	RESOURCES_OBJ_DUMP
 from test.objects import COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, COMPLETE_ACTIVITY_WITH_RESOURCE_DATA as AC, METADATA_OBJ, METADATA_OBJ_DUMP
-from tracs.activity import Activities, ActivityPart
+from tracs.activity import Activities, Activity, ActivityPart
 from tracs.core import Metadata
 from tracs.fsio import converter, load_activities, load_schema, write_activities
 from tracs.resources import Resource, Resources
@@ -33,16 +34,19 @@ def test_resource():
 	assert dump_to_str( converter.unstructure( RESOURCE_OBJ ) ) == RESOURCE_OBJ_DUMP
 	assert converter.structure( load_from( RESOURCE_OBJ_DUMP ), Resource ) == RESOURCE_OBJ
 
+	# resources
+	assert dump_to_str( converter.unstructure( RESOURCES_OBJ ) ) == RESOURCES_OBJ_DUMP
+	assert converter.structure( load_from( RESOURCES_OBJ_DUMP ), Resources ) == RESOURCES_OBJ
+
 @mark.unit
 def test_activity_part():
 	assert dump_to_str( converter.unstructure( ACTIVITY_PART_OBJ ) ) == ACTIVITY_PART_OBJ_DUMP
 	assert converter.structure( load_from( ACTIVITY_PART_OBJ_DUMP ), ActivityPart ) == ACTIVITY_PART_OBJ
 
-# todo: comparison between activities is not yet correct, test case runs fine, but comparison fails
-@mark.xfail
+@mark.unit
 def test_activity():
-	assert A.to_dict() == AD
-	assert A.from_dict( AD ) == A
+	assert dump_to_str( converter.unstructure( ACTIVITY_OBJ ) ) == ACTIVITY_OBJ_DUMP
+	assert converter.structure( load_from( ACTIVITY_OBJ_DUMP ), Activity ) == ACTIVITY_OBJ
 
 @mark.context( env='default', persist='mem' )
 def test_activities( dbfs ):

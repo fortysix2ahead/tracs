@@ -164,7 +164,7 @@ def timedelta_to_iso8601( td: timedelta ) -> str:
 	else:
 		return s
 
-def timedelta_to_str( td: timedelta ) -> str:
+def timedelta_to_str( td: timedelta, cls: Optional[Type] = None ) -> str:
 	s = str( td )
 	if td.days > 0:
 		days = f'{td.days}' if td.days > 9 else f'0{td.days}'
@@ -175,7 +175,7 @@ def timedelta_to_str( td: timedelta ) -> str:
 
 	return s
 
-def str_to_timedelta( s: str ) -> Optional[timedelta]:
+def str_to_timedelta( s: str, cls: Optional[Type] = None ) -> Optional[timedelta]:
 	if m := TIMEDELTA.fullmatch( s ):
 		days = int( m.groupdict().get( 'days' ) ) if m.groupdict().get( 'days' ) is not None else 0
 		hours, minutes, seconds = int( m.groupdict().get( 'hours' ) ), int( m.groupdict().get( 'minutes' ) ), int( m.groupdict().get( 'seconds' ) )

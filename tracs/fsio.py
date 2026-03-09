@@ -15,6 +15,7 @@ from orjson.orjson import JSONDecodeError
 from rich.prompt import Confirm
 
 from tracs.activity import Activities, Activity
+from tracs.activity_types import ActivityTypes
 from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, ORJSON_OPTIONS, SCHEMA_PATH
 from tracs.resources import Resource, Resources
 from tracs.uid import str_to_uid, UID, uid_to_str
@@ -46,11 +47,13 @@ def make_converter() -> Converter:
 	c.register_unstructure_hook( datetime, toisoformat )
 	c.register_unstructure_hook( timedelta, timedelta_to_str )
 	c.register_unstructure_hook( UID, uid_to_str )
+	c.register_unstructure_hook( ActivityTypes, lambda at: ActivityTypes.to_str( at ) )
 	c.register_unstructure_hook( Resources, resources_to_list )
 	c.register_unstructure_hook( Activities, activities_to_list )
 
 	c.register_structure_hook( datetime, fromisoformat )
 	c.register_structure_hook( timedelta, str_to_timedelta )
+	c.register_structure_hook( ActivityTypes, lambda at, t: ActivityTypes.from_str( at ) )
 	c.register_structure_hook( UID, str_to_uid )
 	c.register_structure_hook( Resources, list_to_resources )
 	c.register_structure_hook( Activities, list_to_activities )

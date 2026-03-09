@@ -19,7 +19,7 @@ from tracs.core import FormattedFieldsBase, Metadata, VirtualFieldsBase
 from tracs.resources import Resource, Resources
 from tracs.ui.utils import fmt_datetime, fmt_decimal, fmt_default, fmt_timedelta
 from tracs.uid import UID
-from tracs.utils import fromisoformat, str_to_timedelta, sum_timedeltas, timedelta_to_str, toisoformat, unique_sorted
+from tracs.utils import sum_timedeltas, unique_sorted
 
 log = getLogger( __name__ )
 
@@ -54,8 +54,6 @@ class ActivityPart:
 
 @define( eq=True, repr=False ) # todo: mark fields with proper eq attributes
 class Activity( VirtualFieldsBase, FormattedFieldsBase ):
-
-	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
 
 	# fields
 	id: int = field( default=None, metadata={ 'protected': True } )
@@ -414,15 +412,6 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 		return mpa
 
-	# serialization
-
-	@classmethod
-	def from_dict( cls, obj: Dict[str, Any] ) -> Activity:
-		return Activity.converter.structure( obj, Activity )
-
-	def to_dict( self ) -> Dict[str, Any]:
-		return Activity.converter.unstructure( self )
-
 class Activities( list[Activity] ):
 	"""
 	Extended list of activities.
@@ -578,24 +567,6 @@ def _sum( activities: List[Activity], name: str ) -> Any:
 
 def _stream( activities: List[Activity], name: str ) -> List:
 	return [ v for a in activities if ( v := getattr( a, name, None ) ) ]
-
-# configure converters
-
-Activity.converter.register_unstructure_hook( datetime, toisoformat )
-Activity.converter.register_unstructure_hook( timedelta, timedelta_to_str )
-Activity.converter.register_unstructure_hook( UID|str, lambda uid: uid.to_str() )
-Activity.converter.register_unstructure_hook( ActivityTypes, ActivityTypes.to_str )
-Activity.converter.register_unstructure_hook( ActivityPart, lambda ap: ap.to_dict() )
-Activity.converter.register_unstructure_hook( Metadata, lambda md: md.to_dict() )
-Activity.converter.register_unstructure_hook( Resources, lambda rl: rl.to_dict() )
-
-Activity.converter.register_structure_hook( int, lambda obj, cls: int( obj ) if obj is not None else None )
-Activity.converter.register_structure_hook( datetime, lambda obj, cls: fromisoformat( obj ) )
-Activity.converter.register_structure_hook( timedelta, lambda obj, cls: str_to_timedelta( obj ) )
-Activity.converter.register_structure_hook( ActivityTypes, lambda obj, cls: ActivityTypes.from_str( obj ) )
-Activity.converter.register_structure_hook( ActivityPart, lambda obj, cls: ActivityPart.from_dict( obj ) )
-Activity.converter.register_structure_hook( Metadata, lambda obj, cls: Metadata.from_dict( obj ) )
-Activity.converter.register_structure_hook( Resources, lambda obj, cls: Resources.from_dict( obj ) )
 
 # configure formatting
 # todo: don't like that as field names are already pinned down here

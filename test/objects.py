@@ -61,6 +61,20 @@ RESOURCE_OBJ_DUMP = \
 }
 '''
 
+# resource part
+
+ACTIVITY_PART_OBJ = ActivityPart(
+	gap=timedelta( minutes=20 ),
+	uid=UID.of( 'polar:1234/recording.1.gpx' )
+)
+
+ACTIVITY_PART_OBJ_DUMP = \
+'''{
+  "gap": "00:20:00",
+  "uid": "polar:1234/recording.1.gpx"
+}
+'''
+
 #
 
 COMPLETE_ACTIVITY = Activity(

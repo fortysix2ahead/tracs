@@ -6,7 +6,7 @@ from orjson.orjson import dumps, loads
 from pytest import mark
 
 from constants import ORJSON_OPTIONS
-from objects import RESOURCE_OBJ, RESOURCE_OBJ_DUMP
+from objects import ACTIVITY_PART_OBJ, ACTIVITY_PART_OBJ_DUMP, RESOURCE_OBJ, RESOURCE_OBJ_DUMP
 from test.objects import COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, COMPLETE_ACTIVITY_WITH_RESOURCE_DATA as AC, METADATA_OBJ, METADATA_OBJ_DUMP
 from tracs.activity import Activities, ActivityPart
 from tracs.core import Metadata
@@ -33,11 +33,10 @@ def test_resource():
 	assert dump_to_str( converter.unstructure( RESOURCE_OBJ ) ) == RESOURCE_OBJ_DUMP
 	assert converter.structure( load_from( RESOURCE_OBJ_DUMP ), Resource ) == RESOURCE_OBJ
 
+@mark.unit
 def test_activity_part():
-	assert A.parts[0].to_dict() == AD['parts'][0]
-	# todo: don't know why this test fails and str comparison works
-	# assert ActivityPart.from_dict( AD['parts'][0] ) == A.parts[0]
-	assert str( ActivityPart.from_dict( AD['parts'][0] ) ) == str( A.parts[0] )
+	assert dump_to_str( converter.unstructure( ACTIVITY_PART_OBJ ) ) == ACTIVITY_PART_OBJ_DUMP
+	assert converter.structure( load_from( ACTIVITY_PART_OBJ_DUMP ), ActivityPart ) == ACTIVITY_PART_OBJ
 
 # todo: comparison between activities is not yet correct, test case runs fine, but comparison fails
 @mark.xfail

@@ -14,16 +14,13 @@ from orjson import dumps, loads
 from orjson.orjson import JSONDecodeError
 from rich.prompt import Confirm
 
-from activity import Activity
-from tracs.activity import Activities
+from tracs.activity import Activities, Activity
 from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, ORJSON_OPTIONS, SCHEMA_PATH
 from tracs.resources import Resource, Resources
 from tracs.uid import str_to_uid, UID, uid_to_str
 from tracs.utils import fromisoformat, str_to_timedelta, timedelta_to_str, toisoformat
 
 log = getLogger( __name__ )
-
-SCHEMA_CONVERTER = Converter()
 
 # note:
 # structure(data, Class)	== Deserialize
@@ -111,7 +108,7 @@ class Schema:
 	version: int = field( default=None )
 
 def load_schema( fs: FS ) -> Schema:
-	schema = SCHEMA_CONVERTER.loads( fs.readbytes( SCHEMA_PATH ), Schema )
+	schema = converter.structure( loads( fs.readbytes( SCHEMA_PATH ) ), Schema )
 	log.debug( f'loaded database schema from {SCHEMA_PATH}, schema version = {schema.version}' )
 	return schema
 

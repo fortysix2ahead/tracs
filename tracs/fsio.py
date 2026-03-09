@@ -4,7 +4,8 @@ from re import compile
 from typing import List
 
 from attrs import define, field
-from cattrs.preconf.orjson import make_converter
+from cattrs import Converter
+from cattrs.preconf.orjson import OrjsonConverter
 from fs.base import FS
 from fs.copy import copy_dir
 from fs.errors import FileExpected, ResourceNotFound
@@ -14,13 +15,30 @@ from orjson.orjson import JSONDecodeError
 from rich.prompt import Confirm
 
 from tracs.activity import Activities
-from tracs.constants import ACTIVITIES_NAME, ACTIVITIES_PATH, GROUPS_PATH, SCHEMA_PATH
+from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, SCHEMA_PATH
+from tracs.uid import str_to_uid, UID, uid_to_str
 
 log = getLogger( __name__ )
 
 ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
-SCHEMA_CONVERTER = make_converter()
+SCHEMA_CONVERTER = Converter()
+
+# note:
+# structure(data, Class)	== Deserialize
+# unstructure(obj) == Serialize
+
+# custom i/o handling
+
+def make_converter() -> Converter:
+	c = OrjsonConverter()
+
+	c.register_unstructure_hook( UID, uid_to_str )
+	c.register_structure_hook( UID, str_to_uid )
+
+	return c
+
+converter = make_converter()
 
 # activity handling
 

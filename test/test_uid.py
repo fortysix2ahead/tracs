@@ -1,26 +1,26 @@
-from attrs import define, field
-
 from pytest import mark
 
+from test.objects import UID_DUMP, UID_OBJ
+from fsio import converter
 from tracs.uid import UID
 
 @mark.unit
 def test_uid():
-	uid = UID( 'polar' )
+	uid = UID.of( 'polar' )
 	assert uid.classifier == 'polar' and uid.local_id is None and uid.path is None
 	assert uid.uid == 'polar' and uid.denotes_service()
 	assert uid.as_tuple == ('polar', None) and uid.as_triple == ( 'polar', None, None )
 	assert uid.as_tuple_str == 'polar'
 	assert uid.head == 'polar' and uid.tail is None
 
-	uid = UID( 'polar:' )
+	uid = UID.of( 'polar:' )
 	assert uid.classifier == 'polar' and uid.local_id is None and uid.path is None
 	assert uid.uid == 'polar' and uid.denotes_service()
 	assert uid.as_tuple == ('polar', None) and uid.as_triple == ( 'polar', None, None )
 	assert uid.as_tuple_str == 'polar'
 	assert uid.head == 'polar' and uid.tail is None
 
-	uid = UID( 'polar:101' )
+	uid = UID.of( 'polar:101' )
 	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path is None
 	assert uid.uid == 'polar:101' and uid.denotes_activity()
 	assert uid.as_tuple == ('polar', 101) and uid.as_triple == ( 'polar', 101, None )
@@ -28,28 +28,28 @@ def test_uid():
 	assert uid.head == 'polar:101' and uid.tail is None
 
 	# special cases for convenience: allow path parameter + allow overwriting
-	uid = UID( 'polar:101', path='recording.gpx' )
+	uid = UID.of( 'polar:101', path='recording.gpx' )
 	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path == 'recording.gpx'
 	assert uid.uid == 'polar:101/recording.gpx' and uid.denotes_resource()
 	assert uid.as_tuple == ('polar', 101) and uid.as_triple == ('polar', 101, 'recording.gpx')
 	assert uid.as_tuple_str == 'polar:101'
 	assert uid.head == 'polar:101' and uid.tail == "recording.gpx"
 
-	uid = UID( 'polar:101/file.gpx', path='recording.gpx' )
+	uid = UID.of( 'polar:101/file.gpx', path='recording.gpx' )
 	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path == 'recording.gpx'
 	assert uid.uid == 'polar:101/recording.gpx' and uid.denotes_resource()
 	assert uid.as_tuple == ('polar', 101) and uid.as_triple == ('polar', 101, 'recording.gpx')
 	assert uid.as_tuple_str == 'polar:101'
 	assert uid.head == 'polar:101' and uid.tail == "recording.gpx"
 
-	uid = UID( 'polar:101/recording.gpx' )
+	uid = UID.of( 'polar:101/recording.gpx' )
 	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path == 'recording.gpx'
 	assert uid.uid == 'polar:101/recording.gpx' and uid.denotes_resource()
 	assert uid.as_tuple == ('polar', 101) and uid.as_triple == ( 'polar', 101, 'recording.gpx' )
 	assert uid.as_tuple_str == 'polar:101'
 	assert uid.head == 'polar:101' and uid.tail == "recording.gpx"
 
-	uid = UID( 'polar:101#2' )
+	uid = UID.of( 'polar:101#2' )
 	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.part == 2
 	assert uid.uid == 'polar:101#2' and uid.denotes_activity() and uid.denotes_part()
 	assert uid.as_tuple == ('polar', 101) and uid.as_triple == ( 'polar', 101, None )
@@ -57,7 +57,7 @@ def test_uid():
 	assert uid.head == 'polar:101' and uid.tail == "2"
 
 	# works, but does not make sense
-	uid = UID( 'polar:101/recording.gpx#2' )
+	uid = UID.of( 'polar:101/recording.gpx#2' )
 	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path == 'recording.gpx' and uid.part == 2
 	assert uid.uid == 'polar:101/recording.gpx#2'
 	assert uid.as_tuple == ('polar', 101) and uid.as_triple == ( 'polar', 101, 'recording.gpx' )
@@ -73,9 +73,9 @@ def test_uid():
 
 @mark.unit
 def test_uid_path():
-	uid_short = UID( 'polar:101', path='recording.gpx' )
-	uid_rel = UID( 'polar:101', path='1/0/1/101/recording.gpx' )
-	uid_abs = UID( 'polar:101', path='/home/user/1/0/1/101/recording.gpx' )
+	uid_short = UID.of( 'polar:101', path='recording.gpx' )
+	uid_rel = UID.of( 'polar:101', path='1/0/1/101/recording.gpx' )
+	uid_abs = UID.of( 'polar:101', path='/home/user/1/0/1/101/recording.gpx' )
 
 	assert uid_short.base == 'polar:101/recording.gpx'
 	assert uid_rel.base == 'polar:101/recording.gpx'
@@ -89,9 +89,9 @@ def test_uid_path():
 
 @mark.unit
 def test_eq():
-	uid1 = UID( 'polar:101/recording.gpx' )
-	uid2 = UID( 'polar:101/recording.gpx' )
-	uid3 = UID( 'polar:102/recording.gpx' )
+	uid1 = UID.of( 'polar:101/recording.gpx' )
+	uid2 = UID.of( 'polar:101/recording.gpx' )
+	uid3 = UID.of( 'polar:102/recording.gpx' )
 	uid4 = 'polar:102/recording.gpx'
 
 	assert uid1 == uid2
@@ -101,8 +101,8 @@ def test_eq():
 
 @mark.unit
 def test_lt():
-	uid1 = UID( 'polar:101' )
-	uid2 = UID( 'polar:102' )
+	uid1 = UID.of( 'polar:101' )
+	uid2 = UID.of( 'polar:102' )
 	uid3 = 'strava:101'
 
 	assert uid1 < uid2
@@ -114,19 +114,5 @@ def test_lt():
 
 @mark.unit
 def test_serialize():
-	uid_str = 'polar:101/recording.gpx#1'
-	uid = UID( uid_str )
-
-	assert uid.to_str() == uid_str and UID.from_str( uid_str ) == uid
-
-@define
-class ClassWithUid:
-
-	uid: UID|str = field( default=None, converter=lambda u: UID( u ) if isinstance( u, str ) else u )
-
-@mark.unit
-def test_uid_class():
-	c = ClassWithUid( 'polar:101/recording.gpx' )
-	assert isinstance( c.uid, UID )
-	c.uid = 'polar:101/recording_2.gpx'
-	assert isinstance( c.uid, UID )
+	assert converter.unstructure( UID_OBJ ) == UID_DUMP
+	assert converter.structure( UID_DUMP, UID ) == UID_OBJ

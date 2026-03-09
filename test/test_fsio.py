@@ -5,11 +5,10 @@ from dateutil.tz import UTC
 from orjson.orjson import dumps, loads
 from pytest import mark
 
-from constants import ORJSON_OPTIONS
-from objects import ACTIVITY_OBJ, ACTIVITY_OBJ_DUMP, ACTIVITY_PART_OBJ, ACTIVITY_PART_OBJ_DUMP, RESOURCE_OBJ, RESOURCE_OBJ_DUMP, RESOURCES_OBJ, \
-	RESOURCES_OBJ_DUMP
-from test.objects import COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, COMPLETE_ACTIVITY_WITH_RESOURCE_DATA as AC, METADATA_OBJ, METADATA_OBJ_DUMP
+from test.objects import ACTIVITIES_OBJ, ACTIVITIES_OBJ_DUMP, ACTIVITY_OBJ, ACTIVITY_OBJ_DUMP, ACTIVITY_PART_OBJ, ACTIVITY_PART_OBJ_DUMP, \
+	COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, METADATA_OBJ, METADATA_OBJ_DUMP, RESOURCE_OBJ, RESOURCE_OBJ_DUMP, RESOURCES_OBJ, RESOURCES_OBJ_DUMP
 from tracs.activity import Activities, Activity, ActivityPart
+from tracs.constants import ORJSON_OPTIONS
 from tracs.core import Metadata
 from tracs.fsio import converter, load_activities, load_schema, write_activities
 from tracs.resources import Resource, Resources
@@ -47,6 +46,10 @@ def test_activity_part():
 def test_activity():
 	assert dump_to_str( converter.unstructure( ACTIVITY_OBJ ) ) == ACTIVITY_OBJ_DUMP
 	assert converter.structure( load_from( ACTIVITY_OBJ_DUMP ), Activity ) == ACTIVITY_OBJ
+
+	# activities
+	assert dump_to_str( converter.unstructure( ACTIVITIES_OBJ ) ) == ACTIVITIES_OBJ_DUMP
+	assert converter.structure( load_from( ACTIVITIES_OBJ_DUMP ), Activities ) == ACTIVITIES_OBJ
 
 @mark.context( env='default', persist='mem' )
 def test_activities( dbfs ):

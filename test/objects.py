@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from dateutil.tz import tzlocal, tzoffset, UTC
 
-from tracs.activity import Activity, ActivityPart
+from tracs.activity import Activity, ActivityPart, Activities
 from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata
 from tracs.plugins.gpx import GPX_TYPE
@@ -178,6 +178,77 @@ ACTIVITY_OBJ_DUMP = \
   "type": "Walking",
   "uid": "polar:1234"
 }
+'''
+
+ACTIVITIES_OBJ = Activities(
+	Activity(
+		id=2,
+		uid=UID.of( 'polar:2234' ),
+		starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
+		duration=timedelta( hours=2 ),
+		type=ActivityTypes.walk,
+		location_country='de',
+		metadata=Metadata(
+			created=datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
+			modified=datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
+			favourite=True,
+			members=[UID.of( 'polar:101' ), UID.of( 'strava:101' )],
+		),
+		parts=[
+			ActivityPart( uid=UID.of( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
+			ActivityPart( uid=UID.of( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
+		],
+		resources=Resources(
+			Resource(
+				name='recording.gpx',
+				type=GPX_TYPE,
+				path='polar/1/2/3/1234/1234.gpx',
+				source='https://polar.com/1234/1234.gpx',
+				uid='polar:1234',
+			)
+		)
+	)
+)
+
+ACTIVITIES_OBJ_DUMP = \
+'''[
+  {
+    "duration": "02:00:00",
+    "id": 2,
+    "location_country": "de",
+    "metadata": {
+      "created": "2024-01-04T10:00:00+00:00",
+      "favourite": true,
+      "members": [
+        "polar:101",
+        "strava:101"
+      ],
+      "modified": "2024-01-04T11:00:00+00:00"
+    },
+    "parts": [
+      {
+        "gap": "00:20:00",
+        "uid": "polar:222#1"
+      },
+      {
+        "gap": "00:20:00",
+        "uid": "polar:222#2"
+      }
+    ],
+    "resources": [
+      {
+        "name": "recording.gpx",
+        "path": "polar/1/2/3/1234/1234.gpx",
+        "source": "https://polar.com/1234/1234.gpx",
+        "type": "application/gpx+xml",
+        "uid": "polar:1234"
+      }
+    ],
+    "starttime": "2024-01-03T10:00:00+00:00",
+    "type": "Walking",
+    "uid": "polar:2234"
+  }
+]
 '''
 
 COMPLETE_ACTIVITY = Activity(

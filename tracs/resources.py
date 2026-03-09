@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import UserList
 from datetime import datetime
 from enum import Enum
 from functools import cached_property
@@ -253,7 +254,7 @@ class Resource:
 	def evolve( self ) -> Resource:
 		return evolve( self, content=None, text=None, raw=None, data=None )
 
-class Resources( list[Resource] ):
+class Resources( UserList[Resource] ):
 
 	def __init__( self, *resources: Resource, lst: Optional[List[Resource]] = None, lists: Optional[List[Resources]] = None ):
 		super().__init__()

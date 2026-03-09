@@ -41,7 +41,7 @@ METADATA_OBJ_DUMP = \
 }
 '''
 
-# resource
+# resources
 
 RESOURCE_OBJ = Resource(
 	name='recording.gpx',
@@ -61,7 +61,43 @@ RESOURCE_OBJ_DUMP = \
 }
 '''
 
-# resource part
+RESOURCES_OBJ = Resources(
+	Resource(
+		name='recording_1.gpx',
+		path='polar/1/2/3/1234/1234_1.gpx',
+		source='https://polar.com/1234/1234_1.gpx',
+		type=GPX_TYPE,
+		uid=UID.of( 'polar:1234' ),
+	),
+	Resource(
+		name='recording_2.gpx',
+		path='polar/1/2/3/1234/1234_2.gpx',
+		source='https://polar.com/1234/1234_2.gpx',
+		type=GPX_TYPE,
+		uid=UID.of( 'polar:1235' ),
+	)
+)
+
+RESOURCES_OBJ_DUMP  = \
+'''[
+  {
+    "name": "recording_1.gpx",
+    "path": "polar/1/2/3/1234/1234_1.gpx",
+    "source": "https://polar.com/1234/1234_1.gpx",
+    "type": "application/gpx+xml",
+    "uid": "polar:1234"
+  },
+  {
+    "name": "recording_2.gpx",
+    "path": "polar/1/2/3/1234/1234_2.gpx",
+    "source": "https://polar.com/1234/1234_2.gpx",
+    "type": "application/gpx+xml",
+    "uid": "polar:1235"
+  }
+]
+'''
+
+# activity part
 
 ACTIVITY_PART_OBJ = ActivityPart(
 	gap=timedelta( minutes=20 ),

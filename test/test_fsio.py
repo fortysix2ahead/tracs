@@ -6,11 +6,12 @@ from orjson.orjson import dumps, loads
 from pytest import mark
 
 from constants import ORJSON_OPTIONS
+from objects import RESOURCE_OBJ, RESOURCE_OBJ_DUMP
 from test.objects import COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, COMPLETE_ACTIVITY_WITH_RESOURCE_DATA as AC, METADATA_OBJ, METADATA_OBJ_DUMP
 from tracs.activity import Activities, ActivityPart
 from tracs.core import Metadata
 from tracs.fsio import converter, load_activities, load_schema, write_activities
-from tracs.resources import Resources
+from tracs.resources import Resource, Resources
 
 def dump_to_str( d: Dict ) -> str:
 	return dumps( d, option=ORJSON_OPTIONS ).decode( 'utf-8' )
@@ -22,16 +23,15 @@ def load_from( s: str ) -> Dict:
 def test_load_schema( dbfs ):
 	assert load_schema( dbfs ).version == 14
 
+@mark.unit
 def test_metadata():
 	assert dump_to_str( converter.unstructure( METADATA_OBJ ) ) == METADATA_OBJ_DUMP
 	assert converter.structure( load_from( METADATA_OBJ_DUMP ), Metadata ) == METADATA_OBJ
 
+@mark.unit
 def test_resource():
-	assert A.resources.to_dict() == AD['resources']
-	assert AC.resources.to_dict() == AD['resources']
-	# todo: don't know why this test fails and str comparison works
-	# assert Resources.from_dict( AD['resources'] ) == A.resources
-	assert str( Resources.from_dict( AD['resources'] ) ) == str( A.resources )
+	assert dump_to_str( converter.unstructure( RESOURCE_OBJ ) ) == RESOURCE_OBJ_DUMP
+	assert converter.structure( load_from( RESOURCE_OBJ_DUMP ), Resource ) == RESOURCE_OBJ
 
 def test_activity_part():
 	assert A.parts[0].to_dict() == AD['parts'][0]

@@ -41,6 +41,26 @@ METADATA_OBJ_DUMP = \
 }
 '''
 
+# resource
+
+RESOURCE_OBJ = Resource(
+	name='recording.gpx',
+	path='polar/1/2/3/1234/1234.gpx',
+	source='https://polar.com/1234/1234.gpx',
+	type=GPX_TYPE,
+	uid=UID.of( 'polar:1234' ),
+)
+
+RESOURCE_OBJ_DUMP = \
+'''{
+  "name": "recording.gpx",
+  "path": "polar/1/2/3/1234/1234.gpx",
+  "source": "https://polar.com/1234/1234.gpx",
+  "type": "application/gpx+xml",
+  "uid": "polar:1234"
+}
+'''
+
 #
 
 COMPLETE_ACTIVITY = Activity(

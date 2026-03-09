@@ -5,11 +5,9 @@ from enum import Enum
 from functools import cached_property
 from logging import getLogger
 from re import compile, Pattern
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Union
+from typing import Any, Callable, ClassVar, Dict, List, Optional
 
 from attrs import Attribute, define, evolve, field, fields
-from cattrs import Converter, GenConverter
-from cattrs.gen import make_dict_unstructure_fn, override
 from dateutil.tz import UTC
 from fs.base import FS
 from fs.errors import ResourceNotFound
@@ -94,8 +92,6 @@ class ResourceTypes( dict[str, ResourceType] ):
 
 @define( repr=False )
 class Resource:
-
-	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
 
 	name: str = field( default=None )
 	type: str = field( default=None )
@@ -254,13 +250,6 @@ class Resource:
 	def save( self, fs: FS, path: str, exporter: Exporter ) -> None:
 		exporter.save( data=self.data, path=path, fs=fs, resource=self ) # todo: add exception handling here
 
-	@classmethod
-	def from_dict( cls, obj: Dict[str, Any] ) -> Resource:
-		return Resource.converter.structure( obj, Resource )
-
-	def to_dict( self ) -> Dict[str, Any]:
-		return Resource.converter.unstructure( self )
-
 	def evolve( self ) -> Resource:
 		return evolve( self, content=None, text=None, raw=None, data=None )
 
@@ -332,22 +321,3 @@ class Resources( list[Resource] ):
 
 	def to_dict( self ) -> List[Dict[str, Any]]:
 		return [ r.to_dict() for r in self ]
-
-# configure converters
-
-Resource.converter.register_unstructure_hook( UID, lambda uid: uid.to_str() )
-Resource.converter.register_unstructure_hook( UID|str, lambda uid: uid.to_str() )
-
-Resource.converter.register_structure_hook( UID, lambda obj, cls: UID.from_str( obj ) )
-Resource.converter.register_structure_hook( Union[str, UID], lambda obj, cls: obj if isinstance( obj, str ) else UID.from_str( obj ) )
-hook = make_dict_unstructure_fn(
-	Resource,
-	Resource.converter,
-	_cattrs_omit_if_default=True,
-	content=override( omit=True ),
-	data=override( omit=True ),
-	raw=override( omit=True ),
-	status=override( omit=True ),
-	text=override( omit=True ),
-)
-Resource.converter.register_unstructure_hook( Resource, hook )

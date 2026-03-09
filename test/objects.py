@@ -11,6 +11,28 @@ from tracs.uid import UID
 
 # collection of test objects
 
+# UID
+
+UID_OBJ = UID( classifier='polar', local_id=101, path='recording.gpx', part=1 )
+
+UID_DUMP = 'polar:101/recording.gpx#1'
+
+# metadata
+
+METADATA_OBJ = Metadata(
+	created=datetime( 2024, 10, 10, 10, 10, 10, tzinfo=UTC ),
+	modified=datetime( 2024, 11, 11, 11, 11, 11, tzinfo=UTC ),
+	favourite=True,
+	members=[
+		UID.of( 'polar:101' ),
+		UID.of( 'strava:101' )
+	],
+)
+
+METADATA_OBJ_DUMP = '{"created":"2024-10-10T10:10:10Z","modified":"2024-11-11T11:11:11Z","favourite":true,"members":["polar:101","strava:101"]}'
+
+#
+
 COMPLETE_ACTIVITY = Activity(
 	id=1,
 	uid='polar:101',

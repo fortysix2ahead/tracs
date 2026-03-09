@@ -1,73 +1,55 @@
 from __future__ import annotations
 
-from typing import Callable, ClassVar, List, Optional, Tuple
-from urllib.parse import SplitResult, urlsplit, urlunsplit
+from typing import Callable, List, Optional, Tuple
+from urllib.parse import urlparse, urlunsplit
 
 from attrs import define, field
-from cattrs import Converter, GenConverter
-from fs.path import basename
+from fs.path import basename, split
 
 @define( eq=False, order=False, repr=False )
 class UID:
 
-	converter: ClassVar[Converter] = GenConverter()
-
 	classifier: str = field( default=None )
 	"""Classifier is equal to the url scheme. Example: uid = polar:101, classifier = polar."""
+
 	local_id: int = field( default=None )
-	"""Identifier of an activity, equal to the path. Example: uid = polar:101, local_id = 101."""
-	path: str = field( default=None )
+	"""Identifier of an activity, equal to the URI path. Example: uid = polar:101, local_id = 101."""
+
+	path: Optional[str] = field( default=None )
 	"""Path of a resource of an activity. Example: uid = polar:101?recording.gpx, path = recording.gpx."""
-	part: int = field( default=None )
+
+	part: Optional[int] = field( default=None )
 	"""Part number of an activity. Example: uid = polar:101#2, part = 2."""
 
-	def __attrs_post_init__( self ):
-		# always parse classifier
-		classifier, local_id, path, part = self._uidparse( self.classifier )
-		# overwrite fields depending on provided and parsed values
-		self.classifier = classifier # always
-		self.local_id = self.local_id if self.local_id else local_id
-		self.path = self.path if self.path else path
-		self.part = self.part if self.part else part
+	@classmethod
+	def of( cls, uid: str, path: str = None ) -> UID:
+		return from_str( uid, path )
 
-	# noinspection PyMethodMayBeStatic
-	def _urlsplit( self, url: str ) -> SplitResult:
-		url: SplitResult = urlsplit( url )
-		if not url.scheme and url.path:
-			if ':' in url.path:
-				path, local_id = url.path.split( ':' )
-				return SplitResult( scheme=path, netloc=url.netloc, path=local_id, query=url.query, fragment=url.fragment )
-			else:
-				return SplitResult( scheme=url.path, netloc=url.netloc, path='', query=url.query, fragment=url.fragment )
-		else:
-			return url
+	@classmethod
+	def from_str( cls, uid: str ) -> UID:
+		return cls.of( uid, None )
 
-	def _uidparse( self, url: str  ) -> Tuple[Optional[str], Optional[int], Optional[str], Optional[int]]:
-		url: SplitResult = self._urlsplit( url )
-		classifier = url.scheme if url.scheme else None
-		path_split = url.path.split( '/', maxsplit=1 )
-		local_id = int( path_split[0] ) if path_split[0] else None
-		path = path_split[1] if len( path_split ) > 1 else None
-		part = int( url.fragment ) if url.fragment else None
-		return classifier, local_id, path, part
+	@classmethod
+	def from_strs( cls, uids: List[str] ) -> List[UID]:
+		return [ cls.of( u, None ) for u in uids ]
 
 	def __eq__( self, other ):
 		return self.uid == other.uid if isinstance( other, UID ) else self.uid == other
 
-	def __hash__( self ) -> int:
-		return hash( self.uid )
+#	def __hash__( self ) -> int:
+#		return hash( self.uid )
 
-	def __lt__( self, other: [UID|str] ):
+	def __lt__( self, other ):
 		return self.uid < other.uid if isinstance( other, UID ) else self.uid < other
 
 	def __gt__( self, other ):
 		return self.uid > other.uid if isinstance( other, UID ) else self.uid > other
 
-	def __str__( self ) -> str:
-		return self.uid
+#	def __str__( self ) -> str:
+#		return self.uid
 
-	def __repr__( self ) -> str:
-		return self.__str__()
+#	def __repr__( self ) -> str:
+#		return self.__str__()
 
 	@property
 	def uid( self ):
@@ -90,20 +72,14 @@ class UID:
 
 	@property
 	def base( self ) -> UID:
-		return UID( self.classifier, self.local_id, basename( self.path ), self.part )
+		return UID( classifier=self.classifier, local_id=self.local_id, path=basename( self.path ), part=self.part )
 
 	def resolve( self, fn: Callable ) -> UID:
-		return UID( self.classifier, self.local_id, fn( self.local_id, basename( self.path ) ), self.part )
+		return UID( classifier=self.classifier, local_id=self.local_id, path=fn( self.local_id, basename( self.path ) ), part=self.part )
 
 	@property
 	def as_str( self ) -> str:
-		if self.classifier and not self.local_id:
-			return urlunsplit( ['', '', self.classifier, self.path or '', self.part or ''] )
-		else:
-			local_id = str( self.local_id ) if self.local_id else ''
-			path = f'{local_id}/{self.path}' if self.path else local_id
-			part = str( self.part ) if self.part else ''
-			return urlunsplit( [self.classifier, '', path, '', part] )
+		return to_str( self )
 
 	@property
 	def as_tuple( self ) -> Tuple[str, int]:
@@ -133,20 +109,54 @@ class UID:
 	def denotes_part( self ) -> bool:
 		return True if self.classifier and self.local_id and self.part else False
 
-	# serialization
+# serialization
 
-	def to_str( self ):
-		return UID.converter.unstructure( self )
+def from_str( uid: str, path: str = None ) -> UID:
+	pr = urlparse( uid )
 
-	@staticmethod
-	def from_str( obj: str ) -> UID:
-		return UID.converter.structure( obj, UID )
+	# interpret a URI without a colon as scheme instead of path
+	if pr.path and not pr.scheme:
+		classifier, local_id = pr.path, None
 
-	@staticmethod
-	def from_strs( objs: List[str] ) -> List[UID]:
-		return [UID.converter.structure( u, UID ) for u in objs]
+	else:
+		classifier = pr.scheme
+		head, tail = split( pr.path )
+		if head and tail:
+			local_id, path = head, path if path else tail
+		else:
+			local_id, path = tail, path if path else None
 
-# setup converter
+	try:
+		local_id = int( local_id )
+	except (TypeError, ValueError):
+		local_id = None
 
-UID.converter.register_unstructure_hook( UID, lambda u: str( u ) )
-UID.converter.register_structure_hook( UID, lambda u, v: UID( u ) )
+	try:
+		part = int( pr.fragment )
+	except (TypeError, ValueError):
+		part = None
+
+	return UID( classifier=classifier, local_id=local_id, path=path, part=part )
+
+def to_str( uid: UID ) -> Optional[str]:
+	if uid is None:
+		return None
+
+	if not isinstance( uid, UID ):
+		raise ValueError()
+
+	if uid.classifier and not uid.local_id:
+		return urlunsplit( ['', '', uid.classifier, uid.path or '', uid.part or ''] )
+	else:
+		local_id = str( uid.local_id ) if uid.local_id else ''
+		path = f'{local_id}/{uid.path}' if uid.path else local_id
+		part = str( uid.part ) if uid.part else ''
+		return urlunsplit( [uid.classifier, '', path, '', part] )
+
+# hooks for cattrs
+
+def uid_to_str( uid: UID ) -> str:
+	return to_str( uid )
+
+def str_to_uid( data: str, cls: type ) -> UID:
+	return from_str( data )

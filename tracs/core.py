@@ -119,10 +119,8 @@ class Container( Generic[T] ):
 	def update( self, *items: Union[T, List[T]] ) -> Tuple[List[int], List[int]]:
 		pass
 
-@define( init=False )
+@define
 class Metadata:
-
-	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
 
 	created: Optional[datetime] = field( default=None )
 	modified: Optional[datetime] = field( default=None )
@@ -130,12 +128,12 @@ class Metadata:
 	favourite: bool = field( default=False )
 
 	# member: UID = field( default=None ) # indicator that an activity is a member of a group, not used yet
-	members: List[UID] = field( default=[] ) # used for groups to indicate group members
+	members: List[UID] = field( factory=list ) # used for groups to indicate group members
 
-	# part: List[UID] = field( factory=list ) # indicator that an activity is part of one or multiple others, not used yet
-	# parts: List = field( factory=list ) # indicates parts of a multipart activity
+	part_of: List[UID] = field( factory=list ) # indicator that an activity is part of one or multiple others, not used yet
+	parts: List[UID] = field( factory=list ) # indicates parts of a multipart activity
 
-	supplementary: Dict[str, Any] = field( factory=dict )
+	__supplementary__: Dict[str, Any] = field( factory=dict )
 	# __kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )
 
 	@cached_property
@@ -147,14 +145,14 @@ class Metadata:
 		return [f.name for f in fields( self.__class__ ) if not f.name == 'supplementary']
 
 	# noinspection PyUnresolvedReferences
-	def __init__( self, *args, **kwargs ):
-		self.__attrs_init__( *args, **{ k: v for k, v in kwargs.items() if k in self.__fieldnames } )
-		self.supplementary = { k: v for k, v in kwargs.items() if k not in self.__fieldnames } | self.supplementary
+#	def __init__( self, *args, **kwargs ):
+#		self.__attrs_init__( *args, **{ k: v for k, v in kwargs.items() if k in self.__fieldnames } )
+#		self.supplementary = { k: v for k, v in kwargs.items() if k not in self.__fieldnames } | self.supplementary
 
 	# len() support
 
 	def __len__( self ) -> int:
-		return len( self.supplementary ) + len( self.__regular_fieldnames )
+		return len( self.__supplementary__ ) + len( self.__regular_fieldnames )
 
 	# getter
 
@@ -162,7 +160,7 @@ class Metadata:
 		if key in self.__fieldnames:
 			return super().__getattribute__( key )
 		else:
-			return self.supplementary.get( key )
+			return self.__supplementary__.get( key )
 
 	def __getitem__( self, key: str ):
 		return self.__getattr__( key )
@@ -176,7 +174,7 @@ class Metadata:
 		if key in self.__fieldnames:
 			super().__setattr__( key, value )
 		else:
-			self.supplementary[key] = value
+			self.__supplementary__[key] = value
 
 	# dict-like methods
 
@@ -192,15 +190,6 @@ class Metadata:
 	def as_dict( self ) -> Dict[str, Any]:
 		d = { f: self.__getattr__( f ) for f in self.__regular_fieldnames } | self.supplementary
 		return { k: v for k, v in d.items() if v is not None }
-
-	# serialization
-
-	@classmethod
-	def from_dict( cls, obj: Dict[str, Any] ) -> Metadata:
-		return Metadata.converter.structure( obj, Metadata )
-
-	def to_dict( self ) -> Dict[str, Any]:
-		return Metadata.converter.unstructure( self )
 
 @define
 class VirtualField:
@@ -423,12 +412,3 @@ class Normalizer:
 
 	def __call__( self, *args, **kwargs ) -> str:
 		return self.fn( *args, **kwargs )
-
-
-# setup converters
-
-Metadata.converter.register_unstructure_hook( datetime, toisoformat )
-Metadata.converter.register_unstructure_hook( UID, lambda u: u.to_str() )
-
-Metadata.converter.register_structure_hook( datetime, lambda dt, c: fromisoformat( dt ) )
-Metadata.converter.register_structure_hook( UID, lambda uid, c: UID.from_str( uid ) )

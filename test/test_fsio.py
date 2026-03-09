@@ -8,6 +8,7 @@ from pytest import mark
 from test.objects import ACTIVITIES_OBJ, ACTIVITIES_OBJ_DUMP, ACTIVITY_OBJ, ACTIVITY_OBJ_DUMP, ACTIVITY_PART_OBJ, ACTIVITY_PART_OBJ_DUMP, \
 	COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, METADATA_OBJ, METADATA_OBJ_DUMP, RESOURCE_OBJ, RESOURCE_OBJ_DUMP, RESOURCES_OBJ, RESOURCES_OBJ_DUMP
 from tracs.activity import Activities, Activity, ActivityPart
+from tracs.activity_types import ActivityTypes
 from tracs.constants import ORJSON_OPTIONS
 from tracs.core import Metadata
 from tracs.fsio import converter, load_activities, load_schema, write_activities
@@ -36,6 +37,11 @@ def test_resource():
 	# resources
 	assert dump_to_str( converter.unstructure( RESOURCES_OBJ ) ) == RESOURCES_OBJ_DUMP
 	assert converter.structure( load_from( RESOURCES_OBJ_DUMP ), Resources ) == RESOURCES_OBJ
+
+@mark.unit
+def test_activity_type():
+	assert dump_to_str( converter.unstructure( ActivityTypes.run ) ) == '"run"\n'
+	assert converter.structure( 'run', ActivityTypes ) == ActivityTypes.run
 
 @mark.unit
 def test_activity_part():

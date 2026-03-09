@@ -39,7 +39,7 @@ def activities_to_list( activities: Activities ) -> List[Activity]:
 	return [ converter.unstructure( a ) for a in activities ]
 
 def list_to_activities( activities: List[Activity], cls: Optional[Type] = None ) -> Activities:
-	return Activities( lst=[converter.structure( a, Activity ) for a in activities] )
+	return Activities( lst=[converter.structure( a, Activity ) for a in activities], skip_checks=True )
 
 def make_converter() -> Converter:
 	c = OrjsonConverter( omit_if_default=True )

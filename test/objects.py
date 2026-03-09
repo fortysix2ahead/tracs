@@ -29,7 +29,17 @@ METADATA_OBJ = Metadata(
 	],
 )
 
-METADATA_OBJ_DUMP = '{"created":"2024-10-10T10:10:10Z","modified":"2024-11-11T11:11:11Z","favourite":true,"members":["polar:101","strava:101"]}'
+METADATA_OBJ_DUMP = \
+'''{
+  "created": "2024-10-10T10:10:10+00:00",
+  "favourite": true,
+  "members": [
+    "polar:101",
+    "strava:101"
+  ],
+  "modified": "2024-11-11T11:11:11+00:00"
+}
+'''
 
 #
 

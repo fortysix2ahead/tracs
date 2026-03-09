@@ -1,31 +1,30 @@
 from datetime import datetime, timedelta
-from json import loads
+from typing import Dict
 
 from dateutil.tz import UTC
+from orjson.orjson import dumps, loads
 from pytest import mark
 
-from test.objects import COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, COMPLETE_ACTIVITY_WITH_RESOURCE_DATA as AC
+from constants import ORJSON_OPTIONS
+from test.objects import COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, COMPLETE_ACTIVITY_WITH_RESOURCE_DATA as AC, METADATA_OBJ, METADATA_OBJ_DUMP
 from tracs.activity import Activities, ActivityPart
 from tracs.core import Metadata
-from tracs.fsio import load_activities, load_schema, write_activities
+from tracs.fsio import converter, load_activities, load_schema, write_activities
 from tracs.resources import Resources
-from tracs.uid import UID
+
+def dump_to_str( d: Dict ) -> str:
+	return dumps( d, option=ORJSON_OPTIONS ).decode( 'utf-8' )
+
+def load_from( s: str ) -> Dict:
+	return loads( s )
 
 @mark.context( env='default', persist='mem' )
 def test_load_schema( dbfs ):
 	assert load_schema( dbfs ).version == 14
 
-def test_uid():
-	uid_str = 'polar:101/recording.gpx#1'
-	uid = UID( uid_str )
-	assert uid.to_str() == uid_str
-	assert UID.from_str( uid_str ) == uid
-
 def test_metadata():
-	assert A.metadata.to_dict() == AD['metadata']
-	# todo: don't know why this test fails and str comparison works
-	# assert Metadata.from_dict( AD['metadata'] ) == A.metadata
-	assert str( Metadata.from_dict( AD['metadata'] ) ) == str( A.metadata )
+	assert dump_to_str( converter.unstructure( METADATA_OBJ ) ) == METADATA_OBJ_DUMP
+	assert converter.structure( load_from( METADATA_OBJ_DUMP ), Metadata ) == METADATA_OBJ
 
 def test_resource():
 	assert A.resources.to_dict() == AD['resources']

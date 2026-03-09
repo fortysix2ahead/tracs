@@ -10,7 +10,7 @@ from os.path import abspath as abs_path, expanduser, expandvars, normpath
 from pathlib import Path
 from re import compile as rxcompile, match
 from time import gmtime, perf_counter
-from typing import BinaryIO, Callable, Dict, Iterable, List, Literal, Optional, Tuple, TypeVar, Union
+from typing import BinaryIO, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Type, TypeVar, Union
 from urllib.parse import ParseResult, ParseResultBytes, urlparse as urllibparse
 
 from arrow import Arrow, get as getarrow
@@ -215,21 +215,23 @@ def to_isotime( timestr: str ) -> Optional[datetime]:
 def fromtimezone( value ) -> time:
 	return get_timezone( value ) if value else get_timezone()
 
-def fromisoformat( value ) -> Optional[datetime] or Optional[time]:
-	rval = None
+def fromisoformat( value, cls: Optional[Type] = None ) -> Optional[datetime|time]:
 	if type( value ) in [time, datetime]:
-		rval = value
+		return value
+
 	elif type( value ) is str:
 		try:
-			rval = time.fromisoformat( value )
+			return time.fromisoformat( value )
 		except ValueError:
 			try:
-				rval = parse_datetime( value )
+				return parse_datetime( value )
 			except ParserError or OverflowError:
 				pass
-	return rval
 
-def toisoformat( value ) -> Optional[str]:
+	else:
+		raise ValueError()
+
+def toisoformat( value, cls: Optional[Type] = None ) -> Optional[str]:
 	if type( value ) in [time, datetime]:
 		return value.isoformat()
 	elif type( value ) is timedelta:
@@ -237,7 +239,8 @@ def toisoformat( value ) -> Optional[str]:
 			return (datetime.min + value - timedelta( days=1 )).strftime( '%d:%H:%M:%S' ) # hmpf ...
 		else:
 			return (datetime.min + value).strftime( '%H:%M:%S' )
-	return value # todo: or return None?
+	else:
+		raise ValueError( f'unable to convert {value} to ISO format' )
 
 def floor_ceil( a: Arrow, frame: TIME_FRAMES ) -> Tuple[Arrow, Arrow]:
 	return a.floor( frame ), a.ceil( frame )

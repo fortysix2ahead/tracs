@@ -17,10 +17,9 @@ from rich.prompt import Confirm
 from tracs.activity import Activities
 from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, SCHEMA_PATH
 from tracs.uid import str_to_uid, UID, uid_to_str
+from utils import fromisoformat, toisoformat
 
 log = getLogger( __name__ )
-
-ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
 SCHEMA_CONVERTER = Converter()
 
@@ -31,9 +30,12 @@ SCHEMA_CONVERTER = Converter()
 # custom i/o handling
 
 def make_converter() -> Converter:
-	c = OrjsonConverter()
+	c = OrjsonConverter( omit_if_default=True )
 
+	c.register_unstructure_hook( datetime, toisoformat )
 	c.register_unstructure_hook( UID, uid_to_str )
+
+	c.register_structure_hook( datetime, fromisoformat )
 	c.register_structure_hook( UID, str_to_uid )
 
 	return c

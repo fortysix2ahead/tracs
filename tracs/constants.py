@@ -5,6 +5,8 @@ from importlib.resources import path as pkg_path
 
 __version__ = '0.2.0-dev'
 
+from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+
 # general constants
 
 APPNAME = 'tracs'
@@ -92,3 +94,7 @@ CFG_FS = '_fs'
 CFG_PATH = 'path'
 CFG_TMP_FS = '_tmp_fs'
 CFG_USER_ID = 'user_id'
+
+# orjson options
+ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
+

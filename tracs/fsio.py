@@ -14,6 +14,7 @@ from orjson import dumps, loads
 from orjson.orjson import JSONDecodeError
 from rich.prompt import Confirm
 
+from activity import Activity
 from tracs.activity import Activities
 from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, SCHEMA_PATH
 from tracs.resources import Resource, Resources
@@ -40,6 +41,12 @@ def resources_to_list( resources: Resources ) -> List[Resource]:
 def list_to_resources( resources: List[Resource], cls: Optional[Type] = None ) -> Resources:
 	return Resources( lst=[converter.structure( r, Resource ) for r in resources] )
 
+def activities_to_list( activities: Activities ) -> List[Activity]:
+	return [ converter.unstructure( a ) for a in activities ]
+
+def list_to_activities( activities: List[Activity], cls: Optional[Type] = None ) -> Activities:
+	return Activities( lst=[converter.structure( a, Activity ) for a in activities] )
+
 def make_converter() -> Converter:
 	c = OrjsonConverter( omit_if_default=True )
 
@@ -47,11 +54,13 @@ def make_converter() -> Converter:
 	c.register_unstructure_hook( timedelta, timedelta_to_str )
 	c.register_unstructure_hook( UID, uid_to_str )
 	c.register_unstructure_hook( Resources, resources_to_list )
+	c.register_unstructure_hook( Activities, activities_to_list )
 
 	c.register_structure_hook( datetime, fromisoformat )
 	c.register_structure_hook( timedelta, str_to_timedelta )
 	c.register_structure_hook( UID, str_to_uid )
 	c.register_structure_hook( Resources, list_to_resources )
+	c.register_structure_hook( Activities, list_to_activities )
 
 	return c
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import getLogger
 from re import compile
 from typing import List
@@ -17,7 +17,7 @@ from rich.prompt import Confirm
 from tracs.activity import Activities
 from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, SCHEMA_PATH
 from tracs.uid import str_to_uid, UID, uid_to_str
-from utils import fromisoformat, toisoformat
+from utils import fromisoformat, str_to_timedelta, timedelta_to_str, toisoformat
 
 log = getLogger( __name__ )
 
@@ -29,13 +29,17 @@ SCHEMA_CONVERTER = Converter()
 
 # custom i/o handling
 
+# serialization
+
 def make_converter() -> Converter:
 	c = OrjsonConverter( omit_if_default=True )
 
 	c.register_unstructure_hook( datetime, toisoformat )
+	c.register_unstructure_hook( timedelta, timedelta_to_str )
 	c.register_unstructure_hook( UID, uid_to_str )
 
 	c.register_structure_hook( datetime, fromisoformat )
+	c.register_structure_hook( timedelta, str_to_timedelta )
 	c.register_structure_hook( UID, str_to_uid )
 
 	return c

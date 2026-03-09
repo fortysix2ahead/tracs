@@ -16,7 +16,7 @@ from rich.prompt import Confirm
 
 from activity import Activity
 from tracs.activity import Activities
-from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, SCHEMA_PATH
+from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, ORJSON_OPTIONS, SCHEMA_PATH
 from tracs.resources import Resource, Resources
 from tracs.uid import str_to_uid, UID, uid_to_str
 from tracs.utils import fromisoformat, str_to_timedelta, timedelta_to_str, toisoformat
@@ -30,10 +30,6 @@ SCHEMA_CONVERTER = Converter()
 # unstructure(obj) == Serialize
 
 # custom i/o handling
-
-# serialization
-
-# configure converters
 
 def resources_to_list( resources: Resources ) -> List[Resource]:
 	return [ converter.unstructure( r ) for r in resources ]
@@ -80,7 +76,7 @@ def _load_activities( fs: FS, path: str ) -> Activities:
 	try:
 		_bytes = fs.readbytes( path )
 		_dicts = loads( _bytes )
-		_activities = Activities.from_dict( _dicts )
+		_activities = converter.structure( _dicts, Activities )
 		log.debug( f'loaded {len( _activities )} activities from {path}' )
 	except (FileExpected, ResourceNotFound, JSONDecodeError):
 		log.error( f'error loading activities', exc_info=True )
@@ -98,17 +94,14 @@ def load_activities( fs: FS ) -> Activities:
 
 def write_activities( activities: Activities, fs: FS ) -> None:
 	_activities = Activities( *sorted( activities.iter_non_groups(), key=lambda a: a.id ), skip_checks=True )
-	fs.writebytes( ACTIVITIES_PATH, dumps( _activities.to_dict(), option=ORJSON_OPTIONS ) )
+	fs.writebytes( ACTIVITIES_PATH, dumps( converter.unstructure( _activities ), option=ORJSON_OPTIONS ) )
 
 	log.debug( f'wrote {len( _activities )} activities to {ACTIVITIES_PATH}' )
 
 	_activities = Activities( *sorted( activities.iter_groups(), key=lambda a: a.id ), skip_checks=True )
-	fs.writebytes( GROUPS_PATH, dumps( _activities.to_dict(), option=ORJSON_OPTIONS ) )
+	fs.writebytes( GROUPS_PATH, dumps( converter.unstructure( _activities ), option=ORJSON_OPTIONS ) )
 
 	log.debug( f'wrote {len( _activities )} activities to {GROUPS_PATH}' )
-
-def write_activities_as_list( activities: Activities ) -> List:
-	return activities.to_dict()
 
 # schema handling
 

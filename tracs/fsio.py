@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from logging import getLogger
 from re import compile
-from typing import List
+from typing import List, Optional, Type
 
 from attrs import define, field
 from cattrs import Converter
@@ -10,14 +10,15 @@ from fs.base import FS
 from fs.copy import copy_dir
 from fs.errors import FileExpected, ResourceNotFound
 from fs.walk import Walker
-from orjson import dumps, loads, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import dumps, loads
 from orjson.orjson import JSONDecodeError
 from rich.prompt import Confirm
 
 from tracs.activity import Activities
 from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, SCHEMA_PATH
+from tracs.resources import Resource, Resources
 from tracs.uid import str_to_uid, UID, uid_to_str
-from utils import fromisoformat, str_to_timedelta, timedelta_to_str, toisoformat
+from tracs.utils import fromisoformat, str_to_timedelta, timedelta_to_str, toisoformat
 
 log = getLogger( __name__ )
 
@@ -31,16 +32,26 @@ SCHEMA_CONVERTER = Converter()
 
 # serialization
 
+# configure converters
+
+def resources_to_list( resources: Resources ) -> List[Resource]:
+	return [ converter.unstructure( r ) for r in resources ]
+
+def list_to_resources( resources: List[Resource], cls: Optional[Type] = None ) -> Resources:
+	return Resources( lst=[converter.structure( r, Resource ) for r in resources] )
+
 def make_converter() -> Converter:
 	c = OrjsonConverter( omit_if_default=True )
 
 	c.register_unstructure_hook( datetime, toisoformat )
 	c.register_unstructure_hook( timedelta, timedelta_to_str )
 	c.register_unstructure_hook( UID, uid_to_str )
+	c.register_unstructure_hook( Resources, resources_to_list )
 
 	c.register_structure_hook( datetime, fromisoformat )
 	c.register_structure_hook( timedelta, str_to_timedelta )
 	c.register_structure_hook( UID, str_to_uid )
+	c.register_structure_hook( Resources, list_to_resources )
 
 	return c
 

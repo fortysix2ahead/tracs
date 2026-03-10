@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Optional
 
 from dateutil.tz import tzlocal, tzoffset, UTC
 
@@ -353,3 +354,10 @@ DEFAULT_ONE = Activity(
 		members=UID.from_strs( ['polar:1234567890', 'strava:12345678', 'waze:20210101010101'] )
 	)
 )
+
+def activity( id: int = 0, uid: Optional[str] = None, name: Optional[str] = None ):
+	return Activity(
+		id=id,
+		uid=UID.of( uid or f'activity:{id}' ),
+		name=name or f'Activity {id}',
+	)

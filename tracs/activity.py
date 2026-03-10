@@ -20,7 +20,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.core import FormattedFieldsBase, Metadata, VirtualFieldsBase
 from tracs.resources import Resource, Resources
 from tracs.ui.utils import fmt_datetime, fmt_decimal, fmt_default, fmt_timedelta
-from tracs.uid import UID
+from tracs.uid import UID, uid
 from tracs.utils import sum_timedeltas, unique_sorted
 
 log = getLogger( __name__ )
@@ -31,28 +31,16 @@ T = TypeVar('T')
 class ActivityPart:
 
 	gap: timedelta = field( default=None )
-	uid: UID = field( default=None, converter=lambda u: UID.from_str( u ) if isinstance( u, str ) else u )
+	uid: UID = field( default=None, converter=lambda u: uid( u ) )
 	uids: List[UID] = field( factory=list )
 
 	@property
 	def classifiers( self ) -> List[str]:
-		return unique_sorted( [ uid.classifier for uid in self.uid_objs ] )
+		return unique_sorted( [ uid.classifier for uid in self.uids ] )
 
 	@property
-	def activity_uids( self ) -> List[str]:
-		return [ uid.uid for uid in self.as_activity_uids ]
-
-	@cached_property
-	def uid_objs( self ) -> List[UID]:
-		return [UID( uid ) for uid in self.uids]
-
-	@property
-	def as_uids( self ) -> List[UID]:
-		return unique_sorted( self.uid_objs )
-
-	@cached_property
-	def as_activity_uids( self ) -> List[UID]:
-		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.uid_objs ] )
+	def activity_uids( self ) -> List[UID]:
+		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.uids ] )
 
 @define( eq=True, repr=False ) # todo: mark fields with proper eq attributes
 class Activity( VirtualFieldsBase, FormattedFieldsBase ):

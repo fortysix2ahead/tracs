@@ -45,11 +45,11 @@ class UID:
 	def __gt__( self, other ):
 		return self.uid > other.uid if isinstance( other, UID ) else self.uid > other
 
-#	def __str__( self ) -> str:
-#		return self.uid
+	def __str__( self ) -> str:
+		return self.uid
 
-#	def __repr__( self ) -> str:
-#		return self.__str__()
+	def __repr__( self ) -> str:
+		return self.__str__()
 
 	@property
 	def uid( self ):
@@ -111,8 +111,8 @@ class UID:
 
 # convenience ...
 
-def uid( s: str ) -> UID:
-	return from_str( s, None )
+def uid( u: UID|str ) -> UID:
+	return from_str( u, None ) if isinstance( u, str ) else u
 
 def uids( *s: str ) -> List[UID]:
 	return [ from_str( u, None ) for u in s ]

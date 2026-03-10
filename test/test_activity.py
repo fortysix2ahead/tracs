@@ -9,7 +9,7 @@ from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata, VirtualField
 from tracs.pluginmgr import virtualfield
 from tracs.resources import Resource, Resources
-from tracs.uid import UID
+from tracs.uid import UID, uid, uids
 
 log = getLogger( __name__ )
 
@@ -20,7 +20,7 @@ def setup_module( module ):
 
 @mark.unit
 def test_activity():
-	a = Activity( uid='polar:100' )
+	a = Activity( uid=uid( 'polar:100' ) )
 	assert a.uid == UID( classifier='polar', local_id=100 )
 	assert a.uids == [ 'polar:100' ]
 	# assert a.refs() == ['polar:100'] and a.refs( True ) == [UID( 'polar:100' )]
@@ -30,13 +30,13 @@ def test_activity():
 	assert not a.multipart
 
 	# test values
-	a = Activity( uid='polar:101', heartrate=150, calories=1000 )
+	a = Activity( uid=uid( 'polar:101' ), heartrate=150, calories=1000 )
 	assert a.values( 'uid', 'heartrate', 'calories', 'speed', 'xyz' ) == ['polar:101', 150, 1000, None, None]
 
 @mark.unit
 def test_activity_group():
-	a = Activity( uid = 'group:101' )
-	a.metadata.members = UID.from_strs( [ 'strava:100', 'polar:100', 'polar:100' ] )
+	a = Activity( uid = uid( 'group:101' ) )
+	a.metadata.members = uids( 'strava:100', 'polar:100', 'polar:100' )
 	assert a.uid == 'group:101'
 	assert a.uids == [ 'polar:100', 'strava:100' ]
 #	assert a.refs() == [ 'polar:100', 'strava:100' ]
@@ -51,7 +51,7 @@ def test_group_of():
 	src1 = Activity(
 		id=1,
 		name='One',
-		uid='polar:1',
+		uid=uid( 'polar:1' ),
 		type=ActivityTypes.walk,
 		starttime=datetime( 2024, 2, 1, 10, 0, 0 ),
 		tags=['a'],
@@ -61,16 +61,16 @@ def test_group_of():
 		name='Two',
 		distance=10,
 		calories=20,
-		uid='polar:2',
+		uid=uid( 'polar:2' ),
 		starttime = datetime( 2024, 2, 1, 10, 1, 0 ),
 		tags=['b'],
 	)
 
 	g1 = Activity( id=3, calories=100, heartrate=100, name='Group One', uid='group:1' )
-	g1.metadata.members = UID.from_strs( ['polar:1', 'polar:2'] )
+	g1.metadata.members = uids( 'polar:1', 'polar:2')
 
 	g2 = Activity( id=4, calories=200, heartrate=200, name='Group Two', uid='group:2' )
-	g2.metadata.members = UID.from_strs( ['polar:1', 'polar:2'] )
+	g2.metadata.members = uids( 'polar:1', 'polar:2' )
 
 	# grouping
 	group = Activity.group_of(src1, src2 )

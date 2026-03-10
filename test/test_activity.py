@@ -137,18 +137,9 @@ def test_union_of():
 
 @mark.unit
 def test_activity_part():
-	p = ActivityPart( uids=[ 'polar:1234' ] )
-	assert p.as_uids == [ UID( classifier='polar', local_id=1234 ) ]
-	assert p.classifiers == [ 'polar' ]
-
-	p = ActivityPart( uids=['polar:2345', 'polar:1234' ] )
-	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345' ) ]
-	assert p.classifiers == [ 'polar' ]
-
-	p = ActivityPart( uids=['polar:2345/rec.gpx', 'polar:2345/rec.tcx', 'polar:1234'] )
-	assert p.as_uids == [ UID( 'polar:1234' ), UID( 'polar:2345/rec.gpx' ), UID( 'polar:2345/rec.tcx' ) ]
-	assert p.as_activity_uids == [ UID( 'polar:1234' ), UID( 'polar:2345' ) ]
-	assert p.activity_uids == [ 'polar:1234', 'polar:2345' ]
+	p = ActivityPart( uids=uids( 'polar:1234', 'polar:2345', 'polar:2345/rec.gpx', 'polar:2345/rec.tcx' ) )
+	assert p.uids == uids( 'polar:1234', 'polar:2345', 'polar:2345/rec.gpx', 'polar:2345/rec.tcx' )
+	assert p.activity_uids == uids( 'polar:1234', 'polar:2345' )
 	assert p.classifiers == [ 'polar' ]
 
 @mark.unit

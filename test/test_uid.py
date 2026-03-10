@@ -2,7 +2,7 @@ from pytest import mark
 
 from test.objects import UID_DUMP, UID_OBJ
 from fsio import converter
-from tracs.uid import UID
+from tracs.uid import UID, uid
 
 @mark.unit
 def test_uid():
@@ -111,6 +111,10 @@ def test_lt():
 	assert uid3 > uid2
 
 	assert sorted( [uid2, uid3, uid1] ) == [uid1, uid2, uid3]
+
+@mark.unit
+def test_hash():
+	assert hash( uid( 'polar:101' ) ) == hash( 'polar:101' )
 
 @mark.unit
 def test_serialize():

@@ -36,8 +36,8 @@ class UID:
 	def __eq__( self, other ):
 		return self.uid == other.uid if isinstance( other, UID ) else self.uid == other
 
-#	def __hash__( self ) -> int:
-#		return hash( self.uid )
+	def __hash__( self ) -> int:
+		return hash( self.uid )
 
 	def __lt__( self, other ):
 		return self.uid < other.uid if isinstance( other, UID ) else self.uid < other
@@ -108,6 +108,14 @@ class UID:
 
 	def denotes_part( self ) -> bool:
 		return True if self.classifier and self.local_id and self.part else False
+
+# convenience ...
+
+def uid( s: str ) -> UID:
+	return from_str( s, None )
+
+def uids( *s: str ) -> List[UID]:
+	return [ from_str( u, None ) for u in s ]
 
 # serialization
 

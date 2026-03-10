@@ -1,12 +1,14 @@
 
 from __future__ import annotations
 
+from collections import UserList
 from datetime import datetime, timedelta
 from functools import cached_property
 from inspect import isfunction
 from itertools import chain
 from logging import getLogger
-from typing import Any, Callable, ClassVar, Dict, List, Optional, TypeVar, Union
+from types import MappingProxyType
+from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, TypeVar, Union
 
 from attrs import define, evolve, Factory, field
 from cattrs import ClassValidationError, Converter, GenConverter
@@ -132,6 +134,9 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
 	__parent__: Activity = field( init=False, default=None, alias='__parent__' )
 	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
+
+	def of( self, id: int = 0, uid: str = 'activity:0', name: str = 'Activity 0' ):
+		pass
 
 	# additional properties
 
@@ -412,15 +417,16 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 		return mpa
 
-class Activities( list[Activity] ):
+class Activities( UserList[Activity] ):
 	"""
 	Extended list of activities.
 	"""
 
-	converter: ClassVar[Converter] = GenConverter( omit_if_default=True )
-
 	def __init__( self, *activities: Activity, lst: Optional[List[Activity]] = None, skip_checks: bool = False ):
 		super().__init__()
+
+		self._id_idx: Dict[int, Activity] = dict()
+		self._uid_idx: Dict[UID, Activity] = dict()
 		self.add( *activities, lst=lst, skip_checks=skip_checks )
 
 	# calculation of next id
@@ -429,6 +435,9 @@ class Activities( list[Activity] ):
 		id_range = range( 1, max( existing_ids ) + 2 ) if len( existing_ids ) > 0 else [1]
 		return set( id_range ).difference( set( existing_ids ) ).pop()
 
+	def __next_id_2__( self ) -> int:
+		return max( self._id_idx.keys() ) + 1 if self._id_idx else 1
+
 	def __contains__( self, item: Activity|UID ) -> bool:
 		if isinstance( item, Activity ):
 			return super().__contains__( item )
@@ -436,6 +445,14 @@ class Activities( list[Activity] ):
 			return self.__contains_uid__( item )
 		else:
 			return False
+
+	def __delitem__( self, i: int ):
+		self.remove( self.data[i] )
+
+	def __remove__( self, a: Activity ):
+		del self._id_idx[a.id]
+		del self._uid_idx[a.uid]
+		self.data.remove( a )
 
 	def __contains_uid__( self, uid: UID ):
 		return any( [a.uid == uid for a in self] )
@@ -459,68 +476,70 @@ class Activities( list[Activity] ):
 
 	def add( self, *activities: Activity, lst: Optional[List[Activity]] = None, skip_checks: bool = False ) -> List[int]:
 		activities = [ *activities, *(lst if lst else []) ]
-		for a in activities:
-			if not skip_checks:
+
+		if not skip_checks:
+			for a in activities:
 				if a.uid is None:
 					raise KeyError( f'activity must have a valid UID to be added (UID = {a.uid})' )
 				if self.__contains_uid__( a.uid ):
 					raise KeyError( f'activity with UID {a.uid} already contained in activities' )
 
-				a.id = self.__next_id__()
+				a.id = self.__next_id_2__()
+				self._id_idx[a.id] = a
+				self._uid_idx[a.uid] = a
 
-			self.append( a )
+		self.data.extend( activities )
 
 		return [a.id for a in activities]
 
-	def remove( self, item: Any ):
-		if isinstance( item, UID ):
-			if a:= self.get_by_uid( item ):
-				self.remove( a )
-		else:
-			super().remove( item )
+	def remove( self, item: UID|str|Activity ):
+		if isinstance( item, Activity ) and item in self.data:
+			self.__remove__( item )
+		elif item in self._id_idx or item in self._uid_idx:
+			self.__remove__( self._id_idx.get( item ) or self._uid_idx.get( item ) )
 
 	def all( self, sort: bool|Callable = False, reverse: bool = False ) -> List[Activity]:
 		if sort is True:
-			return sorted( self, key=lambda a: a.id, reverse=reverse )
+			return sorted( self.data, key=lambda a: a.id, reverse=reverse )
 		elif isfunction( sort ):
-			return sorted( self, key=sort, reverse=reverse )
+			return sorted( self.data, key=sort, reverse=reverse )
 		else:
-			return list( self )
+			return list( self.data )
 
 	def ids( self ) -> List[int]:
-		return [a.id for a in self]
+		return list( self._id_idx.keys() )
 
 	def uids( self ) -> List[UID]:
-		return [a.uid for a in self]
+		return list( self._uid_idx.keys() )
 
 	@property
-	def id_map( self ) -> Dict[int, Activity]:
-		return { a.id: a for a in self }
+	def id_map( self ) -> Mapping[int, Activity]:
+		return MappingProxyType( self._id_idx )
 
 	@property
-	def uid_map( self ) -> Dict[UID, Activity]:
-		return { a.uid: a for a in self }
+	def uid_map( self ) -> Mapping[UID, Activity]:
+		return MappingProxyType( self._uid_idx )
 
 	def get( self, uid: UID|str ) -> Optional[Activity]:
-		return self.get_by_uid( uid )
+		return self._uid_idx.get( uid )
 
 	def get_by_id( self, id: int ) -> Optional[Activity]:
-		return first_true( self, pred=lambda a: a.id == id )
+		return self._id_idx.get( id )
 
 	def get_by_uid( self, uid: UID|str ) -> Optional[Activity]:
-		return first_true( self, pred=lambda a: a.uid == uid )
+		return self._uid_idx.get( uid )
 
 	def idget( self, id: int ) -> Optional[Activity]:
-		return self.get_by_id( id )
+		return self._id_idx.get( id )
 
 	def iter( self ):
-		return self.__iter__()
+		return self.data.__iter__()
 
 	def iter_groups( self ):
-		return filter( lambda a: a.group, self.__iter__() )
+		return filter( lambda a: a.group, self.data.__iter__() )
 
 	def iter_non_groups( self ):
-		return filter( lambda a: not a.group, self.__iter__() )
+		return filter( lambda a: not a.group, self.data.__iter__() )
 
 	def iter_resources( self ) -> Resources:
 		return Resources( *chain( *[ a.resources for a in self ] ) )
@@ -530,19 +549,6 @@ class Activities( list[Activity] ):
 
 	def iter_resource_uids( self ):
 		return chain( *[ [ r.as_uid if r.uid else UID( *a.uid.as_tuple, r.path ) for r in a.resources ] for a in self ] )
-
-	# serialization
-
-	@classmethod
-	def from_dict( cls, obj: List[Dict] ) -> Activities:
-		try:
-			return Activities( *[Activity.from_dict( o ) for o in obj], skip_checks=True )
-		except ClassValidationError as e:
-			log.error( f'invalid activity dict', exc_info=True )
-			return Activities()
-
-	def to_dict( self ) -> List[Dict]:
-		return [ Activity.to_dict( a ) for a in self.all( sort=True ) ]
 
 # helper
 

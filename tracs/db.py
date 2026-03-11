@@ -257,8 +257,10 @@ class ActivityDb:
 			return False
 
 	def contains_activity( self, uid: UID|str ) -> bool:
-		uid = uid if isinstance( uid, UID ) else UID.from_str( uid )
-		return any( u == uid for u in self._activities.iter_uids() )
+		# old version without index
+		# uid = uid if isinstance( uid, UID ) else UID.from_str( uid )
+		# return any( u == uid for u in self._activities.iter_uids() )
+		return uid in self._activities
 
 	def contains_resource( self, uid: UID|str, path: Optional[str] ) -> bool:
 		if isinstance( uid, UID ):

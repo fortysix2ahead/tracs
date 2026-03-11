@@ -1,18 +1,29 @@
 
-from datetime import datetime, timedelta
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 
 from dateutil.tz import tzlocal, UTC
 from pytest import mark
 
 from test.helpers import skip_live
 from tracs.activity_types import ActivityTypes
-from tracs.plugins.polar import BASE_URL, PolarFitnessTestImporter, PolarOrthostaticTestImporter, PolarRRRecordingImporter
-from tracs.plugins.polar import Polar, PolarFlowExercise
-from tracs.plugins.polar import PolarFlowImporter
-from tracs.utils import FsPath, fspath
+from tracs.models.polar.account_profile import AccountProfile
+from models.io import polar_model_converter
+from tracs.models.polar.training_session import TrainingSession
+from tracs.plugins.polar import BASE_URL, Polar, PolarFitnessTestImporter, PolarFlowImporter, PolarOrthostaticTestImporter, PolarRRRecordingImporter
+from tracs.utils import FsPath
 
 importer = PolarFlowImporter()
+
+@mark.file( 'data/takeouts/polar/account-profile-59284768.json' )
+def test_account_profile( fs_path ):
+	fs, path = fs_path
+	model: AccountProfile = polar_model_converter.loads( fs.readbytes( path ), AccountProfile )
+	assert model.exportVersion == '2.6'
+
+@mark.file( 'data/takeouts/polar/training-session-2022-10-16T14:23:39-7505780534.json' )
+def test_training_session( fs_path ):
+	model: TrainingSession = polar_model_converter.loads( fs_path[0].readbytes( fs_path[1] ), TrainingSession )
+	assert model.application.name == 'Polar Flow'
 
 @mark.file( 'environments/default/db/polar/1/0/0/100001/100001.json' )
 def test_exercise( path ):

@@ -443,7 +443,9 @@ class Activities( UserList[Activity] ):
 		self.data.remove( a )
 
 	def __contains_uid__( self, uid: UID ):
-		return any( [a.uid == uid for a in self] )
+		# old version without index
+		# return any( [a.uid == uid for a in self] )
+		return uid in self._uid_idx
 
 	# def replace( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
 	# 	if not new:
@@ -465,16 +467,17 @@ class Activities( UserList[Activity] ):
 	def add( self, *activities: Activity, lst: Optional[List[Activity]] = None, skip_checks: bool = False ) -> List[int]:
 		activities = [ *activities, *(lst if lst else []) ]
 
-		if not skip_checks:
-			for a in activities:
+		for a in activities:
+			if not skip_checks:
 				if a.uid is None:
 					raise KeyError( f'activity must have a valid UID to be added (UID = {a.uid})' )
 				if self.__contains_uid__( a.uid ):
 					raise KeyError( f'activity with UID {a.uid} already contained in activities' )
 
 				a.id = self.__next_id_2__()
-				self._id_idx[a.id] = a
-				self._uid_idx[a.uid] = a
+
+			self._id_idx[a.id] = a
+			self._uid_idx[a.uid] = a
 
 		self.data.extend( activities )
 

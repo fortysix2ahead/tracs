@@ -4,8 +4,9 @@ from datetime import timedelta
 from logging import getLogger
 from typing import Any, Union
 
-from cattrs.preconf.orjson import make_converter
-from orjson import dumps as save_json, loads as load_json, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import dumps as save_json, loads as load_json
+
+from tracs.constants import ORJSON_OPTIONS
 from tracs.handlers import ResourceHandler
 from tracs.pluginmgr import importer, resourcetype
 from tracs.resources import ResourceType
@@ -23,19 +24,14 @@ def json_resource_type() -> ResourceType:
 class JSONHandler( ResourceHandler ):
 
 	TYPE: str = JSON_TYPE
-	OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
 
 	def load_raw( self, content: Union[bytes,str], **kwargs ) -> Any:
 		return load_json( content )
 
 	def save_raw( self, data: Any, **kwargs ) -> bytes:
-		return save_json( data, option=JSONHandler.OPTIONS, default=serialize )
+		return save_json( data, option=ORJSON_OPTIONS, default=serialize )
 
 class DataclassFactoryHandler( JSONHandler ):
-
-	def __init__( self ):
-		super().__init__()
-		self.converter = make_converter()
 
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		"""
@@ -44,9 +40,9 @@ class DataclassFactoryHandler( JSONHandler ):
 		Example: transform a dict into a dataclass.
 		"""
 		try:
-			return self.converter.structure( raw, self.__class__.ACTIVITY_CLS )
+			return kwargs.get( 'converter' ).structure( raw, kwargs.get( 'cls' ) )
 		except RuntimeError:
-			log.error( f'unable to transform raw data into structured data by using the factory for {self._activity_cls}', exc_info=True )
+			log.error( f'unable to transform raw data into structured data by using the converter/cls {kwargs.get( "converter" )}, {kwargs.get( "cls" )}', exc_info=True )
 			return raw
 
 def serialize( obj: Any ):

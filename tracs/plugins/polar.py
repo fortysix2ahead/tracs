@@ -2,13 +2,12 @@ from datetime import datetime, time, timedelta
 from itertools import zip_longest
 from logging import getLogger
 from pathlib import Path
-from re import compile, match
+from re import match
 from sys import exit as sysexit
 from time import time as current_time
 from typing import Any, ClassVar, Dict, List, Mapping, Optional, Tuple, Union
 from zipfile import BadZipFile
 
-from attrs import define, field
 from babel.dates import get_timezone
 from bs4 import BeautifulSoup
 from click import echo
@@ -28,20 +27,21 @@ from rich.prompt import Prompt
 from tracs.activity import Activities, Activity, ActivityPart
 from tracs.activity_types import ActivityTypes, ActivityTypes as Types
 from tracs.aio import load_resource
-from tracs.protocols import ApplicationContext
 from tracs.constants import APPNAME
+from tracs.models.polar.constants import *
+from tracs.models.polar.flow import PolarFitnessTest, PolarFlowExercise, PolarOrthostaticTest, PolarRRRecording, PolarTrainingSession, ResourcePartlist
 from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.plugins.json import DataclassFactoryHandler, JSONHandler
-from tracs.plugins.polarconstants import ACCESSLINK_TYPES
 from tracs.plugins.polar_takeout import PolarFlowTakeoutImporter
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.plugins.xml import XMLHandler
+from tracs.protocols import ApplicationContext
 from tracs.resources import Resource, ResourceType
-from tracs.service import Service, path_for_id
+from tracs.service import path_for_id, Service
 from tracs.streams import Point, Stream
-from tracs.utils import seconds_to_time, to_isotime
 from tracs.uid import UID
+from tracs.utils import seconds_to_time, to_isotime
 
 log = getLogger( __name__ )
 
@@ -50,28 +50,7 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'polar'
 DISPLAY_NAME = 'Polar Flow'
 
-POLAR_CSV_TYPE = 'text/vnd.polar+csv'
-POLAR_HRV_TYPE = 'text/vnd.polar.hrv+csv'
-POLAR_FLOW_TYPE = 'application/vnd.polar+json'
-POLAR_FITNESS_TEST_TYPE = 'application/vnd.polar.fitness+json'
-POLAR_ORTHOSTATIC_TEST_TYPE = 'application/vnd.polar.orthostatic+json'
-POLAR_RRRECORDING_TYPE = 'application/vnd.polar.rrrecording+json'
-POLAR_SESSION_TYPE = 'application/vnd.polar.session+json'
-POLAR_EXERCISE_DATA_TYPE = 'application/vnd.polar.ped+xml'
-POLAR_ZIP_GPX_TYPE = 'application/vnd.polar.gpx+zip'
-POLAR_ZIP_TCX_TYPE = 'application/vnd.polar.tcx+zip'
-
-ACCOUNT_DATA_GLOB = 'account-data-*.json'
-ACCOUNT_PROFILE_GLOB = 'account-profile-*.json'
-TRAINING_SESSION_GLOB = 'training-session-*.json'
-
-TRAINING_SESSION_REGEX = compile( r'^.*training-session-(\d{4}-\d{2}-\d{2})-(\d+)(-([a-f0-9-]+))*\.json$' )
-
 PED_NS = 'http://www.polarpersonaltrainer.com'
-
-# polar icon ids for identifying multipart activities: there does not seem to be any other way to identify those
-ICON_ID_TRIATHLON = '003304795bc33d808ee8e6ab8bf45d1f-2015-10-20_13_45_17'  # triathlon
-ICON_ID_MULTISPORT = '20951a7d8b02def8265f5231f57f4ed9-2015-10-20_13_45_40'  # multisport
 
 BASE_URL = 'https://flow.polar.com'
 
@@ -109,167 +88,8 @@ HEADERS_DOWNLOAD = { **HEADERS_TEMPLATE, **{
 	# 'X-Requested-With': 'XMLHttpRequest'
 } }
 
-# all types: https://www.polar.com/accesslink-api/#detailed-sport-info-values-in-exercise-entity
-# this maps the last part of the icon URL to Polar sports types, there's no other way to find the actual type
-# example: iconUrl = "https://platform.cdn.polar.com/ecosystem/sport/icon/808d0882e97375e68844ec6c5417ea33-2015-10-20_13_46_22
-TYPES = {
-	'003304795bc33d808ee8e6ab8bf45d1f-2015-10-20_13_45_17': Types.triathlon,
-	'20951a7d8b02def8265f5231f57f4ed9-2015-10-20_13_45_40': Types.multisport,
-	'22f701a2c43d7c5678140b0a3e52ddaa-2015-10-20_13_46_02': Types.rollski_classic,
-	'2524f40bcd8372f0912cb213c1fc9a29-2015-10-20_13_45_29': Types.bike_road,
-	'3c1103ccbeee33fa663a1dc8e0fd8a6d-2015-10-20_13_45_48': Types.xcski_classic,
-	'3e8556e6cf6ed3f01e5f8af133117416-2015-10-20_13_46_00': Types.rollski_free,
-	'40894732d0b606b3fd9c9c34471df222-2015-10-20_13_46_28': Types.swim_indoor,
-	'49b881c0a9aec1fce68fab11f8f1b01d-2016-02-03_06_06_42': Types.gymnastics,
-	'4c54b3b02bd2d8b9b3f60931776a3497-2015-10-20_13_46_07': Types.unknown,
-	'4ddd474b10302e72fb53bbd69028e15b-2015-10-20_13_46_17': Types.bike_mountain,
-	'561a80f6d7eef7cc328aa07fe992af8e-2015-10-20_13_46_03': Types.bike,
-	'5cdfcd252814f732414d977484cef4ea-2015-10-20_13_46_11': Types.swim_outdoor,
-	'808d0882e97375e68844ec6c5417ea33-2015-10-20_13_46_22': Types.run,
-	'9e3fc7036226634543f971acd1a68e60-2015-11-25_10_37_05': Types.ergo,
-	'a2afcae540681c227a48410d97277e2e-2015-10-20_13_45_18': Types.unknown,
-	'a2e8c7a794dadb60ecbfb21239f5b981-2016-02-03_06_06_32': Types.unknown,
-	'd1ce94078aec226be28f6c602e6803e1-2015-10-20_13_45_19': Types.gym,
-	'e25370188b9c9b611dcafb6f0028faeb-2015-10-20_13_45_32': Types.hiking,
-	'f0c9643f1cef947e5621b0b46ab06783-2015-10-20_13_46_12': Types.xcski_free,
-	'f4197b0c1a4d65962b9e45226c77d4d5-2015-10-20_13_45_26': Types.swim,
-}
-
-@define
-class ResourcePartlist:
-
-	index: int = field( default=0 )
-	range: DateTimeRange = field( default=None )
-	resources: List[Resource] = field( factory=list )
-
-	def start( self ) -> datetime:
-		return self.range.start_datetime
-
-	def end( self ) -> datetime:
-		return self.range.end_datetime
-
-@define
-class PolarFlowExercise:
-
-	allDay: bool = field( default=False )
-	backgroundColor: Optional[str] = field( default=None )
-	borderColor: Optional[str] = field( default=None )
-	calories: Optional[int] = field( default=None )
-	className: Optional[str] = field( default=None )
-	datetime: str = field( default=None ) # 2011-04-28T17:48:10.000Z
-	distance: Optional[float] = field( default=None )
-	duration: int = field( default=None )
-	end: Optional[int] = field( default=None )
-	eventType: str = field( default=None )
-	hasTrainingTarget: Optional[bool] = field( default=False )
-	iconUrl: Optional[str] = field( default=None )
-	index: Optional[int] = field( default=None )
-	isTest: Optional[bool] = field( default=False )
-	listItemId: int = field( default=None )
-	start: Optional[int] = field( default=None )
-	textColor: Optional[str] = field( default=None )
-	timestamp: int = field( default=None )
-	title: str = field( default=None )
-	type: str = field( default=None )
-	url: str = field( default=None )
-
-	@property
-	def is_multipart( self ):
-		return _is_multipart_id( self.iconUrl )
-
-	@property
-	def local_id( self ) -> int:
-		if self.eventType == 'exercise' or self.eventType == 'fitnessData':
-			return self.listItemId
-		elif self.eventType == 'orthostaticTest':
-			return int( match('.*id=(\d+).*', self.url )[1] )
-		elif self.eventType == 'rrTest':
-			return int( match('.*/rr/(\d+)', self.url )[1])
-		return 0
-
-	@property
-	def uid( self ):
-		return f'{SERVICE_NAME}:{self.local_id}'
-
-	def get_type( self ) -> ActivityTypes:
-		return TYPES.get( self.iconUrl.rsplit( '/', 1 )[1], Types.unknown ) if self.iconUrl else Types.unknown
-
-@define
-class PolarFitnessTest:
-
-	allDay: bool = field( default=False )
-	backgroundColor: str = field( default=None )
-	borderColor: str = field( default=None )
-	className: str = field( default=None )
-	datetime: str = field( default=None ) # 2011-04-28T17:48:10.000Z
-	eventType: str = field( default=None )
-	index: int = field( default=None )
-	listItemId: int = field( default=None )
-	start: str = field( default=None )
-	textColor: str = field( default=None )
-	timestamp: int = field( default=None )
-	title: str = field( default=None )
-	type: str = field( default=None )
-	url: str = field( default=None )
-
-@define
-class PolarOrthostaticTest:
-
-	_RX_URL = compile( r'/progress/tests\?type=orthostatic_test&id=(\d+)' )
-
-	datetime: str = field( default=None ) # 2011-04-28T17:48:10.000Z
-	eventType: str = field( default=None )
-	result: str = field( default=None )
-	title: str = field( default=None )
-	type: str = field( default=None )
-	url: str = field( default=None )
-
-	@property
-	def local_id( self ) -> int:
-		return int( self.__class__._RX_URL.fullmatch( self.url ).groups()[0] )
-
-@define
-class PolarRRRecording:
-
-	_RX_URL = compile( r'/training/test/rr/(\d+)' )
-
-	datetime: str = field( default=None ) # 2011-04-28T17:48:10.000Z
-	eventType: str = field( default=None )
-	result: str = field( default=None )
-	title: str = field( default=None )
-	type: str = field( default=None )
-	url: str = field( default=None )
-
-	@property
-	def local_id( self ) -> int:
-		return int( self.__class__._RX_URL.fullmatch( self.url ).groups()[0] )
-
-@define
-class PolarFlowExerciseCsv:
-
-	pass
-
-@define
-class PolarFlowExerciseHrv:
-
-	pass
-
-@define
-class PolarTrainingSession:
-
-	pass
-
-# todo: this needs an update, but has low priority
-class PolarExerciseDataActivity( Activity ):
-
-	def __raw_init__( self, raw: Any ) -> None:
-		self.classifier = 'polar'
-		self.time = datetime.strptime( self.raw.get( 'time' ), '%Y-%m-%d %H:%M:%S.%f' ).astimezone( UTC )  # 2016-09-15 16:50:27.0
-		self.raw_id = int( self.time.strftime( '%y%m%d%H%M%S' ) )
-		self.uid = f'{self.classifier}:{self.raw_id}'
-
 @resourcetype
-def bikecitizens_resource_types() -> List[ResourceType]:
+def polar_resource_types() -> List[ResourceType]:
 	return [
 		ResourceType( name=POLAR_FLOW_TYPE, summary=True ),
 		ResourceType( name=POLAR_FITNESS_TEST_TYPE ),
@@ -476,35 +296,6 @@ class PolarTrainingSessionImporter( JSONHandler ):
 		else: # can this happen?
 			pass
 
-@importer( type=POLAR_EXERCISE_DATA_TYPE )
-class PersonalTrainerImporter( XMLHandler ):
-
-	def __init__( self ) -> None:
-		super().__init__( resource_type=POLAR_EXERCISE_DATA_TYPE, activity_cls=PolarExerciseDataActivity )
-
-	def load_data( self, data: Any, text: Optional[str], content: Optional[bytes], path: Optional[Path], url: Optional[str] ) -> Any:
-		xml = super().load_data( data, text, content, path, url )
-		root = xml.getroot()
-		data = {
-			'time': root.find( self._ns( 'calendar-items/exercise/time' ) ).text,
-			'type': root.find( self._ns( 'calendar-items/exercise/sport' ) ).text,
-			'result_type': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/sport' ) ).text,  # should be the same as type
-			'duration': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/duration' ) ).text,  # should be the same as type
-			'distance': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/distance' ) ).text,
-			'calories': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/calories' ) ).text,
-			'recording_rate': root.find( self._ns( 'calendar-items/exercise/sport-results/sport-result/recording-rate' ) ).text,
-		}
-		samples = root.findall( self._ns( 'calendar-items/exercise/sport-results/sport-result/samples/sample' ) )
-		for s in samples:
-			sample_type = s.find( self._ns( 'type' ) ).text
-			sample_values = s.find( self._ns( 'values' ) ).text
-			data[('samples', sample_type)] = sample_values.split( ',' )
-		return data
-
-	# noinspection PyMethodMayBeStatic
-	def _ns( self, s: str ):
-		return f'{{{PED_NS}}}' + s.replace( '/', f'/{{{PED_NS}}}' )
-
 @service
 class Polar( Service ):
 
@@ -609,6 +400,7 @@ class Polar( Service ):
 			activity_files = existing
 
 			log.debug( f'found {len( activity_files)} activities which do not yet exist in db' )
+
 
 		for file in activity_files:
 			id = TRAINING_SESSION_REGEX.fullmatch( file ).groups()[1]
@@ -925,7 +717,7 @@ def _type_of( r: Mapping ) -> ActivityTypes:
 	if 'iconUrl' not in r:
 		return Types.unknown
 	id = r.get( 'iconUrl' ).rsplit( '/', 1 )[1]
-	return TYPES.get( id, Types.unknown )
+	return ICON_TYPES.get( id, Types.unknown )
 
 def _is_multipart_id( icon_url: str ) -> bool:
 	return True if icon_url and (icon_url.endswith( ICON_ID_TRIATHLON ) or icon_url.endswith( ICON_ID_MULTISPORT )) else False

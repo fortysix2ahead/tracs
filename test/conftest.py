@@ -4,7 +4,7 @@ from logging import getLogger
 from os.path import dirname
 from pathlib import Path
 from shutil import copytree, rmtree
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from fs.base import FS
 from fs.copy import copy_fs
@@ -166,6 +166,11 @@ def path( request ) -> Optional[Path]:
 def fspath( request ) -> FsPath:
 	with pkgpath( 'test', '__init__.py' ) as test_path:
 		return FsPath( OSFS( root_path=str( test_path.parent ), create=False ), marker( request, 'file', None, None ) )
+
+@fixture
+def fs_path( request ) -> Tuple[FS, str]:
+	with pkgpath( 'test', '__init__.py' ) as test_path:
+		return OSFS( root_path=str( test_path.parent ), create=False ), marker( request, 'file', None, None )
 
 @fixture
 def service( request, env: Environment ) -> Optional[Service]:

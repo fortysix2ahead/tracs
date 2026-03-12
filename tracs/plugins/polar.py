@@ -270,16 +270,16 @@ class Polar( Service ):
 
 			log.debug( f'found {len( activity_files)} activities which do not yet exist in db' )
 
+		activity_files = sorted( activity_files, reverse=True )
+
 		for file in activity_files:
-			id = TRAINING_SESSION_REGEX.fullmatch( file ).groups()[1]
-			uid, src = UID( f'{self.name}:{id}' ), f'{self.name}{file}'
 			session_activity = self._session_importer.load_as_activity( fs=src_fs, path=file )
-			session_activity.uid = uid
+			uid, src = session_activity.uid, f'{self.name}{file}'
 
 			if not self._session_importer.remainders:
-				session = first_true( session_activity.resources, pred=lambda r: r.name == POLAR_SESSION_TYPE )
-				gpx = first_true( session_activity.resources, pred=lambda r: r.name == GPX_TYPE )
-				tcx = first_true( session_activity.resources, pred=lambda r: r.name == TCX_TYPE )
+				session = session_activity.resources.first_of_type( POLAR_SESSION_TYPE )
+				gpx = session_activity.resources.first_of_type( GPX_TYPE )
+				tcx = session_activity.resources.first_of_type( TCX_TYPE )
 
 				# update resource metadata
 				for r, ext in zip( [session, gpx, tcx], ['.session.json', '.gpx', '.tcx'] ):

@@ -3,6 +3,8 @@ from re import compile
 
 from tracs.activity_types import ActivityTypes as Types
 
+CLASSIFIER = 'polar'
+
 # resource types
 
 POLAR_CSV_TYPE = 'text/vnd.polar+csv'
@@ -210,3 +212,18 @@ ACCESSLINK_TYPES = {
 	'XC_SKIING_FREESTYLE': Types.xcski_free,  # Freestyle XC skiing
 	'YOGA': Types.yoga,  # Yoga
 }
+
+# sample types
+SAMPLE_ALT = 'ALTITUDE'
+SAMPLE_CADENCE = 'CADENCE'
+SAMPLE_DIST = 'DISTANCE'
+SAMPLE_HR = 'HEART_RATE'
+SAMPLE_TEMP = 'TEMPERATURE'
+SAMPLE_SPEED = 'SPEED'
+SAMPLE_STRIDE = 'STRIDE_LENGTH'
+
+# statistics types
+
+STAT_ALT = 'STATISTICS_TYPE_ALTITUDE'
+STAT_HR = 'STATISTICS_TYPE_HEART_RATE'
+STAT_SPEED = 'STATISTICS_TYPE_SPEED'

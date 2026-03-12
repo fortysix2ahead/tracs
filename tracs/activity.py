@@ -405,6 +405,16 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 		return mpa
 
+@define
+class ActivityGroup( Activity ):
+
+	pass
+
+@define
+class MultipartActivity( Activity ):
+
+	pass
+
 class Activities( UserList[Activity] ):
 	"""
 	Extended list of activities.

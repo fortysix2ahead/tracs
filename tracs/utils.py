@@ -20,6 +20,7 @@ from babel.numbers import format_decimal
 from click import style
 from dateutil.parser import parse as parse_datetime, ParserError
 from dateutil.tz import gettz, tzlocal
+from dateutil.tz.tz import UTC
 from dynaconf import Dynaconf as Configuration
 from fs.base import FS
 from fs.errors import CreateFailed, ResourceNotFound, ResourceReadOnly
@@ -188,6 +189,12 @@ def str_to_timedelta( s: str, cls: Optional[Type] = None ) -> Optional[timedelta
 	else:
 		return None
 
+def millis_to_timedelta( millis: float|str|None ) -> Optional[timedelta]:
+	try:
+		return timedelta( milliseconds=millis )
+	except ValueError:
+		return None
+
 def seconds_to_time( time_float: float ) -> Optional[time]:
 	if not isinstance( time_float, (float, int) ):
 		return None
@@ -208,7 +215,8 @@ def sum_timedeltas( timedeltas: List[timedelta] ) -> Optional[timedelta]:
 
 def to_isotime( timestr: str ) -> Optional[datetime]:
 	try:
-		return parse_datetime( timestr )
+		dt = parse_datetime( timestr )
+		return dt.replace( tzinfo=UTC ) if dt.tzinfo is None else dt
 	except (ParserError, TypeError):
 		return None
 

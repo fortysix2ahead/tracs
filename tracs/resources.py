@@ -16,6 +16,7 @@ from fs.path import basename, split
 from isodate import parse_duration
 from more_itertools import unique
 from more_itertools.more import first, last, rstrip
+from more_itertools.recipes import first_true
 
 from tracs.protocols import Exporter, Importer
 from tracs.uid import UID
@@ -258,17 +259,16 @@ class Resources( UserList[Resource] ):
 
 	def __init__( self, *resources: Resource, lst: Optional[List[Resource]] = None, lists: Optional[List[Resources]] = None ):
 		super().__init__()
+
 		# for convenience, allow creation with given resources/list/resource lists
-		self.extend( resources )
-		self.extend( lst or [] )
-		self.extend( [r for l in lists or [] for r in l] )
+		self.data.extend( [*resources, *(lst or []), *[r for l in lists or [] for r in l] ] )
 
 	def iter( self ):
 		"""
 		Iterates over all resources in the resource list.
 		:return:
 		"""
-		return iter( self )
+		return self.data.__iter__()
 
 	def iter_for( self, uid: UID|str ) -> Resources:
 		"""
@@ -277,14 +277,14 @@ class Resources( UserList[Resource] ):
 		:return:
 		"""
 		uid = uid if isinstance( uid, UID ) else UID( uid )
-		return Resources( *[r for r in self if r.uid.head == uid.head] )
+		return Resources( *[r for r in self.data if r.uid.head == uid.head] )
 		# return [ r for r in self if r.uid.head == uid.head ]
 
 	def iter_types( self, types:List[str] ) -> Resources:
-		return Resources( *[r for r in self if r.type in types] )
+		return Resources( *[r for r in self.data if r.type in types] )
 
 	def iter_uids( self ) -> List[UID]:
-		return [UID( r.uid.classifier, r.uid.local_id, basename( r.path ) or basename( r.uid.path ) ) for r in self]
+		return [UID( r.uid.classifier, r.uid.local_id, basename( r.path ) or basename( r.uid.path ) ) for r in self.data]
 
 	def iter_uids_for( self, uid: UID|str ) -> List[UID]:
 		uid = uid if isinstance( uid, UID ) else UID( uid )
@@ -300,25 +300,19 @@ class Resources( UserList[Resource] ):
 
 	# for compatibility only
 	def all( self ) -> List[Resource]:
-		return [ r for r in self ]
+		return [ r for r in self.data ]
 
 	def all_for( self, uid: str = None, path: str = None ) -> List[Resource]:
-		_all = filter( lambda r: r.uid == uid, self ) if uid else self
+		_all = filter( lambda r: r.uid == uid, self.data ) if uid else self.data
 		_all = filter( lambda r: r.path == path, _all ) if path else _all
 		return list( _all )
 
 	def first( self ) -> Optional[Resource]:
-		return first( self, None )
+		return first( self.data, None )
+
+	def first_of_type( self, type: str ) -> Optional[Resource]:
+		return first_true( self.data, pred=lambda r: r.type == type )
 
 	@classmethod
 	def from_list( cls, *lists: Resources ) -> Resources:
 		return Resources( lst=[r for l in lists for r in l] )
-
-	# serialization
-
-	@classmethod
-	def from_dict( cls, obj: List[Dict[str, Any]] ) -> Resources:
-		return Resources( *[ Resource.from_dict( r ) for r in obj ] )
-
-	def to_dict( self ) -> List[Dict[str, Any]]:
-		return [ r.to_dict() for r in self ]

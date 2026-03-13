@@ -250,7 +250,7 @@ class ApplicationContext:
 		except (AttributeError, NoSysPath):
 			return SubFS( self.db_fs, f'/{name}' )
 
-	def plugin_fs( self, name: str, user: Optional[str], slug: Optional[str] ) -> MultiFS:
+	def plugin_fs( self, name: Optional[str] = None, user: Optional[str] = None, slug: Optional[str] = None ) -> MultiFS:
 		if slug: # slug wins over name/user
 			fs_path = slug
 		else:
@@ -301,8 +301,19 @@ class ApplicationContext:
 	def takeouts_dir_path( self ) -> Path:
 		return Path( self.takeouts_dir )
 
-	def takeout_fs( self, name: str ) -> FS:
-		return OSFS( root_path=self.takeouts_fs.getsyspath( f'{name}' ), create=True )
+	def takeout_fs_for( self, name: str ) -> FS:
+		try:
+			return OSFS( root_path=self.takeouts_fs.getsyspath( name ), create=True )
+		except (AttributeError, NoSysPath):
+			return SubFS( self.takeouts_fs, f'/{name}' )
+
+	def takeout_fs( self, name: Optional[str] = None, user: Optional[str] = None, slug: Optional[str] = None ) -> FS:
+		if slug: # slug wins over name/user
+			fs_path = slug
+		else:
+			fs_path = f'{name}/{user}' if user else name
+
+		return self.takeout_fs_for( fs_path )
 
 	def takeout_dir( self, name: str ) -> str:
 		return self.takeout_fs( name ).getsyspath( '' )

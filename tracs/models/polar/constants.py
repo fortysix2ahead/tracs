@@ -24,7 +24,16 @@ ACCOUNT_DATA_GLOB = 'account-data-*.json'
 ACCOUNT_PROFILE_GLOB = 'account-profile-*.json'
 TRAINING_SESSION_GLOB = 'training-session-*.json'
 
-TRAINING_SESSION_REGEX = compile( r'^.*training-session-(\d{4}-\d{2}-\d{2})-(\d+)(-([a-f0-9-]+))*\.json$' )
+rx_uuid = r'(?P<uuid>[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12})'
+rx_uuid2 = r'(?P<uuid2>[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12})' # need to double up ;-)
+rx_ymd = r'(?P<ymd>\d{4}-\d{2}-\d{2})'
+rx_time = r'(?P<time>\d{2}:\d{2}:\d{2})'
+rx_nid = r'(?P<nid>\d+)'
+rx_anid = r'(?P<anid>[a-f\d]+)'
+
+RX_TRAINING_SESSION_V1 = compile( rf'^/?training-session-{rx_ymd}-(\d+)(-{rx_uuid})?\.json$' )
+RX_TRAINING_SESSION_V2A = compile( rf'^/?training-session-{rx_ymd}T{rx_time}-{rx_nid}(-{rx_uuid})?\.json$' )
+RX_TRAINING_SESSION_V2B = compile( rf'^/?training-session-{rx_ymd}T{rx_time}-{rx_uuid}(-{rx_uuid2})?\.json$' )
 
 # icon ids
 

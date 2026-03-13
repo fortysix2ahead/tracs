@@ -19,13 +19,14 @@ from fs.errors import CreateFailed
 from fs.path import dirname
 from fs.zipfs import ReadZipFS
 from more_itertools import first_true
+from orjson.orjson import loads
 from requests_cache import CachedSession
 from rich.prompt import Prompt
 
 from tracs.activity import Activities, Activity, ActivityPart
 from tracs.activity_types import ActivityTypes
 from tracs.aio import load_resource
-from tracs.constants import APPNAME
+from tracs.constants import APPNAME, CFG_CLASSIFIER
 from tracs.models.polar.constants import *
 from tracs.models.polar.flow import PolarFitnessTest, PolarFlowExercise, PolarOrthostaticTest, PolarRRRecording, ResourcePartlist
 from tracs.models.polar.io import PolarTrainingSessionImporter
@@ -37,7 +38,7 @@ from tracs.plugins.tcx import TCX_TYPE
 from tracs.protocols import ApplicationContext
 from tracs.resources import Resource, ResourceType
 from tracs.service import path_for_id, Service
-from tracs.uid import UID, uid as muid
+from tracs.uid import UID, uid as uid_
 from tracs.utils import seconds_to_time
 
 log = getLogger( __name__ )
@@ -172,7 +173,6 @@ class Polar( Service ):
 
 	def __init__( self, **kwargs ):
 		super().__init__( **kwargs )
-		# super().__init__( **kwargs, display_name=DISPLAY_NAME, base_url=BASE_URL )
 
 		self._session = None
 		self._logged_in = False
@@ -254,26 +254,39 @@ class Polar( Service ):
 	def import_from_fs( self, src_fs: FS, dst_fs: FS, **kwargs ) -> Activities:
 		log.debug( f'fetching {self.name} activities from {src_fs}' )
 		imported_activities = Activities()
+		classifier = self.cfg_value( CFG_CLASSIFIER ) or self.name
 
-		activity_files = sorted( [ f for f in src_fs.walk.files( '/', filter=[ TRAINING_SESSION_GLOB ] ) ] )
-		log.debug( f'found {len( activity_files )} activity files in {src_fs}' )
+		session_files = sorted( [ f for f in src_fs.walk.files( '/', filter=[ TRAINING_SESSION_GLOB ] ) ] )
+		log.debug( f'found {len( session_files )} activity files in {src_fs}' )
 
 		if not self.ctx.force:
 			log.debug( f'checking db for already existing activities ...' )
 
-			for af, ex in zip_longest( activity_files, existing := [] ):
-				if m := TRAINING_SESSION_REGEX.fullmatch( af ):
-					_uid = muid( f'{self.name}:{m.groups()[1]}' ) # todo: check why import uid() does not work here
-					if not self.db.contains_activity( _uid ):
-						existing.append( af )
-			activity_files = existing
+			for af, ex in zip_longest( session_files, existing := [] ):
+				# old version, not valid any longer from 2026-03 onwards
+				if m := RX_TRAINING_SESSION_V1.fullmatch( af ):
+					_uid = uid_( f'{classifier}:{m.groupdict().get( "nid")}' )
 
-			log.debug( f'found {len( activity_files)} activities which do not yet exist in db' )
+				# new version, old exercises before 2026-03
+				elif m := RX_TRAINING_SESSION_V2A.fullmatch( af ):
+					_uid = uid_( f'{classifier}:{m.groupdict().get( "nid")}' )
 
-		activity_files = sorted( activity_files, reverse=True )
+				# new version, new exercises after 2026-03
+				elif m := RX_TRAINING_SESSION_V2B.fullmatch( af ):
+					# this is more complicated: we cannot derive the id from the filename :-(
+					_uid = None
 
-		for file in activity_files:
-			session_activity = self._session_importer.load_as_activity( fs=src_fs, path=file )
+				if not self.db.contains_activity( _uid ):
+					existing.append( af )
+
+			session_files = existing
+
+			log.debug( f'found {len( session_files)} activities which do not yet exist in db' )
+
+		session_files = sorted( session_files, reverse=True )
+
+		for file in session_files:
+			session_activity = self._session_importer.load_as_activity( fs=src_fs, path=file, attach=False )
 			uid, src = session_activity.uid, f'{self.name}{file}'
 
 			if not self._session_importer.remainders:

@@ -37,9 +37,9 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		return super().load_data( raw, converter=polar_model_converter, cls=TrainingSession )
 
-	def as_activity( self, resource: Resource ) -> Activity | Tuple[Activity]:
+	def as_activity( self, resource: Resource ) -> Activity|Tuple[Activity, ...]:
 		if len( resource.data.exercises ) == 1:
-			activity = self._from_single_exercise( resource.data, resource.data.exercises[0] )
+			activity, parts = self._from_single_exercise( resource.data, resource.data.exercises[0] ), ()
 		elif len( resource.data.exercises ) > 1:
 			activity, parts = self._from_multiple_exercises( resource.data, resource.data.exercises )
 		else:
@@ -48,8 +48,10 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 
 		# attach main resource to main activity
 		resource.name=f'training session {activity.uid.local_id}'
-		resource.path=f'{activity.uid.local_id}.session.json'
+		resource.path=f'{activity.uid.local_id}.json'
 		activity.resources.insert( 0, resource )
+
+		return activity, *parts
 
 	def _from_single_exercise( self, s: TrainingSession, e: Exercise ) -> Activity:
 		a = Activity(
@@ -139,6 +141,10 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		)
 
 		parts = [ self._from_single_exercise( s, p ) for p in el ]
+
+		# update members
+		parent.metadata.members = [ p.uid for p in parts ]
+		[ p.metadata.part_of.append( parent.uid ) for p in parts ]
 
 		return parent, tuple( parts )
 

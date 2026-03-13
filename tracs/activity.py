@@ -110,7 +110,6 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	calories: int = field( default=None ) #
 
 	metadata: Metadata = field( factory=Metadata )
-	parts: List[ActivityPart] = field( factory=list )
 	resources: Resources = field( factory=Resources ) # todo: merge with Resources later
 
 	# init variables
@@ -168,7 +167,7 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 	@property
 	def multipart( self ) -> bool:
-		return len( self.parts ) > 0
+		return False
 
 	def refs( self, as_uid: bool = False ) -> List[Union[str, UID]]:
 		if self.uid and not self.uids:
@@ -358,15 +357,41 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 		return target
 
+@define
+class ActivityGroup( Activity ):
+
+	__members__: List[Activity] = field( factory=list, alias='__members__' )
+
+	@property
+	def group( self ) -> bool:
+		return True
+
+@define
+class MultipartActivity( Activity ):
+
+	__members__: List[Activity] = field( factory=list, alias='__members__' )
+	gaps: List[timedelta] = field( factory=list ) # this is always len( parts ) - 1
+
+	@property
+	def gaps_before( self ) -> List[timedelta]:
+		return [ timedelta(), *self.gaps ]
+
+	@property
+	def gaps_after( self ) -> List[timedelta]:
+		return [ *self.gaps, timedelta() ]
+
+	@property
+	def multipart( self ) -> bool:
+		return True
+
 	@classmethod
-	def multipart_of( cls, *activities: Activity ) -> Activity:
+	def of( cls, *activities: Activity ) -> Activity:
 		"""
 		Creates a new multipart activity from provided activities.
 
 		:return:
 		"""
-
-		mpa = Activity()
+		mpa = MultipartActivity()
 
 		# aggregated fields
 		for f in Activity.fields():
@@ -405,15 +430,6 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 
 		return mpa
 
-@define
-class ActivityGroup( Activity ):
-
-	pass
-
-@define
-class MultipartActivity( Activity ):
-
-	pass
 
 class Activities( UserList[Activity] ):
 	"""

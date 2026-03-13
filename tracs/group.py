@@ -7,7 +7,7 @@ from attrs import define, field
 from rich.prompt import Confirm
 
 from tracs.service import Service
-from tracs.activity import Activity, ActivityPart, groups
+from tracs.activity import Activity, groups
 from tracs.protocols import ApplicationContext
 from tracs.ui import Choice, dict_table, diff_table_3
 from tracs.utils import seconds_to_time, unique_sorted as usort

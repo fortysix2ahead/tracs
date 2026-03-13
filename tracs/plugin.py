@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import Any, Tuple
 
 from dynaconf.utils.boxing import DynaBox
+from fs import open_fs
 
 from tracs.constants import CFG_CTX
 from tracs.protocols import ApplicationContext
@@ -31,12 +32,8 @@ class Plugin:
 			except AttributeError:
 				self._state = DynaBox()
 
-		elif kwargs.get( '_configuration' ) and kwargs.get( '_state' ): # this is mainly for testing purposes
-			self._cfg = kwargs.get( '_configuration' )
-			self._state = kwargs.get( '_state' )
-
-		else: # fallback
-			self._cfg, self._state = DynaBox(), DynaBox()
+		else: # fallback, for testing only
+			self._cfg, self._state = kwargs.get( '_cfg' ) or DynaBox(), kwargs.get( '_state' ) or DynaBox()
 
 		# enable by default
 		self._cfg.enabled = kwargs.get( 'enabled', True )

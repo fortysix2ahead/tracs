@@ -127,10 +127,10 @@ ACTIVITY_OBJ = Activity(
 		favourite=True,
 		members=[ UID.of( 'polar:101' ), UID.of( 'strava:101' ) ],
 	),
-	parts=[
-		ActivityPart( uid=UID.of( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
-		ActivityPart( uid=UID.of( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
-	],
+#	parts=[
+#		ActivityPart( uid=UID.of( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
+#		ActivityPart( uid=UID.of( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
+#	],
 	resources=Resources(
 		Resource(
 			name='recording.gpx',
@@ -195,10 +195,10 @@ ACTIVITIES_OBJ = Activities(
 			favourite=True,
 			members=[UID.of( 'polar:101' ), UID.of( 'strava:101' )],
 		),
-		parts=[
-			ActivityPart( uid=UID.of( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
-			ActivityPart( uid=UID.of( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
-		],
+#		parts=[
+#			ActivityPart( uid=UID.of( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
+#			ActivityPart( uid=UID.of( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
+#		],
 		resources=Resources(
 			Resource(
 				name='recording.gpx',
@@ -265,10 +265,10 @@ COMPLETE_ACTIVITY = Activity(
 		favourite=True,
 		members=[UID( 'polar:101' ), UID( 'strava:101' )],
 	),
-	parts=[
-		ActivityPart( uid=UID.from_str( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
-		ActivityPart( uid=UID.from_str( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
-	],
+#	parts=[
+#		ActivityPart( uid=UID.from_str( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
+#		ActivityPart( uid=UID.from_str( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
+#	],
 	resources=Resources(
 		Resource(
 			name='recording.gpx',
@@ -293,10 +293,10 @@ COMPLETE_ACTIVITY_WITH_RESOURCE_DATA = Activity(
 		favourite=True,
 		members=[UID( 'polar:101' ), UID( 'strava:101' )],
 	),
-	parts=[
-		ActivityPart( uid=UID.from_str( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
-		ActivityPart( uid=UID.from_str( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
-	],
+#	parts=[
+#		ActivityPart( uid=UID.from_str( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
+#		ActivityPart( uid=UID.from_str( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
+#	],
 	resources=Resources(
 		Resource(
 			name='recording.gpx',

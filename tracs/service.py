@@ -188,6 +188,13 @@ class Service( Plugin ):
 		"""
 		return self.path_for_id( local_id, self.name, self._user_id, resource_path, as_path )
 
+	def path_rel_to_db( self, local_id: int|str, resource_path: str ) -> str:
+		if self._path:
+			name, user = self._path, None
+		else:
+			name, user = self.name, self._user_id
+		return self.path_for_id( local_id, name, user, resource_path )
+
 	def path_for( self, resource: Resource, absolute: bool = False, omit_classifier: bool = False,
 	              ignore_overlay: bool = True, as_path: bool = False ) -> Optional[Path|str]:
 		"""

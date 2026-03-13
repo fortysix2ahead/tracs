@@ -14,7 +14,7 @@ from fs.subfs import SubFS
 from pytest import fixture
 
 from tracs.activity import Activity
-from tracs.constants import DB_DIRNAME
+from tracs.constants import CFG_CTX, CFG_FS, DB_DIRNAME
 from tracs.context import ApplicationContext, set_current_ctx
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager, Registry
@@ -42,8 +42,14 @@ def marker( request, name, key, default = None ):
 			return m.args[0]
 
 	except (AttributeError, IndexError, KeyError, TypeError):
-		log.info( f'unable to access marker {name}.{key}, falling back to default value = {default}', exc_info=True )
+		log.info( f'unable to access marker {name}.{key}, falling back to default value = {default}', exc_info=False )
 		return default
+
+def markers( request, name ):
+	_keys = [ 'cls' ]
+	m = request.node.get_closest_marker( name )
+	_kwargs = { k: v for k, v in m.kwargs.items() if k not in _keys }
+	return _kwargs
 
 # shared fixtures
 
@@ -175,18 +181,10 @@ def fs_path( request ) -> Tuple[FS, str]:
 @fixture
 def service( request, env: Environment ) -> Optional[Service]:
 	service_class = marker( request, 'service', 'cls', None )
-	service_class_name = service_class.__name__.lower() if service_class else None
+	_kwargs = markers( request, 'service' )
+	service = service_class( **{ CFG_CTX: env.ctx, **_kwargs } )
+
 	register = marker( request, 'service', 'register', False )
-	init = marker( request, 'service', 'init', False )
-
-	service = service_class( ctx=env.ctx )
-
-#	if init:
-		# service = service_class( fs=ctx.config_fs, _configuration=ctx.config['plugins'][service_class_name], _state=ctx.state['plugins'][service_class_name] )
-#		service = service_class( ctx=ctx )
-#	else:
-#		service = service_class( fs=fs )
-
 	if register and service not in env.registry.services:
 		env.registry.services.append( service )
 

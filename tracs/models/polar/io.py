@@ -1,4 +1,4 @@
-from datetime import timedelta, UTC
+from datetime import datetime, timedelta, UTC
 from itertools import zip_longest
 from logging import getLogger
 from typing import Any, List, Optional, Tuple
@@ -9,7 +9,8 @@ from gpxpy.gpx import GPX
 from lxml.etree import tostring
 from more_itertools import first, first_true
 
-from tracs.activity import Activity
+from test.objects import activity
+from tracs.activity import Activity, MultipartActivity
 from tracs.models.io import polar_model_converter
 from tracs.models.polar.constants import *
 from tracs.models.polar.training_session import Exercise, Route, Samples, TrainingSession
@@ -32,59 +33,25 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 
 	def __init__( self ):
 		super().__init__()
-		self.remainders: Optional[List[Activity]] = None
 
 	def load_data( self, raw: Any, **kwargs ) -> Any:
 		return super().load_data( raw, converter=polar_model_converter, cls=TrainingSession )
 
 	def as_activity( self, resource: Resource ) -> Activity | Tuple[Activity]:
 		if len( resource.data.exercises ) == 1:
-			return self._from_single_exercise( resource, resource.data, resource.data.exercises[0] )
-
+			activity = self._from_single_exercise( resource.data, resource.data.exercises[0] )
 		elif len( resource.data.exercises ) > 1:
-			parent, parts = self._from_multiple_exercises( resource.data, resource.data.exercises )
-			return parent, *parts
-
+			activity, parts = self._from_multiple_exercises( resource.data, resource.data.exercises )
 		else:
 			log.error( 'unable to import training session without exercises - this should not happen, please report this as bug' )
-			return None
+			raise NotImplementedError()
 
-		# for e, a in zip( el := resource.data.exercises, activities := [Activity() for e in el] ):
-			# do not append, this is done in calling method automatically
-			# act.resources.append( Resource(
-			# 	content=resource.content,
-			# 	type=POLAR_SESSION_TYPE,
-			# ) )
+		# attach main resource to main activity
+		resource.name=f'training session {activity.uid.local_id}'
+		resource.path=f'{activity.uid.local_id}.session.json'
+		activity.resources.insert( 0, resource )
 
-		# if len( activities ) == 1:  # if there's only one activity, we can return it directly -> main case
-		# 	self.remainders = None
-		# 	return first( activities )
-
-		# elif len( activities ) > 1:  # if there's more than one activity, we have to create a multipart activity
-		# 	parent_activity = Activity()
-		# 	self.remainders = activities  # save parts as remainders
-		#
-		# 	parent_activity.starttime = resource.utc( 'startTime' )
-		# 	parent_activity.endtime = resource.utc( 'stopTime' )
-		# 	parent_activity.duration = resource.td( 'duration' )
-		# 	parent_activity.distance = resource.float( 'distance' )
-		# 	parent_activity.heartrate = resource.int( 'averageHeartRate' )
-		# 	parent_activity.heartrate_max = resource.int( 'maximumHeartRate' )
-		# 	parent_activity.calories = resource.int( 'kiloCalories' )
-		#
-		# 	# "timeZoneOffset": 60 # todo: convert timezone offset into proper timezone
-		# 	parent_activity.timezone = get_timezone().zone
-		# 	parent_activity.starttime_local = parent_activity.starttime.astimezone( tzlocal() )
-		# 	parent_activity.endtime_local = parent_activity.endtime.astimezone( tzlocal() )
-		#
-		# 	# append main resource + recordings
-		# 	# parent_activity.resources.append( resource )
-		# 	return parent_activity
-		#
-		# else:  # can this happen?
-		# 	pass
-
-	def _from_single_exercise( self, r: Resource, s: TrainingSession, e: Exercise ) -> Activity:
+	def _from_single_exercise( self, s: TrainingSession, e: Exercise ) -> Activity:
 		a = Activity(
 			ascent = e.ascentMeters,
 			# not supported any longer?
@@ -116,37 +83,30 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			uid = UID( classifier=CLASSIFIER, local_id=int( e.identifier.id ) )
 		)
 
-		stream = self._stream( e.routes.route,  e.samples )
+		stream = self._stream( e.routes.route,  e.samples, a.starttime )
 
 		# create GPX/TCX
-
 		gpx, tcx = self._gpx_tcx( a, stream )
 
 		# attach resources
-
-		r.name=f'training session {a.uid.local_id}'
-		r.path=f'{a.uid.local_id}.session.json'
-
-		a.resources.add_all(
-			r,
-			Resource(
-				name=f'gpx recording {a.uid.local_id}',
-				path=f'{a.uid.local_id}.gpx',
-				content=gpx.to_xml( prettyprint=True ).encode( 'UTF-8' ),
-				type=GPX_TYPE
-			),
-			Resource(
-				name=f'tcx recording {a.uid.local_id}',
-				path=f'{a.uid.local_id}.tcx',
-				content=tostring( tcx.as_xml(), pretty_print=True ),
-				type=TCX_TYPE
-			)
+		gpx_resource = Resource(
+			name=f'gpx recording {a.uid.local_id}',
+			path=f'{a.uid.local_id}.gpx',
+			content=gpx.to_xml( prettyprint=True ).encode( 'UTF-8' ),
+			type=GPX_TYPE
 		)
+		tcx_resource = Resource(
+			name=f'tcx recording {a.uid.local_id}',
+			path=f'{a.uid.local_id}.tcx',
+			content=tostring( tcx.as_xml(), pretty_print=True ),
+			type=TCX_TYPE
+		)
+		a.resources.add_all( gpx_resource, tcx_resource )
 
 		return a
 
-	def _from_multiple_exercises( self, s: TrainingSession, el: List[Exercise] ) -> Tuple[Activity, Tuple[Activity]]:
-		parent = Activity(
+	def _from_multiple_exercises( self, s: TrainingSession, el: List[Exercise] ) -> Tuple[MultipartActivity, Tuple[Activity, ...]]:
+		parent = MultipartActivity(
 			# ascent = no field
 			# not supported any longer?
 			# cadence = resource.float( 'cadence', 'avg', parent=exc )
@@ -178,28 +138,35 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
 		)
 
-		parts = [ self._from_single_exercise( p ) for p in el ]
+		parts = [ self._from_single_exercise( s, p ) for p in el ]
 
-		print()
+		return parent, tuple( parts )
 
-	def _stream( self, route: Route, samples: Samples ) -> Stream:
+	def _stream( self, route: Route, samples: Samples, start: datetime ) -> Stream:
 		# todo: check this again: the length of the route list is samples length - 2
 		# this means the first and the last points are missing? Or the first two?
 		# in addition a waypoint does not contain a timestamp, but elapsedMillis, starting at 2xxx
 		# this also means that this code will likely break for older takeouts?
 
-		# assume that the second point is 1000 ms away from the start
-		start = to_isotime( route.startTime )
-		times = [ start, start + timedelta( milliseconds=1000 ), *[start + timedelta( wp.elapsedMillis ) for wp in route.wayPoints] ]
+		# use start time from route if it exists, otherwise rely on provided time
+		if route is not None:
+			# assume that the second point is 1000 ms away from the start
+			start = to_isotime( route.startTime )
+			times = [ start, start + timedelta( milliseconds=1000 ), *[start + timedelta( wp.elapsedMillis ) for wp in route.wayPoints] ]
 
-		# we'll triple the first point for now to have the same length as the samples lists
-		# although this may not be correct, maybe there's a start and end point somewhere?
-		# latitudes = [route.wayPoints[0].latitude, route.wayPoints[0].latitude, *[wp.latitude for wp in route.wayPoints]]
-		# longitudes = [route.wayPoints[0].longitude, route.wayPoints[0].longitude, *[wp.longitude for wp in route.wayPoints]]
+			# we'll triple the first point for now to have the same length as the samples lists
+			# although this may not be correct, maybe there's a start and end point somewhere?
+			# latitudes = [route.wayPoints[0].latitude, route.wayPoints[0].latitude, *[wp.latitude for wp in route.wayPoints]]
+			# longitudes = [route.wayPoints[0].longitude, route.wayPoints[0].longitude, *[wp.longitude for wp in route.wayPoints]]
 
-		# more correct is probably to mark the points as missing
-		latitudes = [None, None, *[wp.latitude for wp in route.wayPoints]]
-		longitudes = [None, None, *[wp.longitude for wp in route.wayPoints]]
+			# more correct is probably to mark the points as missing
+			latitudes = [None, None, *[wp.latitude for wp in route.wayPoints]]
+			longitudes = [None, None, *[wp.longitude for wp in route.wayPoints]]
+
+		else:
+			millis, length = first( samples.samples ).intervalMillis, _sample_len( samples )
+			times = [ start + timedelta( milliseconds=i*millis ) for i in range( length )]
+			latitudes, longitudes = [], []
 
 		for tm, lat, lon, alt, dst, hr, spd, p in zip_longest(
 			times,
@@ -237,11 +204,17 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		return gpx, tcx
 
 def _statistic( e: Exercise, type: str, value: str ) -> float|int|None:
-	# todo: exception handling
-	return getattr( first_true( e.statistics.statistics, pred=lambda s: s.type == type ), value )
+	try:
+		return getattr( first_true( e.statistics.statistics, pred=lambda s: s.type == type ), value )
+	except AttributeError:
+		# log.error( 'error', exc_info=True ) # used for development only, to examine data model
+		pass
 
 def _sample_len( samples: Samples ) -> int:
 	return max( [len( s.values ) for s in samples.samples] )
 
 def _sample_values( samples: Samples, type: str ) -> List[float]:
-	return first_true( samples.samples, pred=lambda s: s.type == type ).values
+	try:
+		return first_true( samples.samples, pred=lambda s: s.type == type ).values
+	except AttributeError:
+		return [] # empty in case samples do not exist

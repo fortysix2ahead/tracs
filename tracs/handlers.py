@@ -69,9 +69,15 @@ class ResourceHandler:
 		"""
 		resource = self.load( path=path, fs=fs, url=url, content=content, **kwargs )
 		activity = self.as_activity( resource )
-		attach = kwargs.get( 'attach', True ) if 'resource' in kwargs.keys() else True
-		if attach:
+
+		#attach = kwargs.get( 'attach', True ) if 'resource' in kwargs.keys() else True
+		#if attach:
+		#	activity.resources.append( resource )
+
+		# by default attach this resource to new activity unless attach parameter is set to false
+		if kwargs.get( 'attach', True ):
 			activity.resources.append( resource )
+
 		return activity
 
 	def as_activity( self, resource: Resource ) -> Activity:

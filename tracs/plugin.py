@@ -3,6 +3,7 @@ from typing import Any, Tuple
 
 from dynaconf.utils.boxing import DynaBox
 
+from tracs.constants import CFG_CTX
 from tracs.protocols import ApplicationContext
 from tracs.db import ActivityDb
 
@@ -17,7 +18,7 @@ class Plugin:
 		self._qname: str = f'{self.__class__.__module__}.{self.__class__.__name__}'
 
 		# save the current context, to be able to access the context from sub-methods
-		self._ctx: ApplicationContext = kwargs.get( 'ctx' )
+		self._ctx: ApplicationContext = kwargs.get( CFG_CTX )
 		if self._ctx:
 			# configure config/state views: create empty configs if context is missing
 			try:

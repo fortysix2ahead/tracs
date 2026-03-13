@@ -263,6 +263,9 @@ class Resources( UserList[Resource] ):
 		# for convenience, allow creation with given resources/list/resource lists
 		self.data.extend( [*resources, *(lst or []), *[r for l in lists or [] for r in l] ] )
 
+	def add_all( self, *resources: Resource ) -> None:
+		self.data.extend( resources )
+
 	def iter( self ):
 		"""
 		Iterates over all resources in the resource list.

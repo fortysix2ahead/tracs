@@ -11,6 +11,7 @@ from rich.prompt import Confirm
 from tzlocal import get_localzone_name
 
 from tracs.activity import Activities, Activity, ActivityTypes
+from tracs.constants import CFG_FROM_TAKEOUTS
 from tracs.protocols import ApplicationContext
 from tracs.db import ActivityDb
 from tracs.plugins.gpx import GPX_TYPE
@@ -44,11 +45,14 @@ def import_activities( ctx: ApplicationContext, sources: List[str], **kwargs ) -
 
 		if service := ctx.service_mgr.get( src ):
 			log.debug( f'importing activities from service {src}' )
-			if kwargs.get( 'from_takeouts' ):
-				fs, path = ctx.takeout_fs( src ), None
+			# todo: this needs to be improved for importing from u user-defined dir/file
+			if kwargs.get( CFG_FROM_TAKEOUTS ):
+				_imported = service.import_activities( ctx.force, ctx.pretend, **kwargs )
 			else:
 				fs, path = None, None
-			imported.extend( service.import_activities( ctx.force, ctx.pretend, fs=fs, path=path, **kwargs ) )
+				_imported = []
+
+			imported.extend( _imported )
 
 		else:
 			try:

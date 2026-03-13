@@ -89,11 +89,18 @@ KEY_VERSION = 'version'
 # configuration keys
 
 CFG_BASE_URL = '_base_url'
+CFG_CLASSIFIER = 'classifier'
+CFG_CTX = '_ctx'
 CFG_DB_FS = '_db_fs'
+CFG_DB_PATH = 'path'
+CFG_FROM_TAKEOUTS = 'from_takeouts'
 CFG_FS = '_fs'
 CFG_PATH = 'path'
+CFG_TAKEOUT_FS = '_takeout_fs'
+CFG_TAKEOUT_PATH = 'takeout_path'
 CFG_TMP_FS = '_tmp_fs'
 CFG_USER_ID = 'user_id'
+CFG_PASSWORD = 'password'
 
 # orjson options
 ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS

@@ -19,7 +19,7 @@ from fs.path import basename, combine, dirname, isabs, join, parts, split
 from more_itertools.recipes import first_true
 
 from tracs.activity import Activities, Activity
-from tracs.constants import CFG_BASE_URL, CFG_DB_FS, CFG_FS, CFG_PATH, CFG_TMP_FS, CFG_USER_ID, DB_DIRNAME, OVERLAY_DIRNAME
+from tracs.constants import *
 from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.resources import Resource, Resources
@@ -38,19 +38,34 @@ class Service( Plugin ):
 
 		# paths + plugin filesystem area
 		# providing parameters via kwargs is for testing only and is not supposed to be used in production
-		# there's not check for ctx being null as a service shall not exist without a context
-		self._user_id = kwargs.get( CFG_USER_ID ) or self._cfg.get( CFG_USER_ID )
-		self._path = kwargs.get( CFG_PATH ) or self._cfg.get( CFG_PATH )
+		# there's no check for ctx being null as a service shall not exist without a context
 
-		self._fs: FS = kwargs.get( CFG_FS ) or self.ctx.plugin_fs( self.name, self._user_id, self._path )
+		self._user_id = kwargs.get( CFG_USER_ID ) or self._cfg.get( CFG_USER_ID )
+		self._db_path = kwargs.get( CFG_DB_PATH ) or self._cfg.get( CFG_DB_PATH )
+
+		# plugin fs
+		if kwargs.get( CFG_FS ):
+			self._fs: FS = kwargs.get( CFG_FS )
+		elif self._db_path:
+			self._fs: FS = self.ctx.plugin_fs( slug=self._db_path )
+		else:
+			self._fs: FS = self.ctx.plugin_fs( self.name, self._user_id )
+
+		log.debug( f'service instance {self.name} configured to use plugin fs = {self._fs}' )
+
+		self._takeout_path = kwargs.get( CFG_TAKEOUT_PATH ) or self._cfg.get( CFG_TAKEOUT_PATH )
+		self._takeout_fs: FS = kwargs.get( CFG_TAKEOUT_FS )
+		log.debug( f'service instance {self.name} uses takeout path = {self._takeout_path}' )
+
+		# common fs being equal for all plugins
 		self._dbfs = kwargs.get( CFG_DB_FS ) or self.ctx.db_fs
 		self._tmpfs = kwargs.get( CFG_TMP_FS ) or self.ctx.tmp_fs
-		self._rootfs = OSFS( '/' ) # needed ?
+		self._rootfs = OSFS( '/' )  # needed ?
 		self._base_url = kwargs.get( CFG_BASE_URL )
 
 		self._logged_in: bool = False
 
-		log.debug( f'service instance {self._name} created with fs = {self._fs}' )
+		log.debug( f'service instance {self.name} created with fs = {self._fs}' )
 
 	# properties
 
@@ -255,10 +270,18 @@ class Service( Plugin ):
 			range_from = datetime.now( UTC ) - timedelta( days = days_range )
 		range_to = datetime.now( UTC ) + timedelta( days=1 )
 
-		src_fs: FS = kwargs.get( 'fs' )
-		src_path: str = kwargs.get( 'path' )
+		if kwargs.get( CFG_FROM_TAKEOUTS ):
+			if not self._takeout_fs:
+				if self._takeout_path:
+					self._takeout_fs = self.ctx.takeout_fs( slug=self._takeout_path )
+				else:
+					self._takeout_fs = self.ctx.takeout_fs( self.name, self._user_id )
 
-		classifier = kwargs.get( 'classifier' ) or self.name
+
+			src_fs: FS = self._takeout_fs
+			src_path: str = None
+
+		classifier = self.cfg_value( CFG_CLASSIFIER ) or self.name
 		type = kwargs.get( 'type' )
 
 		skip_fetch = kwargs.get( 'skip_fetch', False )
@@ -344,7 +367,9 @@ class ServiceManager:
 	def add_from( self, ctx, name: str, config: Dict[str, Any] ):
 		service_cls = first_true( self.services_classes.values(), pred=lambda sc: sc.SERVICE_NAME == config.get( 'type' ) )
 		if service_cls:
-			self.services[name] = service_cls( **{ **config, 'ctx': ctx, 'name': name } )
+			cfg_dict = config | { CFG_CTX: ctx, 'name': name }
+			cfg_dict.pop( 'type' )
+			self.services[name] = service_cls( **cfg_dict )
 		else:
 			log.error( f'unable to find service class for service type {name}' )
 

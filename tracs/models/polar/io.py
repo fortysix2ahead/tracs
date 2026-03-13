@@ -39,10 +39,15 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 
 	def as_activity( self, resource: Resource ) -> Activity | Tuple[Activity]:
 		if len( resource.data.exercises ) == 1:
-			return self._from_single_exercise( resource.data, resource.data.exercises[0] )
-		else:
+			return self._from_single_exercise( resource, resource.data, resource.data.exercises[0] )
+
+		elif len( resource.data.exercises ) > 1:
 			parent, parts = self._from_multiple_exercises( resource.data, resource.data.exercises )
 			return parent, *parts
+
+		else:
+			log.error( 'unable to import training session without exercises - this should not happen, please report this as bug' )
+			return None
 
 		# for e, a in zip( el := resource.data.exercises, activities := [Activity() for e in el] ):
 			# do not append, this is done in calling method automatically
@@ -79,7 +84,7 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		# else:  # can this happen?
 		# 	pass
 
-	def _from_single_exercise( self, s: TrainingSession, e: Exercise ) -> Activity:
+	def _from_single_exercise( self, r: Resource, s: TrainingSession, e: Exercise ) -> Activity:
 		a = Activity(
 			ascent = e.ascentMeters,
 			# not supported any longer?
@@ -119,21 +124,63 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 
 		# attach resources
 
-		a.resources.append( Resource(
-			name=f'gpx recording {a.uid.local_id}',
-			content=gpx.to_xml( prettyprint=True ).encode( 'UTF-8' ),
-			type=GPX_TYPE
-		) )
-		a.resources.append( Resource(
-			name=f'tcx recording {a.uid.local_id}',
-			content=tostring( tcx.as_xml(), pretty_print=True ),
-			type=TCX_TYPE
-		) )
+		r.name=f'training session {a.uid.local_id}'
+		r.path=f'{a.uid.local_id}.session.json'
+
+		a.resources.add_all(
+			r,
+			Resource(
+				name=f'gpx recording {a.uid.local_id}',
+				path=f'{a.uid.local_id}.gpx',
+				content=gpx.to_xml( prettyprint=True ).encode( 'UTF-8' ),
+				type=GPX_TYPE
+			),
+			Resource(
+				name=f'tcx recording {a.uid.local_id}',
+				path=f'{a.uid.local_id}.tcx',
+				content=tostring( tcx.as_xml(), pretty_print=True ),
+				type=TCX_TYPE
+			)
+		)
 
 		return a
 
 	def _from_multiple_exercises( self, s: TrainingSession, el: List[Exercise] ) -> Tuple[Activity, Tuple[Activity]]:
-		pass
+		parent = Activity(
+			# ascent = no field
+			# not supported any longer?
+			# cadence = resource.float( 'cadence', 'avg', parent=exc )
+			# cadence_max = resource.float( 'cadence', 'max', parent=exc )
+			calories = s.calories,
+			# descent = no field
+			distance = s.distanceMeters,
+			duration = millis_to_timedelta( s.durationMillis ),
+			# elevation = no field
+			# elevation_max = no field
+			# elevation_min = no field
+			endtime = to_isotime( s.stopTime ),
+			endtime_local = to_isotime( s.stopTime ).astimezone( tzlocal() ),
+			heartrate = s.hrAvg,
+			heartrate_max = s.hrMax,
+			# heartrate_min = no field exists,
+			location_latitude_start = s.latitude,
+			location_longitude_start = s.longitude,
+			# power values are hidden somewhere else now?
+			# power = resource.float( 'power', 'avg', parent=exc )
+			# power_max = resource.float( 'power', 'max', parent=exc )
+			name = s.name,
+			# speed = no field
+			# speed_max = no field
+			starttime = to_isotime( s.startTime ),
+			starttime_local = to_isotime( s.startTime ).astimezone( tzlocal() ),
+			timezone = get_timezone().zone, # todo: this not correct - when an activity took place in a different timezone than the home zone
+			type = ACCESSLINK_TYPES.get( s.sport.id ), # todo: this will fail, sports now have ids
+			uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
+		)
+
+		parts = [ self._from_single_exercise( p ) for p in el ]
+
+		print()
 
 	def _stream( self, route: Route, samples: Samples ) -> Stream:
 		# todo: check this again: the length of the route list is samples length - 2

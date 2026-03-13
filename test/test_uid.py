@@ -1,7 +1,7 @@
 from pytest import mark
 
 from test.objects import UID_DUMP, UID_OBJ
-from fsio import converter
+from tracs.fsio import converter
 from tracs.uid import UID, uid
 
 @mark.unit
@@ -55,6 +55,13 @@ def test_uid():
 	assert uid.as_tuple == ('polar', 101) and uid.as_triple == ( 'polar', 101, None )
 	assert uid.as_tuple_str == 'polar:101'
 	assert uid.head == 'polar:101' and uid.tail == "2"
+
+	uid = UID.of( 'polar:101/a/b/c/recording.gpx' )
+	assert uid.classifier == 'polar' and uid.local_id == 101 and uid.path == 'a/b/c/recording.gpx'
+	assert uid.uid == 'polar:101/a/b/c/recording.gpx' and uid.denotes_resource()
+	assert uid.as_tuple == ('polar', 101) and uid.as_triple == ( 'polar', 101, 'a/b/c/recording.gpx' )
+	assert uid.as_tuple_str == 'polar:101'
+	assert uid.head == 'polar:101' and uid.tail == "a/b/c/recording.gpx"
 
 	# works, but does not make sense
 	uid = UID.of( 'polar:101/recording.gpx#2' )

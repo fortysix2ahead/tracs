@@ -286,16 +286,16 @@ class Service( Plugin ):
 		skip_fetch = kwargs.get( 'skip_fetch', False )
 		skip_download = kwargs.get( 'skip_download', False )
 
-		dst_fs = self.ctx.import_fs()
+		dest_fs = self.ctx.import_fs()
 
 		# actual import from local fs or remote
 		if src_fs and self.supports_fs_import( src_fs, src_path ):
 			log.debug( f'service {self.name} supports import from {src_fs.getsyspath( "" )}' )
-			activities = self.import_from_fs( src_fs, dst_fs, path=src_path, classifier=classifier, type=type )
+			activities = self.import_from_fs( src_fs, dest_fs, path=src_path, classifier=classifier, type=type )
 
 		elif self.supports_remote_import():
 			log.debug( f'service {self.name} supports remote import' )
-			activities = self.import_from_remote( dst_fs, range_from=range_from, range_to=range_to )
+			activities = self.import_from_remote( dest_fs, range_from=range_from, range_to=range_to )
 
 		else:
 			log.info( f'service [bold]{self.name}[/bold] does not support neither remote nor local import from {src_fs} or no suitable file(s) to import have been found' )
@@ -308,8 +308,8 @@ class Service( Plugin ):
 				if force or not self.ctx.db_fs.exists( r.path ):
 					try:
 						self.ctx.db_fs.makedirs( dirname( r.path ), recreate=True )
-						copy_file( dst_fs, r.path, self.ctx.db_fs, r.path, preserve_time=True )
-						dst_fs.remove( r.path )
+						copy_file( dest_fs, r.path, self.ctx.db_fs, r.path, preserve_time=True )
+						dest_fs.remove( r.path )
 						# don't know why move_file fails, maybe a bug?
 						# move_file( import_fs, r.path, ctx.db_fs, r.path, preserve_time=True )
 						log.debug( f'imported resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
@@ -336,7 +336,7 @@ class Service( Plugin ):
 	def supports_fs_import( self, fs: FS | None, path: str | None ) -> bool:
 		return False
 
-	def import_from_fs( self, src_fs: FS, dst_fs: FS, **kwargs ) -> Activities:
+	def import_from_fs( self, src_fs: FS, dest_fs: FS, **kwargs ) -> Activities:
 		return Activities()
 
 	def supports_remote_import( self ) -> bool:

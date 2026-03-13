@@ -11,7 +11,7 @@ from tracs.activity import Activities, Activity, ActivityTypes
 from tracs.errors import ResourceImportException
 from tracs.pluginmgr import service
 from tracs.plugins.gpx import GPXImporter
-from tracs.service import path_for_date, Service
+from tracs.service import date_id_to_path, Service
 from tracs.uid import UID
 
 log = getLogger( __name__ )
@@ -71,7 +71,7 @@ class Local( Service ):
 					activity = self._gpx_importer.load_as_activity( fs=src_fs, path=src_path )
 					activity.uid = UID( classifier, int( activity.starttime.strftime( "%y%m%d%H%M%S" ) ) )
 					activity.type = type
-					dst_path = f'{classifier}/{path_for_date( activity.starttime )}/{activity.starttime.strftime( "%y%m%d%H%M%S" )}{f.suffix}'
+					dst_path = f'{classifier}/{date_id_to_path( activity.starttime )}/{activity.starttime.strftime( "%y%m%d%H%M%S" )}{f.suffix}'
 
 					if self.ctx.force or not self.db.contains_resource( activity.uid, dst_path ):
 						dst_fs.makedirs( dirname( dst_path ), recreate=True )

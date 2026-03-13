@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Tuple, Type, Union
 
 from fs.base import FS
 from fs.osfs import OSFS
@@ -61,7 +61,7 @@ class ResourceHandler:
 
 		return resource
 
-	def load_as_activity( self, path: Path|str = None, url: str = None, content: bytes|str = None, fs: FS = None, **kwargs ) -> Activity:
+	def load_as_activity( self, path: Path|str = None, url: str = None, content: bytes|str = None, fs: FS = None, **kwargs ) -> Activity|Tuple[Activity, ...]:
 		"""This is basically the same as load(), but transforms the loaded activity into a resource.
 		This calls load() and provides the loaded resource to as_activity() and returns the result.
 		In addition, it's possible to provide a resource as kwarg. In this case the content/raw/data from the resource
@@ -75,12 +75,12 @@ class ResourceHandler:
 		#	activity.resources.append( resource )
 
 		# by default attach this resource to new activity unless attach parameter is set to false
-		if kwargs.get( 'attach', True ):
+		if kwargs.get( 'attach', True ) and resource not in activity.resources:
 			activity.resources.append( resource )
 
 		return activity
 
-	def as_activity( self, resource: Resource ) -> Activity:
+	def as_activity( self, resource: Resource ) -> Activity|Tuple[Activity, ...]:
 		return Activity()
 
 	# load methods

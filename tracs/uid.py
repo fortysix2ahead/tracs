@@ -4,7 +4,7 @@ from typing import Callable, List, Optional, Tuple
 from urllib.parse import urlparse, urlunsplit
 
 from attrs import define, field
-from fs.path import basename, split
+from fs.path import basename, frombase, parts
 
 @define( eq=False, order=False, repr=False )
 class UID:
@@ -128,11 +128,15 @@ def from_str( uid: str, path: str = None ) -> UID:
 
 	else:
 		classifier = pr.scheme
-		head, tail = split( pr.path )
-		if head and tail:
-			local_id, path = head, path if path else tail
-		else:
-			local_id, path = tail, path if path else None
+		match len( _parts := parts( pr.path ) ):
+			case 1:
+				local_id = None
+			case 2:
+				local_id = _parts[1]
+			case 3:
+				local_id, path = _parts[1], _parts[2] if not path else path
+			case _:
+				local_id, path = _parts[1], frombase( _parts[1], pr.path )[1:]
 
 	try:
 		local_id = int( local_id )

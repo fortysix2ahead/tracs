@@ -251,7 +251,7 @@ class Polar( Service ):
 	def supports_fs_import( self, fs: FS | None, path: str | None ) -> bool:
 		return any ( [ f for f in fs.walk.files( '/', filter=[ ACCOUNT_PROFILE_GLOB ] ) ] )
 
-	def import_from_fs( self, src_fs: FS, dst_fs: FS, **kwargs ) -> Activities:
+	def import_from_fs( self, src_fs: FS, dest_fs: FS, **kwargs ) -> Activities:
 		log.debug( f'fetching {self.name} activities from {src_fs}' )
 		imported_activities = Activities()
 		classifier = self.cfg_value( CFG_CLASSIFIER ) or self.name
@@ -300,10 +300,9 @@ class Polar( Service ):
 						r.source = src_fs.getsyspath( file )
 
 					# calculate import destinations and write content of resources
-					dest_fs, dest_path = self.fs, relativefrom( parts( r.path )[1], r.path ) # path to write to
-					dest_fs.makedirs( dirname( dest_path ), recreate=True )
-					dest_fs.writebytes( dest_path, contents=r.content )
-					log.debug( f'wrote {len( r.content )} bytes of resource content to {fs_to_str( dest_fs )}/{dest_path}' )
+					dest_fs.makedirs( dirname( r.path ), recreate=True )
+					dest_fs.writebytes( r.path, contents=r.content )
+					log.debug( f'wrote {len( r.content )} bytes of resource content to {fs_to_str( dest_fs )}/{r.path}' )
 					r.unload()
 
 				imported_activities.append( a )

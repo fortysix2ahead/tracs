@@ -25,6 +25,7 @@ from dynaconf import Dynaconf as Configuration
 from fs.base import FS
 from fs.errors import CreateFailed, ResourceNotFound, ResourceReadOnly
 from fs.info import Info
+from fs.memoryfs import MemoryFS
 from fs.osfs import OSFS
 from fs.path import basename, dirname
 from fs.zipfs import ReadZipFS
@@ -424,6 +425,15 @@ def fspath( path: Path|str ) -> Tuple[FS,str|None]:
 			raise ResourceNotFound( path )
 
 	return fs, file
+
+def fs_to_str( fs: FS ):
+	match fs:
+		case OSFS():
+			return fs.getsyspath( '/' )
+		case MemoryFS():
+			return 'mem:/'
+		case _:
+			return str( fs )
 
 # styling helpers
 

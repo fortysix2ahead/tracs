@@ -56,8 +56,6 @@ class Mock( Service ):
 	def __init__( self, *args, **kwargs ):
 		super().__init__( *args, **kwargs )
 
-		self._user_id = 'user' if not self._cfg.get( CFG_USER_ID ) else self._cfg.get( CFG_USER_ID )
-
 	def fetch( self, force: bool, pretend: bool, **kwargs ) -> List[Resource]:
 		return [
 			Resource(

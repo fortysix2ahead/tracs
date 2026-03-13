@@ -41,29 +41,18 @@ class Service( Plugin ):
 		# there's no check for ctx being null as a service shall not exist without a context
 
 		self._user_id = kwargs.get( CFG_USER_ID ) or self._cfg.get( CFG_USER_ID )
-		self._db_path = kwargs.get( CFG_DB_PATH ) or self._cfg.get( CFG_DB_PATH )
-
-		# plugin fs
-		if kwargs.get( CFG_FS ):
-			self._fs: FS = kwargs.get( CFG_FS )
-		elif self._db_path:
-			self._fs: FS = self.ctx.plugin_fs( slug=self._db_path )
-		else:
-			self._fs: FS = self.ctx.plugin_fs( self.name, self._user_id )
-
-		log.debug( f'service instance {self.name} configured to use plugin fs = {self._fs}' )
-
+		self._path = kwargs.get( CFG_DB_PATH ) or self._cfg.get( CFG_DB_PATH )
+		self._db_path = kwargs.get( CFG_DB_PATH ) or self._cfg.get( CFG_DB_PATH ) # remove this later as it's not the DB path ...
 		self._takeout_path = kwargs.get( CFG_TAKEOUT_PATH ) or self._cfg.get( CFG_TAKEOUT_PATH )
+
+		self._base_url = kwargs.get( CFG_BASE_URL )
+		self._logged_in: bool = False
+
+		self._fs: FS = kwargs.get( CFG_FS )
+		log.debug( f'service instance {self.name} uses plugin path = {self._path}' )
+
 		self._takeout_fs: FS = kwargs.get( CFG_TAKEOUT_FS )
 		log.debug( f'service instance {self.name} uses takeout path = {self._takeout_path}' )
-
-		# common fs being equal for all plugins
-		self._dbfs = kwargs.get( CFG_DB_FS ) or self.ctx.db_fs
-		self._tmpfs = kwargs.get( CFG_TMP_FS ) or self.ctx.tmp_fs
-		self._rootfs = OSFS( '/' )  # needed ?
-		self._base_url = kwargs.get( CFG_BASE_URL )
-
-		self._logged_in: bool = False
 
 		log.debug( f'service instance {self.name} created with fs = {self._fs}' )
 
@@ -93,6 +82,9 @@ class Service( Plugin ):
 
 	@property
 	def fs( self ) -> FS:
+		if self._fs is None:
+			self._fs: FS = self.ctx.plugin_fs( self.name, self._user_id, self._path )
+
 		return self._fs
 
 	@property
@@ -106,6 +98,16 @@ class Service( Plugin ):
 	@property
 	def overlay_fs( self ) -> FS:
 		return cast( MultiFS, self._fs ).get_fs( OVERLAY_DIRNAME )
+
+	@property
+	def takeout_fs( self ) -> FS:
+		if not self._takeout_fs:
+			if self._takeout_path:
+				self._takeout_fs = self.ctx.takeout_fs( slug=self._takeout_path )
+			else:
+				self._takeout_fs = self.ctx.takeout_fs( self.name, self._user_id )
+
+		return self._takeout_fs
 
 	# class methods for helping with various things
 
@@ -160,7 +162,6 @@ class Service( Plugin ):
 		"""Calculates the path for a resource based on the provided information.
 		Note that this path is relative, but not yet relative to something particular,
 		i.e. it might be relative to DB FS if a base path is provided.
-		This calls _path_for_id() which might be overwritten in subclasses.
 		Also note that this does not take service name or service user into account! Use svc_path_for_id() for this.
 
 		:param local_id: local id of a resource
@@ -170,24 +171,15 @@ class Service( Plugin ):
 		:param as_path: if true, returns a Path instead of a string
 		:return: the calculated path
 		"""
-		path = self._path_for_id( local_id )
+		path = num_id_to_path( local_id )
 		path = combine( user_id, path ) if user_id else path
 		path = combine( base_path, path ) if base_path else path
 		path = combine( path, resource_path ) if resource_path else path
 		return Path( path ) if as_path else path
 
-	# noinspection PyMethodMayBeStatic
-	def _path_for_id( self, local_id: int|str ) -> str:
-		"""Helper which transforms a provided ID into a default path.
-		The default behaviour is ABCD -> A/B/C/ABCD. Right justification will be applied (zero-based).
-
-		:param local_id: id to transform
-		:return: transformed id
-		"""
-		return path_for_id( local_id )
-
 	def svc_path_for_id( self, local_id: Union[int, str], resource_path: Optional[str] = None, as_path: bool = False ):
 		"""Returns the path for an id and takes service name and user into account (if set).
+		In addition it also it uses the configured path if set.
 
 		:param local_id: id to transform
 		:param resource_path: resource path
@@ -392,11 +384,23 @@ class ServiceManager:
 
 # helper functions
 
-def path_for_id( local_id: int|str ) -> str:
-	local_id_rjust = str( local_id ).rjust( 3, '0' )
-	return f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{local_id}'
+def num_id_to_path( num_id: int|str ) -> str:
+	"""
+	Helper for cutting a numeric id into a segmented path.
+	Example: 1234 becomes 1/2/3/1234.
+	:param num_id:
+	:return:
+	"""
+	local_id_rjust = str( num_id ).rjust( 3, '0' )
+	return f'{local_id_rjust[0]}/{local_id_rjust[1]}/{local_id_rjust[2]}/{num_id}'
 
-def path_for_date( date_id: Union[int, str, datetime] ) -> str:
+def date_id_to_path( date_id: Union[int,str,datetime] ) -> str:
+	"""
+	Helper for cutting a date id into a segmented path.
+	Example: 260117101010 becomes 26/01/17/260117101010.
+	:param date_id:
+	:return:
+	"""
 	if isinstance( date_id, int ):
 		date_id = str( date_id )
 	elif isinstance( date_id, datetime ):

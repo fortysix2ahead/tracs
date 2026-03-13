@@ -23,6 +23,7 @@ from yaml import safe_dump
 from tracs.constants import *
 from tracs.pluginmgr import PluginManager, Registry, ServiceManager
 from tracs.protocols import ActivityDb, RuleParser
+from tracs.utils import fs_to_str
 
 log = getLogger( __name__ )
 
@@ -115,12 +116,12 @@ class ApplicationContext:
 		try:
 			settings_files.append( self.config_fs.getsyspath( CONFIG_FILENAME ) )
 		except NoSysPath:
-			log.warning( f'no configuration file found in {self.config_fs}' )
+			log.warning( f'no configuration file found in FS {fs_to_str( self.config_fs )}' )
 
 		try:
 			appstate_files.append( self.config_fs.getsyspath( STATE_FILENAME ) )
 		except NoSysPath:
-			log.warning( f'no appstate file found in {self.config_fs}' )
+			log.warning( f'no appstate file found in FS {fs_to_str( self.config_fs )}' )
 
 		self.config = Configuration( settings_files=settings_files, merge_enabled=True )
 		self.state = Configuration( settings_files=appstate_files, merge_enabled=True )
@@ -141,7 +142,7 @@ class ApplicationContext:
 
 	def __attrs_post_init__( self ):
 		# create config fs
-		log.debug( f'config/library FS configured to {self.config_fs.getsyspath( "/" )} / {self.lib_fs.getsyspath( "/" )}' )
+		log.debug( f'config/library FS configured to {fs_to_str( self.config_fs )} / {fs_to_str( self.lib_fs )}' )
 
 		# setup auxillary fs which depend on config + lib fs
 		self._setup_aux_fs( self.config_fs, self.lib_fs )

@@ -15,7 +15,7 @@ from more_itertools import first, first_true, last, unique
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import FormattedFieldsBase, Metadata, VirtualFields
+from tracs.core import FieldFormatters, Metadata, VirtualFields
 from tracs.resources import Resource, Resources
 from tracs.ui.utils import fmt_datetime, fmt_decimal, fmt_default, fmt_timedelta
 from tracs.uid import UID, uid
@@ -41,9 +41,10 @@ class ActivityPart:
 		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.uids ] )
 
 @define( eq=True, repr=False ) # todo: mark fields with proper eq attributes
-class Activity( FormattedFieldsBase ):
+class Activity:
 
 	__vf__: ClassVar[VirtualFields] = VirtualFields()
+	__fmf__: ClassVar[FieldFormatters] = FieldFormatters()
 
 	# fields
 	id: int = field( default=None, metadata={ 'protected': True } )

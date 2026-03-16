@@ -206,8 +206,6 @@ class VirtualField:
 	display_name: str = field( default=None )
 	expose: bool = field( default=True ) # expose field as regular property
 
-	# enclosing: Type = field( default=None )
-
 	def __call__( self, parent: Any = None ) -> Any:
 		return self.value_for( parent )
 
@@ -305,49 +303,43 @@ class FieldFormatter:
 	def __format__( self, value: Any, format: str = None, locale: str = None ) -> Any:
 		return self.formatter( value, format or self.format, locale or self.locale )
 
-class FieldFormatters( dict[str, FieldFormatter] ):
+class FieldFormatters( UserDict[str, FieldFormatter] ):
 
 	__default_formatter_name__: ClassVar[str] = '__default__'
-	__default_formatter__: ClassVar[FieldFormatter] = FieldFormatter( __default_formatter_name__, formatter=str )
+	__default_formatter__: ClassVar[FieldFormatter] = FieldFormatter( __default_formatter_name__, formatter=lambda v, f, l: str( v ) )
 
-	def __setitem__( self, key: str, field: FieldFormatter|Callable ) -> None:
-		if not callable( field ):
-			raise ValueError( f'value must be of type {FieldFormatter} or Callable' )
+	__proxy__: Any = field( default=None, alias='__proxy__' )
 
-		if not isinstance( field, FieldFormatter ):
-			field = FieldFormatter( name=key, formatter=field )
-
-		super().__setitem__( key, field )
+	def __init__( self, d: dict = None, proxy: Any = None ):
+		super().__init__( d )
+		self.__proxy__: Any = proxy
 
 	def add( self, field: FieldFormatter ) -> None:
-		self[field.name] = field
+		self.data[field.name] = field
 
-@define
-class FormattedFieldsBase( AttrsInstance ):
+	def add_all( self, *fmf: FieldFormatter ) -> None:
+		[self.add( f ) for f in fmf]
 
-	__fmf__: ClassVar[FieldFormatters] = FieldFormatters()
-
-	@classmethod
-	def field_formatters( cls ) -> FieldFormatters:
-		return cls.__fmf__
+	def set( self, key: str, field: FieldFormatter ) -> None:
+		self.data[key] = field
 
 	def format( self, name: str, fmt: str = None, locale: str = None, suppress_errors: bool = False ) -> str:
-		if not ( formatter := self.__class__.__fmf__.get( name ) ):
-			formatter = self.__class__.__fmf__.get( FieldFormatters.__default_formatter_name__ )
+		if not (formatter := self.get( name )):
+			formatter = self.__class__.__default_formatter__
 
 		if suppress_errors:
 			try:
-				return formatter( getattr( self, name ), fmt, locale )
+				return formatter( getattr( self.__proxy__, name ), fmt, locale )
 			except Exception:
 				return ''
 		else:
-			return formatter( getattr( self, name ), fmt, locale )
+			return formatter( getattr( self.__proxy__, name ), fmt, locale )
 
 	def format_as_list( self, *fields, fmt: str = None, locale: str = None, conv: Callable = None, suppress_errors: bool = False ) -> List[str]:
 		if conv:
-			return [ conv( getattr( self, f ) ) for f in fields ]
+			return [conv( getattr( self.__proxy__, f ) ) for f in fields]
 		else:
-			return [ self.format( f, fmt, locale, suppress_errors ) for f in fields ]
+			return [self.format( f, fmt, locale, suppress_errors ) for f in fields]
 
 @define
 class Keyword:

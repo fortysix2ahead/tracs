@@ -607,22 +607,23 @@ def _stream( activities: List[Activity], name: str ) -> List:
 # configure formatting
 # todo: don't like that as field names are already pinned down here
 
-Activity.__fmf__['__default__'] = fmt_default
-for f in [ 'starttime', 'starttime_local', 'endtime', 'endtime_local' ]:
-	Activity.__fmf__[f] = fmt_datetime
-for f in [ 'duration', 'duration_moving' ]:
-	Activity.__fmf__[f] = fmt_timedelta
-for f in [ 'distance', 'ascent', 'descent', 'elevation', 'elevation_max', 'elevation_min', 'speed', 'speed_max' ]:
-	Activity.__fmf__[f] = fmt_decimal
-
-# noinspection PyShadowingNames
+# Activity.__fmf__['__default__'] = fmt_default
+# for f in [ 'starttime', 'starttime_local', 'endtime', 'endtime_local' ]:
+# 	Activity.__fmf__[f] = fmt_datetime
+# for f in [ 'duration', 'duration_moving' ]:
+# 	Activity.__fmf__[f] = fmt_timedelta
+# for f in [ 'distance', 'ascent', 'descent', 'elevation', 'elevation_max', 'elevation_min', 'speed', 'speed_max' ]:
+# 	Activity.__fmf__[f] = fmt_decimal
+#
+# # noinspection PyShadowingNames
 def configure_formatters( cfg: Dict ):
-	for f in ['starttime', 'starttime_local', 'endtime', 'endtime_local']:
-		if formatter := Activity.field_formatters().get( f ):
-			formatter.format, formatter.locale = cfg.get( 'datetime' ), cfg.get( 'locale' )
-	for f in [ 'duration', 'duration_moving' ]:
-		if formatter := Activity.field_formatters().get( f ):
-			formatter.format, formatter.locale = cfg.get( 'timedelta' ), cfg.get( 'locale' )
-	for f in [ 'distance', 'ascent', 'descent', 'elevation', 'elevation_max', 'elevation_min', 'speed', 'speed_max' ]:
-		if formatter := Activity.field_formatters().get( f ):
-			formatter.locale = cfg.get( 'locale' )
+	pass
+	# for f in ['starttime', 'starttime_local', 'endtime', 'endtime_local']:
+	# 	if formatter := Activity.field_formatters().get( f ):
+	# 		formatter.format, formatter.locale = cfg.get( 'datetime' ), cfg.get( 'locale' )
+	# for f in [ 'duration', 'duration_moving' ]:
+	# 	if formatter := Activity.field_formatters().get( f ):
+	# 		formatter.format, formatter.locale = cfg.get( 'timedelta' ), cfg.get( 'locale' )
+	# for f in [ 'distance', 'ascent', 'descent', 'elevation', 'elevation_max', 'elevation_min', 'speed', 'speed_max' ]:
+	# 	if formatter := Activity.field_formatters().get( f ):
+	# 		formatter.locale = cfg.get( 'locale' )

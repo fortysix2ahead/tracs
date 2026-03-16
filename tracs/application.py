@@ -85,7 +85,7 @@ class Application:
 
 		# announce virtual fields to activity class
 		for vf in self.registry.virtual_fields:
-			Activity.VF().add( vf )
+			Activity.virtual_fields().add( vf )
 
 		# init service manager
 		for s in self.registry.services:

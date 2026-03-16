@@ -280,7 +280,7 @@ class Service( Plugin ):
 			src_fs: FS = self._takeout_fs
 			src_path: str = None
 
-		classifier = self.cfg_value( CFG_CLASSIFIER ) or self.name
+		classifier = self._cfg.get( 'classifier' ) or self.name
 		type = kwargs.get( 'type' )
 
 		skip_fetch = kwargs.get( 'skip_fetch', False )

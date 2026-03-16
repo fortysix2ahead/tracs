@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, UTC
-from itertools import zip_longest
+from itertools import pairwise, zip_longest
 from logging import getLogger
 from typing import Any, List, Optional, Tuple
 
@@ -8,6 +8,7 @@ from dateutil.tz import tzlocal
 from gpxpy.gpx import GPX
 from lxml.etree import tostring
 from more_itertools import first, first_true
+from more_itertools.recipes import all_equal
 
 from test.objects import activity
 from tracs.activity import Activity, MultipartActivity
@@ -140,41 +141,47 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
 		)
 
+		# extract parts
 		parts = [ self._from_single_exercise( s, p ) for p in el ]
 
 		# update members
 		parent.metadata.members = [ p.uid for p in parts ]
 		[ p.metadata.part_of.append( parent.uid ) for p in parts ]
 
+		# assume the parts are already sorted by starttime
+		parent.gaps = [ p2.endtime - p1.starttime for p1, p2 in pairwise( parts ) ]
+
 		return parent, tuple( parts )
 
+	# noinspection PyMethodMayBeStatic
 	def _stream( self, route: Route, samples: Samples, start: datetime ) -> Stream:
-		# todo: check this again: the length of the route list is samples length - 2
-		# this means the first and the last points are missing? Or the first two?
-		# in addition a waypoint does not contain a timestamp, but elapsedMillis, starting at 2xxx
-		# this also means that this code will likely break for older takeouts?
+		# the length of the route list may be samples length - 2 for an unknow reason
+		# in this case the first two waypoints are missing and the third starts with elapsedMillis = 2xxx
+
+		# in older exercises this seems to match, but the first wp.elapsedMillis is not 0, but None
 
 		# use start time from route if it exists, otherwise rely on provided time
 		if route is not None:
-			# assume that the second point is 1000 ms away from the start
 			start = to_isotime( route.startTime )
-			times = [ start, start + timedelta( milliseconds=1000 ), *[start + timedelta( wp.elapsedMillis ) for wp in route.wayPoints] ]
+			# fix the missing first elapsed time stamp, if necessary
+			elapsed_millis= [ wp.elapsedMillis for wp in route.wayPoints ]
+			if elapsed_millis[0] is None:
+				elapsed_millis[0] = 0
+			times = [start + timedelta( milliseconds=t ) for t in elapsed_millis]
 
-			# we'll triple the first point for now to have the same length as the samples lists
-			# although this may not be correct, maybe there's a start and end point somewhere?
-			# latitudes = [route.wayPoints[0].latitude, route.wayPoints[0].latitude, *[wp.latitude for wp in route.wayPoints]]
-			# longitudes = [route.wayPoints[0].longitude, route.wayPoints[0].longitude, *[wp.longitude for wp in route.wayPoints]]
+			log.debug( f'exercise contains a route with {len( times )} timestamps' )
 
-			# more correct is probably to mark the points as missing
-			latitudes = [None, None, *[wp.latitude for wp in route.wayPoints]]
-			longitudes = [None, None, *[wp.longitude for wp in route.wayPoints]]
+			latitudes = [wp.latitude for wp in route.wayPoints]
+			longitudes = [wp.longitude for wp in route.wayPoints]
+
+			log.debug( f'route contains {len( latitudes )} coordinates' )
 
 		else:
 			millis, length = first( samples.samples ).intervalMillis, _sample_len( samples )
 			times = [ start + timedelta( milliseconds=i*millis ) for i in range( length )]
 			latitudes, longitudes = [], []
 
-		for tm, lat, lon, alt, dst, hr, spd, p in zip_longest(
+		_samples = [
 			times,
 			latitudes,
 			longitudes,
@@ -185,8 +192,14 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			_sample_values( samples, SAMPLE_SPEED ),
 			# _sample_values( samples, SAMPLE_STRIDE ),
 			# _sample_values( samples, SAMPLE_TEMP ),
-			points := list(),
-		):
+		]
+
+		# sanity check for lengths
+		lengths = [ l for l in [len( s ) for s in _samples ] if l > 0]
+		if not all_equal( lengths ):
+			log.warning( 'lengths of samples do not match ... this requires further investigation ...' )
+
+		for tm, lat, lon, alt, dst, hr, spd, p in zip_longest( *_samples, points := [] ):
 			points.append(
 				Point( time=tm, lat=lat, lon=lon, alt=alt, distance=dst, hr=hr, speed=spd )
 			)

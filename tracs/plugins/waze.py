@@ -20,7 +20,7 @@ from tracs.pluginmgr import importer, resourcetype, service
 from tracs.plugins.csv import CSVHandler
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.resources import Resource, ResourceType
-from tracs.service import path_for_date, Service
+from tracs.service import date_id_to_path, Service
 from tracs.utils import as_datetime
 
 log = getLogger( __name__ )
@@ -487,7 +487,7 @@ class Waze( Service ):
 		:param local_id: id to transform
 		:return: transformed id
 		"""
-		return path_for_date( local_id )
+		return date_id_to_path( local_id )
 
 	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
 		return None

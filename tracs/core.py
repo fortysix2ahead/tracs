@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from collections import UserDict
 from datetime import datetime
 from functools import cached_property
 from inspect import getmembers, signature
+from logging import getLogger
 from sys import version_info
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mapping, Optional, Tuple, Type, TypeVar, Union
@@ -13,6 +15,8 @@ from cattrs import Converter, GenConverter
 
 from tracs.uid import UID
 from tracs.utils import fromisoformat, toisoformat
+
+log = getLogger( __name__ )
 
 FIELD_KWARGS = {
 	'init': True,
@@ -207,6 +211,9 @@ class VirtualField:
 	def __call__( self, parent: Any = None ) -> Any:
 		return self.value_for( parent )
 
+	def __hash__( self ):
+		return hash( self.name )
+
 	def value_for( self, parent: Any = None ) -> Any:
 		if self.default:
 			return self.default
@@ -215,117 +222,73 @@ class VirtualField:
 		else:
 			raise AttributeError( f'virtual field {self.name} has neither a default nor a factory' )
 
-class VirtualFields( dict[str, VirtualField] ):
+class VirtualFields( UserDict[str, VirtualField] ):
 
-	def __init__( self ):
-		super().__init__()
-		self.__parent__ = None
+	def __init__( self, d: dict = None, proxy: Any = None ):
+		super().__init__( d )
+		self.__proxy__: Any = proxy
 
-	def __getattr__( self, name: str ) -> Any:
-		try:
-			return self.__getitem__( name )
-		except KeyError:
-			raise AttributeError
-
-	def __contains__( self, item ) -> bool:
-		return super().__contains__( item )
-
-	def __getitem__( self, key: str ) -> VirtualField:
-		vf = super().__getitem__( key )
-		return vf.factory( self.__parent__ ) if vf.factory else vf.default
-
-	def __setitem__( self, key: str, vf: VirtualField ) -> None:
-		if not isinstance( vf, VirtualField ):
-			raise ValueError( f'value must be of type {VirtualField}' )
-
-		super().__setitem__( key, vf )
+	@classmethod
+	def augment( self, cls: Type ):
+		for f in cls.virtual_fields().fields():
+			if f.default:
+				setattr( cls, f.name, property( lambda obj: f.default ) )
+			elif f.factory:
+				setattr( cls, f.name, property( f.factory ) )
+			else:
+				log.warning( f'unable to augment class {cls} with property {f.name}, neither default value nor factory exists' )
 
 	def add( self, vf: VirtualField ) -> None:
-		self[vf.name] = vf
+		self.data[vf.name] = vf
 
-	def set_field( self, name: str, vf: VirtualField ) -> None:
-		self[name or vf.name] = vf
+	def add_all( self, *vf: VirtualField ) -> None:
+		[ self.add( field ) for field in vf ]
 
-	def proxy( self, parent: Any ) -> VirtualFields:
-		self.__parent__ = parent
-		return self
+	def set( self, vf: VirtualField ) -> None:
+		self.data[vf.name] = vf
 
-@define
-class VirtualFieldsBase( AttrsInstance ):
+	def fields( self, include_internal: bool = False, include_unexposed: bool = False ) -> List[Attribute | VirtualField]:
+		_all_fields = self.data.values()
+		_regular_fields = [f for f in _all_fields if not f.name.startswith( '_' ) and f.expose]
+		_internal_fields = [f for f in _all_fields if f.name.startswith( '_' ) ]
+		_unexposed_fields = [f for f in _all_fields if not f.expose ]
 
-	__vf__: ClassVar[VirtualFields] = VirtualFields()
+		_fields = [ *_regular_fields ]
+		if include_internal:
+			_fields = [ *_fields, *_internal_fields ]
+		if include_unexposed:
+			_fields = [ *_fields, *_unexposed_fields ]
 
-	@classmethod
-	def VF( cls ) -> VirtualFields:
-		return cls.__vf__
+		return [ *set( _fields ) ]
 
-	@classmethod
-	def fields( cls, include_virtual: bool = False, include_internal: bool = False, include_unexposed: bool = False ) -> List[Attribute | VirtualField]:
-		_fields = fields( cls )
-		if not include_internal:
-			# _fields = filter( lambda f: not f.name.startswith( '_' ), _fields )
-			_fields = [ f for f in _fields if not f.name.startswith( '_' ) ]
+	def field_names( cls, include_internal: bool = False, include_unexposed: bool = False ) -> List[str]:
+		return [f.name for f in cls.fields( include_internal, include_unexposed )]
 
-		_vfields = [ f for f in cls.__vf__.values() ] if include_virtual else []
-		if not include_unexposed:
-			_vfields = [ vf for vf in _vfields if vf.expose ]
-
-		return [ *_fields, *_vfields ]
-
-	@classmethod
-	def field_names( cls, include_virtual: bool = False, include_internal: bool = False, include_unexposed: bool = False ) -> List[str]:
-		return [f.name for f in cls.fields( include_virtual, include_internal, include_unexposed )]
-
-	@classmethod
 	def field_type( cls, field_name: str ) -> Any:
-		if f := next( (f for f in cls.fields( True, True, True ) if f.name == field_name), None ):
+		if f := next( (f for f in cls.fields( True, True ) if f.name == field_name), None ):
 			return f.type
 		else:
 			return None
 
-	@classmethod
-	def add_field( cls, vf: VirtualField, name: str = None ) -> None:
-		cls.__vf__.set_field( name, vf )
+	def value( self, field: str, inst: Any = None, quiet: bool = False ) -> Any:
+		# use proxied object if available
+		inst = self.__proxy__ if self.__proxy__ else inst
 
-	def __getattr__( self, name: str ) -> Any:
-		if ( vf := self.__class__.__vf__.get( name ) ) and vf.expose:
-			return vf.factory( self ) if vf.factory else vf.default
-		else:
-			raise AttributeError
+		if f := self.data.get( field ):
+			if f.default is not None:
+				return f.default
+			elif f.factory is not None:
+				return f.factory( inst )
 
-	def getattr( self, name: str, quiet: bool = False, default: Any = None ) -> Any:
-		try:
-			return getattr( self, name )
-		except AttributeError:
-			if quiet:
-				return default
-			else:
-				raise AttributeError
+		if not quiet:
+			raise AttributeError()
 
-	def values( self, *field_names: str ) -> List[Any]:
-		return [ self.getattr( f, quiet=True ) for f in field_names ]
+	def values( self, *field_names: str, inst: Any = None ) -> List[Any]:
+		return [ self.value( f, inst, quiet=True ) for f in field_names ]
 
 	@property
 	def vf( self ) -> VirtualFields:
 		return self.__class__.__vf__.proxy( self )
-
-def vproperty( **kwargs ):
-	def inner( fn ):
-		@property
-		def wrap( *wargs, **wkwargs ):
-			# fn is the decorated function, kwargs contains the keywords/values
-			enclosing_cls: VirtualFieldsBase = wargs[0]
-			enclosing_cls.__vf__.add( VirtualField(
-				name = next( m[1] for m in getmembers( fn ) if m[0] == '__name__' ),
-				type = kwargs.get( 'type' ) or signature( fn ).return_annotation,
-				factory = fn,
-				description = kwargs.get( 'description' ),
-				display_name = kwargs.get( 'display_name' ),
-				# enclosing= wargs[0],
-			) )
-			return fn( *wargs, **wkwargs )
-		return wrap
-	return inner
 
 @define
 class FieldFormatter:

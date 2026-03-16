@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from collections import UserList
 from datetime import datetime, timedelta
-from functools import cached_property
 from inspect import isfunction
 from itertools import chain
 from logging import getLogger
@@ -11,13 +10,12 @@ from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, TypeVar, Union
 
 from attrs import define, evolve, Factory, field
-from cattrs import ClassValidationError, Converter, GenConverter
 from dateutil.tz import UTC
 from more_itertools import first, first_true, last, unique
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import FormattedFieldsBase, Metadata, VirtualFieldsBase
+from tracs.core import FormattedFieldsBase, Metadata, VirtualFields
 from tracs.resources import Resource, Resources
 from tracs.ui.utils import fmt_datetime, fmt_decimal, fmt_default, fmt_timedelta
 from tracs.uid import UID, uid
@@ -43,7 +41,9 @@ class ActivityPart:
 		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.uids ] )
 
 @define( eq=True, repr=False ) # todo: mark fields with proper eq attributes
-class Activity( VirtualFieldsBase, FormattedFieldsBase ):
+class Activity( FormattedFieldsBase ):
+
+	__vf__: ClassVar[VirtualFields] = VirtualFields()
 
 	# fields
 	id: int = field( default=None, metadata={ 'protected': True } )
@@ -122,9 +122,21 @@ class Activity( VirtualFieldsBase, FormattedFieldsBase ):
 	__parent__: Activity = field( init=False, default=None, alias='__parent__' )
 	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
 
+	__fields_proxy__: VirtualFields = field( default=None, alias='__fields_proxy__' )
+
+	@classmethod
+	def virtual_fields( cls ) -> VirtualFields:
+		return cls.__vf__
+
+	def vf( self ) -> VirtualFields:
+		if self.__fields_proxy__ is None:
+			self.__fields_proxy__ = VirtualFields( self.__class__.__vf__.data, self )
+		return self.__fields_proxy__
+
 	def of( self, id: int = 0, uid: str = 'activity:0', name: str = 'Activity 0' ):
 		pass
 
+	@classmethod
 	# additional properties
 
 	@property

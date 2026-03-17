@@ -568,11 +568,17 @@ class Activities( UserList[Activity] ):
 	def iter( self ):
 		return self.data.__iter__()
 
+	def iter_regular( self ):
+		return filter( lambda a: not a.group and not a.multipart, self.data.__iter__() )
+
 	def iter_groups( self ):
 		return filter( lambda a: a.group, self.data.__iter__() )
 
 	def iter_non_groups( self ):
 		return filter( lambda a: not a.group, self.data.__iter__() )
+
+	def iter_multiparts( self ):
+		return filter( lambda a: a.multipart, self.data.__iter__() )
 
 	def iter_resources( self ) -> Resources:
 		return Resources( *chain( *[ a.resources for a in self ] ) )

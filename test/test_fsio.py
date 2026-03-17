@@ -6,8 +6,10 @@ from orjson.orjson import dumps, loads
 from pytest import mark
 
 from test.objects import ACTIVITIES_OBJ, ACTIVITIES_OBJ_DUMP, ACTIVITY_OBJ, ACTIVITY_OBJ_DUMP, ACTIVITY_PART_OBJ, ACTIVITY_PART_OBJ_DUMP, \
-	COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, METADATA_OBJ, METADATA_OBJ_DUMP, RESOURCE_OBJ, RESOURCE_OBJ_DUMP, RESOURCES_OBJ, RESOURCES_OBJ_DUMP
-from tracs.activity import Activities, Activity, ActivityPart
+	COMPLETE_ACTIVITY as A, COMPLETE_ACTIVITY_DICT as AD, METADATA_OBJ, METADATA_OBJ_DUMP, MULTIPART_ACTIVITY_OBJ, MULTIPART_ACTIVITY_OBJ_DUMP, RESOURCE_OBJ, \
+	RESOURCE_OBJ_DUMP, \
+	RESOURCES_OBJ, RESOURCES_OBJ_DUMP
+from tracs.activity import Activities, Activity, ActivityPart, MultipartActivity
 from tracs.activity_types import ActivityTypes
 from tracs.constants import ORJSON_OPTIONS
 from tracs.core import Metadata
@@ -56,6 +58,11 @@ def test_activity():
 	# activities
 	assert dump_to_str( converter.unstructure( ACTIVITIES_OBJ ) ) == ACTIVITIES_OBJ_DUMP
 	assert converter.structure( load_from( ACTIVITIES_OBJ_DUMP ), Activities ) == ACTIVITIES_OBJ
+
+@mark.unit
+def test_multipart_activity():
+	assert dump_to_str( converter.unstructure( MULTIPART_ACTIVITY_OBJ ) ) == MULTIPART_ACTIVITY_OBJ_DUMP
+	assert converter.structure( load_from( MULTIPART_ACTIVITY_OBJ_DUMP ), MultipartActivity ) == MULTIPART_ACTIVITY_OBJ
 
 @mark.context( env='default', persist='mem' )
 def test_activities( dbfs ):

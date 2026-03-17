@@ -3,7 +3,7 @@ from typing import Optional
 
 from dateutil.tz import tzlocal, tzoffset, UTC
 
-from tracs.activity import Activity, ActivityPart, Activities
+from tracs.activity import Activity, ActivityPart, Activities, MultipartActivity
 from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata
 from tracs.plugins.gpx import GPX_TYPE
@@ -180,6 +180,52 @@ ACTIVITY_OBJ_DUMP = \
   "uid": "polar:1234"
 }
 '''
+
+MULTIPART_ACTIVITY_OBJ = MultipartActivity(
+	id=1,
+	uid=UID.of( 'multipart:1234' ),
+	starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
+	duration=timedelta( hours=2 ),
+	type=ActivityTypes.multisport,
+	location_country='de',
+	metadata=Metadata(
+		created=datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
+		modified=datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
+		favourite=True,
+		members=[ UID.of( 'polar:101' ), UID.of( 'polar:102' ), UID.of( 'polar:103' ) ],
+	),
+	gaps=[
+		timedelta( minutes=5 ),
+		timedelta( minutes=10 ),
+	]
+)
+
+MULTIPART_ACTIVITY_OBJ_DUMP = \
+'''{
+  "duration": "02:00:00",
+  "gaps": [
+    "00:05:00",
+    "00:10:00"
+  ],
+  "id": 1,
+  "location_country": "de",
+  "metadata": {
+    "created": "2024-01-04T10:00:00+00:00",
+    "favourite": true,
+    "members": [
+      "polar:101",
+      "polar:102",
+      "polar:103"
+    ],
+    "modified": "2024-01-04T11:00:00+00:00"
+  },
+  "starttime": "2024-01-03T10:00:00+00:00",
+  "type": "multisport",
+  "uid": "multipart:1234"
+}
+'''
+
+# activities
 
 ACTIVITIES_OBJ = Activities(
 	Activity(

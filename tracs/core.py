@@ -127,18 +127,33 @@ class Container( Generic[T] ):
 class Metadata:
 
 	created: Optional[datetime] = field( default=None )
+	"""Timestamp of creation.
+	"""
 	modified: Optional[datetime] = field( default=None )
+	"""Timestamp of last modification.
+	"""
 
 	favourite: bool = field( default=False )
+	"""Marker that this activity is a favourite one.
+	"""
 
-	# member: UID = field( default=None ) # indicator that an activity is a member of a group, not used yet
-	members: List[UID] = field( factory=list ) # used for groups to indicate group members
+	member_of: UID = field( default=None )
+	"""Indicator that an activity is a member of a group.
+	There can only be one parent activity, activities part of multiple groups do not make sense.
+	"""
+	members: List[UID] = field( factory=list )
+	"""List of group members.
+	"""
 
-	part_of: List[UID] = field( factory=list ) # indicator that an activity is part of one or multiple others, not used yet
-	parts: List[UID] = field( factory=list ) # indicates parts of a multipart activity
+	part_of: List[UID] = field( factory=list )
+	"""Indicator that an activity is part of one or multiple other activities.
+	"""
+	parts: List[UID] = field( factory=list )
+	"""List of parts of this activity. Only applies to multipart activities.
+	"""
 
 	__supplementary__: Dict[str, Any] = field( factory=dict )
-	# __kwargs__: Dict[str, Any] = field( factory=dict, alias='__kwargs__' )
+	"""Placeholder for user-defined metadata. Not used yet."""
 
 	@cached_property
 	def __fieldnames( self ) -> List[str]:
@@ -147,13 +162,6 @@ class Metadata:
 	@cached_property
 	def __regular_fieldnames( self ) -> List[str]:
 		return [f.name for f in fields( self.__class__ ) if not f.name == 'supplementary']
-
-	# noinspection PyUnresolvedReferences
-#	def __init__( self, *args, **kwargs ):
-#		self.__attrs_init__( *args, **{ k: v for k, v in kwargs.items() if k in self.__fieldnames } )
-#		self.supplementary = { k: v for k, v in kwargs.items() if k not in self.__fieldnames } | self.supplementary
-
-	# len() support
 
 	def __len__( self ) -> int:
 		return len( self.__supplementary__ ) + len( self.__regular_fieldnames )

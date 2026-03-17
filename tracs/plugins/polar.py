@@ -299,11 +299,8 @@ class Polar( Service ):
 						log.debug( f'source of import {src_fs.getsyspath( file )} is not relative to takeouts, using absolute path as source' )
 						r.source = src_fs.getsyspath( file )
 
-					# calculate import destinations and write content of resources
-					dest_fs.makedirs( dirname( r.path ), recreate=True )
-					dest_fs.writebytes( r.path, contents=r.content )
-					log.debug( f'wrote {len( r.content )} bytes of resource content to {fs_to_str( dest_fs )}/{r.path}' )
-					r.unload()
+					# write content of resources
+					r.unload_to( dest_fs, r.path )
 
 				imported_activities.append( a )
 

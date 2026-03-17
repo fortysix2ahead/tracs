@@ -12,7 +12,7 @@ from attrs import Attribute, define, evolve, field, fields
 from dateutil.tz import UTC
 from fs.base import FS
 from fs.errors import ResourceNotFound
-from fs.path import basename, split
+from fs.path import basename, dirname, split
 from isodate import parse_duration
 from more_itertools import unique
 from more_itertools.more import first, last, rstrip
@@ -20,7 +20,7 @@ from more_itertools.recipes import first_true
 
 from tracs.protocols import Exporter, Importer
 from tracs.uid import UID
-from tracs.utils import to_isotime
+from tracs.utils import fs_to_str, to_isotime
 
 log = getLogger( __name__ )
 
@@ -244,10 +244,12 @@ class Resource:
 
 	def unload_to( self, fs: FS, path: str ) -> None:
 		try:
+			fs.makedirs( dirname( path ), recreate=True )
 			fs.writebytes( path, self.content )
+			log.debug( f'wrote {len( self.content )} bytes of resource content to {fs_to_str( fs )}/{path}' )
 			self.unload()
 		except TypeError:
-			log.error( f'unable to unload resource {self} to {fs}/{path}' )
+			log.error( f'failed to unload resource {self} to {fs}/{path}' )
 
 	def save( self, fs: FS, path: str, exporter: Exporter ) -> None:
 		exporter.save( data=self.data, path=path, fs=fs, resource=self ) # todo: add exception handling here

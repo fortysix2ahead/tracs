@@ -145,7 +145,7 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		parts = [ self._from_single_exercise( s, p ) for p in el ]
 
 		# update members
-		parent.metadata.members = [ p.uid for p in parts ]
+		parent.metadata.parts = [ p.uid for p in parts ]
 		[ p.metadata.part_of.append( parent.uid ) for p in parts ]
 
 		# assume the parts are already sorted by starttime

@@ -43,12 +43,15 @@ class ActivityPart:
 @define( eq=True, repr=False ) # todo: mark fields with proper eq attributes
 class Activity:
 
+	# class fields to add support for virtual fields + formatters
 	__vf__: ClassVar[VirtualFields] = VirtualFields()
 	__fmf__: ClassVar[FieldFormatters] = FieldFormatters()
 
 	# fields
 	id: int = field( default=None, metadata={ 'protected': True } )
-	"""Integer id of this activity, same as key used in dictionary which holds activities, will not be persisted"""
+	"""Integer id of this activity, same as key used in dictionary which holds activities.
+	May be changed to str in the future."""
+
 	uid: UID|str = field(
 		default=None,
 		converter=lambda u: UID.from_str( u ) if isinstance( u, str ) else u,
@@ -113,16 +116,14 @@ class Activity:
 	metadata: Metadata = field( factory=Metadata )
 	resources: Resources = field( factory=Resources ) # todo: merge with Resources later
 
-	# init variables
-	# important: InitVar[str] does not work, dataclass_factory is unable to deserialize, InitVar without types works
-	# todo: move this into a factory method?
+	# todo: this needs to be moved into MultipartActivity/ActivityGroup
 	other_parts = field( default=None )
 
 	## internal fields
-	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
-	__parent__: Activity = field( init=False, default=None, alias='__parent__' )
-	__parent_id__: int = field( init=False, default=0, alias='__parent_id__' )
+	__member_of__: ActivityGroup = field( init=False, default=None, alias='__member_of__' )
+	__part_of__: List[MultipartActivity] = field( init=False, default=None, alias='__part_of__' )
 
+	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
 	__fields_proxy__: VirtualFields = field( default=None, alias='__fields_proxy__' )
 
 	@classmethod
@@ -136,9 +137,6 @@ class Activity:
 
 	def of( self, id: int = 0, uid: str = 'activity:0', name: str = 'Activity 0' ):
 		pass
-
-	@classmethod
-	# additional properties
 
 	@property
 	def classifiers( self ) -> List[str]:
@@ -165,14 +163,6 @@ class Activity:
 	#@property
 	#def activity_uids( self ) -> List[str]:
 	#	return unique_sorted( [ f'{uid.classifier}:{uid.local_id}' for uid in self.as_uids() ] )
-
-	@property
-	def parent( self ) -> Optional[Activity]:
-		return self.__parent__
-
-	@property
-	def parent_id( self ) -> int:
-		return self.__parent_id__
 
 	@property
 	def group( self ) -> bool:
@@ -382,8 +372,10 @@ class ActivityGroup( Activity ):
 @define( repr=False )
 class MultipartActivity( Activity ):
 
-	__members__: List[Activity] = field( factory=list, alias='__members__' )
 	gaps: List[timedelta] = field( factory=list ) # this is always len( parts ) - 1
+
+	# internal fields
+	__parts__: List[Activity] = field( factory=list, alias='__parts__' )
 
 	@property
 	def gaps_before( self ) -> List[timedelta]:
@@ -401,7 +393,7 @@ class MultipartActivity( Activity ):
 		return super().__repr__()
 
 	@classmethod
-	def of( cls, *activities: Activity ) -> Activity:
+	def of( cls, *activities: Activity ) -> MultipartActivity:
 		"""
 		Creates a new multipart activity from provided activities.
 

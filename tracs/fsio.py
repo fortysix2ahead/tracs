@@ -14,9 +14,9 @@ from orjson import dumps, loads
 from orjson.orjson import JSONDecodeError
 from rich.prompt import Confirm
 
-from tracs.activity import Activities, Activity
+from tracs.activity import Activities, Activity, ActivityGroup, MultipartActivity
 from tracs.activity_types import ActivityTypes
-from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, ORJSON_OPTIONS, SCHEMA_PATH
+from tracs.constants import ACTIVITIES_PATH, GROUPS_PATH, MULTIPARTS_PATH, ORJSON_OPTIONS, SCHEMA_PATH
 from tracs.resources import Resource, Resources
 from tracs.uid import str_to_uid, UID, uid_to_str
 from tracs.utils import fromisoformat, str_to_timedelta, timedelta_to_str, toisoformat
@@ -64,7 +64,7 @@ converter = make_converter()
 
 # activity handling
 
-def _load_activities( fs: FS, path: str ) -> Activities:
+def _load_activities( fs: FS, path: str, cls: Type ) -> Activities:
 	"""
 	Loads activities from a provided file
 	:param fs: file system to load from
@@ -76,7 +76,7 @@ def _load_activities( fs: FS, path: str ) -> Activities:
 	try:
 		_bytes = fs.readbytes( path )
 		_dicts = loads( _bytes )
-		_activities = converter.structure( _dicts, Activities )
+		_activities = converter.structure( _dicts, cls )
 		log.debug( f'loaded {len( _activities )} activities from {path}' )
 	except (FileExpected, ResourceNotFound, JSONDecodeError):
 		log.error( f'error loading activities', exc_info=True )
@@ -85,21 +85,30 @@ def _load_activities( fs: FS, path: str ) -> Activities:
 	return _activities
 
 def load_activities( fs: FS ) -> Activities:
+	_activities = Activities()
+
 	# load regular activities
-	_activities = _load_activities( fs, ACTIVITIES_PATH )
+	_activities.add( lst=_load_activities( fs, ACTIVITIES_PATH, List[Activity] ), skip_checks=True )
 	# load groups
-	_activities.add( lst=_load_activities( fs, GROUPS_PATH ), skip_checks=True )
+	_activities.add( lst=_load_activities( fs, GROUPS_PATH, List[ActivityGroup] ), skip_checks=True )
+	# load multiparts
+	_activities.add( lst=_load_activities( fs, MULTIPARTS_PATH, List[MultipartActivity] ), skip_checks=True )
 
 	return _activities
 
 def write_activities( activities: Activities, fs: FS ) -> None:
-	_activities = Activities( *sorted( activities.iter_non_groups(), key=lambda a: a.id ), skip_checks=True )
+	_activities = Activities( *sorted( activities.iter_regular(), key=lambda a: a.id ), skip_checks=True )
 	fs.writebytes( ACTIVITIES_PATH, dumps( converter.unstructure( _activities ), option=ORJSON_OPTIONS ) )
 
 	log.debug( f'wrote {len( _activities )} activities to {ACTIVITIES_PATH}' )
 
 	_activities = Activities( *sorted( activities.iter_groups(), key=lambda a: a.id ), skip_checks=True )
 	fs.writebytes( GROUPS_PATH, dumps( converter.unstructure( _activities ), option=ORJSON_OPTIONS ) )
+
+	log.debug( f'wrote {len( _activities )} activities to {GROUPS_PATH}' )
+
+	_activities = Activities( *sorted( activities.iter_multiparts(), key=lambda a: a.id ), skip_checks=True )
+	fs.writebytes( MULTIPARTS_PATH, dumps( converter.unstructure( _activities ), option=ORJSON_OPTIONS ) )
 
 	log.debug( f'wrote {len( _activities )} activities to {GROUPS_PATH}' )
 

@@ -250,6 +250,12 @@ class ActivityDb( Protocol ):
 	def commit( self ) -> None:
 		...
 
+	def insert( self, activity: Activity ) -> None:
+		...
+
+	def upsert( self, activity: Activity ) -> None:
+		...
+
 class ApplicationContext( Protocol ):
 
 	@property

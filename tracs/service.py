@@ -306,21 +306,23 @@ class Service( Plugin ):
 			# move imported resources
 			for r in a.resources:
 				if force or not self.ctx.db_fs.exists( r.path ):
+					resource_uid = UID( classifier=a.uid.classifier, local_id=a.uid.local_id, path=basename( r.path ) )
 					try:
 						self.ctx.db_fs.makedirs( dirname( r.path ), recreate=True )
 						copy_file( dest_fs, r.path, self.ctx.db_fs, r.path, preserve_time=True )
 						dest_fs.remove( r.path )
 						# don't know why move_file fails, maybe a bug?
 						# move_file( import_fs, r.path, ctx.db_fs, r.path, preserve_time=True )
-						log.debug( f'imported resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
+						log.debug( f'imported resource {resource_uid}' )
 
 					except ResourceNotFound:
-						log.error( f'error importing from resource {UID( a.uid.classifier, a.uid.local_id, path=basename( r.path ) )}' )
+						log.error( f'error importing from resource {resource_uid}' )
 
 				else:
 					log.info( f'skipping import of resource {r}, file already exists, use option -f/--force to force overwrite' )
 
 			# insert / upsert newly created activities
+			# todo: upsert only should work here
 			if self.ctx.db.contains_activity( a.uid ):
 				self.ctx.db.upsert( a )
 			else:

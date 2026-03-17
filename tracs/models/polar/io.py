@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, UTC
 from itertools import pairwise, zip_longest
 from logging import getLogger
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from babel.dates import get_timezone
 from dateutil.tz import tzlocal
@@ -155,56 +155,30 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 
 	# noinspection PyMethodMayBeStatic
 	def _stream( self, route: Route, samples: Samples, start: datetime ) -> Stream:
-		# the length of the route list may be samples length - 2 for an unknow reason
+		# the length of the route list may be samples_length - 2 for an unknown reason
 		# in this case the first two waypoints are missing and the third starts with elapsedMillis = 2xxx
-
 		# in older exercises this seems to match, but the first wp.elapsedMillis is not 0, but None
 
 		# use start time from route if it exists, otherwise rely on provided time
 		if route is not None:
 			start = to_isotime( route.startTime )
-			# fix the missing first elapsed time stamp, if necessary
-			elapsed_millis= [ wp.elapsedMillis for wp in route.wayPoints ]
-			if elapsed_millis[0] is None:
-				elapsed_millis[0] = 0
-			times = [start + timedelta( milliseconds=t ) for t in elapsed_millis]
 
-			log.debug( f'exercise contains a route with {len( times )} timestamps' )
+		_points = {}
 
-			latitudes = [wp.latitude for wp in route.wayPoints]
-			longitudes = [wp.longitude for wp in route.wayPoints]
+		_sample_values( samples, SAMPLE_ALT, _points )
+		_sample_values( samples, SAMPLE_DIST, _points )
+		_sample_values( samples, SAMPLE_HR, _points )
+		_sample_values( samples, SAMPLE_SPEED, _points )
 
-			log.debug( f'route contains {len( latitudes )} coordinates' )
+		_route_values( route, _points )
 
-		else:
-			millis, length = first( samples.samples ).intervalMillis, _sample_len( samples )
-			times = [ start + timedelta( milliseconds=i*millis ) for i in range( length )]
-			latitudes, longitudes = [], []
-
-		_samples = [
-			times,
-			latitudes,
-			longitudes,
-			_sample_values( samples, SAMPLE_ALT ),
-			# _sample_values( samples, SAMPLE_CADENCE ),
-			_sample_values( samples, SAMPLE_DIST ),
-			_sample_values( samples, SAMPLE_HR ),
-			_sample_values( samples, SAMPLE_SPEED ),
-			# _sample_values( samples, SAMPLE_STRIDE ),
-			# _sample_values( samples, SAMPLE_TEMP ),
-		]
+		for elapsed, point in _points.items():
+			point.time = start + timedelta( milliseconds=elapsed )
 
 		# sanity check for lengths
-		lengths = [ l for l in [len( s ) for s in _samples ] if l > 0]
-		if not all_equal( lengths ):
-			log.warning( 'lengths of samples do not match ... this requires further investigation ...' )
+		_check_sample_lengths( samples, route )
 
-		for tm, lat, lon, alt, dst, hr, spd, p in zip_longest( *_samples, points := [] ):
-			points.append(
-				Point( time=tm, lat=lat, lon=lon, alt=alt, distance=dst, hr=hr, speed=spd )
-			)
-
-		return Stream( points )
+		return Stream( sorted( _points.values(), key=lambda p: p.time ) )
 
 	def _gpx_tcx( self, a: Activity, stream: Stream ) -> Tuple[GPX, TrainingCenterDatabase]:
 		gpx = stream.as_gpx()
@@ -232,8 +206,44 @@ def _statistic( e: Exercise, type: str, value: str ) -> float|int|None:
 def _sample_len( samples: Samples ) -> int:
 	return max( [len( s.values ) for s in samples.samples] )
 
-def _sample_values( samples: Samples, type: str ) -> List[float]:
+def _route_values( route: Route, points: Dict ) -> None:
 	try:
-		return first_true( samples.samples, pred=lambda s: s.type == type ).values
+		for wp in route.wayPoints:
+			elapsed = wp.elapsedMillis if wp.elapsedMillis else 0
+			if not (p := points.get( elapsed )):
+				p = Point()
+				points[elapsed] = p
+
+			p.lat, p.lon = wp.latitude, wp.longitude
+			# p.alt = wp.altitude # todo: take altitude from here? is it different from samples?
+
+	except (AttributeError, TypeError):
+		pass
+
+def _sample_values( samples: Samples, type: str, points: Dict ) -> None:
+	try:
+		sample = first_true( samples.samples, pred=lambda s: s.type == type )
+		for i in range( len( sample.values ) ):
+			millis = sample.intervalMillis * i
+
+			if not (p := points.get( millis )):
+				p = Point()
+				points[millis] = p
+
+			if type == SAMPLE_ALT:
+				p.alt = sample.values[i]
+			elif type == SAMPLE_DIST:
+				p.distance = sample.values[i]
+			elif type == SAMPLE_HR:
+				p.hr = int( sample.values[i] )
+			elif type == SAMPLE_SPEED:
+				p.speed = sample.values[i]
+
 	except AttributeError:
-		return [] # empty in case samples do not exist
+		pass
+
+def _check_sample_lengths( samples: Samples, route: Route ):
+	lengths = [ len( s.values ) for s in samples.samples ]
+	lengths = [ *lengths, len( route.wayPoints ) ] if route else lengths
+	if not all_equal( lengths ):
+		log.warning( f'lengths of samples do not match, ranging from {min( lengths )} to {max( lengths )}. This requires further investigation ...' )

@@ -379,7 +379,7 @@ class ActivityGroup( Activity ):
 	def group( self ) -> bool:
 		return True
 
-@define
+@define( repr=False )
 class MultipartActivity( Activity ):
 
 	__members__: List[Activity] = field( factory=list, alias='__members__' )
@@ -396,6 +396,9 @@ class MultipartActivity( Activity ):
 	@property
 	def multipart( self ) -> bool:
 		return True
+
+	def __repr__( self ) -> str:
+		return super().__repr__()
 
 	@classmethod
 	def of( cls, *activities: Activity ) -> Activity:

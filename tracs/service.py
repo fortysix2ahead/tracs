@@ -279,6 +279,8 @@ class Service( Plugin ):
 
 			src_fs: FS = self._takeout_fs
 			src_path: str = None
+		else:
+			src_fs, src_path = None, None
 
 		classifier = self._cfg.get( 'classifier' ) or self.name
 		type = kwargs.get( 'type' )

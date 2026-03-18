@@ -22,17 +22,15 @@ class Plugin:
 		self._ctx: ApplicationContext = kwargs.get( CFG_CTX )
 		if self._ctx:
 			# configure config/state views: create empty configs if context is missing
-			try:
-				self._cfg: DynaBox = self._ctx.config.services[self.name]
-			except AttributeError:
-				self._cfg = DynaBox()
+			if not self._ctx.config.services.get( self.name ):
+				self._ctx.config.services[self.name] = DynaBox()
+			self._cfg = self._ctx.config.services[self.name]
 
-			try:
-				self._state: DynaBox = self._ctx.state.services[self.name]
-			except AttributeError:
-				self._state = DynaBox()
+			if not self._ctx.state.services.get( self.name ):
+				self._ctx.state.services[self.name] = DynaBox()
+			self._state = self._ctx.state.services[self.name]
 
-		else: # fallback, for testing only
+		else:  # fallback, for testing only
 			self._cfg, self._state = kwargs.get( '_cfg' ) or DynaBox(), kwargs.get( '_state' ) or DynaBox()
 
 		# enable by default

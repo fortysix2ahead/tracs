@@ -4,43 +4,59 @@ from typing import List
 
 from rich import box
 from rich.pretty import Pretty as pp
-from rich.prompt import Confirm
+from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
 from tracs.protocols import ApplicationContext
+from tracs.ui import CONSOLE as c
 
 log = getLogger( __name__ )
 
-app_setup_text = 'This creates a valid application setup by asking a few questions (mainly credentials). Credentials and ' \
-                 'options will be saved in the configuration file, while variable data will go into an application ' \
-                 'state file.'
+app_setup_text = \
+'''This creates a valid application setup by asking a few questions (mainly
+credentials). Credentials and options will be saved in the configuration file,
+while variable data like access tokens will go into an application state file.
+
+The application is configured to use the following files:
+Config: \"{config_file}\"
+State: \"{state_file}\"
+
+'''
 
 def setup( ctx: ApplicationContext, services: List[str] ):
-	ctx.console.clear()
+	c.clear()
 
-	ctx.console.rule( "[bold]Application Setup[/bold]" )
-	ctx.console.print( app_setup_text, width=120 )
+	c.rule( "[bold]Setup[/bold]" )
+	text = app_setup_text.format( config_file=ctx.config_file_path, state_file=ctx.state_file_path )
+	c.print( text, width=120 )
 
-	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
-	table.add_row( 'Configuration file:', pp( ctx.config_file_path ) )
-	table.add_row( 'State file:', pp( ctx.state_file_path ) )
-	ctx.console.print( table )
+	for s in services:
+		if current_config := ctx.config.services.get( s ):
+			c.print( f'A configuration for service [blue]{s}[/blue] already exists.' )
 
-	service_names = services if services else ctx.registry.setups.keys()
+			answer = Prompt.ask(
+				f'Would you like to run the setup again or \[s]how the current configuration/state?',
+				choices=['y', 'n', 's'], show_default=True, show_choices=True )
 
-	for name in service_names:
-		answer = ctx.force or Confirm.ask( f'Would you like to run setup function for plugin {name}?', default=False )
-		if answer:
-			console.print()
-			console.rule( f'[bold]Setup {name}[/bold]' )
-			setup_function = ctx.registry.setups.get( name )
-			config_key = name.split( '.' )[-1]
-			if setup_function:
-				existing_config = ctx.config.plugins[config_key]
-				existing_state = ctx.state.plugins[config_key]
-				config, state = setup_function( ctx, existing_config, existing_state )
-				ctx.config['plugins'][config_key] = config
-				ctx.state['plugins'][config_key] = state
-				console.print()
+			match answer:
+				case 'y':
+					run_setup, ask_again = True, False
+				case 's':
+					for k, v in current_config.items():
+						c.print( f'  {k}: {v}' )
+					c.print()
+					run_setup, ask_again = False, True
+				case _:
+					return
 
-	ctx.dump_config_state()
+			if ask_again:
+				run_setup = Confirm.ask( f'Would you like to run the setup now?', default=False )
+
+		else:
+			c.print( f'No configuration for service [blue]{s}[/blue] exists, running setup ...' )
+			run_setup = True
+
+		if run_setup:
+			# todo: this will fail for fresh services as they won't be instantiated -> bootstrapping necessary
+			ctx.service_mgr.get( s ).setup()
+			ctx.dump_config_state()

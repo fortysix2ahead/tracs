@@ -197,6 +197,11 @@ class ApplicationContext:
 	def json( self ) -> bool:
 		return self.config.json
 
+	# root fs, for convenience
+	@property
+	def root_fs( self ) -> FS:
+		return self._root_fs
+
 	# lib/config related properties
 
 	@property

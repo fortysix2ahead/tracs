@@ -7,6 +7,9 @@ __version__ = '0.2.0-dev'
 
 from orjson import OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
 
+# generic constants
+UNSET = '__UNSET__'
+
 # general constants
 
 APPNAME = 'tracs'

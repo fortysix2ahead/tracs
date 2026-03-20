@@ -192,8 +192,7 @@ class ActivityDb:
 		return l[0] if len( l := [self.upsert_activity( a ) for a in activities] ) == 1 else l
 
 	def upsert_activity( self, activity: Activity ) -> int:
-		#if existing := self.get_by_uid( activity.uid ):
-		if existing := self.get_for_uid( activity.uid ):
+		if existing := self.get_by_uid( activity.uid ):
 			if existing.group:
 				Activity.group_of( existing, activity, target=existing )
 			else:
@@ -289,12 +288,11 @@ class ActivityDb:
 		return first_true( self.activities, pred=lambda a: a.id == id )
 
 	def get_by_uid( self, uid: UID|str ) -> Optional[Activity]:
-		"""
-		Returns the activity with the uid equal to the provided uid.
-		This method does not treat any uids which appear as group members.
+		"""Returns the activity with the uid equal to the provided uid.
+
 		:param uid: uid of the activity
 		"""
-		return first_true( self.activities, pred=lambda a: a.uid == uid )
+		return self._activities.get( uid )
 
 	def get_for_uid( self, uid: UID|str ) -> Optional[Activity]:
 		"""

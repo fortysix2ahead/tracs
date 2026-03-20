@@ -334,12 +334,7 @@ class Service( Plugin ):
 				else:
 					log.info( f'skipping import of resource {r}, file already exists, use option -f/--force to force overwrite' )
 
-			# insert / upsert newly created activities
-			# todo: upsert only should work here
-			if self.ctx.db.contains_activity( a.uid ):
-				self.ctx.db.upsert( a )
-			else:
-				self.ctx.db.insert( a )
+			self.ctx.db.upsert( a ) # upsert newly created activities
 
 		# commit changes to db
 		if len( activities ) > 0:

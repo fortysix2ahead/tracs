@@ -297,14 +297,6 @@ class Polar( Service ):
 					r.source = self.src_path_for( src_fs, file )
 					r.unload_to( dest_fs, r.path )
 
-#					try:
-#						r.source = relpath( frombase( self.ctx.takeouts_fs.getsyspath( '/' ), src_fs.getsyspath( file ) ) )
-#					except ValueError:
-#						log.debug( f'source of import {src_fs.getsyspath( file )} is not relative to takeouts, using absolute path as source' )
-#						r.source = src_fs.getsyspath( file )
-
-					# write content of resources
-
 				imported_activities.append( a )
 
 		return imported_activities

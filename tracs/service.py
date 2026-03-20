@@ -15,7 +15,7 @@ from fs.copy import copy_file
 from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
-from fs.path import basename, combine, dirname, isabs, join, parts, split
+from fs.path import basename, combine, dirname, frombase, isabs, isparent, join, parts, relpath, split
 from fs.zipfs import ReadZipFS
 from more_itertools.recipes import first_true
 
@@ -207,6 +207,21 @@ class Service( Plugin ):
 
 	def src_path_for( self, src_fs: FS, src_file: str ) -> str:
 		match src_fs:
+			case OSFS():
+				_takeouts_fs_path = self.ctx.takeouts_fs.getsyspath( '' )
+				_src_fs_path = src_fs.getsyspath( '' )
+
+				# if source is in takeouts dir -> return path relative to takeouts dir
+				if isparent( _takeouts_fs_path, _src_fs_path ):
+					_src_path = relpath( frombase( _takeouts_fs_path, _src_fs_path ) )
+					if src_file:
+						_src_path = combine( _src_path, src_file )
+
+				# if source is not in takeouts dir -> return absolute path in OS file system
+				else:
+					_src_path = src_fs.getsyspath( src_file )
+
+				return _src_path
 			case ReadZipFS():
 				_path  = f'{fs_to_str( src_fs )}'
 				return _path if not src_file else f'{_path}#{src_file}'

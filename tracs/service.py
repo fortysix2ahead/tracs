@@ -16,6 +16,7 @@ from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
 from fs.path import basename, combine, dirname, isabs, join, parts, split
+from fs.zipfs import ReadZipFS
 from more_itertools.recipes import first_true
 
 from tracs.activity import Activities, Activity
@@ -24,6 +25,7 @@ from tracs.db import ActivityDb
 from tracs.plugin import Plugin
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
+from tracs.utils import fs_to_str
 
 log = getLogger( __name__ )
 
@@ -179,7 +181,7 @@ class Service( Plugin ):
 
 	def svc_path_for_id( self, local_id: Union[int, str], resource_path: Optional[str] = None, as_path: bool = False ):
 		"""Returns the path for an id and takes service name and user into account (if set).
-		In addition it also it uses the configured path if set.
+		In addition, it also it uses the configured path if set.
 
 		:param local_id: id to transform
 		:param resource_path: resource path
@@ -188,12 +190,28 @@ class Service( Plugin ):
 		"""
 		return self.path_for_id( local_id, self.name, self._user_id, resource_path, as_path )
 
-	def path_rel_to_db( self, local_id: int|str, resource_path: str ) -> str:
+	def db_path_for( self, local_id: int | str, resource_path: str ) -> str:
+		"""Returns the path of a resource relative to the db.
+		Example: 1234.gpx -> service_name/user_id/1/2/3/1234/1234.gpx. This takes configured path/user_id into account.
+		This method is used after imports to set the resource.path field.
+
+		:param local_id: local id of the resource
+		:param resource_path: filename of a resource, without any leading directories
+		:return: path relative to the db
+		"""
 		if self._path:
 			name, user = self._path, None
 		else:
 			name, user = self.name, self._user_id
 		return self.path_for_id( local_id, name, user, resource_path )
+
+	def src_path_for( self, src_fs: FS, src_file: str ) -> str:
+		match src_fs:
+			case ReadZipFS():
+				_path  = f'{fs_to_str( src_fs )}'
+				return _path if not src_file else f'{_path}#{src_file}'
+			case _:
+				raise NotImplementedError()
 
 	def path_for( self, resource: Resource, absolute: bool = False, omit_classifier: bool = False,
 	              ignore_overlay: bool = True, as_path: bool = False ) -> Optional[Path|str]:
@@ -259,40 +277,18 @@ class Service( Plugin ):
 		pass
 
 	def import_activities( self, force: bool = False, pretend: bool = False, **kwargs ) -> Activities:
-		fetch_all = kwargs.get( 'fetch_all' ) or self.ctx.config['import'].fetch_all
-		first_year = self.ctx.config['import'].first_year
-		days_range = self.ctx.config['import'].range
-
-		if fetch_all:
-			range_from = datetime( first_year, 1, 1, tzinfo=UTC )
-		else:
-			range_from = datetime.now( UTC ) - timedelta( days = days_range )
-		range_to = datetime.now( UTC ) + timedelta( days=1 )
-
-		if kwargs.get( CFG_FROM_TAKEOUTS ):
-			if not self._takeout_fs:
-				if self._takeout_path:
-					self._takeout_fs = self.ctx.takeout_fs( slug=self._takeout_path )
-				else:
-					self._takeout_fs = self.ctx.takeout_fs( self.name, self._user_id )
-
-
-			src_fs: FS = self._takeout_fs
-			src_path: str = None
-		else:
-			src_fs, src_path = None, None
-
 		classifier = self._cfg.get( 'classifier' ) or self.name
 		type = kwargs.get( 'type' )
+		range_from = kwargs.get( 'range_from' )
+		range_to = kwargs.get( 'range_to' )
 
-		skip_fetch = kwargs.get( 'skip_fetch', False )
-		skip_download = kwargs.get( 'skip_download', False )
-
+		# source and destination fs
+		src_fs, src_path = kwargs.get( 'src_fs' ), kwargs.get( 'src_path' )
 		dest_fs = self.ctx.import_fs()
 
 		# actual import from local fs or remote
 		if src_fs and self.supports_fs_import( src_fs, src_path ):
-			log.debug( f'service {self.name} supports import from {src_fs.getsyspath( "" )}' )
+			log.debug( f'service {self.name} supports import from {fs_to_str( src_fs )}' )
 			activities = self.import_from_fs( src_fs, dest_fs, path=src_path, classifier=classifier, type=type )
 
 		elif self.supports_remote_import():

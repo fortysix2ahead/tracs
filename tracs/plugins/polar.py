@@ -254,7 +254,7 @@ class Polar( Service ):
 	def import_from_fs( self, src_fs: FS, dest_fs: FS, **kwargs ) -> Activities:
 		log.debug( f'fetching {self.name} activities from {src_fs}' )
 		imported_activities = Activities()
-		classifier = self.cfg_value( CFG_CLASSIFIER ) or self.name
+		classifier = self._cfg.get( CFG_CLASSIFIER ) or self.name
 
 		session_files = sorted( [ f for f in src_fs.walk.files( '/', filter=[ TRAINING_SESSION_GLOB ] ) ] )
 		log.debug( f'found {len( session_files )} activity files in {src_fs}' )
@@ -283,7 +283,8 @@ class Polar( Service ):
 
 			log.debug( f'found {len( session_files)} activities which do not yet exist in db' )
 
-		session_files = sorted( session_files, reverse=True )
+		session_files = sorted( session_files, reverse=False )
+		session_files = list( filter( lambda s: '7175844455' in s, session_files ) )
 
 		for file in session_files:
 			# session may contain multiple activities
@@ -291,16 +292,18 @@ class Polar( Service ):
 
 			for a in session:
 				for r in a.resources:
-					# update resources paths
-					r.path = self.path_rel_to_db( a.uid.local_id, resource_path=r.path ) # path to update resource
-					try:
-						r.source = relpath( frombase( self.ctx.takeouts_fs.getsyspath( '/' ), src_fs.getsyspath( file ) ) )
-					except ValueError:
-						log.debug( f'source of import {src_fs.getsyspath( file )} is not relative to takeouts, using absolute path as source' )
-						r.source = src_fs.getsyspath( file )
+					# update resources paths and unload
+					r.path = self.db_path_for( a.uid.local_id, r.path ) # path to update resource
+					r.source = self.src_path_for( src_fs, file )
+					r.unload_to( dest_fs, r.path )
+
+#					try:
+#						r.source = relpath( frombase( self.ctx.takeouts_fs.getsyspath( '/' ), src_fs.getsyspath( file ) ) )
+#					except ValueError:
+#						log.debug( f'source of import {src_fs.getsyspath( file )} is not relative to takeouts, using absolute path as source' )
+#						r.source = src_fs.getsyspath( file )
 
 					# write content of resources
-					r.unload_to( dest_fs, r.path )
 
 				imported_activities.append( a )
 

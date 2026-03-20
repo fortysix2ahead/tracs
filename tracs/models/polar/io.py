@@ -83,8 +83,14 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			starttime_local = to_isotime( e.startTime ).astimezone( tzlocal() ),
 			timezone = get_timezone().zone, # todo: this not correct - when an activity took place in a different timezone than the home zone
 			type = ACCESSLINK_TYPES.get( e.sport.id ), # todo: this will fail, sports now have ids
-			uid = UID( classifier=CLASSIFIER, local_id=int( e.identifier.id ) )
+			uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
 		)
+
+		# update metadata
+
+		# save the exercise id as custom metadata, for an unknown reason the id is different from the session id
+		if s.identifier.id != e.identifier.id:
+			a.metadata.set( 'exercise_id', str( e.identifier.id ) )
 
 		stream = self._stream( e.routes.route,  e.samples, a.starttime )
 
@@ -199,7 +205,7 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 def _statistic( e: Exercise, type: str, value: str ) -> float|int|None:
 	try:
 		return getattr( first_true( e.statistics.statistics, pred=lambda s: s.type == type ), value )
-	except AttributeError:
+	except (AttributeError, TypeError):
 		# log.error( 'error', exc_info=True ) # used for development only, to examine data model
 		pass
 
@@ -230,20 +236,26 @@ def _sample_values( samples: Samples, type: str, points: Dict ) -> None:
 				p = Point()
 				points[millis] = p
 
-			if type == SAMPLE_ALT:
-				p.alt = sample.values[i]
-			elif type == SAMPLE_DIST:
-				p.distance = sample.values[i]
-			elif type == SAMPLE_HR:
-				p.hr = int( sample.values[i] )
-			elif type == SAMPLE_SPEED:
-				p.speed = sample.values[i]
+			try:
+				if type == SAMPLE_ALT:
+					p.alt = sample.values[i]
+				elif type == SAMPLE_DIST:
+					p.distance = sample.values[i]
+				elif type == SAMPLE_HR:
+					p.hr = int( sample.values[i] )
+				elif type == SAMPLE_SPEED:
+					p.speed = sample.values[i]
+			except ValueError:
+				pass
 
-	except AttributeError:
+	except (AttributeError, TypeError):
 		pass
 
 def _check_sample_lengths( samples: Samples, route: Route ):
-	lengths = [ len( s.values ) for s in samples.samples ]
-	lengths = [ *lengths, len( route.wayPoints ) ] if route else lengths
-	if not all_equal( lengths ):
-		log.warning( f'lengths of samples do not match, ranging from {min( lengths )} to {max( lengths )}. This requires further investigation ...' )
+	try:
+		lengths = [ len( s.values ) for s in samples.samples ]
+		lengths = [ *lengths, len( route.wayPoints ) ] if route else lengths
+		if not all_equal( lengths ):
+			log.warning( f'lengths of samples do not match, ranging from {min( lengths )} to {max( lengths )}. This requires further investigation ...' )
+	except TypeError:
+		pass

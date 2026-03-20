@@ -11,6 +11,7 @@ from tracs import __version__
 from tracs.activity import Activity
 from tracs.aio import export_activities, import_activities, open_activities, reimport_activities
 from tracs.application import Application
+from tracs.constants import UNSET
 from tracs.context import ApplicationContext, APPNAME
 from tracs.db import maintain_db, status_db
 from tracs.edit import edit_activities, equip_activities, modify_activities, rename_activities, set_activity_type, tag_activities, unequip_activities, \
@@ -110,16 +111,23 @@ def filters( ctx: ApplicationContext ):
 	show_filters( ctx )
 
 @cli.command( 'import', hidden=True, help='imports activities' )
-@option( '-a', '--fetch-all', required=False, hidden=True, default=False, is_flag=True, type=bool, help='always fetch all activities instead of the most recent ones' )
+@option( '-a', '--all', 'import_all', required=False, hidden=True, default=False, is_flag=True, type=bool, help='always fetch all activities instead of the most recent ones' )
 @option( '-c', '--classifier', required=False, type=str, help='classifier to use during import' )
+@option( '-f', '--from', 'from_source', required=False, is_flag=False, flag_value=UNSET, help='source location to import from (takeouts if omitted' )
 @option( '-m', '--move', required=False, hidden=True, is_flag=True, help='remove resources after import (dangerous, applies for imports from takeouts only)' )
-@option( '-sd', '--skip-download', hidden=True, required=False, is_flag=True, help='skips download of activities' )
-@option( '-t', '--from-takeouts', required=False, is_flag=True, help='imports activities from takeouts folder (plugin needs to support this)' )
-@option( '-tp', '--type', required=False, is_flag=False, help='use type to activties', type=str )
-@argument( 'sources', nargs=-1 )
+@option( '-s', '--service', 'services', required=False, is_flag=False, multiple=True, help='restrict import to only one service instead (option can be used multiple times)' )
+@option( '-t', '--type', hidden=True, required=False, is_flag=False, help='use provided type for new activities', type=str )
 @pass_obj
-def imprt( ctx: ApplicationContext, sources, fetch_all: bool, skip_download: bool, move: bool, from_takeouts: str, classifier: str, type: str ):
-	activities = import_activities( ctx, sources, fetch_all=fetch_all, skip_download=skip_download, move=move, from_takeouts=from_takeouts, classifier=classifier, type=type )
+def imprt( ctx: ApplicationContext, import_all: bool, classifier: str, from_source: str, move: bool, services: Tuple[str, ...], type: str ):
+	activities = import_activities(
+		ctx,
+		import_all=import_all,
+		classifier=classifier,
+		move=move,
+		from_source=from_source,
+		services=services,
+		type=type,
+	)
 
 	if ctx.json:
 		console.print_json( data=activities.to_dict() )

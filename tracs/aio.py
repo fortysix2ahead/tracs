@@ -3,15 +3,17 @@ from logging import getLogger
 from os import system
 from pathlib import Path
 from shlex import quote
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
-from dateutil.tz import gettz
+from datetimerange import DateTimeRange
+from dateutil.tz import gettz, UTC
 from fs.errors import ResourceNotFound
 from rich.prompt import Confirm
 from tzlocal import get_localzone_name
 
 from tracs.activity import Activities, Activity, ActivityTypes
-from tracs.constants import CFG_FROM_TAKEOUTS
+from tracs.constants import CFG_FROM_TAKEOUTS, UNSET
+from tracs.errors import ImportException
 from tracs.protocols import ApplicationContext
 from tracs.db import ActivityDb
 from tracs.plugins.gpx import GPX_TYPE
@@ -32,40 +34,59 @@ MAXIMUM_OPEN = 8
 # kepler: https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#geojson
 # also nice: https://github.com/luka1199/geo-heatmap
 
-def import_activities( ctx: ApplicationContext, sources: List[str], **kwargs ) -> Activities:
-	sources = sources or ctx.service_mgr.service_names()
-	activities = Activities()
+# 		import_all=import_all,
+# 		classifier=classifier,
+# 		move=move,
+# 		from_source=from_source,
+# 		type=type,
 
-	if ( t := kwargs.get( 'type' ) ) and t not in ActivityTypes.names():
-		log.error( f'cannot use unknown activity type "{t}" during import, use the command "tracs types" to learn what types exist' )
-		return activities
+def import_activities( ctx: ApplicationContext,
+                       import_all: bool = False, classifier: str = None, move: bool = False,
+                       from_source: str = None, services: Tuple[str, ...] = None, type: str = None ) -> Activities:
+	# setup
+	imported = Activities()
 
-	for src in sources:
-		imported = Activities()
+	# input validation
 
-		if service := ctx.service_mgr.get( src ):
-			log.debug( f'importing activities from service {src}' )
-			# todo: this needs to be improved for importing from u user-defined dir/file
-			if kwargs.get( CFG_FROM_TAKEOUTS ):
-				_imported = service.import_activities( ctx.force, ctx.pretend, **kwargs )
-			else:
-				fs, path = None, None
-				_imported = []
+	if type and type not in ActivityTypes.names():
+		raise ImportException( f'cannot use unknown activity type "{type}" during import, use the command "types" to learn what types exist' )
 
-			imported.extend( _imported )
+	if from_source and from_source != UNSET and len( services ) > 1:
+		raise ImportException( f'import from multiple sources cannot be used in conjunction with -s and external files/directories' )
 
+	if not all( [ ctx.service_mgr.get( s ) is not None for s in services ] ):
+		raise ImportException( f'list of services to import from ({services}) contains an invalid entry (service does not exist)' )
+
+	if from_source and from_source != UNSET and len( services ) == 0:
+		log.info( 'import source, but no service to use provided, attempting to use "local" for import' )
+		services = ( 'local', )
+
+	# import range
+	first_year = ctx.config['import'].first_year
+	days_range = ctx.config['import'].range
+
+	if import_all:
+		range_from = datetime( first_year, 1, 1, tzinfo=UTC )
+	else:
+		range_from = datetime.now( UTC ) - timedelta( days = days_range )
+	range_to = datetime.now( UTC ) + timedelta( days=1 )
+
+	# actual import
+	for service in [ ctx.service_mgr.get( s ) for s in services ]:
+
+		if from_source and from_source == UNSET:
+			src_fs, src_file = ctx.takeout_fs( service.name ), None
+		elif from_source:
+			src_fs, src_file = fspath( from_source )
 		else:
-			try:
-				service = ctx.service_mgr.get( 'local' )
-				fs, path = fspath( src )
-				imported.extend( service.import_activities( ctx.force, ctx.pretend, fs=fs, path=path, **kwargs ) )
+			src_fs, src_file = None, None
 
-			except ResourceNotFound:
-				log.error( f'import location {src} does not exist' )
+		imported.extend(
+			service.import_activities( ctx.force, ctx.pretend, src_fs=src_fs, src_file=src_file, classifier=classifier,
+			                           type=type, range_from=range_from, range_to=range_to )
+		)
 
-		activities.extend( imported )
-
-	return activities
+	return imported
 
 def open_activities( ctx: ApplicationContext, activities: List[Activity] ) -> None:
 	if len( activities ) > MAXIMUM_OPEN:

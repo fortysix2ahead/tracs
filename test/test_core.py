@@ -206,7 +206,7 @@ def test_metadata():
 		created=datetime( 2023, 6, 1, 10, 0, 0 ),
 		modified=datetime( 2023, 7, 2, 11, 0, 0 ),
 		members=[ UID( 'polar:101' ), UID( 'strava:101' ) ],
-		__aux__={
+		aux={
 			'custom_id': 'abcd'
 		}
 	)

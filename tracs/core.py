@@ -124,7 +124,7 @@ class Container( Generic[T] ):
 		pass
 
 @define
-class Metadata( UserDict[str, str] ):
+class Metadata:
 
 	created: Optional[datetime] = field( default=None )
 	"""Timestamp of creation.
@@ -152,19 +152,21 @@ class Metadata( UserDict[str, str] ):
 	"""List of parts of this activity. Only applies to multipart activities.
 	"""
 
-	__aux__: Dict[str, str] = field( factory=dict, alias='__aux__' )
+	aux: Dict[str, str] = field( factory=dict )
 	"""Additional, not predefined metadata.
 	"""
 
-	def __attrs_pre_init__( self ):
-		super().__init__()
+	def __getitem__( self, item ):
+		return self.aux[item]
 
-	def __attrs_post_init__( self ):
-		self.data.update( self.__aux__ )
+	def keys( self ):
+		return self.aux.keys()
 
-	@property
-	def aux( self ) -> Mapping[str, str]:
-		return MappingProxyType( self.data )
+	def values( self ):
+		return self.aux.values()
+
+	def items( self ):
+		return self.aux.items()
 
 	def all_keys( self ) -> List[str]:
 		return [k for k in [*self.__fields__, *self.keys()]]
@@ -177,7 +179,7 @@ class Metadata( UserDict[str, str] ):
 
 	@cached_property
 	def __fields__( self ) -> List[str]:
-		return [f.name for f in fields( self.__class__ ) if not f.name.startswith( '_' )]
+		return [f.name for f in fields( self.__class__ ) if f.name != 'aux' ]
 
 	@cached_property
 	def __values__( self ) -> List[str]:
@@ -186,23 +188,6 @@ class Metadata( UserDict[str, str] ):
 	@cached_property
 	def __items__( self ) -> Dict[str, str]:
 		return { f: getattr( self, f ) for f in self.__fields__ }
-
-	# def __len__( self ) -> int:
-	# 	return len( self.auxillary ) + len( self.__regular_fieldnames )
-
-
-	# def keys( self ) -> List[str]:
-	# 	return [*self.__regular_fieldnames, *self.supplementary.keys()]
-	#
-	# def values( self ) -> List[Any]:
-	# 	return [*[self.__getattr__( f ) for f in self.__regular_fieldnames], *self.supplementary.values()]
-	#
-	# def items( self ) -> List[Tuple[str, Any]]:
-	# 	return [*[( f, self.__getattr__( f ) ) for f in self.__regular_fieldnames ], *self.supplementary.items()]
-	#
-	# def as_dict( self ) -> Dict[str, Any]:
-	# 	d = { f: self.__getattr__( f ) for f in self.__regular_fieldnames } | self.supplementary
-	# 	return { k: v for k, v in d.items() if v is not None }
 
 @define
 class VirtualField:

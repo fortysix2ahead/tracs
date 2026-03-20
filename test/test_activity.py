@@ -4,7 +4,7 @@ from logging import getLogger
 
 from pytest import mark, raises
 
-from tracs.activity import Activities, Activity, ActivityPart, groups
+from tracs.activity import Activities, Activity, ActivityGroup, ActivityPart, groups
 from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata, VirtualField
 from tracs.pluginmgr import virtualfield
@@ -23,28 +23,28 @@ def test_activity():
 	a = Activity( uid=uid( 'polar:100' ) )
 	assert a.uid == UID( classifier='polar', local_id=100 )
 	assert a.uids == [ 'polar:100' ]
+	assert a.classifier == 'polar'
 	# assert a.refs() == ['polar:100'] and a.refs( True ) == [UID( 'polar:100' )]
 	assert a.classifiers == ['polar']
 
 	assert not a.group
 	assert not a.multipart
 
-	# test values
-	a = Activity( uid=uid( 'polar:101' ), heartrate=150, calories=1000 )
-	assert a.values( 'uid', 'heartrate', 'calories', 'speed', 'xyz' ) == ['polar:101', 150, 1000, None, None]
-
 @mark.unit
 def test_activity_group():
-	a = Activity( uid = uid( 'group:101' ) )
+	a = ActivityGroup(
+		uid = uid( 'group:101' )
+	)
 	a.metadata.members = uids( 'strava:100', 'polar:100', 'polar:100' )
+
+	assert a.group
+	assert not a.multipart
+
 	assert a.uid == 'group:101'
 	assert a.uids == [ 'polar:100', 'strava:100' ]
 #	assert a.refs() == [ 'polar:100', 'strava:100' ]
 #	assert a.refs( True ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
 	assert a.classifiers == [ 'polar', 'strava' ]
-
-	assert a.group
-	assert not a.multipart
 
 @mark.unit
 def test_group_of():
@@ -66,42 +66,46 @@ def test_group_of():
 		tags=['b'],
 	)
 
-	g1 = Activity( id=3, calories=100, heartrate=100, name='Group One', uid='group:1' )
+	g1 = ActivityGroup( id=3, calories=100, heartrate=100, name='Group One', uid='group:1' )
 	g1.metadata.members = uids( 'polar:1', 'polar:2')
 
-	g2 = Activity( id=4, calories=200, heartrate=200, name='Group Two', uid='group:2' )
+	g2 = ActivityGroup( id=4, calories=200, heartrate=200, name='Group Two', uid='group:2' )
 	g2.metadata.members = uids( 'polar:1', 'polar:2' )
 
 	# grouping
-	group = Activity.group_of(src1, src2 )
+	group = ActivityGroup.of( src1, src2 )
 	assert group.name == 'One' and group.distance == 10 and group.calories == 20
 	assert group.uid == 'group:240201100000' and group.uids == [ 'polar:1', 'polar:2' ]
 	assert group.type == ActivityTypes.walk
 
 	# grouping with force
-	group = Activity.group_of( src1, src2, force=True )
+	group = ActivityGroup.of( src1, src2, force=True )
 	assert group.name == 'Two' and group.distance == 10 and group.calories == 20 and group.type == ActivityTypes.walk
 	assert group.uid == 'group:240201100000' and group.uids == [ 'polar:1', 'polar:2' ]
 
 	# grouping with ignored_fields
-	group = Activity.group_of(src1, src2, ignored_fields=[ 'type' ] )
+	group = ActivityGroup.of(src1, src2, ignored_fields=[ 'type' ] )
 	assert group.name == 'One' and group.distance == 10 and group.calories == 20
 	assert group.uid == 'group:240201100000' and group.uids == [ 'polar:1', 'polar:2' ]
 	assert group.type is None
 
 	# grouping with target
-	group = Activity.group_of(src1, src2, target=g1 )
+	group = ActivityGroup.of(src1, src2, target=g1 )
 	assert group is g1
 	assert group.name == 'Group One' and group.distance == 10 and group.calories == 100
 	assert group.uid == 'group:240201100000' and group.uids == [ 'polar:1', 'polar:2' ]
 	assert group.type == ActivityTypes.walk
 
 	# grouping with target and force
-	group = Activity.group_of( src1, src2, target=g2, force=True )
+	group = ActivityGroup.of( src1, src2, target=g2, force=True )
 	assert group is g2
 	assert group.name == 'Two' and group.distance == 10 and group.calories == 20
 	assert group.uid == 'group:240201100000' and group.uids == ['polar:1', 'polar:2']
 	assert group.type == ActivityTypes.walk
+
+	# wrong target
+	with raises( ValueError ):
+		group = ActivityGroup.of( src1, src2, target=Activity() )
 
 @mark.unit
 def test_union_of():

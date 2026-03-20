@@ -196,7 +196,7 @@ class ActivityDb:
 			if existing.group:
 				Activity.group_of( existing, activity, target=existing )
 			else:
-				Activity.union_of( activity, target=existing, force=True )
+				Activity.union( activity, target=existing, force=True )
 			return existing.id
 		else:
 			return self.insert_activity( activity )

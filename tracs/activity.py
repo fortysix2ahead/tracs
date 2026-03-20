@@ -4,10 +4,10 @@ from __future__ import annotations
 from collections import UserList
 from datetime import datetime, timedelta
 from inspect import isfunction
-from itertools import chain
+from itertools import chain, pairwise
 from logging import getLogger
 from types import MappingProxyType
-from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, TypeVar, Union
+from typing import Any, Callable, ClassVar, Dict, List, Literal, Mapping, Optional, TypeVar, Union
 
 from attrs import fields
 from attrs import define, evolve, Factory, field
@@ -25,21 +25,7 @@ from tracs.utils import sum_timedeltas, unique_sorted
 log = getLogger( __name__ )
 
 T = TypeVar('T')
-
-@define( eq=True )
-class ActivityPart:
-
-	gap: timedelta = field( default=None )
-	uid: UID = field( default=None, converter=lambda u: uid( u ) )
-	uids: List[UID] = field( factory=list )
-
-	@property
-	def classifiers( self ) -> List[str]:
-		return unique_sorted( [ uid.classifier for uid in self.uids ] )
-
-	@property
-	def activity_uids( self ) -> List[UID]:
-		return unique_sorted( [ UID( classifier=uid.classifier, local_id=uid.local_id ) for uid in self.uids ] )
+MULTIPART_TYPE: type[str] = Literal[ 'average', 'max', 'min', 'sum' ]
 
 @define( eq=True, repr=False ) # todo: mark fields with proper eq attributes
 class Activity:
@@ -196,45 +182,6 @@ class Activity:
 
 	# additional methods
 
-	def add( self, others: List[Activity], copy: bool = False, force: bool = False ) -> Activity:
-		"""
-		Updates this activity with other activities as parts for this activity.
-		Existing values are overwritten, if existing values need to be incorporated, this method
-		has to called with add( [ self, other1, other2 ... ] ).
-
-		:return:
-		"""
-
-		this = evolve( self ) if copy else self
-		activities = [this, *others]
-
-		this.type = t if (t := _unique( activities, 'type' ) ) else ActivityTypes.multisport
-
-		this.starttime = _min( activities, 'starttime' )
-		this.starttime_local = _min( activities, 'starttime_local' )
-		this.endtime = _max( activities, 'endtime' )
-		this.endtime_local = _max( activities, 'endtime_local' )
-		this.timezone = t if (t := _unique( activities, 'timezone' ) ) else get_localzone_name()
-
-		this.duration = sum_timedeltas( _stream( activities, 'duration' ) )
-		this.duration_moving = sum_timedeltas( _stream( activities, 'duration_moving' ) )
-
-		this.distance = _sum( activities, 'distance' )
-		this.ascent = _sum( activities, 'ascent' )
-		this.descent = _sum( activities, 'descent' )
-		this.elevation_max = _max( activities, 'elevation_max' )
-		this.elevation_min = _min( activities, 'elevation_min' )
-
-		this.speed_max = _max( activities, 'speed_max' )
-
-		this.heartrate_min = _min( activities, 'heartrate_min' )
-		this.heartrate_max = _max( activities, 'heartrate_max' )
-		this.calories = _sum( activities, 'calories' )
-
-		# todo: fill parts field information already here?
-
-		return this
-
 	def add_resource( self, resource: Resource ) -> None:
 		self.__resources__.append( resource )
 		resource.__parent_activity__ = self
@@ -363,16 +310,22 @@ class MultipartActivity( Activity ):
 		return super().__repr__()
 
 	@classmethod
-	def of( cls, *activities: Activity ) -> MultipartActivity:
-		"""
-		Creates a new multipart activity from provided activities.
+	def of( cls, *activities: Activity, target: MultipartActivity = None ) -> MultipartActivity:
+		"""Creates a new multipart activity from provided activities.
 
-		:return:
+		:return: new multipart activity
 		"""
-		mpa = MultipartActivity()
+		if len( activities ) < 2:
+			raise ValueError( 'unable to create a multipart activity with less than 2 parts' )
+
+		if target is not None and not isinstance( target, MultipartActivity ):
+			raise ValueError( 'target must be an instance of MultipartActivity' )
+
+		if target is None:
+			target = MultipartActivity()
 
 		# aggregated fields
-		for f in Activity.fields():
+		for f in fields( Activity ):
 			if md := f.metadata.get( 'multipart' ):
 				_value = None
 				try:
@@ -393,20 +346,22 @@ class MultipartActivity( Activity ):
 					log.debug( f'unable to calculate multipart value for field {f.name} from activities { [a.uid for a in activities] }' )
 
 				if _value:
-					setattr( mpa, f.name, _value )
+					setattr( target, f.name, _value )
 
-		# create part objects
+		# create parts
 		activities = sorted( [*activities], key=lambda a: a.starttime )
-		mpa.parts = [ ActivityPart( uids=[a.uid] ) for a in activities ]
-		mpa.parts[0].gap = timedelta( seconds=0 )
-		for i in range( 1, len( activities ) ):
-			mpa.parts[i].gap = activities[i].starttime - activities[i-1].endtime
+		target.gaps = [succ.starttime - pred.endtime for pred, succ in pairwise( activities )]
 
-		# type + uid
-		mpa.type = t if (t := _unique( activities, 'type' ) ) else ActivityTypes.multisport
-		# mpa.uids = list( set( a.uid for a in activities ) )
+		# update metadata
+		target.uid = uid( f'multipart:{activities[0].starttime.strftime( "%y%m%d%H%M%S" )}' )
+		target.metadata.parts = [ a.uid for a in activities ]
+		for a in activities:
+			a.metadata.part_of.append( target.uid )
 
-		return mpa
+		# update type
+		target.type = t if (t := _unique( activities, 'type' ) ) else ActivityTypes.multisport
+
+		return target
 
 
 class Activities( UserList[Activity] ):

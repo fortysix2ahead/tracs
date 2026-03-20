@@ -6,7 +6,7 @@ from babel.numbers import format_decimal
 from pytest import mark, raises
 
 from tracs.core import FieldFormatter, FieldFormatters, Metadata, VirtualField, VirtualFields
-from tracs.uid import UID
+from tracs.uid import UID, uid
 
 @mark.unit
 def test_virtual_field():
@@ -200,47 +200,47 @@ def test_formatted_fields():
 	assert fdc.fmf().format_as_list( 'name', 'age', 'speed', 'width', conv=lambda v: str( v ) ) == ['Name', '10', '12345.6', 'None']
 
 @mark.unit
-@mark.xfail
 def test_metadata():
 
 	md = Metadata(
 		created=datetime( 2023, 6, 1, 10, 0, 0 ),
 		modified=datetime( 2023, 7, 2, 11, 0, 0 ),
 		members=[ UID( 'polar:101' ), UID( 'strava:101' ) ],
+		__aux__={
+			'custom_id': 'abcd'
+		}
 	)
 
-	md.f2 = 'two'
-	md['f3'] = 'three'
+	assert md.aux == { 'custom_id': 'abcd' }
 
-	assert md.f2 == 'two'
-	assert md['f3'] == 'three'
 	assert md.members == [ UID( 'polar:101' ), UID( 'strava:101' ) ]
+	with raises( AttributeError ):
+		assert md.custom_id == 'abcd'
+	assert md['custom_id'] == 'abcd'
 
-	assert md.keys() == ['created', 'modified', 'favourite', 'members', 'f1', 'f2', 'f3']
-	assert md.values() == [
-		datetime( 2023, 6, 1, 10, 0, 0 ),
-		datetime( 2023, 7, 2, 11, 0, 0 ),
+	assert list( md.keys() ) == ['custom_id' ]
+	assert md.all_keys() == [ 'created', 'modified', 'favourite', 'member_of', 'members', 'part_of', 'parts', 'custom_id' ]
+
+	assert list( md.values() ) == [ 'abcd' ]
+	assert md.all_values() == [
+		datetime( 2023, 6, 1, 10, 0 ),
+		datetime( 2023, 7, 2, 11, 0 ),
 		False,
-		[ UID( 'polar:101' ), UID( 'strava:101' ) ],
-		'one',
-		'two',
-		'three',
+		None,
+		[ uid( 'polar:101' ), uid( 'strava:101' )],
+		[],
+		[],
+		'abcd'
 	]
-	assert md.items() == [
-		('created', datetime( 2023, 6, 1, 10, 0, 0 )),
-		('modified', datetime( 2023, 7, 2, 11, 0, 0 )),
+
+	assert dict( md.items() ) == { 'custom_id': 'abcd' }
+	assert list( md.all_items() ) == [
+		('created', datetime(2023, 6, 1, 10, 0)),
+		('modified', datetime(2023, 7, 2, 11, 0)),
 		('favourite', False),
-		('members', [ UID( 'polar:101' ), UID( 'strava:101' ) ]),
-		('f1', 'one'),
-		('f2', 'two'),
-		('f3', 'three'),
+		('member_of', None),
+		('members', [uid( 'polar:101' ), uid( 'strava:101' )]),
+		('part_of', []),
+		('parts', []),
+		('custom_id', 'abcd')
 	]
-	assert md.as_dict() == {
-		'created': datetime( 2023, 6, 1, 10, 0, 0 ),
-		'modified': datetime( 2023, 7, 2, 11, 0, 0 ),
-		'favourite': False,
-		'members': [ UID( 'polar:101' ), UID( 'strava:101' ) ],
-		'f1': 'one',
-		'f2': 'two',
-		'f3': 'three',
-	}

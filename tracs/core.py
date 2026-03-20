@@ -124,7 +124,7 @@ class Container( Generic[T] ):
 		pass
 
 @define
-class Metadata:
+class Metadata( UserDict[str, str] ):
 
 	created: Optional[datetime] = field( default=None )
 	"""Timestamp of creation.
@@ -152,56 +152,57 @@ class Metadata:
 	"""List of parts of this activity. Only applies to multipart activities.
 	"""
 
-	__supplementary__: Dict[str, Any] = field( factory=dict )
-	"""Placeholder for user-defined metadata. Not used yet."""
+	__aux__: Dict[str, str] = field( factory=dict, alias='__aux__' )
+	"""Additional, not predefined metadata.
+	"""
+
+	def __attrs_pre_init__( self ):
+		super().__init__()
+
+	def __attrs_post_init__( self ):
+		self.data.update( self.__aux__ )
+
+	@property
+	def aux( self ) -> Mapping[str, str]:
+		return MappingProxyType( self.data )
+
+	def all_keys( self ) -> List[str]:
+		return [k for k in [*self.__fields__, *self.keys()]]
+
+	def all_values( self ) -> List[str]:
+		return [v for v in [*self.__values__, *self.values()]]
+
+	def all_items( self ) -> Dict[str, str]:
+		return (self.__items__ | dict( self.items() )).items()
 
 	@cached_property
-	def __fieldnames( self ) -> List[str]:
-		return [f.name for f in fields( self.__class__ )]
+	def __fields__( self ) -> List[str]:
+		return [f.name for f in fields( self.__class__ ) if not f.name.startswith( '_' )]
 
 	@cached_property
-	def __regular_fieldnames( self ) -> List[str]:
-		return [f.name for f in fields( self.__class__ ) if not f.name == 'supplementary']
+	def __values__( self ) -> List[str]:
+		return [getattr( self, f ) for f in self.__fields__]
 
-	def __len__( self ) -> int:
-		return len( self.__supplementary__ ) + len( self.__regular_fieldnames )
+	@cached_property
+	def __items__( self ) -> Dict[str, str]:
+		return { f: getattr( self, f ) for f in self.__fields__ }
 
-	# getter
+	# def __len__( self ) -> int:
+	# 	return len( self.auxillary ) + len( self.__regular_fieldnames )
 
-	def __getattr__( self, key: str ) -> Any:
-		if key in self.__fieldnames:
-			return super().__getattribute__( key )
-		else:
-			return self.__supplementary__.get( key )
 
-	def __getitem__( self, key: str ):
-		return self.__getattr__( key )
-
-	# setter
-
-	def __setitem__( self, key: str, value: Any ) -> None:
-		self.__setattr__( key, value )
-
-	def __setattr__( self, key, value ):
-		if key in self.__fieldnames:
-			super().__setattr__( key, value )
-		else:
-			self.__supplementary__[key] = value
-
-	# dict-like methods
-
-	def keys( self ) -> List[str]:
-		return [*self.__regular_fieldnames, *self.supplementary.keys()]
-
-	def values( self ) -> List[Any]:
-		return [*[self.__getattr__( f ) for f in self.__regular_fieldnames], *self.supplementary.values()]
-
-	def items( self ) -> List[Tuple[str, Any]]:
-		return [*[( f, self.__getattr__( f ) ) for f in self.__regular_fieldnames ], *self.supplementary.items()]
-
-	def as_dict( self ) -> Dict[str, Any]:
-		d = { f: self.__getattr__( f ) for f in self.__regular_fieldnames } | self.supplementary
-		return { k: v for k, v in d.items() if v is not None }
+	# def keys( self ) -> List[str]:
+	# 	return [*self.__regular_fieldnames, *self.supplementary.keys()]
+	#
+	# def values( self ) -> List[Any]:
+	# 	return [*[self.__getattr__( f ) for f in self.__regular_fieldnames], *self.supplementary.values()]
+	#
+	# def items( self ) -> List[Tuple[str, Any]]:
+	# 	return [*[( f, self.__getattr__( f ) ) for f in self.__regular_fieldnames ], *self.supplementary.items()]
+	#
+	# def as_dict( self ) -> Dict[str, Any]:
+	# 	d = { f: self.__getattr__( f ) for f in self.__regular_fieldnames } | self.supplementary
+	# 	return { k: v for k, v in d.items() if v is not None }
 
 @define
 class VirtualField:

@@ -12,6 +12,7 @@ from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mappi
 from attr import AttrsInstance
 from attrs import Attribute, define, field, fields
 from cattrs import Converter, GenConverter
+from dateutil.tz import UTC
 
 from tracs.uid import UID
 from tracs.utils import fromisoformat, toisoformat
@@ -156,8 +157,19 @@ class Metadata:
 	"""Additional, not predefined metadata.
 	"""
 
+	def __attrs_post_init__( self ):
+		self.created = self.created if self.created else datetime.now( UTC )
+
 	def __getitem__( self, item ):
 		return self.aux[item]
+
+	def set( self, key: str, value: Any ) -> None:
+		try:
+			setattr( self, key, value )
+		except AttributeError:
+			self.aux[key] = value
+		finally:
+			self.modified = datetime.now( UTC )
 
 	def keys( self ):
 		return self.aux.keys()

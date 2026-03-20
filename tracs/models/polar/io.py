@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, UTC
 from itertools import pairwise, zip_longest
 from logging import getLogger
+from re import compile
 from typing import Any, Dict, List, Optional, Tuple
 
 from babel.dates import get_timezone
@@ -10,7 +11,6 @@ from lxml.etree import tostring
 from more_itertools import first, first_true
 from more_itertools.recipes import all_equal
 
-from test.objects import activity
 from tracs.activity import Activity, MultipartActivity
 from tracs.models.io import polar_model_converter
 from tracs.models.polar.constants import *
@@ -25,6 +25,8 @@ from tracs.uid import UID
 from tracs.utils import millis_to_timedelta, to_isotime
 
 log = getLogger( __name__ )
+
+REGEX_UUID = compile( r'\w{8}-\w{4}-\w{4}-\w{4}-\w{12}' )
 
 @importer
 class PolarTrainingSessionImporter( DataclassFactoryHandler ):
@@ -83,14 +85,21 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			starttime_local = to_isotime( e.startTime ).astimezone( tzlocal() ),
 			timezone = get_timezone().zone, # todo: this not correct - when an activity took place in a different timezone than the home zone
 			type = ACCESSLINK_TYPES.get( e.sport.id ), # todo: this will fail, sports now have ids
-			uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
+			# uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
 		)
 
 		# update metadata
 
-		# save the exercise id as custom metadata, for an unknown reason the id is different from the session id
 		if s.identifier.id != e.identifier.id:
-			a.metadata.set( 'exercise_id', str( e.identifier.id ) )
+			# for newer than 2026-03 exercises s.identifier.id is a UUID, that's why we're using e.id
+			# the web url in Flow also points to e.id, but to s.id for older exercises
+			if REGEX_UUID.match( s.identifier.id ):
+				a.uid = UID( classifier=CLASSIFIER, local_id=int( e.identifier.id ) )
+
+			# save the exercise id as custom metadata, for an unknown reason the id is different from the session id
+			else:
+				a.uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
+				a.metadata.set( 'exercise_id', str( e.identifier.id ) )
 
 		stream = self._stream( e.routes.route,  e.samples, a.starttime )
 

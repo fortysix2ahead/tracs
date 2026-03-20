@@ -283,9 +283,6 @@ class Polar( Service ):
 
 			log.debug( f'found {len( session_files)} activities which do not yet exist in db' )
 
-		session_files = sorted( session_files, reverse=False )
-		session_files = list( filter( lambda s: '7175844455' in s, session_files ) )
-
 		for file in session_files:
 			# session may contain multiple activities
 			session = self._session_importer.load_as_activity( fs=src_fs, path=file, attach=False )

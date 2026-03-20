@@ -2,9 +2,10 @@
 from datetime import datetime, time, timedelta
 from logging import getLogger
 
+from dateutil.tz import UTC
 from pytest import mark, raises
 
-from tracs.activity import Activities, Activity, ActivityGroup, ActivityPart, groups
+from tracs.activity import Activities, Activity, ActivityGroup, groups, MultipartActivity
 from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata, VirtualField
 from tracs.pluginmgr import virtualfield
@@ -45,6 +46,38 @@ def test_activity_group():
 #	assert a.refs() == [ 'polar:100', 'strava:100' ]
 #	assert a.refs( True ) == [ UID( 'polar:100' ), UID( 'strava:100' ) ]
 	assert a.classifiers == [ 'polar', 'strava' ]
+
+@mark.unit
+def test_union():
+	a1 = Activity(
+		id=1,
+		name='One',
+		distance=10,
+		uid='polar:1',
+		type=ActivityTypes.walk,
+		starttime=datetime( 2024, 2, 1, 10, 0, 0 ),
+		tags=['a'],
+	)
+	a2 = Activity(
+		id=2,
+		name='Two',
+		calories=20,
+		uid='polar:2',
+		starttime = datetime( 2024, 2, 1, 10, 1, 0 ),
+		tags=['b'],
+		type=ActivityTypes.run,
+	)
+
+	u = Activity.union( a1, a2 )
+	assert u.name == 'One' and u.distance == 10 and u.calories == 20
+	assert u.uid == 'polar:1' and u.uids == [ 'polar:1' ]
+	assert u.type == ActivityTypes.walk and u.tags == [ 'a', 'b' ]
+
+	# union with force == True
+	u = Activity.union( a1, a2, force=True )
+	assert u.name == 'Two' and u.distance == 10 and u.calories == 20
+	assert u.uid == 'polar:2' and u.uids == ['polar:2']
+	assert u.type == ActivityTypes.run and u.tags == ['a', 'b']
 
 @mark.unit
 def test_group_of():
@@ -108,61 +141,21 @@ def test_group_of():
 		group = ActivityGroup.of( src1, src2, target=Activity() )
 
 @mark.unit
-def test_union_of():
-	a1 = Activity(
-		id=1,
-		name='One',
-		distance=10,
-		uid='polar:1',
-		type=ActivityTypes.walk,
-		starttime=datetime( 2024, 2, 1, 10, 0, 0 ),
-		tags=['a'],
-	)
-	a2 = Activity(
-		id=2,
-		name='Two',
-		calories=20,
-		uid='polar:2',
-		starttime = datetime( 2024, 2, 1, 10, 1, 0 ),
-		tags=['b'],
-		type=ActivityTypes.run,
-	)
-
-	u = Activity.union( a1, a2 )
-	assert u.name == 'One' and u.distance == 10 and u.calories == 20
-	assert u.uid == 'polar:1' and u.uids == [ 'polar:1' ]
-	assert u.type == ActivityTypes.walk and u.tags == [ 'a', 'b' ]
-
-	# union with force == True
-	u = Activity.union( a1, a2, force=True )
-	assert u.name == 'Two' and u.distance == 10 and u.calories == 20
-	assert u.uid == 'polar:2' and u.uids == ['polar:2']
-	assert u.type == ActivityTypes.run and u.tags == ['a', 'b']
-
-@mark.unit
-def test_activity_part():
-	p = ActivityPart( uids=uids( 'polar:1234', 'polar:2345', 'polar:2345/rec.gpx', 'polar:2345/rec.tcx' ) )
-	assert p.uids == uids( 'polar:1234', 'polar:2345', 'polar:2345/rec.gpx', 'polar:2345/rec.tcx' )
-	assert p.activity_uids == uids( 'polar:1234', 'polar:2345' )
-	assert p.classifiers == [ 'polar' ]
-
-@mark.unit
 def test_multipart_activity():
-	from dateutil.tz import UTC
 	swim_start = datetime( 2023, 7, 1, 10, 0, 0, tzinfo=UTC )
 	swim_end = datetime( 2023, 7, 1, 10, 30, 0, tzinfo=UTC )
 	bike_start = datetime( 2023, 7, 1, 10, 35, 0, tzinfo=UTC )
 	bike_end = datetime( 2023, 7, 1, 11, 55, 0, tzinfo=UTC )
-	run_start = datetime( 2023, 7, 1, 12, 0, 0, tzinfo=UTC )
+	run_start = datetime( 2023, 7, 1, 12, 5, 0, tzinfo=UTC )
 	run_end = datetime( 2023, 7, 1, 13, 0, 0, tzinfo=UTC )
 	a1 = Activity( uid='polar:101', name='swim', distance=1500, starttime=swim_start, endtime=swim_end )
 	a2 = Activity( uid='polar:102', name='bike', distance=40000, starttime=bike_start, endtime=bike_end )
 	a3 = Activity( uid='polar:102', name='run', distance=10000, starttime=run_start, endtime=run_end )
 
-	tri = Activity.multipart_of( a1, a2, a3 )
+	tri = MultipartActivity.of( a1, a2, a3 )
 
 	assert tri.multipart
-	assert [ p.gap.seconds for p in tri.parts ] == [ 0, 300, 300 ]
+	assert [ gap.seconds for gap in tri.gaps ] == [ 300, 600 ]
 	assert tri.type == ActivityTypes.multisport
 	assert tri.distance == 51500
 	assert tri.starttime == swim_start
@@ -177,48 +170,7 @@ def test_multipart_activity():
 	a1 = Activity( uid='polar:101', name='bike', heartrate=120, starttime=bike_start, endtime=bike_end, duration=timedelta( hours=2 ) )
 	a2 = Activity( uid='polar:102', name='run', heartrate=180, starttime=run_start, endtime=run_end, duration=timedelta( hours=1 ) )
 
-	assert Activity.multipart_of( a1, a2 ).heartrate == 140
-
-@mark.unit
-@mark.skip
-def test_multipart_activity2():
-	p1 = ActivityPart( uids=['polar:101' ], gap=time( 0, 0, 0 ) )
-	p2 = ActivityPart( uids=['polar:102', 'strava:102' ], gap=time( 1, 0, 0 ) )
-	a = Activity( parts=[ p1, p2 ] )
-
-	assert a.multipart
-	assert a.uids == [ 'polar:101', 'polar:102', 'strava:102' ]
-	assert a.as_uids() == [ UID( 'polar:101' ), UID( 'polar:102' ), UID( 'strava:102' ) ]
-	assert a.classifiers == [ 'polar', 'strava' ]
-
-	p1 = ActivityPart( uids=['polar:101/swim.gpx' ], gap=time( 0, 0, 0 ) )
-	p2 = ActivityPart( uids=['polar:101/bike.gpx' ], gap=time( 1, 0, 0 ) )
-	p3 = ActivityPart( uids=['polar:101/run.gpx' ], gap=time( 1, 0, 0 ) )
-	a = Activity( parts=[ p1, p2, p3 ] )
-
-	assert a.multipart
-	assert a.uids == [ 'polar:101' ]
-	assert a.as_uids() == [ UID( 'polar:101' ) ]
-	assert a.classifiers == [ 'polar' ]
-
-@mark.unit
-def test_add():
-	src1 = Activity( starttime=datetime( 2022, 2, 22, 7 ), distance=10, duration=timedelta( hours=1 ), heartrate_max=180, heartrate_min=100 )
-	src2 = Activity( starttime=datetime( 2022, 2, 22, 8 ), distance=20, duration=timedelta( hours=1, minutes=20 ) )
-	src3 = Activity( starttime=datetime( 2022, 2, 22, 9 ), heartrate_max=160, heartrate_min=80 )
-	target = src1.add( others=[src2, src3], copy=True )
-
-	assert target.starttime == datetime( 2022, 2, 22, 7 )
-	assert target.endtime is None
-
-	assert target.distance == 30
-	assert target.ascent is None
-	assert target.elevation_max is None
-
-	assert target.duration == timedelta( hours=2, minutes=20 )
-	assert target.duration_moving == timedelta( seconds=0 )
-	assert target.heartrate_max == 180
-	assert target.heartrate_min == 80
+	assert MultipartActivity.of( a1, a2 ).heartrate == 140
 
 @mark.unit
 def test_groups():

@@ -50,6 +50,8 @@ HOUR = rxcompile( '^(?P<hour>[0-1]\d|2[0-4])$' )
 HOUR_MINUTE = rxcompile( '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d)$' )
 HOUR_MINUTE_SECOND = rxcompile( '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d):(?P<second>[0-5]\d)$' )
 
+ZIP_FS = rxcompile( r'<zipfs \'(.+)\'>' )
+
 @define
 class UtilityConfiguration:
 
@@ -430,6 +432,8 @@ def fs_to_str( fs: FS ):
 	match fs:
 		case OSFS():
 			return fs.getsyspath( '/' )
+		case ReadZipFS():
+			return ZIP_FS.sub( "zip://\\1", str( fs ) )
 		case MemoryFS():
 			return 'mem:/'
 		case _:

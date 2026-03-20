@@ -28,10 +28,16 @@ METADATA_OBJ = Metadata(
 		UID.of( 'polar:101' ),
 		UID.of( 'strava:101' )
 	],
+	aux= {
+		'custom_id': '1234'
+	}
 )
 
 METADATA_OBJ_DUMP = \
 '''{
+  "aux": {
+    "custom_id": "1234"
+  },
   "created": "2024-10-10T10:10:10+00:00",
   "favourite": true,
   "members": [

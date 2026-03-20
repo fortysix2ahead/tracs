@@ -128,13 +128,13 @@ def test_union_of():
 		type=ActivityTypes.run,
 	)
 
-	u = Activity.union_of( a1, a2 )
+	u = Activity.union( a1, a2 )
 	assert u.name == 'One' and u.distance == 10 and u.calories == 20
 	assert u.uid == 'polar:1' and u.uids == [ 'polar:1' ]
 	assert u.type == ActivityTypes.walk and u.tags == [ 'a', 'b' ]
 
 	# union with force == True
-	u = Activity.union_of( a1, a2, force=True )
+	u = Activity.union( a1, a2, force=True )
 	assert u.name == 'Two' and u.distance == 10 and u.calories == 20
 	assert u.uid == 'polar:2' and u.uids == ['polar:2']
 	assert u.type == ActivityTypes.run and u.tags == ['a', 'b']

@@ -196,48 +196,6 @@ class Activity:
 
 	# additional methods
 
-	# def union( self, others: List[Activity], strategy: Literal['first', 'last'] = 'first' ) -> Activity: # todo: are different strategies useful?
-	def union( self, others: List[Activity], ignore: List[str] = None, copy: bool = False, force: bool = False ) -> Activity:
-		log.warning( 'call to deprecated method Activity.union(), method will be removed in the future' )
-		this = evolve( self ) if copy else self
-		ignore = ignore if ignore else []
-
-		for f in this.fields():
-			if f.name.startswith( '__' ) or f.name in ignore: # never touch internal or ignored fields
-				continue
-
-			if not force and f.metadata.get( 'protected', False ): # only overwrite protected fields when forced
-				continue
-
-			value = getattr( this, f.name )
-
-			# case 1: non-factory types
-			if not isinstance( f.default, Factory ):
-				if not force and value != f.default:  # do not overwrite when a value is already set
-					continue
-
-				for other in others:
-					# overwrite when other value is different and different from default
-					if (other_value := getattr( other, f.name )) != value and other_value != f.default:
-						setattr( this, f.name, other_value )
-						if not force: # with force the last value wins
-							break
-
-			# case 2: factory types
-			else:
-				for other in others:
-					other_value = getattr( other, f.name )
-					if f.default.factory is list:
-						setattr( this, f.name, sorted( list( set().union( getattr( this, f.name ), other_value ) ) ) )
-					elif f.default.factory is dict:
-						setattr( this, f.name, { **value, **other_value } )
-					elif f.default.factory in [Metadata, Resources]:
-						pass # ignore metadata
-					else:
-						raise RuntimeError( f'unsupported factory datatype: {f.default}' )
-
-		return this
-
 	def add( self, others: List[Activity], copy: bool = False, force: bool = False ) -> Activity:
 		"""
 		Updates this activity with other activities as parts for this activity.
@@ -302,7 +260,7 @@ class Activity:
 		self.tags.remove( tag )
 
 	@classmethod
-	def union_of( cls, *activities: Activity, ignored_fields: List[str] = None, force: bool = False, target: Activity = None ) -> Activity:
+	def union( cls, *activities: Activity, ignored_fields: List[str] = None, force: bool = False, target: Activity = None ) -> Activity:
 		target = target or Activity()
 		ignored_fields = ignored_fields or []
 
@@ -368,7 +326,7 @@ class ActivityGroup( Activity ):
 		if target is None:
 			target = ActivityGroup()
 
-		target = cls.union_of( *activities, ignored_fields=ignored_fields, force=force, target=target )
+		target = cls.union( *activities, ignored_fields=ignored_fields, force=force, target=target )
 
 		# treatment of special fields
 		if target.uid.classifier != 'group':

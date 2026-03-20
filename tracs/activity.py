@@ -9,6 +9,7 @@ from logging import getLogger
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, TypeVar, Union
 
+from attrs import fields
 from attrs import define, evolve, Factory, field
 from dateutil.tz import UTC
 from more_itertools import first, first_true, last, unique
@@ -137,6 +138,10 @@ class Activity:
 
 	def of( self, id: int = 0, uid: str = 'activity:0', name: str = 'Activity 0' ):
 		pass
+
+	@property
+	def classifier( self ) -> str:
+		return self.uid.classifier
 
 	@property
 	def classifiers( self ) -> List[str]:
@@ -301,7 +306,7 @@ class Activity:
 		target = target or Activity()
 		ignored_fields = ignored_fields or []
 
-		for f in target.fields():
+		for f in fields( Activity ):
 			if f.name.startswith( '__' ) or f.name in ignored_fields: # never touch internal or ignored fields
 				continue
 
@@ -346,20 +351,6 @@ class Activity:
 
 		return target
 
-	@classmethod
-	def group_of( cls, *activities: Activity, ignored_fields: List[str] = None, force: bool = False, target: Activity = None ) -> Activity:
-		target = cls.union_of( *activities, ignored_fields=ignored_fields, force=force, target=target )
-
-		# treatment of special fields
-		if target.uid.classifier != 'group':
-			target.uid = f'group:{activities[0].starttime.strftime( "%y%m%d%H%M%S" )}'
-
-		# update members + resources
-		target.metadata.members = sorted( [ a.uid for a in activities ] )
-		target.resources = Resources( lst=sorted( [ r for a in activities for r in a.resources ], key=lambda r: r.path ) )
-
-		return target
-
 @define
 class ActivityGroup( Activity ):
 
@@ -368,6 +359,27 @@ class ActivityGroup( Activity ):
 	@property
 	def group( self ) -> bool:
 		return True
+
+	@classmethod
+	def of( cls, *activities: Activity, ignored_fields: List[str] = None, force: bool = False, target: Activity = None ) -> ActivityGroup:
+		if target is not None and not isinstance( target, ActivityGroup ):
+			raise ValueError( 'target must be an instance of ActivityGroup' )
+
+		if target is None:
+			target = ActivityGroup()
+
+		target = cls.union_of( *activities, ignored_fields=ignored_fields, force=force, target=target )
+
+		# treatment of special fields
+		if target.uid.classifier != 'group':
+			target.uid = uid( f'group:{activities[0].starttime.strftime( "%y%m%d%H%M%S" )}' )
+
+		# update members
+		target.metadata.members = sorted( [a.uid for a in activities] )
+		for a in activities:
+			a.metadata.member_of = target.uid
+
+		return target
 
 @define( repr=False )
 class MultipartActivity( Activity ):

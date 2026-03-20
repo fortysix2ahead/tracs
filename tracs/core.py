@@ -158,7 +158,9 @@ class Metadata:
 	"""
 
 	def __attrs_post_init__( self ):
-		self.created = self.created if self.created else datetime.now( UTC )
+		# todo: enable this later
+		# self.created = self.created if self.created else datetime.now( UTC )
+		pass
 
 	def __getitem__( self, item ):
 		return self.aux[item]
@@ -170,6 +172,9 @@ class Metadata:
 			self.aux[key] = value
 		finally:
 			self.modified = datetime.now( UTC )
+			# todo: remove, when create above has been enabled
+			if not self.created:
+				self.created = self.modified
 
 	def keys( self ):
 		return self.aux.keys()

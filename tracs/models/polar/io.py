@@ -107,19 +107,26 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		gpx, tcx = self._gpx_tcx( a, stream )
 
 		# attach resources
-		gpx_resource = Resource(
-			name=f'gpx recording {a.uid.local_id}',
-			path=f'{a.uid.local_id}.gpx',
-			content=gpx.to_xml( prettyprint=True ).encode( 'UTF-8' ),
-			type=GPX_TYPE
-		)
-		tcx_resource = Resource(
-			name=f'tcx recording {a.uid.local_id}',
-			path=f'{a.uid.local_id}.tcx',
-			content=tostring( tcx.as_xml(), pretty_print=True ),
-			type=TCX_TYPE
-		)
-		a.resources.add_all( gpx_resource, tcx_resource )
+
+		if gpx:
+			a.resources.append(
+				Resource(
+					name=f'gpx recording {a.uid.local_id}',
+					path=f'{a.uid.local_id}.gpx',
+					content=gpx.to_xml( prettyprint=True ).encode( 'UTF-8' ),
+					type=GPX_TYPE
+				)
+			)
+
+		if tcx:
+			a.resources.append(
+				Resource(
+					name=f'tcx recording {a.uid.local_id}',
+					path=f'{a.uid.local_id}.tcx',
+					content=tostring( tcx.as_xml(), pretty_print=True ),
+					type=TCX_TYPE
+				)
+			)
 
 		return a
 
@@ -196,7 +203,12 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		return Stream( sorted( _points.values(), key=lambda p: p.time ) )
 
 	def _gpx_tcx( self, a: Activity, stream: Stream ) -> Tuple[GPX, TrainingCenterDatabase]:
-		gpx = stream.as_gpx()
+		# create gpx only if there are locations
+		if any( p.lat or p.lon for p in stream.points ):
+			gpx = stream.as_gpx()
+		else:
+			gpx = None
+
 		tcx = stream.as_tcx(
 			average_heart_rate_bpm=a.heartrate,
 			calories=a.calories,

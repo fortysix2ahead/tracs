@@ -3,7 +3,7 @@ from itertools import pairwise
 from logging import getLogger
 from typing import Any, Dict, List, Optional, Tuple
 
-from dateutil.tz import tzoffset
+from dateutil.tz import tzlocal, tzoffset
 from gpxpy.gpx import GPX
 from lxml.etree import tostring
 from more_itertools import first_true
@@ -78,7 +78,7 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			type = ACCESSLINK_TYPES.get( e.sport.id ), # todo: this will fail, sports now have ids
 		)
 
-		self._set_times( a, e )
+		self._set_times( a, s, e )
 		self._set_uids( a, s, e )
 
 		stream = self._stream( e.routes.route,  e.samples, a.starttime )
@@ -131,7 +131,7 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			type = ACCESSLINK_TYPES.get( s.sport.id ), # todo: this will fail, sports now have ids
 		)
 
-		self._set_times( parent, s )
+		self._set_times( parent, s, None )
 		self._set_uids( parent, s, None )
 
 		# extract parts
@@ -147,15 +147,24 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		return parent, tuple( parts )
 
 	@staticmethod
-	def _set_times( a: Activity, se: TrainingSession|Exercise ) -> None:
+	def _set_times( a: Activity, s: TrainingSession, e: Optional[Exercise] ) -> None:
 		# timezone = get_timezone().zone
-		offset = se.timezoneOffsetMinutes
+
+		start = e.startTime if e and e.startTime else s.startTime
+		end = e.stopTime if e and e.stopTime else s.stopTime
+
+		# offset might be empty in some exercises -> use session instead
+		offset = e.timezoneOffsetMinutes if e and e.timezoneOffsetMinutes else s.timezoneOffsetMinutes
+		if offset is None:
+			# both timezoneOffsetMinutes values are missing -> that's bad, this happens for very old exercises
+			offset = int( to_naive_time( start ).replace( tzinfo=tzlocal() ).utcoffset().seconds / 60 )
+			log.warning( f'training session {s.identifier.id} does not contain any timezone information, assuming local timezone with an offset = {offset}' )
 
 		# update start/end times
 		a.timezone_offset = offset
-		a.starttime = (to_naive_time( se.startTime ) - timedelta( minutes=offset )).replace( tzinfo=UTC )
+		a.starttime = (to_naive_time( start ) - timedelta( minutes=offset )).replace( tzinfo=UTC )
 		a.starttime_local = (a.starttime + timedelta( minutes=offset )).replace( tzinfo=tzoffset( None, offset * 60 ) )
-		a.endtime = (to_naive_time( se.stopTime ) - timedelta( minutes=offset )).replace( tzinfo=UTC )
+		a.endtime = (to_naive_time( end ) - timedelta( minutes=offset )).replace( tzinfo=UTC )
 		a.endtime_local = (a.endtime + timedelta( minutes=offset )).replace( tzinfo=tzoffset( None, offset * 60 ) )
 
 	@staticmethod

@@ -1,14 +1,12 @@
 from datetime import datetime, timedelta, UTC
-from itertools import pairwise, zip_longest
+from itertools import pairwise
 from logging import getLogger
-from re import compile
 from typing import Any, Dict, List, Optional, Tuple
 
-from babel.dates import get_timezone
-from dateutil.tz import tzlocal, tzoffset
+from dateutil.tz import tzoffset
 from gpxpy.gpx import GPX
 from lxml.etree import tostring
-from more_itertools import first, first_true
+from more_itertools import first_true
 from more_itertools.recipes import all_equal
 
 from tracs.activity import Activity, MultipartActivity
@@ -80,23 +78,10 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			speed = _statistic( e, STAT_SPEED, 'avg' ),
 			speed_max = _statistic( e, STAT_HR, 'max' ),
 			type = ACCESSLINK_TYPES.get( e.sport.id ), # todo: this will fail, sports now have ids
-			# uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
 		)
 
 		self._set_times( a, e )
-
-		# update metadata
-
-		if s.identifier.id != e.identifier.id:
-			# for newer than 2026-03 exercises s.identifier.id is a UUID, that's why we're using e.id
-			# the web url in Flow also points to e.id, but to s.id for older exercises
-			if REGEX_UUID.match( s.identifier.id ):
-				a.uid = UID( classifier=CLASSIFIER, local_id=int( e.identifier.id ) )
-
-			# save the exercise id as custom metadata, for an unknown reason the id is different from the session id
-			else:
-				a.uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
-				a.metadata.set( 'exercise_id', str( e.identifier.id ) )
+		self._set_uids( a, s, e )
 
 		stream = self._stream( e.routes.route,  e.samples, a.starttime )
 
@@ -156,6 +141,7 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		)
 
 		self._set_times( parent, s )
+		self._set_uids( parent, s, None )
 
 		# extract parts
 		parts = [ self._from_single_exercise( s, p ) for p in el ]
@@ -180,6 +166,27 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		a.starttime_local = (a.starttime + timedelta( minutes=offset )).replace( tzinfo=tzoffset( None, offset * 60 ) )
 		a.endtime = (to_naive_time( se.stopTime ) - timedelta( minutes=offset )).replace( tzinfo=UTC )
 		a.endtime_local = (a.endtime + timedelta( minutes=offset )).replace( tzinfo=tzoffset( None, offset * 60 ) )
+
+	@staticmethod
+	def _set_uids( a: Activity, s: TrainingSession, e: Optional[Exercise] ):
+		sid, eid = s.identifier.id, e.identifier.id if e else None
+		if sid and not eid:
+			# assumption: in this case sid is an int -> this may fail?
+			a.uid = UID( classifier=CLASSIFIER, local_id=int( sid ) )
+		
+		elif sid and eid:
+			# for newer than 2026-03 exercises sid is a UUID, that's why int( sid ) will fail and
+			# eid will be used for creating the uid
+			# the url in Polar Flow points analysis/<eid>, but to analysis/<sid> for older exercises
+			try:
+				a.uid = UID( classifier=CLASSIFIER, local_id=int( sid ) )
+				a.metadata.set( 'exercise_id', str( eid ) )
+			except ValueError:
+				a.uid = UID( classifier=CLASSIFIER, local_id=int( eid ) )
+				a.metadata.set( 'session_id', sid )
+
+		else:
+			raise ValueError( 'fatal: missing session and exercise id: this should not happen' )
 
 	# noinspection PyMethodMayBeStatic
 	def _stream( self, route: Route, samples: Samples, start: datetime ) -> Stream:
@@ -208,7 +215,8 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 
 		return Stream( sorted( _points.values(), key=lambda p: p.time ) )
 
-	def _gpx_tcx( self, a: Activity, stream: Stream ) -> Tuple[GPX, TrainingCenterDatabase]:
+	@staticmethod
+	def _gpx_tcx( a: Activity, stream: Stream ) -> Tuple[GPX, TrainingCenterDatabase]:
 		# create gpx only if there are locations
 		if any( p.lat or p.lon for p in stream.points ):
 			gpx = stream.as_gpx()

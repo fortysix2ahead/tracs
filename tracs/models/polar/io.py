@@ -125,14 +125,10 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			# heartrate_min = no field exists,
 			location_latitude_start = s.latitude,
 			location_longitude_start = s.longitude,
-			# power values are hidden somewhere else now?
-			# power = resource.float( 'power', 'avg', parent=exc )
-			# power_max = resource.float( 'power', 'max', parent=exc )
 			name = s.name,
 			# speed = no field
 			# speed_max = no field
 			type = ACCESSLINK_TYPES.get( s.sport.id ), # todo: this will fail, sports now have ids
-			uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
 		)
 
 		self._set_times( parent, s )

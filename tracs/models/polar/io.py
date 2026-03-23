@@ -57,9 +57,8 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 	def _from_single_exercise( self, s: TrainingSession, e: Exercise ) -> Activity:
 		a = Activity(
 			ascent = e.ascentMeters,
-			# not supported any longer?
-			# cadence = resource.float( 'cadence', 'avg', parent=exc )
-			# cadence_max = resource.float( 'cadence', 'max', parent=exc )
+			cadence = _statistic( e, STAT_CADENCE, 'avg' ),
+			cadence_max = _statistic( e, STAT_CADENCE, 'max' ),
 			calories = e.calories,
 			descent = e.descentMeters,
 			distance = e.distanceMeters,
@@ -72,9 +71,8 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			heartrate_min = _statistic( e, STAT_HR, 'min' ),
 			location_latitude_start = e.latitude,
 			location_longitude_start = e.longitude,
-			# power values are hidden somewhere else now?
-			# power = resource.float( 'power', 'avg', parent=exc )
-			# power_max = resource.float( 'power', 'max', parent=exc )
+			power = _statistic( e, STAT_POWER, 'avg' ),
+			power_max = _statistic( e, STAT_POWER, 'max' ),
 			speed = _statistic( e, STAT_SPEED, 'avg' ),
 			speed_max = _statistic( e, STAT_HR, 'max' ),
 			type = ACCESSLINK_TYPES.get( e.sport.id ), # todo: this will fail, sports now have ids
@@ -115,9 +113,6 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 	def _from_multiple_exercises( self, s: TrainingSession, el: List[Exercise] ) -> Tuple[MultipartActivity, Tuple[Activity, ...]]:
 		parent = MultipartActivity(
 			# ascent = no field
-			# not supported any longer?
-			# cadence = resource.float( 'cadence', 'avg', parent=exc )
-			# cadence_max = resource.float( 'cadence', 'max', parent=exc )
 			calories = s.calories,
 			# descent = no field
 			distance = s.distanceMeters,

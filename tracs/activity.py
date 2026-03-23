@@ -77,6 +77,8 @@ class Activity:
 	"""activity end time (local)"""
 	timezone: str = field( default=get_localzone_name() )
 	"""timezone of the activity, local timezone by default"""
+	timezone_offset: int = field( default=None )
+	"""timezone offset of the activity"""
 
 	duration: timedelta = field( default=None ) #
 	duration_moving: timedelta = field( default=None ) #

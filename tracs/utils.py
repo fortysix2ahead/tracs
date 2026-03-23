@@ -223,6 +223,12 @@ def to_isotime( timestr: str ) -> Optional[datetime]:
 	except (ParserError, TypeError):
 		return None
 
+def to_naive_time( timestr: str ) -> Optional[datetime]:
+	try:
+		return parse_datetime( timestr )
+	except (ParserError, TypeError):
+		return None
+
 def fromtimezone( value ) -> time:
 	return get_timezone( value ) if value else get_timezone()
 

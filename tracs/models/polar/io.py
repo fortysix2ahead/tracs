@@ -69,8 +69,6 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			elevation = _statistic( e, STAT_ALT, 'avg' ),
 			elevation_max = _statistic( e, STAT_ALT, 'max' ),
 			elevation_min = _statistic( e, STAT_ALT, 'min' ),
-			# endtime = to_isotime( e.stopTime ),
-			# endtime_local = to_isotime( e.stopTime ).astimezone( tzlocal() ),
 			heartrate = _statistic( e, STAT_HR, 'avg' ),
 			heartrate_max = _statistic( e, STAT_HR, 'max' ),
 			heartrate_min = _statistic( e, STAT_HR, 'min' ),
@@ -81,20 +79,11 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			# power_max = resource.float( 'power', 'max', parent=exc )
 			speed = _statistic( e, STAT_SPEED, 'avg' ),
 			speed_max = _statistic( e, STAT_HR, 'max' ),
-			# starttime = to_isotime( e.startTime ),
-			# starttime_local = to_isotime( e.startTime ).astimezone( tzlocal() ),
-			# timezone = get_timezone().zone, # todo: this not correct - when an activity took place in a different timezone than the home zone
-			timezone_offset= e.timezoneOffsetMinutes,
 			type = ACCESSLINK_TYPES.get( e.sport.id ), # todo: this will fail, sports now have ids
 			# uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
 		)
 
-		# update start/end times
-		a.timezone_offset = e.timezoneOffsetMinutes
-		a.starttime = (to_naive_time( e.startTime )  - timedelta( minutes=e.timezoneOffsetMinutes )).replace( tzinfo=UTC )
-		a.starttime_local = (a.starttime + timedelta( minutes=e.timezoneOffsetMinutes )).replace( tzinfo=tzoffset( None, e.timezoneOffsetMinutes * 60 ) )
-		a.endtime = (to_naive_time( e.stopTime )  - timedelta( minutes=e.timezoneOffsetMinutes )).replace( tzinfo=UTC )
-		a.endtime_local = (a.endtime + timedelta( minutes=e.timezoneOffsetMinutes )).replace( tzinfo=tzoffset( None, e.timezoneOffsetMinutes * 60 ) )
+		self._set_times( a, e )
 
 		# update metadata
 
@@ -151,8 +140,6 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			# elevation = no field
 			# elevation_max = no field
 			# elevation_min = no field
-			endtime = to_isotime( s.stopTime ),
-			endtime_local = to_isotime( s.stopTime ).astimezone( tzlocal() ),
 			heartrate = s.hrAvg,
 			heartrate_max = s.hrMax,
 			# heartrate_min = no field exists,
@@ -164,12 +151,11 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			name = s.name,
 			# speed = no field
 			# speed_max = no field
-			starttime = to_isotime( s.startTime ),
-			starttime_local = to_isotime( s.startTime ).astimezone( tzlocal() ),
-			timezone = get_timezone().zone, # todo: this not correct - when an activity took place in a different timezone than the home zone
 			type = ACCESSLINK_TYPES.get( s.sport.id ), # todo: this will fail, sports now have ids
 			uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
 		)
+
+		self._set_times( parent, s )
 
 		# extract parts
 		parts = [ self._from_single_exercise( s, p ) for p in el ]
@@ -182,6 +168,18 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		parent.gaps = [ p2.endtime - p1.starttime for p1, p2 in pairwise( parts ) ]
 
 		return parent, tuple( parts )
+
+	@staticmethod
+	def _set_times( a: Activity, se: TrainingSession|Exercise ) -> None:
+		# timezone = get_timezone().zone
+		offset = se.timezoneOffsetMinutes
+
+		# update start/end times
+		a.timezone_offset = offset
+		a.starttime = (to_naive_time( se.startTime ) - timedelta( minutes=offset )).replace( tzinfo=UTC )
+		a.starttime_local = (a.starttime + timedelta( minutes=offset )).replace( tzinfo=tzoffset( None, offset * 60 ) )
+		a.endtime = (to_naive_time( se.stopTime ) - timedelta( minutes=offset )).replace( tzinfo=UTC )
+		a.endtime_local = (a.endtime + timedelta( minutes=offset )).replace( tzinfo=tzoffset( None, offset * 60 ) )
 
 	# noinspection PyMethodMayBeStatic
 	def _stream( self, route: Route, samples: Samples, start: datetime ) -> Stream:

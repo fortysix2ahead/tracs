@@ -5,7 +5,7 @@ from re import compile
 from typing import Any, Dict, List, Optional, Tuple
 
 from babel.dates import get_timezone
-from dateutil.tz import tzlocal
+from dateutil.tz import tzlocal, tzoffset
 from gpxpy.gpx import GPX
 from lxml.etree import tostring
 from more_itertools import first, first_true
@@ -22,7 +22,7 @@ from tracs.plugins.tcx import TCX_TYPE, TrainingCenterDatabase
 from tracs.resources import Resource
 from tracs.streams import Point, Stream
 from tracs.uid import UID
-from tracs.utils import millis_to_timedelta, to_isotime
+from tracs.utils import millis_to_timedelta, to_isotime, to_naive_time
 
 log = getLogger( __name__ )
 
@@ -69,8 +69,8 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			elevation = _statistic( e, STAT_ALT, 'avg' ),
 			elevation_max = _statistic( e, STAT_ALT, 'max' ),
 			elevation_min = _statistic( e, STAT_ALT, 'min' ),
-			endtime = to_isotime( e.stopTime ),
-			endtime_local = to_isotime( e.stopTime ).astimezone( tzlocal() ),
+			# endtime = to_isotime( e.stopTime ),
+			# endtime_local = to_isotime( e.stopTime ).astimezone( tzlocal() ),
 			heartrate = _statistic( e, STAT_HR, 'avg' ),
 			heartrate_max = _statistic( e, STAT_HR, 'max' ),
 			heartrate_min = _statistic( e, STAT_HR, 'min' ),
@@ -81,12 +81,20 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			# power_max = resource.float( 'power', 'max', parent=exc )
 			speed = _statistic( e, STAT_SPEED, 'avg' ),
 			speed_max = _statistic( e, STAT_HR, 'max' ),
-			starttime = to_isotime( e.startTime ),
-			starttime_local = to_isotime( e.startTime ).astimezone( tzlocal() ),
-			timezone = get_timezone().zone, # todo: this not correct - when an activity took place in a different timezone than the home zone
+			# starttime = to_isotime( e.startTime ),
+			# starttime_local = to_isotime( e.startTime ).astimezone( tzlocal() ),
+			# timezone = get_timezone().zone, # todo: this not correct - when an activity took place in a different timezone than the home zone
+			timezone_offset= e.timezoneOffsetMinutes,
 			type = ACCESSLINK_TYPES.get( e.sport.id ), # todo: this will fail, sports now have ids
 			# uid = UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
 		)
+
+		# update start/end times
+		a.timezone_offset = e.timezoneOffsetMinutes
+		a.starttime = (to_naive_time( e.startTime )  - timedelta( minutes=e.timezoneOffsetMinutes )).replace( tzinfo=UTC )
+		a.starttime_local = (a.starttime + timedelta( minutes=e.timezoneOffsetMinutes )).replace( tzinfo=tzoffset( None, e.timezoneOffsetMinutes * 60 ) )
+		a.endtime = (to_naive_time( e.stopTime )  - timedelta( minutes=e.timezoneOffsetMinutes )).replace( tzinfo=UTC )
+		a.endtime_local = (a.endtime + timedelta( minutes=e.timezoneOffsetMinutes )).replace( tzinfo=tzoffset( None, e.timezoneOffsetMinutes * 60 ) )
 
 		# update metadata
 

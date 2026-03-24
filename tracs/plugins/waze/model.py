@@ -5,6 +5,8 @@ from typing import List
 from attrs import define, field
 from dateutil.parser import parse as parse_datetime
 
+from tracs.plugins.waze.constants import *
+
 @define
 class Point:
 
@@ -70,7 +72,7 @@ class LocationDetail:
 
 	def as_point_list( self ) -> List[Point]:
 		if self.coordinates[0] == '[' and self.coordinates[-1] == ']':
-			segments = self.__class__.CURLY_BRACES.findall( self.coordinates )
+			segments = CURLY_BRACES.findall( self.coordinates )
 			segments = [s[6:-2] for s in segments]
 			all_points = []
 			for s in segments:
@@ -81,14 +83,14 @@ class LocationDetail:
 			points = all_points
 		else:
 			points = self.coordinates.split( '|' )
-			if points and self.__class__.COORDS_1.match( points[0] ):
+			if points and COORDS_1.match( points[0] ):
 				points = [p[1:-1].split( ' ' ) for p in points]  # format: lon lat!!
 				points = [Point( lon=float( p[0] ), lat=float( p[1] ) ) for p in points]
-			elif points and self.__class__.COORDS_2.match( points[0] ):
+			elif points and COORDS_2.match( points[0] ):
 				points = [p[:-1].split( '(' ) for p in points ]
 				points = [[p[0], *p[1].split( ' ' ) ] for p in points] # format lat lon!!
 				points = [ Point( time=p[0], lat=p[1], lon=p[2] ) for p in points ]
-			elif points and self.__class__.COORDS_3.match( points[0] ):
+			elif points and COORDS_3.match( points[0] ):
 				points = [p[:-1].split( '(' ) for p in points]
 				points = [[p[0], *p[1].split( ' ' )] for p in points]  # format lon lat!!
 				points = [Point( time=p[0], lat=p[2], lon=p[1] ) for p in points]
@@ -102,9 +104,9 @@ class LocationDetail:
 
 	# this is just for testing
 	def validate( self ) -> bool:
-		b1 = bool( self.__class__.DATE.match( self.date ) )
-		b2 = bool( self.__class__.COORDS_LIST_1.match( self.coordinates ) )
-		b3 = bool( self.__class__.COORDS_LIST_2.match( self.coordinates ) )
+		b1 = bool( DATE.match( self.date ) )
+		b2 = bool( COORDS_LIST_1.match( self.coordinates ) )
+		b3 = bool( COORDS_LIST_2.match( self.coordinates ) )
 		b = b1 and ( b2 or b3 )
 		return b
 

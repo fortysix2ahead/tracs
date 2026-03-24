@@ -54,7 +54,7 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 
 		return activity, *parts
 
-	def _from_single_exercise( self, s: TrainingSession, e: Exercise ) -> Activity:
+	def _from_single_exercise( self, s: TrainingSession, e: Exercise, force_sid: bool = True ) -> Activity:
 		a = Activity(
 			ascent = e.ascentMeters,
 			cadence = _statistic( e, STAT_CADENCE, 'avg' ),
@@ -79,7 +79,8 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		)
 
 		self._set_times( a, s, e )
-		self._set_uids( a, s, e )
+		a.uid, metadata = self._uid_from_exercise( s, e, force_sid=force_sid )
+		a.metadata.set( *metadata )
 
 		stream = self._stream( e.routes.route,  e.samples, a.starttime )
 
@@ -129,13 +130,13 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 			# speed = no field
 			# speed_max = no field
 			type = ACCESSLINK_TYPES.get( s.sport.id ), # todo: this will fail, sports now have ids
+			uid = self._uid_from_session( s )
 		)
 
 		self._set_times( parent, s, None )
-		self._set_uids( parent, s, None )
 
 		# extract parts
-		parts = [ self._from_single_exercise( s, p ) for p in el ]
+		parts = [ self._from_single_exercise( s, p, force_sid=False ) for p in el ]
 
 		# update members
 		parent.metadata.parts = [ p.uid for p in parts ]
@@ -168,25 +169,32 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 		a.endtime_local = (a.endtime + timedelta( minutes=offset )).replace( tzinfo=tzoffset( None, offset * 60 ) )
 
 	@staticmethod
-	def _set_uids( a: Activity, s: TrainingSession, e: Optional[Exercise] ):
-		sid, eid = s.identifier.id, e.identifier.id if e else None
-		if sid and not eid:
-			# assumption: in this case sid is an int -> this may fail?
-			a.uid = UID( classifier=CLASSIFIER, local_id=int( sid ) )
-		
-		elif sid and eid:
-			# for newer than 2026-03 exercises sid is a UUID, that's why int( sid ) will fail and
-			# eid will be used for creating the uid
-			# the url in Polar Flow points analysis/<eid>, but to analysis/<sid> for older exercises
-			try:
-				a.uid = UID( classifier=CLASSIFIER, local_id=int( sid ) )
-				a.metadata.set( 'exercise_id', str( eid ) )
-			except ValueError:
-				a.uid = UID( classifier=CLASSIFIER, local_id=int( eid ) )
-				a.metadata.set( 'session_id', sid )
+	def _uid_from_session( s: TrainingSession ) -> UID:
+		# todo: will this fail for newer activities?
+		return UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
 
+	@staticmethod
+	def _uid_from_exercise( s: TrainingSession, e: Exercise, force_sid: bool = False ) -> Tuple[UID, Tuple[str, str]]:
+		# sid: prior to 2026-03 a numeric id of the session, a UUID onwards
+		# eid: always a numeric id
+		# urls in Polar Flow for exercises prior to 2026-03: https://flow.polar.com/training/analysis/<sid>
+		# after 2026-03: https://flow.polar.com/training/analysis/<unknown_id> (which does not appear anywhere in takeout data)
+
+		sid, eid = s.identifier.id, e.identifier.id
+		if sid.isdigit():
+			# unfortunately need to differentiate for historic reasons:
+			# sid was used as uid, although eid would have been the better choice
+			# drawback: is not possible to calculate the Flow URL from eid
+			# force_sid = True is used for single exercises
+			# force_sid = False is used for exercises which are part of multipart
+			if force_sid:
+				return UID( classifier=CLASSIFIER, local_id=int( sid ) ), ( 'exercise_id', str( eid ) )
+			else:
+				return UID( classifier=CLASSIFIER, local_id=int( eid ) ), ( 'session_id', str( sid ) )
 		else:
-			raise ValueError( 'fatal: missing session and exercise id: this should not happen' )
+			# sid is UUID, therefore use eid as uid and store sid in metadata
+			# todo: what ids do modern multiparts have?
+			return UID( classifier=CLASSIFIER, local_id=int( eid ) ), ( 'session_id', sid )
 
 	# noinspection PyMethodMayBeStatic
 	def _stream( self, route: Route, samples: Samples, start: datetime ) -> Stream:

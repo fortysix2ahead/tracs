@@ -114,5 +114,183 @@
     "starttime_local": "2023-03-10T16:27:17+01:00",
     "type": "drive",
     "uid": "waze:230310152717"
+  },
+  {
+    "distance": 1151.17822265625,
+    "duration": "03:13:02.216000",
+    "endtime": "2022-10-16T15:36:41+00:00",
+    "endtime_local": "2022-10-16T17:36:41+02:00",
+    "id": 5,
+    "location_latitude_start": 51.20556640625,
+    "location_longitude_start": 14.385148286832855,
+    "metadata": {
+      "aux": {
+        "exercise_id": "7531046217"
+      },
+      "created": "2026-03-25T14:04:31.812962+00:00",
+      "modified": "2026-03-25T14:04:31.812962+00:00"
+    },
+    "resources": [
+      {
+        "name": "training session 7505780534",
+        "path": "polar/7/5/0/7505780534/7505780534.json",
+        "source": "polar/training-session-2022-10-16T14:23:39-7505780534-25099b60-224b-4e6b-8f47-fb00f6d2df75.json",
+        "type": "application/vnd.polar.session+json"
+      },
+      {
+        "name": "gpx recording 7505780534",
+        "path": "polar/7/5/0/7505780534/7505780534.gpx",
+        "source": "polar/training-session-2022-10-16T14:23:39-7505780534-25099b60-224b-4e6b-8f47-fb00f6d2df75.json",
+        "type": "application/gpx+xml"
+      },
+      {
+        "name": "tcx recording 7505780534",
+        "path": "polar/7/5/0/7505780534/7505780534.tcx",
+        "source": "polar/training-session-2022-10-16T14:23:39-7505780534-25099b60-224b-4e6b-8f47-fb00f6d2df75.json",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed": 0.35781076550483704,
+    "starttime": "2022-10-16T12:23:39+00:00",
+    "starttime_local": "2022-10-16T14:23:39+02:00",
+    "timezone_offset": 120,
+    "uid": "polar:7505780534"
+  },
+  {
+    "calories": 38,
+    "duration": "00:22:48.627000",
+    "endtime": "2022-12-06T08:15:54+00:00",
+    "endtime_local": "2022-12-06T09:15:54+01:00",
+    "heartrate": 67.0,
+    "heartrate_max": 86.0,
+    "heartrate_min": 53.0,
+    "id": 6,
+    "metadata": {
+      "aux": {
+        "exercise_id": "7563345441"
+      },
+      "created": "2026-03-25T14:04:32.118944+00:00",
+      "modified": "2026-03-25T14:04:32.118944+00:00"
+    },
+    "resources": [
+      {
+        "name": "training session 7537918051",
+        "path": "polar/7/5/3/7537918051/7537918051.json",
+        "source": "polar/training-session-2022-12-06T08:53:05-7537918051-85398bc4-fffe-4e97-9594-fd99cbf883f7.json",
+        "type": "application/vnd.polar.session+json"
+      },
+      {
+        "name": "tcx recording 7537918051",
+        "path": "polar/7/5/3/7537918051/7537918051.tcx",
+        "source": "polar/training-session-2022-12-06T08:53:05-7537918051-85398bc4-fffe-4e97-9594-fd99cbf883f7.json",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed_max": 86.0,
+    "starttime": "2022-12-06T07:53:05+00:00",
+    "starttime_local": "2022-12-06T08:53:05+01:00",
+    "timezone_offset": 60,
+    "uid": "polar:7537918051"
+  },
+  {
+    "calories": 16,
+    "distance": 42.599998474121094,
+    "duration": "00:09:19.127000",
+    "endtime": "2022-12-06T08:30:59+00:00",
+    "endtime_local": "2022-12-06T09:30:59+01:00",
+    "heartrate": 66.0,
+    "heartrate_max": 82.0,
+    "heartrate_min": 53.0,
+    "id": 8,
+    "metadata": {
+      "aux": {
+        "session_id": "7537918035"
+      },
+      "created": "2026-03-25T14:04:32.131099+00:00",
+      "modified": "2026-03-25T14:04:32.131099+00:00",
+      "part_of": [
+        "polar:7537918035"
+      ]
+    },
+    "resources": [
+      {
+        "name": "tcx recording 7563345425",
+        "path": "polar/7/5/6/7563345425/7563345425.tcx",
+        "source": "polar/training-session-2022-12-06T09:21:40-7537918035-01419ab6-479d-428d-a0a9-203e24d050f5.json",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed": 2.431854724884033,
+    "speed_max": 82.0,
+    "starttime": "2022-12-06T08:21:40+00:00",
+    "starttime_local": "2022-12-06T09:21:40+01:00",
+    "timezone_offset": 60,
+    "uid": "polar:7563345425"
+  },
+  {
+    "calories": 13,
+    "duration": "00:07:18.282000",
+    "endtime": "2022-12-06T08:38:28+00:00",
+    "endtime_local": "2022-12-06T09:38:28+01:00",
+    "heartrate": 66.0,
+    "heartrate_max": 76.0,
+    "heartrate_min": 56.0,
+    "id": 9,
+    "metadata": {
+      "aux": {
+        "session_id": "7537918035"
+      },
+      "created": "2026-03-25T14:04:32.135336+00:00",
+      "modified": "2026-03-25T14:04:32.135336+00:00",
+      "part_of": [
+        "polar:7537918035"
+      ]
+    },
+    "resources": [
+      {
+        "name": "tcx recording 7563345432",
+        "path": "polar/7/5/6/7563345432/7563345432.tcx",
+        "source": "polar/training-session-2022-12-06T09:21:40-7537918035-01419ab6-479d-428d-a0a9-203e24d050f5.json",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed_max": 76.0,
+    "starttime": "2022-12-06T08:31:09+00:00",
+    "starttime_local": "2022-12-06T09:31:09+01:00",
+    "timezone_offset": 60,
+    "uid": "polar:7563345432"
+  },
+  {
+    "calories": 7,
+    "duration": "00:02:03.727000",
+    "endtime": "2022-12-06T08:45:08+00:00",
+    "endtime_local": "2022-12-06T09:45:08+01:00",
+    "heartrate": 73.0,
+    "heartrate_max": 84.0,
+    "heartrate_min": 63.0,
+    "id": 10,
+    "metadata": {
+      "aux": {
+        "session_id": "7537918035"
+      },
+      "created": "2026-03-25T14:04:32.137950+00:00",
+      "modified": "2026-03-25T14:04:32.137950+00:00",
+      "part_of": [
+        "polar:7537918035"
+      ]
+    },
+    "resources": [
+      {
+        "name": "tcx recording 7563345422",
+        "path": "polar/7/5/6/7563345422/7563345422.tcx",
+        "source": "polar/training-session-2022-12-06T09:21:40-7537918035-01419ab6-479d-428d-a0a9-203e24d050f5.json",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed_max": 84.0,
+    "starttime": "2022-12-06T08:43:05+00:00",
+    "starttime_local": "2022-12-06T09:43:05+01:00",
+    "timezone_offset": 60,
+    "uid": "polar:7563345422"
   }
 ]

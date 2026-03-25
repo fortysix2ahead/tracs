@@ -1,368 +1,118 @@
 [
-	{
-		"id": 2,
-		"name": "03:23:53;0.0 km",
-		"description": "Reference Polar Activity",
-		"calories": 2904,
-		"distance": 30000.1,
-		"duration_moving": "01:40:00",
-		"heartrate": 150,
-		"metadata": {
-			"created": "2024-01-04T10:00:00.000+00:00",
-			"modified": "2024-01-04T12:00:00.000+00:00",
-			"favourite": true
-		},
-		"resources": [
-			{
-				"name": "Polar GPX Track",
-				"path": "polar/1/0/0/1001/1001.gpx",
-				"type": "application/gpx+xml"
-			},
-			{
-				"name": "Polar Activity Data",
-				"path": "polar/1/0/0/1001/1001.json",
-				"type": "application/vnd.polar+json"
-			}
-		],
-		"starttime": "2012-01-07T10:40:51.000+00:00",
-		"type": "run",
-		"uid": "polar:1001"
-	},
-	{
-		"id": 3,
-		"name": "Run in the Forest",
-		"description": "Reference Strava Activity",
-		"starttime": "2012-01-07T10:40:52+00:00",
-		"heartrate": 140,
-		"starttime_local": "2012-01-07T11:40:52+01:00",
-		"resources": [
-			{
-				"name": "Strava GPX Track",
-				"path": "strava/1/0/0/1001/1001.gpx",
-				"type": "application/gpx+xml"
-			},
-			{
-				"name": "Strava Activity Data",
-				"path": "strava/1/0/0/1001/1001.json",
-				"type": "application/vnd.strava+json"
-			}
-		],
-		"type": "run",
-		"uid": "strava:1001"
-	},
-	{
-		"id": 4,
-		"name": "Drive to the Forest",
-		"description": "Reference Waze Activity, supposed to be a drive to make the run #1",
-		"heartrate": 130,
-		"starttime": "2021-01-11T12:00:00+00:00",
-		"type": "drive",
-		"uid": "waze:210111120000",
-		"resources": [
-			{
-				"name": "Waze GPX Track",
-				"path": "waze/21/01/11/210111120000/210111120000.gpx",
-				"type": "application/gpx+xml"
-			}
-		]
-	},
-	{
-		"id": 21,
-		"name": "Polar Run 1",
-		"description": "complement to #24",
-		"starttime": "2022-03-01T09:00:00+00:00",
-		"endtime": "2022-03-01T09:55:00+00:00",
-		"uid": "polar:1021"
-	},
-	{
-		"id": 22,
-		"name": "Polar Run 2",
-		"description": "complement to #24",
-		"starttime": "2022-03-01T10:00:00+00:00",
-		"endtime": "2022-03-01T10:55:00+00:00",
-		"uid": "polar:1022"
-	},
-	{
-		"id": 23,
-		"name": "Polar Run 1",
-		"description": "complement to #24",
-		"starttime": "2022-03-01T11:00:00+00:00",
-		"endtime": "2022-03-01T11:55:00+00:00",
-		"uid": "polar:1023"
-	},
-	{
-		"id": 24,
-		"name": "Strava Run 1",
-		"description": "Complement to #23",
-		"starttime": "2022-03-01T11:00:00+00:00",
-		"endtime": "2022-03-01T11:55:00+00:00",
-		"type": "run",
-		"uid": "strava:1024"
-	},
-	{
-		"id": 26,
-		"name": "Polar Run 2",
-		"description": "Second polar run, complement to #27",
-		"starttime": "2022-03-01T12:00:00+00:00",
-		"endtime": "2022-03-01T12:55:00+00:00",
-		"uid": "polar:1026"
-	},
-	{
-		"id": 27,
-		"name": "Strava Run 2",
-		"description": "Second strava run, complement to #26",
-		"starttime": "2022-03-01T12:00:00+00:00",
-		"endtime": "2022-03-01T12:55:00+00:00",
-		"type": "run",
-		"uid": "strava:1027"
-	},
-	{
-		"name": "Triathlon Polar - Swim",
-		"description": "dedicated swimming activity with artificial polar ID",
-		"duration": "00:14:19",
-		"endtime": "2017-07-02T09:21:37+00:00",
-		"endtime_local": "2017-07-02T11:21:38+02:00",
-		"id": 30,
-		"resources": [
-			{
-				"path": "polar/1/0/3/1031/2017-07-02T09-07-18.000Z_Swimming.gpx",
-				"type": "application/gpx+xml"
-			},
-			{
-				"path": "polar/1/0/3/1031/2017-07-02T09-07-18.000Z_Swimming.tcx",
-				"type": "application/tcx+xml"
-			}
-		],
-		"starttime": "2017-07-02T09:07:18+00:00",
-		"starttime_local": "2017-07-02T11:07:19+02:00",
-		"uid": "polar:1031#1"
-	},
-	{
-		"duration": "01:50:00",
-		"id": 31,
-		"name": "Triathlon Polar",
-		"description": "Multipart triathlon activity as exported from Polar",
-		"metadata": {
-			"members": [
-				"polar:1031#1",
-				"polar:1031#2",
-				"polar:1031#3"
-			]
-		},
-		"parts": [
-			{
-				"gap": "00:00:00",
-				"uid": "polar:1031#1"
-			},
-			{
-				"gap": "00:00:09",
-				"uid": "polar:1031#2"
-			},
-			{
-				"gap": "00:01:13",
-				"uid": "polar:1031#3"
-			}
-		],
-		"resources": [
-			{
-				"path": "polar/1/0/3/1031/1031.gpx.zip",
-				"type": "application/vnd.polar.gpx+zip"
-			},
-			{
-				"path": "polar/1/0/3/1031/1031.json",
-				"type": "application/vnd.polar+json"
-			},
-			{
-				"path": "polar/1/0/3/1031/1031.tcx.zip",
-				"type": "application/vnd.polar.tcx+zip"
-			}
-		],
-		"starttime": "2017-07-02T09:07:18+00:00",
-		"starttime_local": "2017-07-02T11:07:18+02:00",
-		"type": "triathlon",
-		"uid": "polar:1031"
-	},
-	{
-		"duration": "00:14:19",
-		"id": 32,
-		"name": "Triathlon - Swim",
-		"resources": [
-			{
-				"path": "strava/1/0/3/1032/1032.gpx",
-				"type": "application/gpx+xml"
-			},
-			{
-				"path": "strava/1/0/3/1032/1032.json",
-				"type": "application/vnd.strava+json"
-			},
-			{
-				"path": "strava/1/0/3/1032/1032.tcx",
-				"type": "application/tcx+xml"
-			}
-		],
-		"starttime": "2017-07-02T09:07:19+00:00",
-		"starttime_local": "2017-07-02T11:07:19+00:00",
-		"type": "swim",
-		"uid": "strava:1032"
-	},
-	{
-		"name": "Triathlon Polar - Cycling",
-		"description": "dedicated cycling activity with artificial polar ID",
-		"duration": "00:56:17",
-		"endtime": "2017-07-02T10:18:03+00:00",
-		"endtime_local": "2017-07-02T12:18:03+02:00",
-		"id": 33,
-		"resources": [
-			{
-				"path": "polar/1/0/3/1031/2017-07-02T09-21-45.000Z_Cycling.gpx",
-				"type": "application/gpx+xml"
-			},
-			{
-				"path": "polar/1/0/3/1031/2017-07-02T09-21-45.000Z_Cycling.tcx",
-				"type": "application/tcx+xml"
-			}
-		],
-		"starttime": "2017-07-02T09:21:46+00:00",
-		"starttime_local": "2017-07-02T11:21:46+02:00",
-		"uid": "polar:1031#2"
-	},
-	{
-		"duration": "00:56:17",
-		"id": 34,
-		"name": "Triathlon - Bike",
-		"resources": [
-			{
-				"path": "strava/1/0/3/1034/1034.gpx",
-				"type": "application/gpx+xml"
-			},
-			{
-				"path": "strava/1/0/3/1034/1034.json",
-				"type": "application/vnd.strava+json"
-			},
-			{
-				"path": "strava/1/0/3/1034/1034.tcx",
-				"type": "application/tcx+xml"
-			}
-		],
-		"starttime": "2017-07-02T09:21:46+00:00",
-		"starttime_local": "2017-07-02T11:21:46+00:00",
-		"type": "bike",
-		"uid": "strava:1034"
-	},
-	{
-		"name": "Triathlon Polar - Run",
-		"description": "dedicated running activity with artificial polar ID",
-		"endtime": "2017-07-02T10:57:18+00:00",
-		"endtime_local": "2017-07-02T12:57:18+02:00",
-		"id": 35,
-		"resources": [
-			{
-				"path": "polar/1/0/3/1031/2017-07-02T10-19-15.000Z_Running.gpx",
-				"type": "application/gpx+xml"
-			},
-			{
-				"path": "polar/1/0/3/1031/2017-07-02T10-19-15.000Z_Running.tcx",
-				"type": "application/tcx+xml"
-			}
-		],
-		"starttime": "2017-07-02T10:19:16+00:00",
-		"starttime_local": "2017-07-02T12:19:16+02:00",
-		"uid": "polar:1031#3"
-	},
-	{
-		"duration": "00:38:02",
-		"id": 36,
-		"name": "Triathlon - Run",
-		"resources": [
-			{
-				"path": "strava/1/0/3/1036/1036.gpx",
-				"type": "application/gpx+xml"
-			},
-			{
-				"path": "strava/1/0/3/1036/1036.json",
-				"type": "application/vnd.strava+json"
-			},
-			{
-				"path": "strava/1/0/3/1036/1036.tcx",
-				"type": "application/tcx+xml"
-			}
-		],
-		"starttime": "2017-07-02T10:19:16+00:00",
-		"starttime_local": "2017-07-02T12:19:16+00:00",
-		"type": "run",
-		"uid": "strava:1036"
-	},
-	{
-		"id": 100,
-		"name": null,
-		"heartrate": null,
-		"location": "",
-		"starttime": "2021-01-11T12:00:00+00:00",
-		"type": "drive",
-		"uid": "polar:123456"
-	},
-	{
-		"calories": 311,
-		"duration": "00:48:51",
-		"duration_moving": "00:48:51",
-		"heartrate": 113,
-		"heartrate_max": 147,
-		"id": 1998,
-		"location_country": "Germany",
-		"name": "Ungrouped Polar Activity",
-		"resources": [
-			{
-				"path": "polar/2/0/0/200000/200000.gpx",
-				"type": "application/gpx+xml"
-			},
-			{
-				"path": "polar/2/0/0/200000/200000.json",
-				"type": "application/vnd.polar+json"
-			}
-		],
-		"starttime": "2017-04-10T17:15:53+00:00",
-		"starttime_local": "2017-04-10T19:15:53+02:00",
-		"type": "gym",
-		"uid": "polar:200000"
-	},
-	{
-		"calories": 311,
-		"duration": "00:48:51",
-		"duration_moving": "00:48:51",
-		"heartrate": 113,
-		"heartrate_max": 147,
-		"id": 1999,
-		"location_country": "Germany",
-		"name": "Ungrouped Strava Activity",
-		"resources": [
-			{
-				"path": "strava/2/0/0/200000/200000.tcx",
-				"type": "application/tcx+xml"
-			},
-			{
-				"path": "strava/2/0/0/200000/200000.json",
-				"type": "application/vnd.strava+json"
-			}
-		],
-		"starttime": "2017-04-10T17:15:53+00:00",
-		"starttime_local": "2017-04-10T19:15:53+02:00",
-		"type": "gym",
-		"uid": "strava:200000"
-	},
-	{
-		"id": 2010,
-		"name": "Grouped Polar Activity",
-		"starttime": "2018-04-10T17:15:53+00:00",
-		"starttime_local": "2018-04-10T19:15:53+02:00",
-		"type": "gym",
-		"uid": "polar:200010"
-	},
-	{
-		"id": 2011,
-		"name": "Grouped Strava Activity",
-		"starttime": "2018-04-10T17:15:53+00:00",
-		"starttime_local": "2018-04-10T19:15:53+02:00",
-		"type": "gym",
-		"uid": "strava:200010"
-	}
+  {
+    "distance": 1308.672966704183,
+    "duration": "00:03:44",
+    "endtime": "2020-07-12T10:28:13",
+    "endtime_local": "2020-07-12T10:28:13+02:00",
+    "id": 1,
+    "location_latitude_end": 54.662089,
+    "location_latitude_start": 54.66943,
+    "location_longitude_end": 13.337306,
+    "location_longitude_start": 13.32803,
+    "resources": [
+      {
+        "path": "waze/20/07/12/200712102429/200712102429.txt",
+        "source": "waze/2020-09/account_activity_3.csv",
+        "type": "text/vnd.waze+txt",
+        "uid": "waze:200712102429"
+      },
+      {
+        "path": "waze/20/07/12/200712102429/200712102429.gpx",
+        "source": "waze/2020-09/account_activity_3.csv",
+        "type": "application/gpx+xml",
+        "uid": "waze:200712102429"
+      }
+    ],
+    "starttime": "2020-07-12T10:24:29",
+    "starttime_local": "2020-07-12T10:24:29+02:00",
+    "type": "drive",
+    "uid": "waze:200712102429"
+  },
+  {
+    "distance": 42976.01659908288,
+    "duration": "00:22:25",
+    "endtime": "2021-12-22T05:39:36+00:00",
+    "endtime_local": "2021-12-22T06:39:36+01:00",
+    "id": 2,
+    "location_latitude_end": 49.22882,
+    "location_latitude_start": 49.313393,
+    "location_longitude_end": 10.296724,
+    "location_longitude_start": 10.838691,
+    "resources": [
+      {
+        "path": "waze/21/12/22/211222051711/211222051711.txt",
+        "source": "waze/2022-01/account_activity_3.csv",
+        "type": "text/vnd.waze+txt",
+        "uid": "waze:211222051711"
+      },
+      {
+        "path": "waze/21/12/22/211222051711/211222051711.gpx",
+        "source": "waze/2022-01/account_activity_3.csv",
+        "type": "application/gpx+xml",
+        "uid": "waze:211222051711"
+      }
+    ],
+    "starttime": "2021-12-22T05:17:11+00:00",
+    "starttime_local": "2021-12-22T06:17:11+01:00",
+    "type": "drive",
+    "uid": "waze:211222051711"
+  },
+  {
+    "distance": 39840.564927548985,
+    "duration": "00:19:22",
+    "endtime": "2022-01-02T19:32:38+00:00",
+    "endtime_local": "2022-01-02T20:32:38+01:00",
+    "id": 3,
+    "location_latitude_end": 49.194373,
+    "location_latitude_start": 48.927643,
+    "location_longitude_end": 9.427534,
+    "location_longitude_start": 9.169791,
+    "resources": [
+      {
+        "path": "waze/22/01/02/220102191316/220102191316.txt",
+        "source": "waze/2022-01/account_activity_3.csv",
+        "type": "text/vnd.waze+txt",
+        "uid": "waze:220102191316"
+      },
+      {
+        "path": "waze/22/01/02/220102191316/220102191316.gpx",
+        "source": "waze/2022-01/account_activity_3.csv",
+        "type": "application/gpx+xml",
+        "uid": "waze:220102191316"
+      }
+    ],
+    "starttime": "2022-01-02T19:13:16+00:00",
+    "starttime_local": "2022-01-02T20:13:16+01:00",
+    "type": "drive",
+    "uid": "waze:220102191316"
+  },
+  {
+    "distance": 10031.040842645558,
+    "duration": "00:04:16",
+    "endtime": "2023-03-10T15:31:33+00:00",
+    "endtime_local": "2023-03-10T16:31:33+01:00",
+    "id": 4,
+    "location_latitude_end": 51.299735,
+    "location_latitude_start": 51.257366,
+    "location_longitude_end": 12.61266,
+    "location_longitude_start": 12.73279,
+    "resources": [
+      {
+        "path": "waze/23/03/10/230310152717/230310152717.txt",
+        "source": "waze/2023-04/account_activity_3.csv",
+        "type": "text/vnd.waze+txt",
+        "uid": "waze:230310152717"
+      },
+      {
+        "path": "waze/23/03/10/230310152717/230310152717.gpx",
+        "source": "waze/2023-04/account_activity_3.csv",
+        "type": "application/gpx+xml",
+        "uid": "waze:230310152717"
+      }
+    ],
+    "starttime": "2023-03-10T15:27:17+00:00",
+    "starttime_local": "2023-03-10T16:27:17+01:00",
+    "type": "drive",
+    "uid": "waze:230310152717"
+  }
 ]

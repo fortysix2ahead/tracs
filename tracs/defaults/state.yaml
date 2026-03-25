@@ -1,17 +1,3 @@
-plugins:
+services:
+  local: {}
 
-  bikecitizens:
-
-  local:
-
-  polar:
-
-  strava:
-    access_token:
-    refresh_token:
-    expires_at:
-
-  stravaweb:
-    session:
-
-  waze:

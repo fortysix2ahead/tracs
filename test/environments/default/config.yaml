@@ -1,28 +1,28 @@
-
-library:
-debug: false
-verbose: false
+debug: true
 force: false
-pluginpath:
+json: false
+pretend: false
 
-db:
-  cache_size: 0
-  index: false
-
-formats:
-  table:
-    box: ascii
-
-plugins:
+services:
   polar:
-      password: some_polar_password
-      username: polar@example.com
-
+    classifier: polar
+    client_id: 00000000-0000-0000-0000-000000000000
+    client_secret: 11111111-1111-1111-1111-111111111111
+    display_name: Polar Flow (fortysix2ahead)
+    path: polar
+    takeout_path: polar
+    type: polar
+    user_id: fortysix2ahead@example.com
   strava:
-      client_id: 1000
-      client_secret: 1000000000000000000000000000000000000000
-      username: strava@example.com
-      password: some_strava_password
-
+    client_code: 2222222222222222222222222222222222222222
+    client_id: 33333
+    client_secret: 4444444444444444444444444444444444444444
+    display_name: Strava (fortysix2ahead)
+    path: strava
+    type: strava
+    user_id: fortysix2ahead@example.com
   waze:
-    field_size_limit: 512000
+    takeout_path: waze
+    type: waze
+
+verbose: true

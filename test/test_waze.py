@@ -45,6 +45,7 @@ def test_activity_from_raw( path ):
 	resource = WazeImporter().load( path )
 	assert len( resource.data.points ) == 137
 
+@mark.context( env='empty', cleanup=True )
 @mark.service( cls=Waze )
 def test_path_for( service ):
 	assert service.path_for_id( '231201102030' ) == '23/12/01/231201102030'
@@ -55,12 +56,11 @@ def test_path_for( service ):
 
 	assert service.svc_path_for_id( '231201102030', 'recording.gpx' ) == 'waze/23/12/01/231201102030/recording.gpx'
 
-@mark.context( env='default', persist='var', cleanup=True )
+@mark.context( env='default', cleanup=True )
 @mark.service( cls=Waze, init=True, register=True )
 def test_import( service ):
-	src_fs, src_path = fspath( service.ctx.config_fs.getsyspath( 'takeouts/waze' ) )
-	activities = service.import_activities( fs=src_fs, path=src_path )
-	# todo: actually there should be 5 imports?
-	assert [ a.uid.to_str() for a in activities ] == [
+	src_fs = service.ctx.takeout_fs( 'waze' )
+	activities = service.import_activities( src_fs=src_fs, src_path=None, force=True )
+	assert [ a.uid for a in activities ] == [
 		'waze:200712102429', 'waze:211222051711', 'waze:220102191316', 'waze:230310152717'
 	]

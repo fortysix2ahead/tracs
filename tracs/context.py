@@ -326,7 +326,7 @@ class ApplicationContext:
 	def takeout_fs_for( self, name: str ) -> FS:
 		try:
 			return OSFS( root_path=self.takeouts_fs.getsyspath( name ), create=True )
-		except (AttributeError, NoSysPath):
+		except (AttributeError, NoSysPath, ResourceNotFound):
 			return SubFS( self.takeouts_fs, f'/{name}' )
 
 	def takeout_fs( self, name: Optional[str] = None, user: Optional[str] = None, slug: Optional[str] = None ) -> FS:

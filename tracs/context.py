@@ -14,7 +14,7 @@ from dynaconf.utils.boxing import DynaBox
 from dynaconf.vendor.box.exceptions import BoxKeyError
 from fs.appfs import UserCacheFS, UserConfigFS, UserDataFS, UserLogFS
 from fs.base import FS
-from fs.errors import NoSysPath
+from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
 from fs.subfs import SubFS
@@ -115,12 +115,28 @@ class ApplicationContext:
 
 		try:
 			settings_files.append( self.config_fs.getsyspath( CONFIG_FILENAME ) )
-		except NoSysPath:
+		except (ResourceNotFound, NoSysPath):
+			# only for testing: config fs might be a multi fs with test data in underlay
+			# therefore use the underlay fs to read configuration data
+			# todo: check if this code can be removed in favour of a better solution, don't want test-specific code in here
+			try:
+				underlay = self.config_fs.get_fs( 'underlay' )
+				settings_files.append( underlay.getsyspath( CONFIG_FILENAME ) )
+				log.info( f'using configuration file found in FS {fs_to_str( underlay )}' )
+			except AttributeError:
+				pass
 			log.warning( f'no configuration file found in FS {fs_to_str( self.config_fs )}' )
 
+		# same procedure for state file
 		try:
 			appstate_files.append( self.config_fs.getsyspath( STATE_FILENAME ) )
-		except NoSysPath:
+		except (ResourceNotFound, NoSysPath):
+			try:
+				underlay = self.config_fs.get_fs( 'underlay' )
+				appstate_files.append( underlay.getsyspath( STATE_FILENAME ) )
+				log.info( f'using state file found in FS {fs_to_str( underlay )}' )
+			except AttributeError:
+				pass
 			log.warning( f'no appstate file found in FS {fs_to_str( self.config_fs )}' )
 
 		self.config = Configuration( settings_files=settings_files, merge_enabled=True )

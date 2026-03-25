@@ -4,11 +4,12 @@ from logging import getLogger
 from os.path import dirname
 from pathlib import Path
 from shutil import copytree, rmtree
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Any, Dict, Generator, List, NamedTuple, Optional, Tuple
 
 from fs.base import FS
 from fs.copy import copy_fs
 from fs.memoryfs import MemoryFS
+from fs.multifs import MultiFS
 from fs.osfs import OSFS
 from fs.subfs import SubFS
 from pytest import fixture
@@ -55,42 +56,44 @@ def markers( request, name ):
 
 # noinspection PyTestUnpassedFixture
 @fixture
-def fs( request ) -> FS:
+def fs( request ) -> Generator[FS, Any, None]:
 	env = marker( request, 'context', 'env', 'empty' )
 	persist = marker( request, 'context', 'persist', 'mem' )
 	cleanup = marker( request, 'context', 'cleanup', True )
 
 	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
-		tp = test_pkg_path.parent
-		env_fs = OSFS( root_path=f'{str( tp )}/environments/{env}' )
-		ep = Path( tp, f'environments/{env}' )
-		vrp = Path( tp, f'../var/run/{datetime.now().strftime( "%H%M%S_%f" )}' ).resolve()
+		pkg_path = test_pkg_path.parent.parent
+		env_path = f'{pkg_path}/test/environments/{env}'
+		env_fs = OSFS( root_path=env_path )
 
-		if persist in ['disk', 'clone']:
-			vrp.mkdir( parents=True, exist_ok=True )
-			root_fs = OSFS( str( vrp ), expand_vars=True )
-			log.info( f'created new temporary persistance dir in {str( vrp )}' )
+		if persist in ['disk', 'clone', 'var']:
+			var_path = f'{pkg_path}/var/run/{datetime.now().strftime( "%H%M%S_%f" )}'
+			var_fs = OSFS( root_path=var_path, create=True )
 
-			if persist == 'clone':
-				copytree( ep, vrp, dirs_exist_ok=True )
+			_fs = MultiFS()
+			_fs.add_fs( 'underlay', env_fs, write=False )
+			_fs.add_fs( 'overlay', var_fs, write=True )
+			log.info( f'using {var_path} as FS write layer' )
 
 		elif persist == 'mem':
-			root_fs = MemoryFS()
-			log.info( f'using memory as root fs backend' )
-
-			copy_fs( env_fs, root_fs, preserve_time=True )
+			_fs = MultiFS()
+			_fs.add_fs( 'underlay', env_fs, write=False )
+			_fs.add_fs( 'overlay', MemoryFS(), write=True )
+			log.info( f'using mem:// as FS write layer' )
 
 		else:
 			raise ValueError( 'value of key persist needs to be one of [mem, disk, clone]' )
 
-	yield root_fs
+	yield _fs
 
 	if cleanup:
-		if isinstance( root_fs, OSFS ):
-			sp = root_fs.getsyspath( '/' )
-			if dirname( dirname( sp ) ).endswith( 'var/run' ):  # sanity check: only remove when in var/run
-				rmtree( sp, ignore_errors=True )
-				log.info( f'cleaned up temporary persistance dir {sp}' )
+		overlay = _fs.get_fs( 'overlay' )
+		if isinstance( overlay, OSFS ):
+			sp = overlay.getsyspath( '/' )
+			print( sp )
+#			if dirname( dirname( sp ) ).endswith( 'var/run' ):  # sanity check: only remove when in var/run
+#				overlay.remove( '/' )
+			log.info( f'cleaned up temporary persistance dir {_fs.get_fs( "overlay" )}' )
 
 @fixture
 def dbfs( request, fs: FS ) -> FS:
@@ -114,6 +117,9 @@ def db( request, fs: FS ) -> ActivityDb:
 		db_fs = OSFS( root_path=fs.getsyspath( DB_DIRNAME ), create=True )
 	elif isinstance( fs, MemoryFS ):
 		db_fs = MemoryFS()
+	elif isinstance( fs, MultiFS ):
+		fs.makedir( DB_DIRNAME, recreate=True )
+		db_fs = SubFS( fs, DB_DIRNAME )
 	else:
 		raise ValueError
 
@@ -141,8 +147,8 @@ def registry( request, plugin_mgr: PluginManager, ctx: ApplicationContext ) -> R
 	reg = plugin_mgr.registry()
 
 	# todo: make this configurable?
-	for vf in reg.virtual_fields:
-		Activity.VF().add( vf )
+#	for vf in reg.virtual_fields:
+#		Activity.VF().add( vf )
 
 	return reg
 

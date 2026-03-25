@@ -6,13 +6,11 @@ library:
 pretend: no
 verbose: no
 
-plugins:
+services:
 
   bikecitizens:
     password: PASSWORD
     username: USERNAME
-
-  local:
 
   polar:
     password: USERNAME

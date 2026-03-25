@@ -1,10 +1,10 @@
-plugins:
-    bikecitizens:
-    polar:
+services:
+    bikecitizens: {}
+    polar: {}
     strava:
         expires_in:
         expires_at:
         token_type:
         refresh_token:
         access_token:
-    waze:
+    waze: {}

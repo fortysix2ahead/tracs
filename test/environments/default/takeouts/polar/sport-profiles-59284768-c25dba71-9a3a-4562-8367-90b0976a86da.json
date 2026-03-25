@@ -1,6 +1,6 @@
 [
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "RUNNING",
     "speedViewSettings": "PACE",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -101,7 +101,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "TREADMILL_RUNNING",
     "speedViewSettings": "PACE",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -190,7 +190,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "CYCLING",
     "speedViewSettings": "SPEED",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -285,7 +285,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "INDOOR_CYCLING",
     "speedViewSettings": "SPEED",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -370,7 +370,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "MOUNTAIN_BIKING",
     "speedViewSettings": "SPEED",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -465,7 +465,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "SWIMMING",
     "speedViewSettings": "SPEED",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -558,7 +558,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "STRENGTH_TRAINING",
     "speedViewSettings": "SPEED",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -643,7 +643,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "CROSS_FIT",
     "speedViewSettings": "SPEED",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -728,7 +728,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "WALKING",
     "speedViewSettings": "PACE",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -823,7 +823,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "HIKING",
     "speedViewSettings": "PACE",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -918,7 +918,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "OTHER_INDOOR",
     "speedViewSettings": "SPEED",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -1003,7 +1003,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "OTHER_OUTDOOR",
     "speedViewSettings": "SPEED",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -1098,7 +1098,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "TRIATHLON",
     "speedViewSettings": "PACE",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -1193,7 +1193,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "TRIATHLON_CYCLING",
     "speedViewSettings": "SPEED",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -1302,7 +1302,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "TRIATHLON_RUNNING",
     "speedViewSettings": "PACE",
     "heartRateViewSettings": "BEATS_PER_MINUTE",
@@ -1417,7 +1417,7 @@
     ]
   },
   {
-    "exportVersion": "2.4",
+    "exportVersion": "2.6",
     "sport": "TRIATHLON_SWIMMING",
     "speedViewSettings": "PACE",
     "heartRateViewSettings": "BEATS_PER_MINUTE",

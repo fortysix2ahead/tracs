@@ -47,14 +47,15 @@ def test_activity_from_raw( path ):
 
 @mark.service( cls=Waze )
 def test_path_for( service ):
-	assert service.path_for_id( '231201102030' ) == Path( '23/12/01/231201102030' )
-	assert service.path_for_id( '1' ) == Path( '00/00/01/000001' )
-	assert service.path_for_id( '231201102030', 'waze' ) == Path( 'waze/23/12/01/231201102030' )
-	assert service.path_for_id( '231201102030', resource_path='recording.gpx' ) == Path( '23/12/01/231201102030/recording.gpx' )
-	assert service.path_for_id( '231201102030', base_path='waze', resource_path='recording.gpx' ) == Path( 'waze/23/12/01/231201102030/recording.gpx' )
-	assert service.path_for_id( '231201102030', base_path='waze', resource_path='recording.gpx', as_path=False ) == 'waze/23/12/01/231201102030/recording.gpx'
+	assert service.path_for_id( '231201102030' ) == '23/12/01/231201102030'
+	assert service.path_for_id( '1' ) == '00/00/01/000001'
+	assert service.path_for_id( '231201102030', 'waze' ) == 'waze/23/12/01/231201102030'
+	assert service.path_for_id( '231201102030', resource_path='recording.gpx' ) == '23/12/01/231201102030/recording.gpx'
+	assert service.path_for_id( '231201102030', base_path='waze', resource_path='recording.gpx' ) == 'waze/23/12/01/231201102030/recording.gpx'
 
-@mark.context( env='default', persist='clone', cleanup=True )
+	assert service.svc_path_for_id( '231201102030', 'recording.gpx' ) == 'waze/23/12/01/231201102030/recording.gpx'
+
+@mark.context( env='default', persist='var', cleanup=True )
 @mark.service( cls=Waze, init=True, register=True )
 def test_import( service ):
 	src_fs, src_path = fspath( service.ctx.config_fs.getsyspath( 'takeouts/waze' ) )

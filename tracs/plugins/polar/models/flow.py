@@ -6,7 +6,7 @@ from attrs import define, field
 from datetimerange import DateTimeRange
 
 from tracs.activity_types import ActivityTypes
-from tracs.models.polar.constants import ICON_TYPES
+from tracs.plugins.polar.constants import ICON_TYPES
 from tracs.resources import Resource
 
 @define

@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta, UTC
 from itertools import pairwise
 from logging import getLogger
+from re import compile
 from typing import Any, Dict, List, Optional, Tuple
 
+from cattrs.preconf.orjson import OrjsonConverter
 from dateutil.tz import tzlocal, tzoffset
 from gpxpy.gpx import GPX
 from lxml.etree import tostring
@@ -10,12 +12,11 @@ from more_itertools import first_true
 from more_itertools.recipes import all_equal
 
 from tracs.activity import Activity, MultipartActivity
-from tracs.models.io import polar_model_converter
-from tracs.models.polar.constants import *
-from tracs.models.polar.training_session import Exercise, Route, Samples, TrainingSession
 from tracs.pluginmgr import importer
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import DataclassFactoryHandler
+from tracs.plugins.polar.constants import *
+from tracs.plugins.polar.models.training_session import Exercise, Route, Samples, TrainingSession
 from tracs.plugins.tcx import TCX_TYPE, TrainingCenterDatabase
 from tracs.resources import Resource
 from tracs.streams import Point, Stream
@@ -25,6 +26,21 @@ from tracs.utils import millis_to_timedelta, to_isotime, to_naive_time
 log = getLogger( __name__ )
 
 REGEX_UUID = compile( r'\w{8}-\w{4}-\w{4}-\w{4}-\w{12}' )
+
+
+def to_floatstr( v, t ):
+	return v if isinstance( v, float ) else float( v )
+
+def make_polar_converter() -> OrjsonConverter:
+	c = OrjsonConverter( omit_if_default=True, detailed_validation=True )
+
+	# c.register_unstructure_hook( float|str, lambda v: str( v ) if isinstance( v, float ) else v )
+
+	c.register_structure_hook( float|str, to_floatstr )
+
+	return c
+
+polar_model_converter = make_polar_converter()
 
 @importer
 class PolarTrainingSessionImporter( DataclassFactoryHandler ):

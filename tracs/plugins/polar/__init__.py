@@ -16,10 +16,7 @@ from dateutil.tz import tzlocal, UTC
 from fs import open_fs
 from fs.base import FS
 from fs.errors import CreateFailed
-from fs.path import dirname, frombase, parts, relativefrom, relpath, split
 from fs.zipfs import ReadZipFS
-from more_itertools import first_true
-from orjson.orjson import loads
 from requests_cache import CachedSession
 from rich.prompt import Prompt
 
@@ -27,19 +24,19 @@ from tracs.activity import Activities, Activity
 from tracs.activity_types import ActivityTypes
 from tracs.aio import load_resource
 from tracs.constants import APPNAME, CFG_CLASSIFIER
-from tracs.models.polar.constants import *
-from tracs.models.polar.flow import PolarFitnessTest, PolarFlowExercise, PolarOrthostaticTest, PolarRRRecording, ResourcePartlist
-from tracs.models.polar.io import PolarTrainingSessionImporter
 from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.plugins.json import DataclassFactoryHandler, JSONHandler
+from tracs.plugins.polar.constants import *
+from tracs.plugins.polar.io import PolarTrainingSessionImporter
+from tracs.plugins.polar.models.flow import PolarFitnessTest, PolarFlowExercise, PolarOrthostaticTest, PolarRRRecording, ResourcePartlist
 from tracs.plugins.polar_takeout import PolarFlowTakeoutImporter
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.protocols import ApplicationContext
 from tracs.resources import Resource, ResourceType
-from tracs.service import num_id_to_path, Service
-from tracs.uid import UID, uid as uid_
-from tracs.utils import fs_to_str, seconds_to_time
+from tracs.service import Service
+from tracs.uid import uid as uid_
+from tracs.utils import seconds_to_time
 
 log = getLogger( __name__ )
 

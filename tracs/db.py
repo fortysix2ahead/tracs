@@ -15,14 +15,14 @@ from fs.osfs import OSFS
 from fs.path import basename
 from fs.wrap import read_only
 from more_itertools import first_true, unique
-from orjson import dumps, OPT_APPEND_NEWLINE, OPT_INDENT_2, OPT_SORT_KEYS
+from orjson import dumps
 from rich import box
 from rich.pretty import pretty_repr as pp
 from rich.table import Table as RichTable
 from rule_engine import Rule
 
 from tracs.activity import Activities, Activity
-from tracs.constants import ACTIVITIES_NAME, GROUPS_NAME, SCHEMA_NAME, SCHEMA_VERSION
+from tracs.constants import *
 from tracs.protocols import ApplicationContext
 from tracs.fsio import load_activities, load_schema, Schema, write_activities
 from tracs.migrate import migrate_db, migrate_db_functions
@@ -31,11 +31,10 @@ from tracs.uid import UID
 
 log = getLogger( __name__ )
 
-ORJSON_OPTIONS = OPT_APPEND_NEWLINE | OPT_INDENT_2 | OPT_SORT_KEYS
-
 DB_FILES = {
 	ACTIVITIES_NAME: dumps( [] ),
 	GROUPS_NAME: dumps( [] ),
+	MULTIPARTS_NAME: dumps( [] ),
 	SCHEMA_NAME: dumps( { "version": SCHEMA_VERSION } )
 }
 

@@ -1,6 +1,7 @@
 from datetime import timedelta
 from logging import getLogger
-from typing import cast, ClassVar, Optional, Tuple, Union
+from pathlib import Path
+from typing import Callable, cast, ClassVar, Optional, Tuple, Union
 
 from dateutil.tz import tzlocal
 from fs.base import FS
@@ -55,14 +56,9 @@ class Waze( Service ):
 		if hasattr( self, '_takeout_importer' ):
 			self._takeout_importer.field_size_limit = field_size_limit
 
-	def _path_for_id( self, local_id: int|str ) -> str:
-		"""Helper which transforms a provided ID into a default path.
-		The default behaviour is ABCD -> A/B/C/ABCD. Right justification will be applied (zero-based).
-
-		:param local_id: id to transform
-		:return: transformed id
-		"""
-		return date_id_to_path( local_id )
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, user_id: Optional[str] = None,
+	                 resource_path: Optional[str] = None, as_path: bool = False, id_to_path: Callable = None ) -> Union[Path, str]:
+		return super().path_for_id( local_id, base_path, user_id, resource_path, as_path, date_id_to_path )
 
 	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
 		return None

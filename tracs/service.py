@@ -5,7 +5,7 @@ from abc import abstractmethod
 from datetime import datetime, timedelta
 from logging import getLogger
 from pathlib import Path
-from typing import Any, cast, ClassVar, Dict, List, Optional, Type, Union
+from typing import Any, Callable, cast, ClassVar, Dict, List, Optional, Type, Union
 
 from arrow import utcnow
 from attrs import define, field
@@ -160,7 +160,7 @@ class Service( Plugin ):
 	# service methods
 
 	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, user_id: Optional[str] = None,
-	                 resource_path: Optional[str] = None, as_path: bool = False ) -> Union[Path, str]:
+	                 resource_path: Optional[str] = None, as_path: bool = False, id_to_path: Callable = None ) -> Union[Path, str]:
 		"""Calculates the path for a resource based on the provided information.
 		Note that this path is relative, but not yet relative to something particular,
 		i.e. it might be relative to DB FS if a base path is provided.
@@ -171,9 +171,10 @@ class Service( Plugin ):
 		:param user_id: the user id is used as the second segment of the path, if provided.
 		:param resource_path: the path of the resource
 		:param as_path: if true, returns a Path instead of a string
+		:param id_to_path: function to tranform an id to a path, num_id_to_path() will be used as default
 		:return: the calculated path
 		"""
-		path = num_id_to_path( local_id )
+		path = num_id_to_path( local_id ) if id_to_path is None else id_to_path( local_id )
 		path = combine( user_id, path ) if user_id else path
 		path = combine( base_path, path ) if base_path else path
 		path = combine( path, resource_path ) if resource_path else path

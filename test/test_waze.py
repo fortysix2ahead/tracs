@@ -8,7 +8,7 @@ from tracs.plugins.waze import AccountActivity, Waze, WazeAccountActivityImporte
 account_importer = WazeAccountActivityImporter()
 
 @mark.unit
-@mark.file( 'environments/default/takeouts/waze/2020-09/account_activity_3.csv' )
+@mark.file( 'environments/takeouts/takeouts/waze/2020-09/account_activity_3.csv' )
 def test_read_account_activity_2020( fspath ):
 	resource = account_importer.load( fs=fspath.fs, path=fspath.path )
 	location_details = cast( AccountActivity, resource.data ).location_details
@@ -16,7 +16,7 @@ def test_read_account_activity_2020( fspath ):
 	assert len( location_details[0].as_point_list() ) == 25
 
 @mark.unit
-@mark.file( 'environments/default/takeouts/waze/2022-01/account_activity_3.csv' )
+@mark.file( 'environments/takeouts/takeouts/waze/2022-01/account_activity_3.csv' )
 def test_read_account_activity_2022( fspath ):
 	resource = account_importer.load( fs=fspath.fs, path=fspath.path )
 	location_details = cast( AccountActivity, resource.data ).location_details
@@ -25,7 +25,7 @@ def test_read_account_activity_2022( fspath ):
 	assert len( location_details[1].as_point_list() ) == 316
 
 @mark.unit
-@mark.file( 'environments/default/takeouts/waze/2023-04/account_activity_3.csv' )
+@mark.file( 'environments/takeouts/takeouts/waze/2023-04/account_activity_3.csv' )
 def test_read_account_activity_2023( fspath ):
 	resource = account_importer.load( fs=fspath.fs, path=fspath.path )
 	location_details = cast( AccountActivity, resource.data ).location_details
@@ -35,7 +35,7 @@ def test_read_account_activity_2023( fspath ):
 
 # dummy test case: can read, but data is not used anywhere
 @mark.unit
-@mark.file( 'environments/default/takeouts/waze/2023-04/account_activity_3.csv' )
+@mark.file( 'environments/takeouts/takeouts/waze/2023-04/account_activity_3.csv' )
 def test_read_account_info( path ):
 	resource = account_importer.load( path=path )
 
@@ -56,7 +56,7 @@ def test_path_for( service ):
 
 	assert service.svc_path_for_id( '231201102030', 'recording.gpx' ) == 'waze/23/12/01/231201102030/recording.gpx'
 
-@mark.context( env='default', cleanup=True )
+@mark.context( env='takeouts', cleanup=True )
 @mark.service( cls=Waze, init=True, register=True )
 def test_import( service ):
 	src_fs = service.ctx.takeout_fs( 'waze' )

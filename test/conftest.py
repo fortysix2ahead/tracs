@@ -7,11 +7,12 @@ from shutil import copytree, rmtree
 from typing import Any, Dict, Generator, List, NamedTuple, Optional, Tuple
 
 from fs.base import FS
-from fs.copy import copy_fs
+from fs.copy import copy_dir, copy_fs
 from fs.memoryfs import MemoryFS
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
 from fs.subfs import SubFS
+from fs.tempfs import TempFS
 from pytest import fixture
 
 from tracs.activity import Activity
@@ -54,9 +55,10 @@ def markers( request, name ):
 
 # shared fixtures
 
-# noinspection PyTestUnpassedFixture
+# old version which does work entirely as MemoryFS does not play well with SubFS
+# we'll keep this, maybe we'll find a workaround later.
 @fixture
-def fs( request ) -> Generator[FS, Any, None]:
+def fs_v1( request ) -> Generator[FS, Any, None]:
 	env = marker( request, 'context', 'env', 'empty' )
 	persist = marker( request, 'context', 'persist', 'mem' )
 	cleanup = marker( request, 'context', 'cleanup', True )
@@ -94,6 +96,57 @@ def fs( request ) -> Generator[FS, Any, None]:
 #			if dirname( dirname( sp ) ).endswith( 'var/run' ):  # sanity check: only remove when in var/run
 #				overlay.remove( '/' )
 			log.info( f'cleaned up temporary persistance dir {_fs.get_fs( "overlay" )}' )
+
+# different version compared to fs_v1() above, using FS with disk backend only
+# unfortunately this does also not work
+@fixture
+def fs_v2( request ) -> Generator[FS, Any, None]:
+	env = marker( request, 'context', 'env', 'empty' )
+	cleanup = marker( request, 'context', 'cleanup', True )
+
+	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
+		pkg_path = test_pkg_path.parent.parent
+		env_path = f'{pkg_path}/test/environments/{env}'
+		env_fs = OSFS( root_path=env_path )
+
+		run_id = datetime.now().strftime( "_%y%m%d_%H%M%S_%f" )
+		var_path = f'{pkg_path}/var/run'
+		var_fs = TempFS( identifier=run_id, temp_dir=var_path, auto_clean=cleanup )
+
+		_fs = MultiFS()
+		_fs.add_fs( 'underlay', env_fs, write=False )
+		_fs.add_fs( 'overlay', var_fs, write=True )
+		log.info( f'using {var_path} as FS write layer' )
+
+		yield _fs
+
+		_fs.close() # close probably not necessary, temp fs is auto closed
+
+# fs_v3, using copy and paste from source fs
+@fixture
+def fs_v3( request ) -> Generator[FS, Any, None]:
+	env = marker( request, 'context', 'env', 'empty' )
+	cleanup = marker( request, 'context', 'cleanup', True )
+
+	with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
+		pkg_path = test_pkg_path.parent.parent
+		env_path = f'{pkg_path}/test/environments/{env}'
+		env_fs = OSFS( root_path=env_path )
+
+		run_id = datetime.now().strftime( "_%y%m%d_%H%M%S_%f" )
+		var_path = f'{pkg_path}/var/run'
+		var_fs = TempFS( identifier=run_id, temp_dir=var_path, auto_clean=cleanup )
+
+		copy_dir( env_fs, '/', var_fs, '/', preserve_time=True )
+		log.info( f'using {var_fs} as FS write layer' )
+
+		yield var_fs
+
+		var_fs.close() # close probably not necessary, temp fs is auto closed
+
+@fixture
+def fs( request, fs_v3: FS ) -> FS:
+	return fs_v3
 
 @fixture
 def dbfs( request, fs: FS ) -> FS:

@@ -58,11 +58,9 @@ def test_path_for_id( service ):
 	assert service.path_for_id( '1001', resource_path='recording.gpx' ) == '1/0/0/1001/recording.gpx'
 	# base + resource, without a user id
 	assert service.path_for_id( '1001', base_path='test', resource_path='recording.gpx' ) == 'test/1/0/0/1001/recording.gpx'
-	# base + user + resource
-	assert service.path_for_id( '1001', 'test', 'user', 'recording.gpx' ) == 'test/user/1/0/0/1001/recording.gpx'
 
 	# as path
-	assert service.path_for_id( '1001', 'test', 'user', 'recording.gpx', as_path=True ) == Path( 'test/user/1/0/0/1001/recording.gpx' )
+	assert service.path_for_id( '1001', 'test', 'recording.gpx', as_path=True ) == Path( 'test/1/0/0/1001/recording.gpx' )
 
 	# service path
 
@@ -71,7 +69,7 @@ def test_path_for_id( service ):
 
 	service._name = 'MOCK'
 	service._user_id = 'USER'
-	assert service.svc_path_for_id( '1001', 'recording.gpx' ) == 'MOCK/USER/1/0/0/1001/recording.gpx'
+	assert service.db_path_for( '1001', 'recording.gpx' ) == 'MOCK/USER/1/0/0/1001/recording.gpx'
 
 @mark.unit
 @mark.service( cls=Mock, user_id='user' )

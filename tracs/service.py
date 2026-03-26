@@ -18,6 +18,7 @@ from fs.osfs import OSFS
 from fs.path import basename, combine, dirname, frombase, isabs, isparent, join, parts, relpath, split
 from fs.zipfs import ReadZipFS
 from more_itertools.recipes import first_true
+from typing_extensions import deprecated
 
 from tracs.activity import Activities, Activity
 from tracs.constants import *
@@ -159,12 +160,16 @@ class Service( Plugin ):
 
 	# service methods
 
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, user_id: Optional[str] = None,
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None,
 	                 resource_path: Optional[str] = None, as_path: bool = False, id_to_path: Callable = None ) -> Union[Path, str]:
 		"""Calculates the path for a resource based on the provided information.
-		Note that this path is relative, but not yet relative to something particular,
-		i.e. it might be relative to DB FS if a base path is provided.
+		Note that this path is relative, but not yet relative to something particular.
 		Also note that this does not take service name or service user into account! Use svc_path_for_id() for this.
+		Examples:
+		path_for_id( 1234 ) -> 1/2/3/1234/1234
+		path_for_id( 1234, 'root' ) -> root/1/2/3/1234/1234
+		path_for_id( 1234, 'root', 'user' ) -> root/user/1/2/3/1234/1234
+		path_for_id( 1234, 'root', 'user', 'file.txt' ) -> root/user/1/2/3/1234/1234/file.txt
 
 		:param local_id: local id of a resource
 		:param base_path: base path is prepended to the calculated path, if provided. Usually this will be the name of the service instance.
@@ -174,12 +179,14 @@ class Service( Plugin ):
 		:param id_to_path: function to tranform an id to a path, num_id_to_path() will be used as default
 		:return: the calculated path
 		"""
-		path = num_id_to_path( local_id ) if id_to_path is None else id_to_path( local_id )
-		path = combine( user_id, path ) if user_id else path
-		path = combine( base_path, path ) if base_path else path
-		path = combine( path, resource_path ) if resource_path else path
+		path = join(
+			base_path,
+			id_to_path( local_id ) if id_to_path else num_id_to_path( local_id ),
+			resource_path,
+		)
 		return Path( path ) if as_path else path
 
+	@deprecated( 'use db_path_for() instead' )
 	def svc_path_for_id( self, local_id: Union[int, str], resource_path: Optional[str] = None, as_path: bool = False ):
 		"""Returns the path for an id and takes service name and user into account (if set).
 		In addition, it also it uses the configured path if set.
@@ -189,22 +196,21 @@ class Service( Plugin ):
 		:param as_path: if true, returns a Path instead of a string
 		:return: transformed id
 		"""
-		return self.path_for_id( local_id, self.name, self._user_id, resource_path, as_path )
+		return self.db_path_for( local_id, resource_path )
 
-	def db_path_for( self, local_id: int | str, resource_path: str ) -> str:
+	def db_path_for( self, local_id: int|str, resource_path: str ) -> str:
 		"""Returns the path of a resource relative to the db.
-		Example: 1234.gpx -> service_name/user_id/1/2/3/1234/1234.gpx. This takes configured path/user_id into account.
+		This takes configured path/user_id into account,
+		Example:
+		  db_path_for( 1234, '1234.gpx' ) -> <service_name>/<user_id>/1/2/3/1234/1234.gpx.
+		  db_path_for( 1234, '1234.gpx' ) -> <path>/1/2/3/1234/1234.gpx if path is set via configuration
 		This method is used after imports to set the resource.path field.
 
 		:param local_id: local id of the resource
 		:param resource_path: filename of a resource, without any leading directories
 		:return: path relative to the db
 		"""
-		if self._path:
-			name, user = self._path, None
-		else:
-			name, user = self.name, self._user_id
-		return self.path_for_id( local_id, name, user, resource_path )
+		return self.path_for_id( local_id, self._path or join( self.name, self._user_id ), resource_path )
 
 	def src_path_for( self, src_fs: FS, src_file: str ) -> str:
 		match src_fs:

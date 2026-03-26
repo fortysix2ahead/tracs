@@ -20,7 +20,7 @@ from rich.prompt import Prompt
 from stravalib.client import Client
 
 from tracs.activity import Activities, Activity
-from tracs.constants import APPNAME
+from tracs.constants import APPNAME, CFG_CLASSIFIER
 from tracs.pluginmgr import resourcetype, service, setup
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.image import JPEG_TYPE
@@ -32,6 +32,7 @@ from tracs.resources import Resource, ResourceType
 from tracs.service import Service
 from tracs.streams import Point, Stream
 from tracs.ui import CONSOLE as cs
+from tracs.uid import uid
 
 log = getLogger( __name__ )
 
@@ -119,10 +120,7 @@ class Strava( Service ):
 		# todo: how to detect unsuccessful login?
 		return True
 
-	def import_from_remote( self, dst_fs: FS, **kwargs ) -> Activities:
-		if not self.login():
-			return Activities()
-
+	def import_from_remote( self, dest_fs: FS, **kwargs ) -> Activities:
 		after = kwargs.get( 'range_from' )
 		before = kwargs.get( 'range_to' )
 		first_year = self._ctx.config['import'].first_year
@@ -130,31 +128,20 @@ class Strava( Service ):
 		if after is None or before is None:
 			after, before = datetime( first_year, 1, 1 ), datetime.now( UTC ) + timedelta( days = 1 )
 
-		activities = Activities()
+		imported = Activities()
 
-		# sa = SummaryActivity, da = DetailedActivity
-		for sa in self._client.get_activities( after=after, before=before ):
-			# self.ctx.advance( f'activity {sa.id}' )
+		if self.login():
+			summary_ids = [ sa.id for sa in self._client.get_activities( after=after, before=before ) ]
+			summary_uids = [ uid( f'{self._cfg.get( CFG_CLASSIFIER ) or self.name}:{id}' ) for id in summary_ids ]
 
-			uid = f'{self.name}:{sa.id}'
-			path = self.svc_path_for_id( sa.id, f'{sa.id}.json' )
+			# filter existing
+			summary_uids = [ u for u in summary_uids if self.ctx.force or not self.db.get_by_uid( u ) ]
 
-			if self.ctx.force or not self.db.contains_resource( uid, path ):
-				da = self._client.get_activity( sa.id, include_all_efforts=True )  # get detailed data for activity
+			for u in summary_uids:
+				path = self.db_path_for( u.local_id, f'{u.local_id}.json' )
 
-				# summary
-				dump = da.model_dump_json( exclude_unset=True, exclude_defaults=True, exclude_none=True )
-				data = self.json_handler.load_raw( dump ) # todo: check if there's a better way or getting a sorted json
-				sorted_dump = self.json_handler.save_raw( data )
-				summary = Resource(
-					content=sorted_dump,
-					raw=data,
-					data=da,
-					uid=uid,
-					path=path,
-					type=STRAVA_TYPE,
-					source=self.url_for_id( da.id ),
-				)
+				# fetch detailed activity
+				summary = self._summary( u.local_id )
 
 				# streams
 
@@ -163,87 +150,99 @@ class Strava( Service ):
 				# gpx contains lat/lon, elevation, time + time in metadata
 				# tcx contains TotalTimeSeconds, DistanceMeters, MaximumSpeed, Calories
 				# track contains Time, LatitudeDegrees, LongitudeDegrees, AltitudeMeters, DistanceMeters, SensorState
-				streams = self._client.get_activity_streams( da.id, types=[ 'time', 'latlng', 'distance', 'altitude', 'velocity_smooth', 'heartrate' ] )
+				streams = self._client.get_activity_streams( u.local_id, types=[ 'time', 'latlng', 'distance', 'altitude', 'velocity_smooth', 'heartrate' ] )
 				stream = to_stream( streams, summary.data.start_date )
 
-				# TCX
-
-				tcx = stream.as_tcx(
-					average_heart_rate_bpm = summary.raw.get( 'average_heartrate' ),
-					calories = round( summary.raw.get( 'calories' ) ),
-					distance_meters = summary.raw.get( 'distance' ),
-					id = f'{summary.raw.get( "start_date_local" )}Z',
-					intensity = 'Active', # todo: don't know where to get this from
-					maximum_heart_rate_bpm = summary.raw.get( 'max_heartrate' ),
-					maximum_speed = summary.raw.get( 'max_speed' ),
-					start_date = dtparse( sd ) if type( sd := summary.raw.get( 'start_date' ) ) is str else sd,
-					# trigger_method = 'Distance', # todo: this is not correct
-					total_time_seconds = round( summary.raw.get( 'elapsed_time' ) ),
-				)
-				tcx_recording = Resource(
-					uid=summary.uid,
-					path=f'{summary.path[0:-4]}tcx',
-					text=tostring( tcx.as_xml(), pretty_print=True ).decode( 'UTF-8' ),
-					type=TCX_TYPE,
-				)
+				# TCX Recording
+				tcx = self._tcx( stream, summary.raw )
 
 				# GPX
-
-				gpx_recording = None
-				if any( p.lat for p in stream.points ):
-					gpx = stream.as_gpx(
-						track_name = summary.raw.get( 'name' ),
-						# track_type = '1' # todo: don't know what GPX type means, strava uses integer numbers
-					)
-					gpx_recording = Resource(
-						uid=summary.uid,
-						path=f'{summary.path[0:-4]}gpx',
-						type=GPX_TYPE,
-						text=gpx.to_xml( prettyprint=True )
-					)
+				gpx = self._gpx( stream, summary.raw )
 
 				# Photos
-
-				photos = []
-				if summary.raw.get( 'photos' ).get( 'count' ) > 0:
-					for photo, index in zip( self._client.get_activity_photos( summary.raw.get( 'id' ), size=PHOTO_SIZE ), range( 1, 100 ) ):
-						photo_url = photo.urls.get( str( PHOTO_SIZE ) )
-						if ( response := rqget( photo_url ) ) and response.status_code == 200:
-							photos.append(
-								Resource(
-									content=response.content,
-									path=f'{summary.path[0:-4]}{index}.jpg',
-									type=JPEG_TYPE,
-									uid=summary.uid,
-								)
-							)
+				photos = self._photos( summary.raw )
 
 				# write resources
-				dst_fs.makedirs( dirname( path ), recreate=True )
-				dst_fs.writebytes( summary.path, contents=summary.content )
-				dst_fs.writebytes( tcx_recording.path, contents=tcx_recording.content )
-				if gpx_recording:
-					dst_fs.writebytes( gpx_recording.path, contents=gpx_recording.content )
-				for p in photos:
-					dst_fs.writebytes( p.path, contents=p.content )
-				log.debug( f'wrote summary to {dst_fs}/{summary.path}' )
+				resources = [ r for r in [summary, gpx, tcx, *photos] if r is not None ]
+				for r in resources:
+					r.unload_to( dest_fs, r.path )
+					log.debug( f'wrote resource to {dest_fs}/{r.path}' )
 
-				# create activity and unload resources
-				activity = self.importer.load_as_activity( resource=summary, fs=dst_fs )
-				activity.resources.append( tcx_recording )
-				if gpx_recording:
-					activity.resources.append( gpx_recording )
-				activity.resources.extend( photos )
+				# append resources
+				activity = self.importer.load_as_activity( resource=summary, fs=dest_fs, attach=False )
+				activity.resources.add_all( *resources )
+				# todo: check why unload does not here ...
+				for r in activity.resources:
+					r.unload()
+				# todo_end
+				imported.append( activity )
 
-				summary.unload()
-				tcx_recording.unload()
-				if gpx_recording:
-					gpx_recording.unload()
-				for p in photos:
-					p.unload()
-				activities.append( activity )
+		return imported
 
-		return activities
+	def _summary( self, id: int ) -> Resource:
+		da = self._client.get_activity( id, include_all_efforts=True )  # get detailed data for activity
+		dump = da.model_dump_json( exclude_unset=True, exclude_defaults=True, exclude_none=True )
+		data = self.json_handler.load_raw( dump )  # todo: check if there's a better way of getting a sorted json
+		sorted_dump = self.json_handler.save_raw( data )
+
+		return Resource(
+			content=sorted_dump,
+			raw=data,
+			data=da,
+			name=f'{id}.json',
+			path=self.db_path_for( id, f'{id}.json' ),
+			type=STRAVA_TYPE,
+			source=self.url_for_id( da.id ),
+		)
+
+	def _gpx( self, stream, raw: Dict ) -> Optional[Resource]:
+		if any( p.lat for p in stream.points ):
+			return Resource(
+				name=f'{raw.get( "id" )}.tcx',
+				path=self.db_path_for( raw.get( 'id' ), f'{raw.get( "id" )}.gpx' ),
+				type=GPX_TYPE,
+				# track_type = '1' # todo: don't know what GPX type means, strava uses integer numbers
+				text=stream.as_gpx( track_name=raw.get( 'name' ) ).to_xml( prettyprint=True )
+			)
+		else:
+			return None
+
+	def _tcx( self, stream, raw: Dict ) -> Resource:
+		tcx = stream.as_tcx(
+			average_heart_rate_bpm=raw.get( 'average_heartrate' ),
+			calories=round( raw.get( 'calories' ) ),
+			distance_meters=raw.get( 'distance' ),
+			id=f'{raw.get( "start_date_local" )}Z',
+			intensity='Active',  # todo: don't know where to get this from
+			maximum_heart_rate_bpm=raw.get( 'max_heartrate' ),
+			maximum_speed=raw.get( 'max_speed' ),
+			start_date=dtparse( sd ) if type( sd := raw.get( 'start_date' ) ) is str else sd,
+			# trigger_method = 'Distance', # todo: this is not correct
+			total_time_seconds=round( raw.get( 'elapsed_time' ) ),
+		)
+		return Resource(
+			name=f'{raw.get( "id" )}.tcx',
+			path=self.db_path_for( raw.get( 'id' ), f'{raw.get( "id" )}.tcx' ),
+			text=tostring( tcx.as_xml(), pretty_print=True ).decode( 'UTF-8' ),
+			type=TCX_TYPE,
+		)
+
+	def _photos( self, raw: Dict ) -> List[Resource]:
+		photos = []
+		if raw.get( 'photos' ).get( 'count' ) > 0:
+			for photo, index in zip( self._client.get_activity_photos( raw.get( 'id' ), size=PHOTO_SIZE ), range( 1, 100 ) ):
+				photo_url = photo.urls.get( str( PHOTO_SIZE ) )
+				if (response := rqget( photo_url )) and response.status_code == 200:
+					photos.append(
+						Resource(
+							content=response.content,
+							name=f'{raw.get( "id" )}{index}.jpg',
+							path=self.db_path_for( raw.get( 'id' ), f'{raw.get( "id" )}{index}.jpg' ),
+							type=JPEG_TYPE,
+						)
+					)
+
+		return photos
 
 	@property
 	def logged_in( self ) -> bool:

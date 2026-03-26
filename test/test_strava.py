@@ -5,11 +5,12 @@ from datetime import timezone
 
 from dateutil.tz import tzlocal
 from pytest import mark
+from stravalib.model import DetailedActivity as StravaActivity
 
 from test.helpers import skip_live
 from tracs.activity_types import ActivityTypes
-from tracs.plugins.strava import Strava, StravaActivity
-from tracs.plugins.strava import StravaHandler
+from tracs.plugins.strava import Strava
+from tracs.plugins.strava.io import StravaHandler
 
 @mark.file( 'environments/default/db/strava/2/0/0/200002/200002.json' )
 def test_init_from_raw( path ):
@@ -37,12 +38,12 @@ def test_init_from_raw( path ):
 	assert sa.heartrate_max == 171
 	assert sa.location_country == 'Germany'
 
-@skip_live
-@mark.context( env='live', persist='clone', cleanup=False )
+#@skip_live
+@mark.context( env='live', cleanup=False )
 @mark.service( cls=Strava, init=True, register=True )
 def test_import( service ):
 	activities = service.import_activities( fetch_all=True )
-	assert sorted( [ a.uid.to_str() for a in activities ] ) == sorted( [
+	assert sorted( [ a.uid for a in activities ] ) == sorted( [
 		'strava:8213576551', 'strava:8213576554', 'strava:8213576563', 'strava:8213576615',
 		'strava:7973155107', 'strava:7956459613', 'strava:7956459639'
 	] )

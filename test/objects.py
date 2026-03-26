@@ -3,7 +3,7 @@ from typing import Optional
 
 from dateutil.tz import tzlocal, tzoffset, UTC
 
-from tracs.activity import Activity, ActivityPart, Activities, MultipartActivity
+from tracs.activity import Activity, Activities, MultipartActivity
 from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata
 from tracs.plugins.gpx import GPX_TYPE
@@ -102,20 +102,6 @@ RESOURCES_OBJ_DUMP  = \
     "uid": "polar:1235"
   }
 ]
-'''
-
-# activity part
-
-ACTIVITY_PART_OBJ = ActivityPart(
-	gap=timedelta( minutes=20 ),
-	uid=UID.of( 'polar:1234/recording.1.gpx' )
-)
-
-ACTIVITY_PART_OBJ_DUMP = \
-'''{
-  "gap": "00:20:00",
-  "uid": "polar:1234/recording.1.gpx"
-}
 '''
 
 # activity

@@ -58,5 +58,10 @@ def setup( ctx: ApplicationContext, services: List[str] ):
 
 		if run_setup:
 			# todo: this will fail for fresh services as they won't be instantiated -> bootstrapping necessary
-			ctx.service_mgr.get( s ).setup()
+			service = ctx.service_mgr.get( s )
+			cfg, state = service.setup()
+			for k, v in cfg.items():
+				service._cfg[k] = v
+			for k, v in state.items():
+				service._state[k] = v
 			ctx.dump_config_state()

@@ -3,99 +3,44 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from itertools import zip_longest
 from logging import getLogger
 from pathlib import Path
-from re import compile, match
+from re import match
 from sys import exit as sysexit
 from time import time
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
+from typing import ClassVar, Dict, List, Optional, Tuple, Union
 from webbrowser import open as open_url
 
 from dateutil.parser import parse as dtparse
-from dateutil.tz import tzlocal, UTC
+from dateutil.tz import UTC
+from dynaconf.utils.boxing import DynaBox
 from fs.base import FS
 from fs.path import dirname
 from lxml.etree import tostring
 from requests import get as rqget
 from rich.prompt import Prompt
 from stravalib.client import Client
-from stravalib.model import DetailedActivity as StravaActivity
 
 from tracs.activity import Activities, Activity
-from tracs.activity_types import ActivityTypes
 from tracs.constants import APPNAME
-from tracs.pluginmgr import importer, resourcetype, service, setup
+from tracs.pluginmgr import resourcetype, service, setup
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.image import JPEG_TYPE
 from tracs.plugins.json import JSONHandler
-from tracs.plugins.stravaconstants import BASE_URL, TYPES
+from tracs.plugins.strava.constants import CLIENT_CODE_TEXT, CLIENT_ID_TEXT, FETCH_PAGE_SIZE, OAUTH_REDIRECT_URL, PHOTO_SIZE, SCOPE, STRAVA_TYPE
+from tracs.plugins.strava.io import StravaHandler
 from tracs.plugins.tcx import TCX_TYPE
-from tracs.protocols import ApplicationContext
 from tracs.resources import Resource, ResourceType
 from tracs.service import Service
 from tracs.streams import Point, Stream
+from tracs.ui import CONSOLE as cs
 
 log = getLogger( __name__ )
 
 SERVICE_NAME = 'strava'
 DISPLAY_NAME = 'Strava'
 
-STRAVA_TYPE = 'application/vnd.strava+json'
-
-OAUTH_REDIRECT_URL = 'http://localhost:40004'
-SCOPE = 'activity:read_all'
-
-FETCH_PAGE_SIZE = 30 #
-PHOTO_SIZE = 2800
-
-TIMEZONE_FULL_REGEX = compile( '^(\(.+\)) (.+)$' ) # not used at the moment
-TIMEZONE_REGEX = compile( '\(\w+\+\d\d:\d\d\) ' )
-
 @resourcetype
 def strava_resource_type() -> ResourceType:
 	return ResourceType( name=STRAVA_TYPE, summary=True )
-
-@importer( type=STRAVA_TYPE )
-class StravaHandler( JSONHandler ):
-
-	TYPE: str = STRAVA_TYPE
-	ACTIVITY_CLS = StravaActivity
-
-	def load_data( self, raw: Any, **kwargs ):
-		return StravaActivity.parse_obj( raw )
-
-	def save_data( self, data: Any, **kwargs ) -> Any:
-		return StravaActivity.dict( data )
-
-	def as_activity( self, resource: Resource ) -> Optional[Activity]:
-		da: StravaActivity = resource.data
-		tz_str = str( da.timezone ) if da.timezone else str( tzlocal() )
-
-		# noinspection Py
-		activity = Activity(
-			name = da.name,
-			type = TYPES.get( da.type.root, ActivityTypes.unknown ),
-			starttime= da.start_date,
-			starttime_local= da.start_date_local.astimezone( da.timezone.timezone() ),
-			timezone = tz_str,
-			distance = float( da.distance or 0.0 ),
-			speed = float( da.average_speed or 0.0 ),
-			speed_max = float( da.max_speed or 0.0 ),
-			ascent = float( da.total_elevation_gain or 0.0 ),
-			descent = float( da.total_elevation_gain or 0.0 ),
-			elevation_max = float( da.elev_high or 0.0 ),
-			elevation_min = float( da.elev_low or 0.0 ),
-			duration = da.elapsed_time.timedelta(),
-			duration_moving = da.moving_time.timedelta(),
-			heartrate = int( da.average_heartrate or 0 ),
-			heartrate_max = int( da.max_heartrate or 0 ),
-			location_country = da.location_country,
-			uid = f'{SERVICE_NAME}:{da.id}',
-		)
-
-		for f in Activity.fields():
-			if getattr( activity, f.name ) in [ 0, 0.0 ]:
-				setattr( activity, f.name, None )
-
-		return activity
 
 @service
 class Strava( Service ):
@@ -304,72 +249,44 @@ class Strava( Service ):
 	def logged_in( self ) -> bool:
 		return True if self._session and self._oauth_session else False
 
-# setup
+	def setup( self ) -> Tuple[DynaBox, DynaBox]:
+		cfg, state = DynaBox(), DynaBox()
+		client = Client()
 
-INTRO_TEXT = f'GPX and TCX files from Strava will be downloaded via Strava\'s Web API, that\'s why your credentials are needed.'
-# https://developers.strava.com/docs/authentication/
-CLIENT_ID_TEXT = 'Checking for new activities and downloading photos works by using Strava\'s REST API. To be able ' \
-                 'to use this API you need to enter your Client ID and your Client Secret. In order to retrieve both, ' \
-                 'you need to create your own Strava application. Head to https://www.strava.com/settings/api ' \
-                 'and enter all necessary details. Once you created your application, the ID and the secret ' \
-                 'will be displayed.'
+		cs.print( CLIENT_ID_TEXT, width=120 )
 
-# return { 'username': user, 'password': password }, {}
+		client_id = Prompt.ask( 'Enter your Client ID', default=self._cfg.get( 'client_id' ) )
+		client_secret = Prompt.ask( 'Enter your Client Secret', default=self._cfg.get( 'client_secret' ) )
 
-@setup
-def setup( ctx: ApplicationContext, config: Dict, state: Dict ) -> Tuple[Dict, Dict]:
-	ctx.console.print( INTRO_TEXT, width=120 )
+		authorize_url = client.authorization_url( client_id=client_id, redirect_uri=OAUTH_REDIRECT_URL, scope=SCOPE )
 
-	client = Client()
+		cs.print( CLIENT_CODE_TEXT )
+		cs.print( f'Authorization URL: {authorize_url}' )
+		cs.print()
+		callback_url = Prompt.ask( f'Paste the URL from your browser' )
 
-	ctx.console.print()
-	ctx.console.print( CLIENT_ID_TEXT, width=120 )
-	ctx.console.print()
-
-	client_id = Prompt.ask( 'Enter your Client ID', console=ctx.console, default=config.get( 'client_id', '' ) )
-	ctx.console.print()
-	client_secret = Prompt.ask( 'Enter your Client Secret', console=ctx.console, default=config.get( 'client_secret', '' ) )
-	ctx.console.print()
-
-	authorize_url = client.authorization_url( client_id=client_id, redirect_uri=OAUTH_REDIRECT_URL, scope=SCOPE )
-
-	client_code_text = f'For the next step we need to obtain the Client Code. The client code can be obtained by visiting this ' \
-	                   f'URL: {authorize_url} After authorizing {APPNAME} you will be redirected to {OAUTH_REDIRECT_URL} and the ' \
-	                   f'code is part of the URL displayed in your browser. Have a look at the displayed ' \
-	                   f'URL: {OAUTH_REDIRECT_URL}?code=<CLIENT_CODE_IS_DISPLAYED_HERE>&scope={SCOPE}'
-
-	ctx.console.print()
-	ctx.console.print( client_code_text )
-	ctx.console.print()
-	client_code = Prompt.ask( f'Enter your Client Code or press enter to open the link in your browser and let {APPNAME} autodetect the code.', console=ctx.console )
-	ctx.console.print()
-
-	if not client_code:
-		open_url( authorize_url )
-		webServer = HTTPServer( ('localhost', 40004), StravaSetupServer )
+		state_, client_code, scope = match( '^.+\?state=(.*)&code=(\w+)&scope=(.+)$', callback_url ).groups()
 
 		try:
-			webServer.serve_forever()
-		except KeyboardInterrupt:
-			pass
+			token_response = client.exchange_code_for_token( client_id=client_id, client_secret=client_secret, code=client_code )
 
-		client_code = StravaSetupServer.client_code
-		webServer.server_close()
+			# state.state = state_ # not needed
+			state.client_code = client_code
+			state.scope = scope
 
-	try:
-		token_response = client.exchange_code_for_token( client_id=client_id, client_secret=client_secret, code=client_code )
-		access_token = token_response.get( 'access_token' )
-		refresh_token = token_response.get( 'refresh_token' )
-		expires_at = token_response.get( 'expires_at' )
-		log.debug( f"fetched access and refresh token for athlete {client.get_athlete().id}, expiring at {expires_at}" )
+			state.access_token = token_response.get( 'access_token' )
+			state.refresh_token = token_response.get( 'refresh_token' )
+			state.expires_at = token_response.get( 'expires_at' )
 
-		return { 'client_code': client_code, 'client_id': client_id, 'client_secret': client_secret },\
-			{ **state, 'access_token': access_token, 'refresh_token': refresh_token, 'expires_at': expires_at }
+			log.debug( f"fetched access and refresh token for athlete {client.get_athlete().id}, expiring at {state.expires_at}" )
 
-	except RuntimeError as rte:
-		ctx.console.print( f'Error: authorization not granted.' )
-		ctx.console.print( rte )
-		return {}, {}
+			return cfg, state
+
+		except RuntimeError as rte:
+			cs.print( f'Error: authorization not granted.' )
+			cs.print( rte )
+
+		return cfg, state
 
 class StravaSetupServer( BaseHTTPRequestHandler ):
 
@@ -388,6 +305,20 @@ class StravaSetupServer( BaseHTTPRequestHandler ):
 			self.wfile.write( bytes( "<body><p>Error: unable to detect client code in URL.</p></body>", "utf-8" ) )
 		self.wfile.write(bytes("</html>", "utf-8"))
 		raise KeyboardInterrupt
+
+def fetch_client_code( authorize_url ):
+	open_url( authorize_url )
+	webServer = HTTPServer( ('localhost', 40004), StravaSetupServer )
+
+	try:
+		webServer.serve_forever()
+	except KeyboardInterrupt:
+		pass
+
+	client_code = StravaSetupServer.client_code
+	webServer.server_close()
+
+	return client_code
 
 # helper
 

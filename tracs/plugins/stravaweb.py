@@ -20,7 +20,6 @@ from tracs.pluginmgr import importer, resourcetype, service, setup
 from tracs.plugins.fit import FIT_TYPE
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSONHandler
-from tracs.plugins.stravaconstants import BASE_URL, TYPES
 from tracs.plugins.tcx import TCX_TYPE
 from tracs.resources import Resource, ResourceType
 from tracs.service import Service

@@ -1,10 +1,12 @@
 from typing import Any, Optional
 
+from attrs import fields
 from dateutil.tz import tzlocal
 from stravalib.model import DetailedActivity as StravaActivity
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
+from tracs.cli import fields
 from tracs.pluginmgr import importer
 from tracs.plugins.json import JSONHandler
 from tracs.plugins.strava.constants import STRAVA_TYPE, TYPES
@@ -45,12 +47,12 @@ class StravaHandler( JSONHandler ):
 			heartrate = int( da.average_heartrate or 0 ),
 			heartrate_max = int( da.max_heartrate or 0 ),
 			location_country = da.location_country,
-			uid = f'{SERVICE_NAME}:{da.id}',
+			uid = f'strava:{da.id}',
 		)
 
-		for f in Activity.fields():
-			if getattr( activity, f.name ) in [ 0, 0.0 ]:
-				setattr( activity, f.name, None )
+#		for f in fields( activity ):
+#			if getattr( activity, f.name ) in [ 0, 0.0 ]:
+#				setattr( activity, f.name, None )
 
 		return activity
 

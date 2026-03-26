@@ -7,7 +7,7 @@ from dateutil.tz import tzlocal, UTC
 from pytest import mark, raises
 from rule_engine import Context, EvaluationError, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
 
-from tracs.activity import Activity, ActivityPart
+from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata
 from tracs.plugins.keywords import TIME_FRAMES as TIME_FRAMES_EXT

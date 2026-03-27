@@ -31,6 +31,7 @@ from fs.path import basename, dirname
 from fs.zipfs import ReadZipFS
 from rich import box
 from rich.table import Table
+from typing_extensions import deprecated
 
 from tracs.activity_types import ActivityTypes
 
@@ -217,7 +218,7 @@ def millis_to_timedelta( millis: float|str|None ) -> Optional[timedelta]:
 	except ValueError:
 		return None
 
-def seconds_to_time( time_float: float ) -> Optional[time]:
+def seconds_to_time( time_float: float ) -> time:
 	gt = gmtime( round( time_float, 0 ) )
 	return time( gt.tm_hour, gt.tm_min, gt.tm_sec )
 
@@ -232,6 +233,12 @@ def sum_timedeltas( timedeltas: List[timedelta] ) -> Optional[timedelta]:
 	for td in timedeltas:
 		sum_td += td
 	return sum_td
+
+def to_datetime( s: str, cls: Optional[Type] = None ) -> datetime:
+	return parse_datetime( s )
+
+def to_time( s: str, cls: Optional[Type] = None ) -> time:
+	return time.fromisoformat( s )
 
 def to_isotime( timestr: str ) -> Optional[datetime]:
 	try:
@@ -250,6 +257,7 @@ def fromtimezone( value ) -> time:
 	return get_timezone( value ) if value else get_timezone()
 
 # note: cls as argument only exists for compatibility to cattrs
+@deprecated( 'use to_datetime() or to_time() instead' )
 def fromisoformat( value, cls: Optional[Type] = None ) -> Optional[datetime|time]:
 	if type( value ) in [time, datetime]:
 		return value

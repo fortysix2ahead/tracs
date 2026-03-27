@@ -14,7 +14,7 @@ from pytest import mark, raises
 from tracs.activity_types import ActivityTypes
 from tracs.uid import UID
 from tracs.utils import as_datetime, convert, floor_ceil_from, floor_ceil_str, fmt, fromisoformat, fspath, ReadGzipFS, seconds_to_time, str_to_timedelta, \
-	timedelta_to_iso8601, timedelta_to_str, toisoformat, unchain, unique_sorted, urlparse
+	timedelta_to_iso8601, timedelta_to_str, to_datetime, to_time, toisoformat, unchain, unique_sorted, urlparse
 
 @mark.unit
 def test_fmt():
@@ -91,6 +91,27 @@ def test_seconds_to_time():
 	assert sto( seconds_to_time, '' ) is None
 
 @mark.unit
+def test_to_datetime():
+	target = datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc )
+	assert to_datetime( '2020-02-01T10:20:30+00:00' ) == target
+	assert to_datetime( '2020-02-01T10:20:30Z' ) == target
+
+	from tracs.utils import silent_convert as sto, default_convert as dto
+	assert dto( to_datetime, target, target ) == target
+	assert sto( to_datetime, 'invalid' ) is None
+	assert sto( to_datetime, None ) is None
+
+@mark.unit
+def test_to_time():
+	target = time( 10, 20, 30 )
+	assert to_time( '10:20:30' ) == target
+
+	from tracs.utils import silent_convert as sto, default_convert as dto
+	assert dto( to_time, target, target ) == target
+	assert sto( to_time, 'invalid' ) is None
+	assert sto( to_time, None ) is None
+
+@mark.unit
 def test_fromisoformat():
 	target = datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc )
 	assert fromisoformat( '2020-02-01T10:20:30+00:00' ) == target
@@ -99,7 +120,6 @@ def test_fromisoformat():
 	assert fromisoformat( '10:20:30' ) == time( 10, 20, 30 )
 	assert fromisoformat( time( 10, 20, 30 ) ) == time( 10, 20, 30 )
 	assert fromisoformat( 'invalid' ) is None
-	assert fromisoformat( None ) is None
 
 @mark.unit
 def test_toisoformat():

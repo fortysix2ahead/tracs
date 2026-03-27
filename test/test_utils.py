@@ -4,7 +4,7 @@ from random import choice
 from string import ascii_lowercase
 
 from arrow import Arrow
-from dateutil.tz import gettz
+from dateutil.tz import gettz, tzlocal
 from fs.errors import ResourceNotFound
 from fs.path import issamedir
 from fs.zipfs import ReadZipFS
@@ -14,7 +14,7 @@ from pytest import mark, raises
 from tracs.activity_types import ActivityTypes
 from tracs.uid import UID
 from tracs.utils import as_datetime, convert, floor_ceil_from, floor_ceil_str, fmt, fromisoformat, fspath, ReadGzipFS, seconds_to_time, str_to_timedelta, \
-	timedelta_to_iso8601, timedelta_to_str, to_datetime, to_datetime_utc, to_time, toisoformat, unchain, unique_sorted, urlparse
+	timedelta_to_iso8601, timedelta_to_str, to_datetime, to_datetime_local, to_datetime_utc, to_time, toisoformat, unchain, unique_sorted, urlparse
 
 @mark.unit
 def test_fmt():
@@ -107,6 +107,13 @@ def test_to_datetime_utc():
 	assert to_datetime_utc( '2020-02-01T10:20:30+00:00' ) == target
 	assert to_datetime_utc( '2020-02-01T10:20:30Z' ) == target
 	assert to_datetime_utc( '2020-02-01T10:20:30' ) == target
+
+@mark.unit
+def test_to_datetime_local():
+	target = datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc )
+	assert to_datetime_local( '2020-02-01T10:20:30+00:00' ) == target
+	assert to_datetime_local( '2020-02-01T10:20:30Z' ) == target
+	assert to_datetime_local( '2020-02-01T10:20:30' ) == target.replace( tzinfo=tzlocal() )
 
 @mark.unit
 def test_to_time():

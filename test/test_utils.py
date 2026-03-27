@@ -14,7 +14,8 @@ from pytest import mark, raises
 from tracs.activity_types import ActivityTypes
 from tracs.uid import UID
 from tracs.utils import as_datetime, convert, floor_ceil_from, floor_ceil_str, fmt, fromisoformat, fspath, ReadGzipFS, seconds_to_time, str_to_timedelta, \
-	timedelta_to_iso8601, timedelta_to_str, to_datetime, to_datetime_local, to_datetime_utc, to_time, toisoformat, unchain, unique_sorted, urlparse
+	timedelta_to_iso8601, timedelta_to_str, to_datetime, to_datetime_local, to_datetime_str, to_datetime_utc, to_naive_time, to_time, to_time_str, to_timedelta_str, toisoformat, unchain, unique_sorted, \
+	urlparse
 
 @mark.unit
 def test_fmt():
@@ -116,6 +117,13 @@ def test_to_datetime_local():
 	assert to_datetime_local( '2020-02-01T10:20:30' ) == target.replace( tzinfo=tzlocal() )
 
 @mark.unit
+def test_to_naive_time():
+	target = datetime( 2020, 2, 1, 10, 20, 30 )
+	assert to_naive_time( '2020-02-01T10:20:30+00:00' ) == target
+	assert to_naive_time( '2020-02-01T10:20:30Z' ) == target
+	assert to_naive_time( '2020-02-01T10:20:30' ) == target
+
+@mark.unit
 def test_to_time():
 	target = time( 10, 20, 30 )
 	assert to_time( '10:20:30' ) == target
@@ -135,6 +143,23 @@ def test_fromisoformat():
 	assert fromisoformat( time( 10, 20, 30 ) ) == time( 10, 20, 30 )
 	assert fromisoformat( 'invalid' ) is None
 
+@mark.unit
+def test_to_datetime_str():
+	assert to_datetime_str( datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc ) ) == '2020-02-01T10:20:30+00:00'
+
+@mark.unit
+def test_to_time_str():
+	assert to_time_str( time( 10, 20, 30 ) ) == '10:20:30'
+
+@mark.unit
+def test_to_timedelta_str():
+	assert to_timedelta_str( timedelta( seconds=32 ) ) == '00:00:32'
+	assert to_timedelta_str( timedelta( hours=17, minutes=8, seconds=32 ) ) == '17:08:32'
+	assert to_timedelta_str( timedelta( days=1, hours=2, minutes=8, seconds=32 ) ) == '01:02:08:32'
+	assert to_timedelta_str( timedelta( hours=26, minutes=8, seconds=32 ) ) == '01:02:08:32'
+
+# not supported any longer
+@mark.xfail
 @mark.unit
 def test_toisoformat():
 	assert toisoformat( datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc ) ) == '2020-02-01T10:20:30+00:00'

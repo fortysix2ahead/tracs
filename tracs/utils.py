@@ -248,17 +248,14 @@ def to_datetime_local( s: str, cls: Optional[Type] = None ) -> datetime:
 def to_time( s: str, cls: Optional[Type] = None ) -> time:
 	return time.fromisoformat( s )
 
+def to_naive_time( s: str, cls: Optional[Type] = None ) -> Optional[datetime]:
+	return parse_datetime( s ).replace( tzinfo=None )
+
 @deprecated( 'use to_datetime_utc() instead' )
 def to_isotime( timestr: str ) -> Optional[datetime]:
 	try:
 		dt = parse_datetime( timestr )
 		return dt.replace( tzinfo=UTC ) if dt.tzinfo is None else dt
-	except (ParserError, TypeError):
-		return None
-
-def to_naive_time( timestr: str ) -> Optional[datetime]:
-	try:
-		return parse_datetime( timestr )
 	except (ParserError, TypeError):
 		return None
 
@@ -282,6 +279,19 @@ def fromisoformat( value, cls: Optional[Type] = None ) -> Optional[datetime|time
 	else:
 		raise ValueError()
 
+def to_datetime_str( dt: datetime, cls: Optional[Type] = None ) -> str:
+	return dt.isoformat()
+
+def to_time_str( t: time, cls: Optional[Type] = None ) -> str:
+	return t.isoformat()
+
+def to_timedelta_str( td: timedelta, cls: Optional[Type] = None ) -> str:
+	if td.days > 0:
+		return (datetime.min + td - timedelta( days=1 )).strftime( '%d:%H:%M:%S' )  # hmpf ...
+	else:
+		return (datetime.min + td).strftime( '%H:%M:%S' )
+
+@deprecated( 'use to_datetime_str() or to_time_str() or to_timedelta_str() instead' )
 def toisoformat( value, cls: Optional[Type] = None ) -> Optional[str]:
 	if type( value ) in [time, datetime]:
 		return value.isoformat()

@@ -54,7 +54,7 @@ def test_path_for( service ):
 	assert service.path_for_id( '231201102030', resource_path='recording.gpx' ) == '23/12/01/231201102030/recording.gpx'
 	assert service.path_for_id( '231201102030', base_path='waze', resource_path='recording.gpx' ) == 'waze/23/12/01/231201102030/recording.gpx'
 
-	assert service.svc_path_for_id( '231201102030', 'recording.gpx' ) == 'waze/23/12/01/231201102030/recording.gpx'
+	assert service.db_path_for( '231201102030', 'recording.gpx' ) == 'waze/23/12/01/231201102030/recording.gpx'
 
 @mark.context( env='takeouts', cleanup=True )
 @mark.service( cls=Waze, init=True, register=True )

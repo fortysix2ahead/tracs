@@ -13,7 +13,7 @@ from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.plugins.json import JSON_TYPE, JSONHandler
 from tracs.plugins.polar import POLAR_EXERCISE_DATA_TYPE, POLAR_FLOW_TYPE, POLAR_SESSION_TYPE, PolarFlowExercise, PolarFlowImporter, \
 	PolarTrainingSessionImporter
-from tracs.plugins.strava import STRAVA_TYPE, StravaActivity, StravaHandler
+from tracs.plugins.strava.io import STRAVA_TYPE, StravaActivity, StravaHandler
 from tracs.plugins.tcx import Activity as TCXActivity, Author, Creator, Lap, Plan, TCX_TYPE, TCXImporter, Trackpoint, Training, TrainingCenterDatabase
 from tracs.plugins.waze import WAZE_TYPE, WazeActivity, WazeImporter
 from tracs.plugins.xml import XML_TYPE, XMLHandler

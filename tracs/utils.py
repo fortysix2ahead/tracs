@@ -10,7 +10,7 @@ from os.path import abspath as abs_path, expanduser, expandvars, normpath
 from pathlib import Path
 from re import compile as rxcompile, match
 from time import gmtime, perf_counter
-from typing import BinaryIO, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, BinaryIO, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Type, TypeVar, Union
 from urllib.parse import ParseResult, ParseResultBytes, urlparse as urllibparse
 
 from arrow import Arrow, get as getarrow
@@ -138,6 +138,19 @@ def fmtl( activity_list: List ) -> str:
 def fmt_delta( dt1: datetime, dt2: datetime ) -> str:
 	return f'{fmt( dt1 )} (\u00B1{fmt( dt1 - dt2 )})'
 
+# generic convert function
+
+def convert( value: Any, fn: Callable, default: Optional[Any] = None, silent: bool = False ) -> Any:
+	try:
+		return fn( value )
+	except Exception as e:
+		if silent or default:
+			return default if default else None
+		else:
+			raise
+
+#
+
 def timestring() -> str:
 	return datetime.now( tz=tzlocal() ).strftime( '%y%m%d_%H%M%S' )
 
@@ -232,6 +245,7 @@ def to_naive_time( timestr: str ) -> Optional[datetime]:
 def fromtimezone( value ) -> time:
 	return get_timezone( value ) if value else get_timezone()
 
+# note: cls as argument only exists for compatibility to cattrs
 def fromisoformat( value, cls: Optional[Type] = None ) -> Optional[datetime|time]:
 	if type( value ) in [time, datetime]:
 		return value

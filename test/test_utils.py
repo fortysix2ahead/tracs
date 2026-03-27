@@ -74,26 +74,28 @@ def test_convert():
 	def sample_str_to_int( str : str) -> int:
 		return int( str )
 
-	assert convert( '10', sample_str_to_int ) == 10
+	assert convert( sample_str_to_int, '10' ) == 10
 	with raises( ValueError ):
-		convert( 'abc', sample_str_to_int )
-	assert convert( 'abc', sample_str_to_int, silent=True ) is None
-	assert convert( 'abc', sample_str_to_int, default='abc' ) == 'abc'
+		convert( sample_str_to_int, 'abc' )
+	assert convert( sample_str_to_int, 'abc', silent=True ) is None
+	assert convert( sample_str_to_int, 'abc', default='abc' ) == 'abc'
 
 @mark.unit
 def test_seconds_to_time():
-	assert seconds_to_time( None ) is None
-	assert seconds_to_time( '' ) is None
-
 	assert seconds_to_time( 62 ) == time( 0, 1, 2 )
 	assert seconds_to_time( 100.3 ) == time( 0, 1, 40 )
 	assert seconds_to_time( 121.7 ) == time( 0, 2, 2 )
 
+	from tracs.utils import silent_convert as sto
+	assert sto( seconds_to_time, None ) is None
+	assert sto( seconds_to_time, '' ) is None
+
 @mark.unit
 def test_fromisoformat():
-	assert fromisoformat( '2020-02-01T10:20:30+00:00' ) == datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc )
-	assert fromisoformat( '2020-02-01T10:20:30Z' ) == datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc )
-	assert fromisoformat( datetime( 2020, 2, 1, 10, 20, 30 ) ) == datetime( 2020, 2, 1, 10, 20, 30 )
+	target = datetime( 2020, 2, 1, 10, 20, 30, tzinfo=timezone.utc )
+	assert fromisoformat( '2020-02-01T10:20:30+00:00' ) == target
+	assert fromisoformat( '2020-02-01T10:20:30Z' ) == target
+	assert fromisoformat( target ) == target
 	assert fromisoformat( '10:20:30' ) == time( 10, 20, 30 )
 	assert fromisoformat( time( 10, 20, 30 ) ) == time( 10, 20, 30 )
 	assert fromisoformat( 'invalid' ) is None

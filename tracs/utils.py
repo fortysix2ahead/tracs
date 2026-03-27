@@ -140,7 +140,7 @@ def fmt_delta( dt1: datetime, dt2: datetime ) -> str:
 
 # generic convert function
 
-def convert( value: Any, fn: Callable, default: Optional[Any] = None, silent: bool = False ) -> Any:
+def convert( fn: Callable, value: Any, default: Optional[Any] = None, silent: bool = False ) -> Any:
 	try:
 		return fn( value )
 	except Exception as e:
@@ -148,6 +148,12 @@ def convert( value: Any, fn: Callable, default: Optional[Any] = None, silent: bo
 			return default if default else None
 		else:
 			raise
+
+def silent_convert( fn: Callable, value: Any ) -> Any:
+	return convert( value, fn, silent=True )
+
+def default_convert( fn: Callable, value: Any, default: Any ) -> Any:
+	return convert( value, fn, default=default )
 
 #
 
@@ -212,8 +218,6 @@ def millis_to_timedelta( millis: float|str|None ) -> Optional[timedelta]:
 		return None
 
 def seconds_to_time( time_float: float ) -> Optional[time]:
-	if not isinstance( time_float, (float, int) ):
-		return None
 	gt = gmtime( round( time_float, 0 ) )
 	return time( gt.tm_hour, gt.tm_min, gt.tm_sec )
 

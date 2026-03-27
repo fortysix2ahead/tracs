@@ -242,6 +242,9 @@ def to_datetime( s: str, cls: Optional[Type] = None ) -> datetime:
 def to_datetime_utc( s: str, cls: Optional[Type] = None ) -> datetime:
 	return dt.replace( tzinfo=UTC ) if (dt := parse_datetime( s )).tzinfo is None else dt
 
+def to_datetime_local( s: str, cls: Optional[Type] = None ) -> datetime:
+	return dt.replace( tzinfo=tzlocal() ) if (dt := parse_datetime( s )).tzinfo is None else dt
+
 def to_time( s: str, cls: Optional[Type] = None ) -> time:
 	return time.fromisoformat( s )
 

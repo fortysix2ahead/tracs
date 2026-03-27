@@ -234,12 +234,18 @@ def sum_timedeltas( timedeltas: List[timedelta] ) -> Optional[timedelta]:
 		sum_td += td
 	return sum_td
 
+# Converters below have cls as argument to be used as cattrs converter
+
 def to_datetime( s: str, cls: Optional[Type] = None ) -> datetime:
 	return parse_datetime( s )
+
+def to_datetime_utc( s: str, cls: Optional[Type] = None ) -> datetime:
+	return dt.replace( tzinfo=UTC ) if (dt := parse_datetime( s )).tzinfo is None else dt
 
 def to_time( s: str, cls: Optional[Type] = None ) -> time:
 	return time.fromisoformat( s )
 
+@deprecated( 'use to_datetime_utc() instead' )
 def to_isotime( timestr: str ) -> Optional[datetime]:
 	try:
 		dt = parse_datetime( timestr )
@@ -256,7 +262,6 @@ def to_naive_time( timestr: str ) -> Optional[datetime]:
 def fromtimezone( value ) -> time:
 	return get_timezone( value ) if value else get_timezone()
 
-# note: cls as argument only exists for compatibility to cattrs
 @deprecated( 'use to_datetime() or to_time() instead' )
 def fromisoformat( value, cls: Optional[Type] = None ) -> Optional[datetime|time]:
 	if type( value ) in [time, datetime]:

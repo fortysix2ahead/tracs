@@ -56,9 +56,9 @@ class Waze( Service ):
 		if hasattr( self, '_takeout_importer' ):
 			self._takeout_importer.field_size_limit = field_size_limit
 
-	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None, user_id: Optional[str] = None,
+	def path_for_id( self, local_id: Union[int, str], base_path: Optional[str] = None,
 	                 resource_path: Optional[str] = None, as_path: bool = False, id_to_path: Callable = None ) -> Union[Path, str]:
-		return super().path_for_id( local_id, base_path, user_id, resource_path, as_path, date_id_to_path )
+		return super().path_for_id( local_id, base_path, resource_path, as_path, date_id_to_path )
 
 	def url_for_id( self, local_id: Union[int, str] ) -> Optional[str]:
 		return None

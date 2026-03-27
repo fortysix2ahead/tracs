@@ -13,7 +13,7 @@ from pytest import mark, raises
 
 from tracs.activity_types import ActivityTypes
 from tracs.uid import UID
-from tracs.utils import as_datetime, floor_ceil_from, floor_ceil_str, fmt, fromisoformat, fspath, ReadGzipFS, seconds_to_time, str_to_timedelta, \
+from tracs.utils import as_datetime, convert, floor_ceil_from, floor_ceil_str, fmt, fromisoformat, fspath, ReadGzipFS, seconds_to_time, str_to_timedelta, \
 	timedelta_to_iso8601, timedelta_to_str, toisoformat, unchain, unique_sorted, urlparse
 
 @mark.unit
@@ -67,6 +67,18 @@ def test_localized_fmt():
 	assert fmt( date( 2019, 4, 25 ), 'de' ) == '25.04.2019'
 	assert fmt( time( 10, 19, 25 ), 'de' ) == '10:19:25'
 	assert fmt( time( 14, 19, 25 ), 'de' ) == '14:19:25'
+
+@mark.unit
+def test_convert():
+
+	def sample_str_to_int( str : str) -> int:
+		return int( str )
+
+	assert convert( '10', sample_str_to_int ) == 10
+	with raises( ValueError ):
+		convert( 'abc', sample_str_to_int )
+	assert convert( 'abc', sample_str_to_int, silent=True ) is None
+	assert convert( 'abc', sample_str_to_int, default='abc' ) == 'abc'
 
 @mark.unit
 def test_seconds_to_time():

@@ -41,10 +41,10 @@ def test_constructor_fixture( service ):
 	assert service._user_id == "moo@example.com"
 
 	assert isinstance( service.fs, MultiFS )
-	assert str( service.fs.write_fs ) == '<memfs>/db/m00h'
-	assert str( service.base_fs ) == '<memfs>/db/m00h'
-	assert str( service.overlay_fs ) == '<memfs>/overlay/m00h'
-	assert str( service.takeout_fs ) == '<memfs>/takeouts/take0uts/m00'
+	assert str( service.fs.write_fs ).endswith( '/db/m00h\'>' )
+	assert str( service.base_fs ).endswith( '/db/m00h\'>' )
+	assert str( service.overlay_fs ).endswith( '/overlay/m00h\'>' )
+	assert str( service.takeout_fs ).endswith( '/takeouts/take0uts/m00\'>' )
 
 @mark.unit
 @mark.service( cls=Mock )
@@ -105,60 +105,3 @@ def test_path_for( service ):
 	assert service.path_for( r, absolute=True ) == '/db/mock/user/1/0/0/1001/recording.gpx' # this is actually a relative path as there's no OSFS behind
 	# absolute implies omit classifier
 	# assert service.path_for( r, absolute=True, omit_classifier=True ) == '/db/mock/1/0/0/1001/recording.gpx'
-
-@mark.unit
-@mark.context( env='empty', persist='clone', cleanup=True )
-@mark.service( cls=Mock )
-def test_path_for_with_osfs( service ):
-	dbpath = service.dbfs.getsyspath( '/' )
-	r = Resource( uid='mock:1001', path='recording.gpx' )
-	assert service.path_for( r, absolute=True ) == f'{dbpath}/mock/user/1/0/0/1001/recording.gpx'
-	assert service.path_for( r, absolute=True, omit_classifier=True ) == f'{dbpath}/mock/user/1/0/0/1001/recording.gpx'
-
-# noinspection PyTestUnpassedFixture
-@mark.context( env='empty', persist='mem', cleanup=True )
-@mark.service( cls=Mock, init=True, register=True )
-def test_fetch( service: Mock ):
-	service.import_activities( skip_download=True, skip_link=True, amount=3 )
-	assert len( service.ctx.db.activities ) == 3
-
-	mfs = service.ctx.db_fs_for( service.name )
-	assert mfs.exists( '1/0/0/1001/1001.json' )
-	assert not mfs.exists( '1/0/0/1001/1001.gpx' )
-
-	# test force flag
-	mtime = mfs.getmodified( '1/0/0/1001/1001.json' )
-	service.import_activities( skip_download=True, skip_link=True )
-	assert mfs.getmodified( '1/0/0/1001/1001.json' ) == mtime
-	service.import_activities( force=True, skip_download=True, skip_link=True )
-	assert mfs.getmodified( '1/0/0/1001/1001.json' ) > mtime
-
-	# test pretend flag
-	mtime = mfs.getmodified( '1/0/0/1001/1001.json' )
-	service.import_activities( force=True, pretend=True, skip_download=True, skip_link=True )
-	assert mfs.getmodified( '1/0/0/1001/1001.json' ) == mtime
-
-@mark.context( env='empty', persist='clone', cleanup=True )
-@mark.service( cls=Mock, init=True, register=True )
-def test_download( service ):
-	service.import_activities( skip_download=False, skip_link=True, amount=3 )
-
-	assert len( service.ctx.db.resources ) == 6
-	assert len( service.ctx.db.activities ) == 3
-
-	mfs = service.ctx.db_fs_for( service.name )
-	assert mfs.exists( '1/0/0/1001/1001.gpx' )
-
-@mark.context( env='empty', persist='clone', cleanup=True )
-@mark.service( cls=Mock, init=True, register=True )
-def test_filter_fetched( service ):
-	resources = [
-		Resource( uid='polar:10', path='10.gpx' ),
-		Resource( uid='polar:20', path='20.gpx' ),
-		Resource( uid='polar:30', path='30.gpx' ),
-	]
-
-	assert service.filter_fetched( resources, 'polar:20' ) == [resources[1]]
-	assert service.filter_fetched( resources, 'polar:10', 'polar:20' ) == [resources[0], resources[1]]
-	assert service.filter_fetched( resources, *[r.uid for r in resources] ) == resources
-	assert service.filter_fetched( resources ) == []

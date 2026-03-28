@@ -5,6 +5,7 @@ from importlib.resources import path
 from json import load as load_json
 from logging import getLogger
 from pathlib import Path
+from os.path import abspath, dirname
 from re import compile, fullmatch, split
 from shutil import copy, copytree, rmtree
 from typing import Dict, List, Optional, Tuple
@@ -28,6 +29,12 @@ VAR = 'var'
 VAR_RUN = 'var/run'
 
 TABLE_LINE = compile( r'^\|([\s\w_]+\|)+$' )
+
+def test_pkg_path():
+	import test
+	return abspath( dirname( test.__file__ ) )
+
+TEST_PKG_PATH = test_pkg_path()
 
 @define( eq=False, repr=False )
 class StringLines:
@@ -311,14 +318,15 @@ def cleanup( run_path: Path = None ) -> None:
 	if run_path and run_path.parent.name == 'run' and run_path.parent.parent.name == 'var': # sanity check: only remove when in test/var/run
 		rmtree( run_path, ignore_errors=True )
 
+# note: return true means skip == true
 def skiplive_condition() -> bool:
 	from os import getenv
 	if getenv( 'TRACS_SKIP_LIVE_TEST' ):
 		return True
-	if not ( get_var_path( 'config_live.yaml' ).exists() and get_var_path( 'state_live.yaml' ).exists() ):
-		return True
+	if Path( f'{TEST_PKG_PATH}/environments/live/config.yaml' ).exists():
+		return False
 
-	return False
+	return True
 
 skip_live = mark.skipif( skiplive_condition(), reason="live test not enabled as configuration is missing" )
 

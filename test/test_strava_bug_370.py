@@ -6,11 +6,12 @@ from stravalib.client import Client
 from stravalib.model import DetailedActivity
 
 from test.conftest import service
+from test.helpers import skip_live
 from tracs.plugins.strava import Strava
-
 
 # test case with development account
 
+@skip_live
 @mark.context( env='live', persist='clone', cleanup=False )
 @mark.service( cls=Strava, init=True, register=True )
 def test_activity( service ):

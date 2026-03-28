@@ -38,7 +38,7 @@ def test_init_from_raw( path ):
 	assert sa.heartrate_max == 171
 	assert sa.location_country == 'Germany'
 
-#@skip_live
+@skip_live
 @mark.context( env='live', cleanup=False )
 @mark.service( cls=Strava, init=True, register=True )
 def test_import( service ):

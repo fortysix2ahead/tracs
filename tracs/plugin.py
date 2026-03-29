@@ -2,13 +2,36 @@ from logging import getLogger
 from typing import Any, Tuple
 
 from dynaconf.utils.boxing import DynaBox
-from fs import open_fs
 
 from tracs.constants import CFG_CTX
 from tracs.protocols import ApplicationContext
 from tracs.db import ActivityDb
 
 log = getLogger( __name__ )
+
+class ConfigProxy:
+
+	def __init__( self, box: DynaBox ) -> None:
+		super().__setattr__( '__box__', box )
+
+	def __contains__( self, key ):
+		return key in self.__box__
+
+	def __getattr__( self, key ) -> Any:
+		return self.__box__.get( key, None )
+
+	def __setattr__( self, key, value ) -> None:
+		self.__box__[key] = value
+
+	def __delattr__( self, key ):
+		if key in self.__box__:
+			del self.__box__[key]
+		else:
+			# raise AttributeError( f'No such key: {key}' )
+			pass # be silent
+
+	def __repr__( self ):
+		return self.__box__.__repr__()
 
 class Plugin:
 
@@ -35,6 +58,9 @@ class Plugin:
 
 		# enable by default
 		self._cfg.enabled = kwargs.get( 'enabled', True )
+
+		# wrapper around Dynabox to enable silent attribute access
+		self.cfg = ConfigProxy( self._cfg )
 
 	# helpers for setting/getting plugin configuration/state values
 

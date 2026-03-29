@@ -1,12 +1,14 @@
 
 from pathlib import Path
 
+from dynaconf.utils.boxing import DynaBox
 from fs import open_fs
 from fs.multifs import MultiFS
 from pytest import mark
 
 from test.mock import Mock
 from tracs.constants import CFG_DB_FS, CFG_FS, CFG_TMP_FS
+from tracs.plugin import ConfigProxy
 from tracs.resources import Resource
 from tracs.uid import uid
 
@@ -15,6 +17,23 @@ default_cfg = {
 	CFG_DB_FS: open_fs( 'mem://' ),
 	CFG_TMP_FS: open_fs( 'mem://' ),
 }
+
+@mark.unit
+def test_config_proxy():
+	box = DynaBox()
+	box.key_one = 1
+	proxy = ConfigProxy( box )
+	proxy.key_two = 2
+	assert proxy.key_one == 1
+	assert proxy.key_two == 2
+	assert proxy.key_three is None
+
+	assert 'key_one' in proxy and 'key_two' in proxy
+	assert 'key_three' not in proxy
+
+	del proxy.key_two
+	del proxy.key_three
+	assert 'key_two' not in proxy and 'key_three' not in proxy
 
 @mark.unit
 def test_constructor( ctx ):

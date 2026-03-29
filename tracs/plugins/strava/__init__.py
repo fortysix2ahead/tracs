@@ -232,12 +232,12 @@ class Strava( Service ):
 		if raw.get( 'photos' ).get( 'count' ) > 0:
 			for photo, index in zip( self._client.get_activity_photos( raw.get( 'id' ), size=PHOTO_SIZE ), range( 1, 100 ) ):
 				photo_url = photo.urls.get( str( PHOTO_SIZE ) )
-				if (response := rqget( photo_url )) and response.status_code == 200:
+				if photo_url and (response := rqget( photo_url )) and response.status_code == 200:
 					photos.append(
 						Resource(
 							content=response.content,
-							name=f'{raw.get( "id" )}{index}.jpg',
-							path=self.db_path_for( raw.get( 'id' ), f'{raw.get( "id" )}{index}.jpg' ),
+							name=f'{raw.get( "id" )}.{index}.jpg',
+							path=self.db_path_for( raw.get( 'id' ), f'{raw.get( "id" )}.{index}.jpg' ),
 							type=JPEG_TYPE,
 						)
 					)

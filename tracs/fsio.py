@@ -110,7 +110,7 @@ def write_activities( activities: Activities, fs: FS ) -> None:
 	_activities = Activities( *sorted( activities.iter_multiparts(), key=lambda a: a.id ), skip_checks=True )
 	fs.writebytes( MULTIPARTS_PATH, dumps( converter.unstructure( _activities ), option=ORJSON_OPTIONS ) )
 
-	log.debug( f'wrote {len( _activities )} activities to {GROUPS_PATH}' )
+	log.debug( f'wrote {len( _activities )} activities to {MULTIPARTS_PATH}' )
 
 # schema handling
 

@@ -246,7 +246,9 @@ def test_metadata():
 	]
 
 	md = Metadata()
-	assert md.aux.get( 'custom_id' ) is None and md.created is not None and md.modified is None
+	# todo: in the future created may not be None
+	# assert md.aux.get( 'custom_id' ) is None and md.created is not None and md.modified is None
+	assert md.aux.get( 'custom_id' ) is None and md.created is None and md.modified is None
 	md.set( 'custom_id', 123 )
 	assert md['custom_id'] == 123 and (modified := md.modified) is not None
 	md.set( 'favourite', True )

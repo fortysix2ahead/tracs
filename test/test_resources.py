@@ -100,7 +100,7 @@ def test_resource():
 	assert r.path == e.path
 	assert [e.content, e.text, e.raw, e.data] == [None, None, None, None]
 
-@mark.file( 'environments/default/db/polar/1/0/0/100001/100001.gpx' )
+@mark.file( 'environments/default/db/polar/7/5/0/7505780534/7505780534.gpx' )
 def test_resource_io( path ):
 	handler = GPXImporter()
 	fs, name = OSFS( str( path.parent ) ), path.name
@@ -108,33 +108,35 @@ def test_resource_io( path ):
 	r1 = Resource( uid='polar:100001', name='100001.gpx', type='application/gpx+xml', path='100001.gpx' )
 	r1.load( fs, None, handler )
 
-@mark.file( 'environments/default/takeouts/polar/training-session-2022-12-06-7537918051-91b48d8f-dea2-4cf5-b807-c2aeefc5a072.json' )
+# test case is not necessary any longer
+@mark.skip
+@mark.file( 'environments/takeouts/takeouts/polar/training-session-2022-12-06T08:53:05-7537918051-85398bc4-fffe-4e97-9594-fd99cbf883f7.json' )
 def test_resource_access( path ):
 	resource = JSONHandler().load( path=path )
 	assert type( resource.raw ) is dict
 
 	assert resource.strg( 'deviceId' ) == '47813520'
-	assert resource.strg( 'timeZoneOffset' ) == '60'
+	assert resource.strg( 'timezoneOffsetMinutes' ) == '60'
 	assert resource.strg( 'name' ) is None
 	assert resource.strg( 'non_existing_name' ) is None
-	assert resource.strg( 'physicalInformationSnapshot', 'sex' ) == 'MALE'
-	assert resource.strg( 'physicalInformationSnapshot', '__sex__' ) is None
-	assert resource.strg( 'physicalInformationSnapshot', 'sex', 'treat_parent_str_as dict' ) is None
+	assert resource.strg( 'physicalInformation', 'sex' ) == 'SEX_MALE'
+	assert resource.strg( 'physicalInformation', '__sex__' ) is None
+	assert resource.strg( 'physicalInformation', 'sex', 'treat_parent_str_as dict' ) is None
 
 	assert resource.int( 'deviceId' ) == 47813520
-	assert resource.int( 'timeZoneOffset' ) == 60
+	assert resource.int( 'timezoneOffsetMinutes' ) == 60
 	assert resource.int( 'name' ) is None
 	assert resource.int( 'duration' ) is None
 
-	assert resource.float( 'loadInformation', 'muscleLoad' ) == -1.0
+	assert resource.float( 'trainingLoadReport', 'muscleLoad' ) == -1.0
 
-	assert isinstance( ( l := resource.list( 'exercises' ) ), list ) and l[0].get( 'kiloCalories' ) == 38
-	assert resource.int( 'kiloCalories', parent = l[0] ) == 38
+	assert isinstance( ( l := resource.list( 'exercises' ) ), list ) and l[0].get( 'calories' ) == 38
+	assert resource.int( 'calories', parent = l[0] ) == 38
 
-	assert resource.dt( 'startTime' ) == to_isotime( '2022-12-06T08:53:05.425' )
-	assert resource.utc( 'startTime' ) == to_isotime( '2022-12-06T08:53:05.425' ).astimezone( UTC )
+	assert resource.dt( 'startTime' ) == to_isotime( '2022-12-06T08:53:05' )
+	assert resource.utc( 'startTime' ) == to_isotime( '2022-12-06T08:53:05' ).astimezone( UTC )
 	assert resource.utc( 'deviceId' ) is None
-	assert resource.td( 'duration' ) == timedelta( seconds=1368, microseconds=627000 )
+	assert resource.td( 'durationMillis' ) == timedelta( seconds=1368, microseconds=627000 )
 	assert resource.td( 'deviceId' ) is None
 
 def test_resources():

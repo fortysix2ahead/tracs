@@ -17,6 +17,7 @@ from isodate import parse_duration
 from more_itertools import unique
 from more_itertools.more import first, last, rstrip
 from more_itertools.recipes import first_true
+from typing_extensions import deprecated
 
 from tracs.protocols import Exporter, Importer
 from tracs.uid import UID
@@ -159,6 +160,10 @@ class Resource:
 		return self.uid.classifier
 
 	@property
+	def id( self ) -> int:
+		return self.local_id
+
+	@property
 	def local_id( self ) -> int:
 		return self.uid.local_id
 
@@ -191,6 +196,7 @@ class Resource:
 
 	# helper for convenient data access (only when raw field contains a dict)
 
+	@deprecated( 'should be moved away from Resource' )
 	def _value( self, *args, parent: Dict = None, conv: Callable, default: Any = None ) -> Any:
 		try:
 			parent, item = parent or self.raw, last( args )
@@ -200,26 +206,32 @@ class Resource:
 		except (KeyError, TypeError, ValueError):
 			return default
 
+	@deprecated( 'should be moved away from Resource' )
 	def float( self, *args, parent: Dict = None, default=None ) -> Optional[float]:
 		return self._value( *args, parent=parent, conv=float, default=default )
 
+	@deprecated( 'should be moved away from Resource' )
 	def list( self, *args, parent: Dict = None, default=None ) -> Optional[List]:
 		return self._value( *args, parent=parent, conv=list, default=default )
 
+	@deprecated( 'should be moved away from Resource' )
 	def int( self, *args, parent: Dict = None, default=None ) -> Optional[int]:
 		return self._value( *args, parent=parent, conv=int, default=default )
 
-	# can't name this method str() because of cattrs weirdness ...
+	@deprecated( 'should be moved away from Resource' )
 	def strg( self, *args, parent: Dict = None, default=None ) -> Optional[str]:
 		return self._value( *args, parent=parent, conv=str, default=default )
 
+	@deprecated( 'should be moved away from Resource' )
 	def dt( self, *args, parent: Dict = None, default=None ) -> Optional[datetime]:
 		return self._value( *args, parent=parent, conv=to_isotime, default=default )
 
+	@deprecated( 'should be moved away from Resource' )
 	def utc( self, *args, parent: Dict = None, default=None ) -> Optional[datetime]:
 		utc: datetime = self._value( *args, parent=parent, conv=to_isotime, default=default )
 		return utc.astimezone( UTC ) if utc else default
 
+	@deprecated( 'should be moved away from Resource' )
 	def td( self, *args, parent: Dict = None, default=None ) -> Optional[datetime]:
 		return self._value( *args, parent=parent, conv=parse_duration, default=default )
 
@@ -281,7 +293,7 @@ class Resources( UserList[Resource] ):
 		:param uid:
 		:return:
 		"""
-		uid = uid if isinstance( uid, UID ) else UID( uid )
+		uid = uid if isinstance( uid, UID ) else UID.of( uid )
 		return Resources( *[r for r in self.data if r.uid.head == uid.head] )
 		# return [ r for r in self if r.uid.head == uid.head ]
 
@@ -292,7 +304,7 @@ class Resources( UserList[Resource] ):
 		return [UID( r.uid.classifier, r.uid.local_id, basename( r.path ) or basename( r.uid.path ) ) for r in self.data]
 
 	def iter_uids_for( self, uid: UID|str ) -> List[UID]:
-		uid = uid if isinstance( uid, UID ) else UID( uid )
+		uid = uid if isinstance( uid, UID ) else UID.of( uid )
 		return [ u for u in self.iter_uids() if u.head == uid.head ]
 
 	def iter_uid_heads( self ) -> List[UID]:

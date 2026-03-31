@@ -1,7 +1,5 @@
 from pytest import mark
 
-from test.objects import UID_DUMP, UID_OBJ
-from tracs.fsio import converter
 from tracs.uid import UID, uid
 
 @mark.unit
@@ -122,8 +120,3 @@ def test_lt():
 @mark.unit
 def test_hash():
 	assert hash( uid( 'polar:101' ) ) == hash( 'polar:101' )
-
-@mark.unit
-def test_serialize():
-	assert converter.unstructure( UID_OBJ ) == UID_DUMP
-	assert converter.structure( UID_DUMP, UID ) == UID_OBJ

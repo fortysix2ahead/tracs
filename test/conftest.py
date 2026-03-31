@@ -150,7 +150,8 @@ def fs( request, fs_v3: FS ) -> FS:
 
 @fixture
 def dbfs( request, fs: FS ) -> FS:
-	return SubFS( fs, '/db' )
+	fs.makedirs( DB_DIRNAME, recreate=True )
+	return SubFS( fs, DB_DIRNAME )
 
 @fixture
 def db_path( request, fs: FS ) -> Path:

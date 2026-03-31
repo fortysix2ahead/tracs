@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from dateutil.tz import tzlocal, tzoffset, UTC
+from dateutil.tz import tzoffset, UTC
 
-from tracs.activity import Activity, Activities, MultipartActivity
+from tracs.activity import Activities, Activity, MultipartActivity
 from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata
 from tracs.plugins.gpx import GPX_TYPE
@@ -107,22 +107,14 @@ RESOURCES_OBJ_DUMP  = \
 # activity
 
 ACTIVITY_OBJ = Activity(
-	id=1,
-	uid=UID.of( 'polar:1234' ),
-	starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
 	duration=timedelta( hours=2 ),
-	type=ActivityTypes.walk,
+	id=1,
 	location_country='de',
 	metadata=Metadata(
 		created=datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
 		modified=datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
 		favourite=True,
-		members=[ UID.of( 'polar:101' ), UID.of( 'strava:101' ) ],
 	),
-#	parts=[
-#		ActivityPart( uid=UID.of( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
-#		ActivityPart( uid=UID.of( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
-#	],
 	resources=Resources(
 		Resource(
 			name='recording.gpx',
@@ -131,7 +123,10 @@ ACTIVITY_OBJ = Activity(
 			source='https://polar.com/1234/1234.gpx',
 			uid='polar:1234',
 		)
-	)
+	),
+	starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
+	type=ActivityTypes.walk,
+	uid=UID.of( 'polar:1234' ),
 )
 
 ACTIVITY_OBJ_DUMP = \
@@ -142,22 +137,8 @@ ACTIVITY_OBJ_DUMP = \
   "metadata": {
     "created": "2024-01-04T10:00:00+00:00",
     "favourite": true,
-    "members": [
-      "polar:101",
-      "strava:101"
-    ],
     "modified": "2024-01-04T11:00:00+00:00"
   },
-  "parts": [
-    {
-      "gap": "00:20:00",
-      "uid": "polar:222#1"
-    },
-    {
-      "gap": "00:20:00",
-      "uid": "polar:222#2"
-    }
-  ],
   "resources": [
     {
       "name": "recording.gpx",
@@ -168,7 +149,7 @@ ACTIVITY_OBJ_DUMP = \
     }
   ],
   "starttime": "2024-01-03T10:00:00+00:00",
-  "type": "Walking",
+  "type": "walk",
   "uid": "polar:1234"
 }
 '''
@@ -231,12 +212,7 @@ ACTIVITIES_OBJ = Activities(
 			created=datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
 			modified=datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
 			favourite=True,
-			members=[UID.of( 'polar:101' ), UID.of( 'strava:101' )],
 		),
-#		parts=[
-#			ActivityPart( uid=UID.of( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
-#			ActivityPart( uid=UID.of( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
-#		],
 		resources=Resources(
 			Resource(
 				name='recording.gpx',

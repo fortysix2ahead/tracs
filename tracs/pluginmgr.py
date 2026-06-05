@@ -23,6 +23,9 @@ from tracs.service import Service, ServiceManager
 log = getLogger( __name__ )
 
 DECORATOR_TYPE = compile( r'^_[a-z]+$' )
+FACTORY_PLUGINS = [
+	'json', 'xml', 'gpx', 'tcx', 'keywords', 'normalizers', 'image', 'fields', 'csv', 'bikecitizens', 'local', 'polar', 'strava', 'waze'
+]
 
 @define
 class Decorator:
@@ -185,6 +188,7 @@ class PluginManager:
 	_service_mgr: ServiceManager = field( factory=ServiceManager, alias='_service_mgr' )
 
 	_plugin_paths: List[str] = field( factory=list, alias='_plugin_paths' )
+	_plugin_modules: List[str] = field( factory=list, alias='_plugin_modules' )
 
 	@classmethod
 	def inst( cls ) -> PluginManager:
@@ -192,8 +196,17 @@ class PluginManager:
 			PluginManager._instance = PluginManager()
 		return PluginManager._instance
 
-	def init( self, plugin_paths: Optional[List[str]], reinit: bool = False ) -> PluginManager:
-		self._plugin_paths = plugin_paths or []
+	def _load_modules( self, mods: List[str] ):
+		for m in mods:
+			try:
+				log.debug( f'attempting to load plugin module tracs.plugins.{m} ...' )
+				self._modules[m] = import_module( f'tracs.plugins.{m}' )
+			except ImportError:
+				log.error( f'failed to import module tracs.plugins.{m}', exc_info=True )
+
+	def init( self, paths: List[str], modules: List[str], reinit: bool = False ) -> PluginManager:
+		self._plugin_paths = paths
+		self._plugin_modules = modules
 
 		# this is just for debug/dev purposes
 		if reinit:
@@ -204,19 +217,25 @@ class PluginManager:
 		# noinspection PyUnresolvedReferences
 		import tracs.plugins
 
+		# load factory plugins
+		self._load_modules( FACTORY_PLUGINS )
+
 		# extend plugin path and load additional, non-optional plugins
-		for pp in plugin_paths or []:
-			plugin_path = OSFS( root_path=pp, expand_vars=True ).getsyspath( PLUGIN_PATH )
+		for p in self._plugin_paths or []:
+			plugin_path = OSFS( root_path=p, expand_vars=True ).getsyspath( PLUGIN_PATH )
 			tracs.plugins.__path__ = extend_path( [plugin_path], PLUGINS_PKG )
 			log.debug( f'adding {plugin_path} to list of plugin search paths' )
 
-		# load plugin modules
-		for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
-			try:
-				self._modules[name] = import_module( f'tracs.plugins.{name}' )
-			except ImportError:
-				log.error( f'failed to import module tracs.plugins.{name}', exc_info=True )
-				continue
+		autoload = False # autoload plugin modules, disabled for now
+		if autoload:
+			for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
+				try:
+					self._modules[name] = import_module( f'tracs.plugins.{name}' )
+				except ImportError:
+					log.error( f'failed to import module tracs.plugins.{name}', exc_info=True )
+					continue
+		else:
+			self._load_modules( self._plugin_modules )
 
 		return self # for convenience
 

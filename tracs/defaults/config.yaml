@@ -8,8 +8,6 @@ library: # absolute path to the activity library
 pretend: false # pretend mode, simulates all commands, but does not persist changes
 verbose: false # verbose mode, displays more log information
 
-pluginpath: # list of additional plugin paths, separated by whitespace
-
 # database configuration
 
 db:
@@ -49,6 +47,10 @@ import:
 
 gpx:
   parser: gpxpy # allowed values: internal, gpxpy, currently ignored
+
+plugins:
+  paths: # list of additional plugin paths, either separated by whitespace or as list
+  modules: # list of additional plugin modules to load, either separated by whitespace or as list
 
 services:
   local: {}

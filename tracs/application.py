@@ -62,7 +62,16 @@ class Application:
 		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
 
 		# init plugin manager
-		self._ctx.plugin_mgr = PluginManager.inst().init( (self._ctx.config.pluginpath or '').split( ' ' ) )
+		if self._ctx.config.plugins.paths:
+			plugin_paths = self._ctx.config.plugins.paths.split() if isinstance( self._ctx.config.plugins.paths, str ) else self._ctx.config.plugins.paths
+		else:
+			plugin_paths = []
+		if self._ctx.config.plugins.modules:
+			modules = self._ctx.config.plugins.modules.split() if isinstance( self._ctx.config.plugins.modules, str ) else self._ctx.config.plugins.modules
+		else:
+			modules = []
+
+		self._ctx.plugin_mgr = PluginManager.inst().init( paths=plugin_paths, modules=modules )
 		self._ctx.service_mgr = self._ctx.plugin_mgr.service_mgr
 
 		# init registry

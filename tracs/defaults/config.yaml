@@ -53,4 +53,5 @@ plugins:
   modules: # list of additional plugin modules to load, either separated by whitespace or as list
 
 services:
-  local: {}
+  local:
+    type: local

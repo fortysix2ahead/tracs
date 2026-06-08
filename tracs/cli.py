@@ -23,7 +23,7 @@ from tracs.link import link_activities
 from tracs.list import list_activities, show_config, show_fields, show_filters
 from tracs.setup import setup as setup_application
 from tracs.show import show_activities, show_aggregate, show_equipments, show_keywords, show_resources, show_tags, show_types
-from tracs.ui import CONSOLE as console
+from tracs.ui import CONSOLE as console, print as prt
 from tracs.validate import validate_activities
 
 log = getLogger( __name__ )
@@ -385,10 +385,7 @@ def types( ctx, used_only: bool = False ):
 @cli.command( help='Displays the version number and exits.' )
 @pass_obj
 def version( ctx: ApplicationContext ):
-	if ctx.config.json:
-		console.print_json( data={ 'version': __version__ } )
-	else:
-		console.print( __version__ )
+	prt( __version__, { 'version': __version__ }, ctx.config.json )
 
 @cli.group( cls=ExtensionGroup, help="extension point for externally provided extra commands, no intended to be called directly" )
 @pass_obj

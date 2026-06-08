@@ -1,10 +1,10 @@
-
+from json import dumps
 from platform import system
 from sys import exit as sysexit
 from typing import Any, Dict, List, Optional, TextIO, Tuple
 
 from rich.console import Console
-from rich.pretty import Pretty
+from rich.pretty import pprint as pretty_print, Pretty
 from rich.prompt import Confirm, DefaultType, Prompt, PromptType
 from rich.table import Table
 from rich.text import Text, TextType
@@ -12,6 +12,26 @@ from rich.text import Text, TextType
 from tracs.utils import colored_diff, colored_diff_2, fmt
 
 CONSOLE = Console( tab_size=2 )
+c: Console = CONSOLE # one char shortcut to Console for easy import
+
+# utility methods
+
+# noinspection PyShadowingBuiltins
+def print( obj: Any, json: Optional[Dict] = None, as_json: bool = False ) -> None:
+	if as_json:
+		print_json( json if json else obj )
+	else:
+		CONSOLE.print( obj )
+
+def print_json( json: Dict|str ) -> None:
+	if isinstance( json, Dict ):
+		json = dumps( json )
+	CONSOLE.print_json( json )
+
+def pprint( obj: Any ) -> None:
+	pretty_print( obj, console=CONSOLE )
+
+#
 
 def dict_table( d: Dict, header: Tuple[str, str] = None, sort_entries: bool = False ) -> Table:
 	table = Table( box=None, show_header=True, show_footer=False )

@@ -5,7 +5,8 @@ from attrs import define, field, fields
 from babel.numbers import format_decimal
 from pytest import mark, raises
 
-from tracs.core import DerivedField, FieldFormatter, FieldFormatters, Metadata, VirtualField, VirtualFields
+from core import is_exposed
+from tracs.core import augment, derived_field_names, derived_fields_of, DerivedField, field_names, FieldFormatter, FieldFormatters, is_derived, is_internal, Metadata, VirtualField, VirtualFields
 from tracs.uid import UID, uid
 
 @mark.unit
@@ -16,7 +17,15 @@ def test_derived_field():
 	def to_lower( self: Any ) -> str:
 		return self.name.lower()
 
-	df = DerivedField( name='lower_name', type=str, fn=to_lower, expose=True )
+	def to_cap( self: Any ) -> str:
+		return self.name.capitalize()
+
+	def to_upper( self: Any ) -> str:
+		return self.name.upper()
+
+	df1 = DerivedField( name='lower_name', type=str, fn=to_lower )
+	df2 = DerivedField( name='cap_name', type=str, fn=to_cap, expose=False )
+	df3 = DerivedField( name='_upper_name', type=str, fn=to_upper )
 
 	# test class enriched with derived fields
 	@define
@@ -24,7 +33,9 @@ def test_derived_field():
 
 		name: str = field( default='Name' )
 
-	DerivedField.augment( ClassWithDerivedFields, df )
+	augment( ClassWithDerivedFields, df1 )
+	augment( ClassWithDerivedFields, df2 )
+	augment( ClassWithDerivedFields, df3 )
 
 	# test
 
@@ -32,9 +43,27 @@ def test_derived_field():
 	assert inst.name == 'Name'
 	assert inst.lower_name == 'name'
 
-	flds = fields( ClassWithDerivedFields )
-	names = [f.name for f in flds]
-	assert 'lower_name' in names
+	# fail to overwrite existing fields
+	df = DerivedField( name='name', type=str, fn=to_lower, expose=True )
+	with raises( AttributeError ):
+		augment( ClassWithDerivedFields, df )
+
+	# helper functions
+
+	assert sorted( field_names( inst ) ) == ['lower_name', 'name']
+	assert sorted( field_names( inst, True ) ) == ['_upper_name', 'lower_name', 'name']
+	assert sorted( field_names( inst, True, True ) ) == ['_upper_name', 'cap_name', 'lower_name', 'name']
+	assert sorted( field_names( inst, False, True ) ) == ['cap_name', 'lower_name', 'name']
+
+	assert sorted( derived_field_names( inst ) ) == ['lower_name']
+	assert sorted( derived_field_names( inst, True ) ) == ['_upper_name', 'lower_name']
+
+	assert is_derived( inst, 'lower_name' )
+	assert not is_derived( inst, 'name' )
+	assert is_internal( inst, '_upper_name' )
+	assert not is_internal( inst, 'name' )
+	assert is_exposed( inst, '_upper_name' )
+	assert not is_exposed( inst, 'name' )
 
 @mark.unit
 def test_virtual_field():

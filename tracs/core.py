@@ -13,6 +13,7 @@ from attr import AttrsInstance
 from attrs import Attribute, define, field, fields
 from cattrs import Converter, GenConverter
 from dateutil.tz import UTC
+from setuptools.unicode_utils import try_encode
 
 from tracs.uid import UID
 from tracs.utils import fromisoformat, toisoformat
@@ -308,10 +309,12 @@ class FieldFormatter:
 
 	formatter: Callable = field( default=None )
 
-	def __call__( self, value: Any, format: str = None, locale: str = None ) -> Any:
+	# noinspection PyShadowingBuiltins
+	def __call__( self, value: Any, format: Optional[str] = None, locale: Optional[str] = None ) -> Any:
 		return self.__format__( value, format, locale )
 
-	def __format__( self, value: Any, format: str = None, locale: str = None ) -> Any:
+	# noinspection PyShadowingBuiltins
+	def __format__( self, value: Any, format: Optional[str] = None, locale: Optional[str] = None ) -> Any:
 		return self.formatter( value, format or self.format, locale or self.locale )
 
 class FieldFormatters( UserDict[str, FieldFormatter] ):
@@ -334,23 +337,34 @@ class FieldFormatters( UserDict[str, FieldFormatter] ):
 	def set( self, key: str, field: FieldFormatter ) -> None:
 		self.data[key] = field
 
-	def format( self, name: str, fmt: str = None, locale: str = None, suppress_errors: bool = False ) -> str:
+	def format( self, value: Any, name: Optional[str] = None,
+	            fmt: Optional[str] = None, locale: Optional[str] = None,
+	            suppress_errors: bool = False ) -> str:
 		if not (formatter := self.get( name )):
 			formatter = self.__class__.__default_formatter__
 
-		if suppress_errors:
-			try:
-				return formatter( getattr( self.__proxy__, name ), fmt, locale )
-			except Exception:
+		try:
+			return formatter( value, fmt, locale )
+		except Exception as e:
+			if suppress_errors:
 				return ''
-		else:
-			return formatter( getattr( self.__proxy__, name ), fmt, locale )
+			else:
+				raise e
 
-	def format_as_list( self, *fields, fmt: str = None, locale: str = None, conv: Callable = None, suppress_errors: bool = False ) -> List[str]:
-		if conv:
-			return [conv( getattr( self.__proxy__, f ) ) for f in fields]
-		else:
-			return [self.format( f, fmt, locale, suppress_errors ) for f in fields]
+	def format_attr( self, obj: Any, name: str,
+	            fmt: Optional[str] = None, locale: Optional[str] = None,
+	            suppress_errors: bool = False ) -> str:
+		try:
+			return self.format( getattr( obj, name ), name, fmt, locale, suppress_errors )
+		except AttributeError as e:
+			if suppress_errors:
+				return ''
+			else:
+				raise e
+
+	def format_fields( self, obj: Any, *fields, fmt: Optional[str] = None,
+	                   locale: Optional[str] = None, suppress_errors: bool = False ) -> Tuple[str, ...]:
+		return tuple( [self.format_attr( obj, f, fmt, locale, suppress_errors=suppress_errors ) for f in fields] )
 
 @define
 class Keyword:

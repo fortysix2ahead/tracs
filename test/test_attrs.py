@@ -1,4 +1,5 @@
-from typing import Any
+from datetime import datetime
+from typing import Any, Callable
 
 from attrs import define, field, fields
 from pytest import mark
@@ -51,3 +52,26 @@ def test_attrs_metafield():
 	c = ClassTwo()
 	assert c.m == 20
 	assert 'm' in [f.name for f in fields( ClassTwo )]
+
+@define
+class BaseActivity:
+
+	dt: datetime = field( default=datetime.now() )
+
+def fn_year( obj: BaseActivity ) -> int:
+	return obj.dt.year
+
+def add_computed_property( cls, name: str, fn: Callable ) -> type:
+	prop = property( fn_year )
+
+	setattr( cls, name, prop )
+	return cls
+
+def test_base_activity():
+	c = BaseActivity()
+	print( c.dt )
+
+	bax = add_computed_property( BaseActivity, 'year', fn_year )
+	c2 = bax()
+	print( c2.dt )
+	print( c2.year )

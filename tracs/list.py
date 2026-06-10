@@ -1,7 +1,7 @@
 
 from logging import getLogger
 from re import split
-from typing import List
+from typing import List, Optional
 
 from dynaconf import inspect_settings
 from dynaconf.vendor.box.exceptions import BoxKeyError
@@ -18,34 +18,42 @@ from tracs.utils import red
 
 log = getLogger( __name__ )
 
+DEFAULT_SORT_FIELD = 'starttime'
+DEFAULT_LIST_FORMAT = 'default'
+
 # noinspection PyTestUnpassedFixture
-def list_activities( activities: List[Activity], sort: str = None, reverse: bool = False, format_name: str = False, fields: str = None, ctx: ApplicationContext = None ) -> None:
-	sort = sort or 'starttime'
+def list_activities( activities: List[Activity], sort: Optional[str] = None,
+                     reverse: bool = False, format_name: Optional[str] = None,
+                     fields: Optional[str] = None, ctx: Optional[ApplicationContext] = None ) -> None:
+
+	sort = sort or DEFAULT_SORT_FIELD
 	fields = fields or []
 
 	try:
 		activities = sorted( activities, key=lambda act: ( ( att := getattr( act, sort, None ) ) is None, att ) )
 	except (AttributeError, TypeError):
-		log.warning( f'unable to sort for field "{sort}", falling back to "starttime"' )
-		activities = sorted( activities, key=lambda act: getattr( act, "starttime" ) )
+		log.warning( f'unable to sort for field "{sort}", falling back to "{DEFAULT_SORT_FIELD}"' )
+		activities = sorted( activities, key=lambda act: getattr( act, DEFAULT_SORT_FIELD ) )
 
 	if reverse:
 		activities.reverse()
 
 	if fields:
 		list_fields = fields.split()
+
 	elif format_name:
 		try:
 			list_fields = ctx.config.formats.list[format_name].split()
 		except BoxKeyError:
-			list_fields = ctx.config.formats.list['default'].split()
+			list_fields = ctx.config.formats.list[DEFAULT_LIST_FORMAT].split()
+
 	else:
-		list_fields = ctx.config.formats.list['default'].split()
+		list_fields = ctx.config.formats.list[DEFAULT_LIST_FORMAT].split()
 
 	table = create_table(
 		box_name=ctx.config.formats.table.box,
 		headers=[ f for f in list_fields ],
-		rows=[ a.format_as_list( *list_fields, suppress_errors=True ) for a in activities ],
+		rows=[ list( a.format( *list_fields ) ) for a in activities ],
 	)
 
 	if len( table.rows ) > 0:

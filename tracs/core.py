@@ -3,11 +3,13 @@ from __future__ import annotations
 from collections import UserDict
 from datetime import datetime
 from functools import cached_property
+from itertools import compress, filterfalse
 from logging import getLogger
 from sys import version_info
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mapping, Optional, Tuple, Type, TypeVar, Union
 
+from attr import AttrsInstance
 from attrs import Attribute, define, field, fields, NOTHING
 from attrs.setters import NO_OP
 from dateutil.tz import UTC
@@ -203,6 +205,8 @@ class Metadata:
 	def __items__( self ) -> Dict[str, str]:
 		return { f: getattr( self, f ) for f in self.__fields__ }
 
+# Derived field for extending Activity
+
 @define
 class DerivedField:
 
@@ -211,40 +215,68 @@ class DerivedField:
 	fn: Callable = field( default=None )
 	description: str = field( default=None )
 	display_name: str = field( default=None )
-	expose: bool = field( default=True ) # expose field as regular property
+	expose: bool = field( default=True )
 
-	# noinspection PyShadowingNames
-	@staticmethod
-	def augment( cls: Type, field: DerivedField ):
+# noinspection PyShadowingNames
+def augment( cls: Type, field: DerivedField ):
 #		if hasattr( cls, "__slots__" ):
 #			raise RuntimeError( 'slotted classes do not support runtime property injection' )
 
-		# augment provided class with property
-		setattr( cls, field.name, property( fget=field.fn ) )
+	if hasattr( cls, field.name ):
+		raise AttributeError( f'overwriting fields is not supported: field "{field.name}" already exists' )
 
-		# noinspection PyArgumentList
-		derived_attr = Attribute(
-			name=field.name,
-			default=NOTHING,
-			validator=None,
-			repr=False, # exclude from repr — it's derived
-			cmp=None,
-			eq=False, # exclude from eq
-			eq_key=None,
-			order=False,
-			order_key=None,
-			hash=False,
-			init=False, # exclude from in __init__
-			metadata={},
-			type=field.type,
-			converter=None,
-			kw_only=False,
-			inherited=False,
-			on_setattr=NO_OP,
-			alias=None,
-		)
+	# augment provided class with property
+	setattr( cls, field.name, property( fget=field.fn ) )
 
-		cls.__attrs_attrs__ = cls.__attrs_attrs__ + (derived_attr,)
+	# noinspection PyArgumentList
+	derived_attr = Attribute(
+		name=field.name,
+		default=NOTHING,
+		validator=None,
+		repr=False, # exclude from repr
+		cmp=None, # exclude from cmp
+		eq=False, # exclude from eq
+		eq_key=None,
+		order=False,
+		order_key=None,
+		hash=False,
+		init=False, # exclude from in __init__
+		metadata={ 'derived': True, 'exposed': field.expose },
+		type=field.type,
+		converter=None,
+		kw_only=False,
+		inherited=False,
+		on_setattr=NO_OP,
+		alias=field.name,
+	)
+
+	cls.__attrs_attrs__ = cls.__attrs_attrs__ + (derived_attr,)
+
+def fields_of( obj: Type[AttrsInstance]|AttrsInstance, include_internal: bool = False, include_unexposed: bool = False ) -> List[Attribute]:
+	_fields = fields( obj )
+	_fields = list( filter( lambda f: include_internal and f.name.startswith( '_' ) or not f.name.startswith( '_' ), _fields ) )
+	_fields = list( filter( lambda f: include_unexposed and f.metadata.get( 'exposed' ) is False or f.metadata.get( 'exposed', True ) is True, _fields ) )
+	return _fields
+
+def derived_fields_of( obj: Type[AttrsInstance]|AttrsInstance, include_internal: bool = False ) -> List[Attribute]:
+	return [ f for f in fields_of( obj, include_internal ) if f.metadata.get( 'derived' ) is True ]
+
+def field_names( obj: Type[AttrsInstance]|AttrsInstance, include_internal: bool = False, include_unexposed: bool = False ) -> List[str]:
+	return [f.name for f in fields_of( obj, include_internal, include_unexposed )]
+
+def derived_field_names( obj: Type[AttrsInstance]|AttrsInstance, include_internal: bool = False, include_unexposed: bool = False ) -> List[str]:
+	return [f.name for f in derived_fields_of( obj, include_internal )]
+
+def is_derived( obj: Type[AttrsInstance]|AttrsInstance, field: str ) -> bool:
+	return any( f for f in fields( obj ) if f.name == field and f.metadata.get( 'derived' ) is True )
+
+def is_exposed( obj: Type[AttrsInstance]|AttrsInstance, field: str ) -> bool:
+	return any( f for f in fields( obj ) if f.name == field and f.metadata.get( 'exposed' ) is True )
+
+def is_internal( obj: Type[AttrsInstance]|AttrsInstance, field: str ) -> bool:
+	return any( f for f in fields( obj ) if f.name == field and f.name.startswith( '_' ) )
+
+#
 
 @define
 class VirtualField:

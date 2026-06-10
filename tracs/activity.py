@@ -7,7 +7,7 @@ from inspect import isfunction
 from itertools import chain, pairwise
 from logging import getLogger
 from types import MappingProxyType
-from typing import Any, Callable, ClassVar, Dict, List, Literal, Mapping, Optional, TypeVar, Union
+from typing import Any, Callable, ClassVar, Dict, List, Literal, Mapping, Optional, Tuple, TypeVar, Union
 
 from attrs import fields
 from attrs import define, evolve, Factory, field
@@ -126,6 +126,9 @@ class Activity:
 
 	def of( self, id: int = 0, uid: str = 'activity:0', name: str = 'Activity 0' ):
 		pass
+
+	def format( self, *fields: Tuple[str, ...] ) -> Tuple[str, ...]:
+		return self.__class__.__fmf__.format_fields( self,*fields, suppress_errors=True )
 
 	@property
 	def classifier( self ) -> str:

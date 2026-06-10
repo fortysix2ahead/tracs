@@ -177,27 +177,26 @@ def test_formatted_fields():
 			return self.__proxy__
 
 	FormattedDataclass.__fmf__.add_all(
-		FieldFormatter( name='lower', formatter=lambda s: s.lower() ),
-		FieldFormatter( name='upper', formatter=lambda s: s.upper() ),
+		FieldFormatter( name='lower', formatter=lambda v, f, l: v.lower() ),
+		FieldFormatter( name='upper', formatter=lambda v, f, l: v.upper() ),
 		FieldFormatter( name='speed', formatter=lambda v, f, l: format_decimal( v, f, l ), locale='en' ),
 	)
 
 	fdc = FormattedDataclass()
 
-	assert fdc.fmf().format( 'name' ) == 'Name'
-	assert fdc.fmf().format( 'age' ) == '10' # this uses the default formatter
-	assert fdc.fmf().format( 'speed' ) == '12,345.6'
+	assert fdc.fmf().format( 'Name', 'lower' ) == 'name'
+	assert fdc.fmf().format( 10 ) == '10' # this uses the default formatter
+	assert fdc.fmf().format( 12345.6, 'speed' ) == '12,345.6'
 
+	assert fdc.fmf().format_attr( fdc, 'noexist', suppress_errors=True ) == ''
 	with raises( AttributeError ):
-		assert fdc.fmf().format( 'noexist' ) == ''
-	assert fdc.fmf().format( 'noexist', suppress_errors=True ) == ''
+		assert fdc.fmf().format_attr( fdc, 'noexist' ) == ''
 
-	assert fdc.fmf().format_as_list( 'name', 'age', 'speed', 'width' ) == [ 'Name', '10', '12,345.6', 'None' ]
+	assert fdc.fmf().format_fields( fdc, 'name', 'age', 'speed', 'width' ) == ('Name', '10', '12,345.6', 'None')
 
+	assert fdc.fmf().format_fields( fdc, 'name', 'age', 'speed', 'height', suppress_errors=True ) == ('Name', '10', '12,345.6', '')
 	with raises( AttributeError ):
-		assert fdc.fmf().format_as_list( 'name', 'age', 'speed', 'height' ) == ['name', '10', '12,345.6', '']
-	assert fdc.fmf().format_as_list( 'name', 'age', 'speed', 'height', suppress_errors=True ) == ['Name', '10', '12,345.6', '']
-	assert fdc.fmf().format_as_list( 'name', 'age', 'speed', 'width', conv=lambda v: str( v ) ) == ['Name', '10', '12345.6', 'None']
+		assert fdc.fmf().format_fields( fdc, 'name', 'age', 'speed', 'height' ) == ('name', '10', '12,345.6', '')
 
 @mark.unit
 def test_metadata():

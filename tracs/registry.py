@@ -4,14 +4,13 @@ from __future__ import annotations
 from enum import Enum
 from inspect import getmembers, isclass, isfunction, signature as getsignature
 from logging import getLogger
-from pathlib import Path
 from re import match
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from attrs import Attribute, define, field, fields
 
 from tracs.activity import Activity
-from tracs.config import ApplicationContext
+from tracs.context import ApplicationContext
 from tracs.core import Keyword, Normalizer, VirtualField, VirtualFields
 from tracs.handlers import ResourceHandler
 from tracs.protocols import Importer, Service
@@ -47,7 +46,7 @@ class Registry:
 		call = format_stack()[-2].splitlines()[0].strip()
 		log.warning( f'Deprecated call to Registry.instance(), from {call}' )
 
-		from tracs.config import current_ctx
+		from tracs.context import current_ctx
 		return current_ctx().registry
 
 	@classmethod

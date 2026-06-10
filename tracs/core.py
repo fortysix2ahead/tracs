@@ -3,20 +3,16 @@ from __future__ import annotations
 from collections import UserDict
 from datetime import datetime
 from functools import cached_property
-from inspect import getmembers, signature
 from logging import getLogger
 from sys import version_info
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, Generic, Iterator, List, Mapping, Optional, Tuple, Type, TypeVar, Union
 
-from attr import AttrsInstance
-from attrs import Attribute, define, field, fields
-from cattrs import Converter, GenConverter
+from attrs import Attribute, define, field, fields, NOTHING
+from attrs.setters import NO_OP
 from dateutil.tz import UTC
-from setuptools.unicode_utils import try_encode
 
 from tracs.uid import UID
-from tracs.utils import fromisoformat, toisoformat
 
 log = getLogger( __name__ )
 
@@ -206,6 +202,49 @@ class Metadata:
 	@cached_property
 	def __items__( self ) -> Dict[str, str]:
 		return { f: getattr( self, f ) for f in self.__fields__ }
+
+@define
+class DerivedField:
+
+	name: str = field( default=None )
+	type: Type = field( default=None )
+	fn: Callable = field( default=None )
+	description: str = field( default=None )
+	display_name: str = field( default=None )
+	expose: bool = field( default=True ) # expose field as regular property
+
+	# noinspection PyShadowingNames
+	@staticmethod
+	def augment( cls: Type, field: DerivedField ):
+#		if hasattr( cls, "__slots__" ):
+#			raise RuntimeError( 'slotted classes do not support runtime property injection' )
+
+		# augment provided class with property
+		setattr( cls, field.name, property( fget=field.fn ) )
+
+		# noinspection PyArgumentList
+		derived_attr = Attribute(
+			name=field.name,
+			default=NOTHING,
+			validator=None,
+			repr=False, # exclude from repr — it's derived
+			cmp=None,
+			eq=False, # exclude from eq
+			eq_key=None,
+			order=False,
+			order_key=None,
+			hash=False,
+			init=False, # exclude from in __init__
+			metadata={},
+			type=field.type,
+			converter=None,
+			kw_only=False,
+			inherited=False,
+			on_setattr=NO_OP,
+			alias=None,
+		)
+
+		cls.__attrs_attrs__ = cls.__attrs_attrs__ + (derived_attr,)
 
 @define
 class VirtualField:

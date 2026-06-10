@@ -1,12 +1,40 @@
 from datetime import datetime
 from typing import Any, ClassVar
 
-from attrs import define, field
+from attrs import define, field, fields
 from babel.numbers import format_decimal
 from pytest import mark, raises
 
-from tracs.core import FieldFormatter, FieldFormatters, Metadata, VirtualField, VirtualFields
+from tracs.core import DerivedField, FieldFormatter, FieldFormatters, Metadata, VirtualField, VirtualFields
 from tracs.uid import UID, uid
+
+@mark.unit
+def test_derived_field():
+
+	# setup
+
+	def to_lower( self: Any ) -> str:
+		return self.name.lower()
+
+	df = DerivedField( name='lower_name', type=str, fn=to_lower, expose=True )
+
+	# test class enriched with derived fields
+	@define
+	class ClassWithDerivedFields:
+
+		name: str = field( default='Name' )
+
+	DerivedField.augment( ClassWithDerivedFields, df )
+
+	# test
+
+	inst = ClassWithDerivedFields()
+	assert inst.name == 'Name'
+	assert inst.lower_name == 'name'
+
+	flds = fields( ClassWithDerivedFields )
+	names = [f.name for f in flds]
+	assert 'lower_name' in names
 
 @mark.unit
 def test_virtual_field():

@@ -6,8 +6,10 @@ from typing import ClassVar, Optional, Tuple
 from attrs import define, field
 from dynaconf import Dynaconf as Configuration
 
+from __log__ import LogManager
 from tracs.activity import Activity, configure_formatters as configure_activity_formatters
 from tracs.context import ApplicationContext
+from tracs.core import augment
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager, Registry, ServiceManager
 from tracs.rules import RuleParser
@@ -18,7 +20,7 @@ log = getLogger( __name__ )
 @define( init=False )
 class Application:
 
-	_instance: ClassVar[Application] = None  # application singleton
+	_instance: ClassVar[Application|None] = None  # application singleton
 
 	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
 
@@ -26,6 +28,8 @@ class Application:
 	_db: ActivityDb = field( default=None, alias='_db' )
 	_registry: Registry = field( default=None, alias='_registry' )
 	_parser: RuleParser = field( default=None, alias='_parser' )
+
+	_log_manager: LogManager = field( default=LogManager.instance(), alias='_log_mgr' )
 
 	@classmethod
 	def instance( cls, *args, **kwargs ):
@@ -46,20 +50,20 @@ class Application:
 	# 'None' as default value means value has not been provided from the outside (via command line switch)
 	def __setup__( self, *args, **kwargs ):
 		# console logging setup --
-		from tracs.__log__ import LogManager
-		LogManager.instance().set_console_log( kwargs.get( 'verbose', False ), kwargs.get( 'debug', False ), kwargs.get( 'json', False ) )
+#		from tracs.__log__ import LogManager
+#		LogManager.instance().set_console_log( kwargs.get( 'verbose', False ), kwargs.get( 'debug', False ), kwargs.get( 'json', False ) )
 
 		# log command line flags
-		log.debug( f'parameters provided from command line: {kwargs}' )
+#		log.debug( f'parameters provided from command line: {kwargs}' )
 
 		# create context, based on cfg_dir
 		self._ctx = ApplicationContext( _cli_args=args, _cli_kwargs=kwargs )
 
 		# file logging setup after configuration has been loaded --
-		LogManager.instance().set_file_log( self._ctx.config.verbose, self._ctx.config.debug, self._ctx.log_file_path )
+#		LogManager.instance().set_file_log( self._ctx.config.verbose, self._ctx.config.debug, self._ctx.log_file_path )
 
 		# print context configuration
-		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
+#		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
 
 		# init plugin manager
 		if self._ctx.config.plugins.paths:
@@ -71,12 +75,9 @@ class Application:
 		else:
 			modules = []
 
-		self._ctx.plugin_mgr = PluginManager.inst().init( paths=plugin_paths, modules=modules )
+		self._ctx.plugin_mgr = PluginManager( plugin_paths=plugin_paths, plugin_modules=modules )
 		self._ctx.service_mgr = self._ctx.plugin_mgr.service_mgr
-
-		# init registry
-		self._registry = PluginManager.inst().registry()
-		self._ctx.registry = self._registry
+		self._ctx.registry = self.registry
 
 		# init db from config_dir
 		self._db = ActivityDb(
@@ -92,9 +93,9 @@ class Application:
 		self._parser = RuleParser( keywords=self.registry.keywords, normalizers=self.registry.normalizers )
 		self._ctx.parser = self._parser
 
-		# announce virtual fields to activity class
-		for vf in self.registry.virtual_fields:
-			Activity.virtual_fields().add( vf )
+		# augment Activity class with derived fields
+		for df in self.registry.derived_fields:
+			augment( Activity, df )
 
 		# init service manager
 		for s in self.registry.services:

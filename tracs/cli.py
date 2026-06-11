@@ -392,12 +392,6 @@ def version( ctx: ApplicationContext ):
 def ext( ctx: ApplicationContext ):
 	pass
 
-def main( args=None ):
-	cli()  # trigger cli
-
-if __name__ == '__main__':
-	main()
-
 # helper
 
 def _flt( ctx: ApplicationContext, *rules: str ) -> List[Activity]:

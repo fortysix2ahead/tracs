@@ -23,13 +23,7 @@ class Application:
 	_instance: ClassVar[Application|None] = None  # application singleton
 
 	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
-
-	_service_mgr: ServiceManager = field( default=None, alias='_service_mgr' )
-	_db: ActivityDb = field( default=None, alias='_db' )
-	_registry: Registry = field( default=None, alias='_registry' )
-	_parser: RuleParser = field( default=None, alias='_parser' )
-
-	_log_manager: LogManager = field( default=LogManager.instance(), alias='_log_mgr' )
+	_log_manager: LogManager|None = field( default=LogManager.instance(), alias='_log_manager' )
 
 	@classmethod
 	def instance( cls, *args, **kwargs ):
@@ -49,6 +43,8 @@ class Application:
 
 	# 'None' as default value means value has not been provided from the outside (via command line switch)
 	def __setup__( self, *args, **kwargs ):
+		self._log_manager = LogManager.instance()
+
 		# console logging setup --
 #		from tracs.__log__ import LogManager
 #		LogManager.instance().set_console_log( kwargs.get( 'verbose', False ), kwargs.get( 'debug', False ), kwargs.get( 'json', False ) )
@@ -123,31 +119,31 @@ class Application:
 
 	@property
 	def registry( self ) -> Registry:
-		return self._registry
+		return self.ctx.registry
 
 	@property
 	def plugin_mgr( self ) -> PluginManager:
-		return self._ctx.plugin_mgr
+		return self.ctx.plugin_mgr
 
 	@property
 	def service_mgr( self ) -> ServiceManager:
-		return self._ctx.service_mgr
+		return self.ctx.service_mgr
 
 	@property
 	def parser( self ) -> RuleParser:
-		return self._parser
+		return self.ctx.parser
 
 	@property
 	def config( self ) -> Configuration:
-		return self._ctx.config
+		return self.ctx.config
 
 	@property
 	def state( self ) -> Configuration:
-		return self._ctx.state
+		return self.ctx.state
 
 	@property
 	def as_tuple( self ) -> Tuple[ApplicationContext, ActivityDb]:
-		return self.ctx, self.db
+		return self.ctx, self.ctx.db
 
 def _config_dir_file( configuration: Optional[str] ) -> Tuple[Optional[str], Optional[str]]:
 	return None, None

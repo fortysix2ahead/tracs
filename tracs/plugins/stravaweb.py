@@ -16,7 +16,7 @@ from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
 from tracs.protocols import ApplicationContext
 from tracs.constants import APPNAME
-from tracs.pluginmgr import importer, resourcetype, service, setup
+from tracs.pluginmgr import importer, resource_type, service, setup
 from tracs.plugins.fit import FIT_TYPE
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.json import JSONHandler
@@ -105,7 +105,7 @@ class StravaWebActivity:
 	visibility: str = field( default=None )
 	workout_type: Optional[int] = field( default=None )
 
-@resourcetype
+@resource_type
 def stravaweb_resource_type() -> ResourceType:
 	return ResourceType( name=STRAVA_WEB_TYPE, summary=True )
 

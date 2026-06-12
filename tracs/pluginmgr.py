@@ -116,7 +116,7 @@ class Registry:
 					self._ddict( d.type )[d.name] = d.fncls()
 				case 'normalizer':
 					self._ddict( d.type )[d.name] = d.fncls()
-				case 'resourcetype':
+				case 'resource_type':
 					_type = d.fncls()
 					if isinstance( _type := d.fncls(), list ):
 						for t in _type:
@@ -404,7 +404,7 @@ def derived_field( *args, **kwargs ):
 def importer( *args, **kwargs ):
 	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.cls } ) )
 
-def resourcetype( *args, **kwargs ):
+def resource_type( *args, **kwargs ):
 	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.call } ) )
 
 def service( *args, **kwargs ):

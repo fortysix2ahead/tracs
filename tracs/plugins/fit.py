@@ -4,7 +4,7 @@ from typing import Any
 
 from tracs.activity import Activity
 from tracs.handlers import ResourceHandler
-from tracs.pluginmgr import importer, resourcetype
+from tracs.pluginmgr import importer, resource_type
 from tracs.resources import ResourceType
 
 log = getLogger( __name__ )
@@ -16,7 +16,7 @@ class FITActivity( Activity ):
 	def __raw_init__( self, raw: Any ) -> None:
 		pass
 
-@resourcetype
+@resource_type
 def fit_resource_types() -> ResourceType:
 	return ResourceType( name=FIT_TYPE, recording=True )
 

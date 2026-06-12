@@ -9,14 +9,14 @@ from gpxpy.gpx import GPX
 from tracs.activity import Activity
 from tracs.errors import ResourceImportException
 from tracs.handlers import ResourceHandler
-from tracs.pluginmgr import importer, resourcetype
+from tracs.pluginmgr import importer, resource_type
 from tracs.resources import Resource, ResourceType
 
 log = getLogger( __name__ )
 
 GPX_TYPE = 'application/gpx+xml'
 
-@resourcetype
+@resource_type
 def gpx_resource_type() -> ResourceType:
 	return ResourceType( name=GPX_TYPE, recording=True )
 

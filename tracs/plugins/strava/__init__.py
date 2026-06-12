@@ -21,7 +21,7 @@ from stravalib.client import Client
 
 from tracs.activity import Activities, Activity
 from tracs.constants import APPNAME, CFG_CLASSIFIER
-from tracs.pluginmgr import resourcetype, service, setup
+from tracs.pluginmgr import resource_type, service, setup
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.plugins.image import JPEG_TYPE
 from tracs.plugins.json import JSONHandler
@@ -39,7 +39,7 @@ log = getLogger( __name__ )
 SERVICE_NAME = 'strava'
 DISPLAY_NAME = 'Strava'
 
-@resourcetype
+@resource_type
 def strava_resource_type() -> ResourceType:
 	return ResourceType( name=STRAVA_TYPE, summary=True )
 

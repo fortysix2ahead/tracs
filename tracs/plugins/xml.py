@@ -3,12 +3,12 @@ from typing import Any, Union
 from lxml.objectify import fromstring, ObjectifiedElement
 
 from tracs.handlers import ResourceHandler
-from tracs.pluginmgr import importer, resourcetype
+from tracs.pluginmgr import importer, resource_type
 from tracs.resources import ResourceType
 
 XML_TYPE = 'application/xml'
 
-@resourcetype
+@resource_type
 def xml_resource_type() -> ResourceType:
 	return ResourceType( name=XML_TYPE )
 

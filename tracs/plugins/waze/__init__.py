@@ -11,7 +11,7 @@ from more_itertools import unique
 from more_itertools.more import first, last
 
 from tracs.activity import Activities
-from tracs.pluginmgr import resourcetype, service
+from tracs.pluginmgr import resource_type, service
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.plugins.waze.constants import *
 from tracs.plugins.waze.io import WazeAccountActivityImporter, WazeAccountInfoImporter, WazeImporter
@@ -21,7 +21,7 @@ from tracs.service import date_id_to_path, Service
 
 log = getLogger( __name__ )
 
-@resourcetype
+@resource_type
 def bikecitizens_resource_types() -> List[ResourceType]:
 	return [
 		ResourceType( name=WAZE_TYPE, summary=True ),

@@ -8,7 +8,7 @@ from orjson import dumps as save_json, loads as load_json
 
 from tracs.constants import ORJSON_OPTIONS
 from tracs.handlers import ResourceHandler
-from tracs.pluginmgr import importer, resourcetype
+from tracs.pluginmgr import importer, resource_type
 from tracs.resources import ResourceType
 from tracs.utils import timedelta_to_str
 
@@ -16,7 +16,7 @@ log = getLogger( __name__ )
 
 JSON_TYPE = 'application/json'
 
-@resourcetype
+@resource_type
 def json_resource_type() -> ResourceType:
 	return ResourceType( name=JSON_TYPE )
 

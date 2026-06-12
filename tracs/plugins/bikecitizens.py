@@ -17,7 +17,7 @@ from tracs.activity import Activities, Activity
 from tracs.activity_types import ActivityTypes
 from tracs.protocols import ApplicationContext
 from tracs.constants import APPNAME
-from tracs.pluginmgr import importer, resourcetype, service, setup
+from tracs.pluginmgr import importer, resource_type, service, setup
 from tracs.plugins.json import DataclassFactoryHandler, JSONHandler
 from tracs.resources import Resource, ResourceType
 from tracs.service import Service
@@ -105,7 +105,7 @@ class BikecitizensActivity:
 	def uid( self ) -> str:
 		return f'{SERVICE_NAME}:{self.id}'
 
-@resourcetype
+@resource_type
 def bikecitizens_resource_types() -> List[ResourceType]:
 	return [
 		ResourceType( name=BIKECITIZENS_RECORDING_TYPE, recording=True ),

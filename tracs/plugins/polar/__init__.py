@@ -24,7 +24,7 @@ from tracs.activity import Activities, Activity
 from tracs.activity_types import ActivityTypes
 from tracs.aio import load_resource
 from tracs.constants import APPNAME, CFG_CLASSIFIER
-from tracs.pluginmgr import importer, resourcetype, service, setup
+from tracs.pluginmgr import importer, resource_type, service, setup
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.plugins.json import DataclassFactoryHandler, JSONHandler
 from tracs.plugins.polar.constants import *
@@ -83,7 +83,7 @@ HEADERS_DOWNLOAD = { **HEADERS_TEMPLATE, **{
 	# 'X-Requested-With': 'XMLHttpRequest'
 } }
 
-@resourcetype
+@resource_type
 def polar_resource_types() -> List[ResourceType]:
 	return [
 		ResourceType( name=POLAR_FLOW_TYPE, summary=True ),

@@ -2,14 +2,14 @@
 from logging import getLogger
 
 from tracs.handlers import ResourceHandler
-from tracs.pluginmgr import importer, resourcetype
+from tracs.pluginmgr import importer, resource_type
 from tracs.resources import ResourceType
 
 log = getLogger( __name__ )
 
 JPEG_TYPE = 'image/jpeg'
 
-@resourcetype
+@resource_type
 def jpeg_resource_type() -> ResourceType:
 	return ResourceType( name=JPEG_TYPE, image=True )
 

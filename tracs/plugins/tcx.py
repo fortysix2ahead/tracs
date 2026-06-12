@@ -10,7 +10,7 @@ from dateutil.tz import tzlocal
 from lxml.objectify import Element, fromstring, ObjectifiedElement, ObjectPath, SubElement
 
 from tracs.activity import Activity as TracsActivity
-from tracs.pluginmgr import importer, resourcetype
+from tracs.pluginmgr import importer, resource_type
 from tracs.plugins.xml import XMLHandler
 from tracs.resources import Resource, ResourceType
 from tracs.utils import fromisoformat
@@ -311,7 +311,7 @@ class TrainingCenterDatabase:
 			author=Author.from_xml( root ),
 		)
 
-@resourcetype
+@resource_type
 def tcx_resource_type() -> ResourceType:
 	return ResourceType( name=TCX_TYPE, recording=True )
 

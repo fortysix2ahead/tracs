@@ -3,7 +3,7 @@ from csv import field_size_limit, reader as csv_reader
 from typing import Any, Union
 
 from tracs.handlers import ResourceHandler
-from tracs.pluginmgr import importer, resourcetype
+from tracs.pluginmgr import importer, resource_type
 from tracs.resources import ResourceType
 
 CSV_TYPE = 'text/csv'
@@ -11,7 +11,7 @@ CSV_TYPE = 'text/csv'
 DEFAULT_FIELD_SIZE_LIMIT = 131072
 
 # register CSV type
-@resourcetype
+@resource_type
 def csv_resource_type() -> ResourceType:
 	return ResourceType( name=CSV_TYPE )
 

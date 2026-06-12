@@ -6,16 +6,16 @@ from typing import List, Optional
 from dynaconf import inspect_settings
 from dynaconf.vendor.box.exceptions import BoxKeyError
 from rich import box
-from rich.pretty import Pretty as pp, Pretty
+from rich.pretty import Pretty, Pretty as pp
 from rich.table import Table
 
 from tracs.activity import Activity
 from tracs.context import ApplicationContext
-from tracs.core import fields_of, VirtualField
+from tracs.core import fields_of
 from tracs.ui import CONSOLE as console
 from tracs.ui.tables import create_table
-from tracs.utils import red
 from tracs.ui.utils import yellow
+from tracs.utils import red
 
 log = getLogger( __name__ )
 

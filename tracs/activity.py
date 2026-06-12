@@ -9,18 +9,15 @@ from logging import getLogger
 from types import MappingProxyType
 from typing import Any, Callable, ClassVar, Dict, List, Literal, Mapping, Optional, Tuple, TypeVar, Union
 
-from attrs import fields
-from attrs import define, evolve, Factory, field
+from attrs import define, Factory, field, fields
 from dateutil.tz import UTC
 from more_itertools import first, first_true, last, unique
 from tzlocal import get_localzone_name
 
 from tracs.activity_types import ActivityTypes
-from tracs.core import FieldFormatters, Metadata, VirtualFields
+from tracs.core import FieldFormatters, Metadata
 from tracs.resources import Resource, Resources
-from tracs.ui.utils import fmt_datetime, fmt_decimal, fmt_default, fmt_timedelta
 from tracs.uid import UID, uid
-from tracs.utils import sum_timedeltas, unique_sorted
 
 log = getLogger( __name__ )
 
@@ -30,8 +27,7 @@ MULTIPART_TYPE: type[str] = Literal[ 'average', 'max', 'min', 'sum' ]
 @define( eq=True, repr=False ) # todo: mark fields with proper eq attributes
 class Activity:
 
-	# class fields to add support for virtual fields + formatters
-	__vf__: ClassVar[VirtualFields] = VirtualFields()
+	# class fields to add support for formatters
 	__fmf__: ClassVar[FieldFormatters] = FieldFormatters()
 
 	# fields
@@ -113,16 +109,6 @@ class Activity:
 	__part_of__: List[MultipartActivity] = field( init=False, default=None, alias='__part_of__' )
 
 	__dirty__: bool = field( init=False, default=False, repr=False, alias='__dirty__' )
-	__fields_proxy__: VirtualFields = field( default=None, alias='__fields_proxy__' )
-
-	@classmethod
-	def virtual_fields( cls ) -> VirtualFields:
-		return cls.__vf__
-
-	def vf( self ) -> VirtualFields:
-		if self.__fields_proxy__ is None:
-			self.__fields_proxy__ = VirtualFields( self.__class__.__vf__.data, self )
-		return self.__fields_proxy__
 
 	def of( self, id: int = 0, uid: str = 'activity:0', name: str = 'Activity 0' ):
 		pass

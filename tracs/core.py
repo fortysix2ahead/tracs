@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections import UserDict
 from datetime import datetime
 from functools import cached_property
-from itertools import compress, filterfalse
 from logging import getLogger
 from sys import version_info
 from types import MappingProxyType
@@ -277,99 +276,6 @@ def is_internal( obj: Type[AttrsInstance]|AttrsInstance, field: str ) -> bool:
 	return any( f for f in fields( obj ) if f.name == field and f.name.startswith( '_' ) )
 
 #
-
-@define
-class VirtualField:
-
-	name: str = field( default=None )
-	type: Type = field( default=None )
-	default: Any = field( default=None )
-	factory: Callable = field( default=None )
-	description: str = field( default=None )
-	display_name: str = field( default=None )
-	expose: bool = field( default=True ) # expose field as regular property
-
-	def __call__( self, parent: Any = None ) -> Any:
-		return self.value_for( parent )
-
-	def __hash__( self ):
-		return hash( self.name )
-
-	def value_for( self, parent: Any = None ) -> Any:
-		if self.default:
-			return self.default
-		elif self.factory:
-			return self.factory( parent )
-		else:
-			raise AttributeError( f'virtual field {self.name} has neither a default nor a factory' )
-
-class VirtualFields( UserDict[str, VirtualField] ):
-
-	def __init__( self, d: dict = None, proxy: Any = None ):
-		super().__init__( d )
-		self.__proxy__: Any = proxy
-
-	@classmethod
-	def augment( self, cls: Type ):
-		for f in cls.virtual_fields().fields():
-			if f.default:
-				setattr( cls, f.name, property( lambda obj: f.default ) )
-			elif f.factory:
-				setattr( cls, f.name, property( f.factory ) )
-			else:
-				log.warning( f'unable to augment class {cls} with property {f.name}, neither default value nor factory exists' )
-
-	def add( self, vf: VirtualField ) -> None:
-		self.data[vf.name] = vf
-
-	def add_all( self, *vf: VirtualField ) -> None:
-		[ self.add( field ) for field in vf ]
-
-	def set( self, vf: VirtualField ) -> None:
-		self.data[vf.name] = vf
-
-	def fields( self, include_internal: bool = False, include_unexposed: bool = False ) -> List[Attribute | VirtualField]:
-		_all_fields = self.data.values()
-		_regular_fields = [f for f in _all_fields if not f.name.startswith( '_' ) and f.expose]
-		_internal_fields = [f for f in _all_fields if f.name.startswith( '_' ) ]
-		_unexposed_fields = [f for f in _all_fields if not f.expose ]
-
-		_fields = [ *_regular_fields ]
-		if include_internal:
-			_fields = [ *_fields, *_internal_fields ]
-		if include_unexposed:
-			_fields = [ *_fields, *_unexposed_fields ]
-
-		return [ *set( _fields ) ]
-
-	def field_names( cls, include_internal: bool = False, include_unexposed: bool = False ) -> List[str]:
-		return [f.name for f in cls.fields( include_internal, include_unexposed )]
-
-	def field_type( cls, field_name: str ) -> Any:
-		if f := next( (f for f in cls.fields( True, True ) if f.name == field_name), None ):
-			return f.type
-		else:
-			return None
-
-	def value( self, field: str, inst: Any = None, quiet: bool = False ) -> Any:
-		# use proxied object if available
-		inst = self.__proxy__ if self.__proxy__ else inst
-
-		if f := self.data.get( field ):
-			if f.default is not None:
-				return f.default
-			elif f.factory is not None:
-				return f.factory( inst )
-
-		if not quiet:
-			raise AttributeError()
-
-	def values( self, *field_names: str, inst: Any = None ) -> List[Any]:
-		return [ self.value( f, inst, quiet=True ) for f in field_names ]
-
-	@property
-	def vf( self ) -> VirtualFields:
-		return self.__class__.__vf__.proxy( self )
 
 @define
 class FieldFormatter:

@@ -6,7 +6,7 @@ from more_itertools import first_true
 
 from tracs.constants import CFG_CTX
 from tracs.protocols import Resource, Service
-from uid import UID
+from tracs.uid import UID
 
 log = getLogger( __name__ )
 

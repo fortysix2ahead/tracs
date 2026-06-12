@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, cast, Dict, Optional, Tuple
 
 from attrs import define, field
-from dateutil.tz import tzlocal, UTC
+from dateutil.tz import tzlocal
 from dynaconf import Dynaconf as Configuration
 from dynaconf.utils.boxing import DynaBox
 from dynaconf.vendor.box.exceptions import BoxKeyError
@@ -21,7 +21,7 @@ from fs.path import dirname
 from fs.subfs import SubFS
 from yaml import safe_dump
 
-from __log__ import LogManager
+from tracs.__log__ import LogManager
 from tracs.constants import *
 from tracs.pluginmgr import PluginManager, Registry, ServiceManager
 from tracs.protocols import ActivityDb, RuleParser

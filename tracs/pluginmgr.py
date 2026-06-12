@@ -14,9 +14,9 @@ from attrs import define, field
 from fs.osfs import OSFS
 from more_itertools.recipes import first_true
 
-from tracs.constants import PLUGINS_PKG, PLUGIN_PATH
+from tracs.constants import PLUGIN_PATH, PLUGINS_PKG
 from tracs.core import DerivedField, Keyword, Normalizer
-from tracs.protocols import Importer, VirtualField
+from tracs.protocols import Importer
 from tracs.resources import ResourceType
 from tracs.service import Service
 from tracs.servicemgr import ServiceManager
@@ -127,8 +127,6 @@ class Registry:
 					self._ddict( d.type )[d.name] = d.fncls
 				case 'setup':
 					self._ddict( d.type )[d.name] = d.fncls
-				case 'virtualfield':
-					self._ddict( d.type )[d.name] = d.fncls()
 				case _:
 					pass
 
@@ -217,10 +215,6 @@ class Registry:
 	@property
 	def derived_fields( self ) -> List[DerivedField]:
 		return [ df for df in self._ddict( 'derived_field' ).values() ]
-
-	@property
-	def virtual_fields( self ) -> List[VirtualField]:
-		return [ vf for vf in self._ddict( 'virtualfield' ).values() ]
 
 @define
 class PluginManager:
@@ -393,9 +387,6 @@ def keyword( *args, **kwargs ):
 	return _register( *args, **(kwargs | { '_frame': currentframe(), '_init': Decorator.Init.call } ) )
 
 def normalizer( *args, **kwargs ):
-	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.call } ) )
-
-def virtualfield( *args, **kwargs ):
 	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.call } ) )
 
 def derived_field( *args, **kwargs ):

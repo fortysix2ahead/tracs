@@ -141,6 +141,15 @@ class Registry:
 	def register( self, name: str, type: str, fncls: Any ) -> None:
 		self._ddict( type=type )[name] = fncls
 
+	# derived fields
+
+	@property
+	def derived_fields( self ) -> List[DerivedField]:
+		return [ df for df in self._ddict( 'derived_field' ).values() ]
+
+	def derived_field( self, name: str ) -> Optional[DerivedField]:
+		return first_true( self.derived_fields, pred=lambda df: df.name == name )
+
 	# importer
 
 	@property
@@ -148,7 +157,7 @@ class Registry:
 		return list( self._ddict( 'importer' ).values() )
 
 	def importer( self, type: str ) -> Optional[Importer]:
-		return first_true( self.importers(), lambda i: i.type == type )
+		return first_true( self.importers, pred=lambda i: i.type == type )
 
 	# keywords
 
@@ -164,36 +173,37 @@ class Registry:
 
 	# resource types
 
+	@property
 	def resource_types( self ) -> List[ResourceType]:
-		return list( self._ddict( 'resourcetype' ).values() )
+		return list( self._ddict( 'resource_type' ).values() )
 
 	def resource_type( self, name: str ) -> Optional[ResourceType]:
-		return first_true( self.resource_types(), pred=lambda rt: rt.name == name )
+		return first_true( self.resource_types, pred=lambda rt: rt.name == name )
 
 	def resource_type_for_extension( self, extension: str ) -> Optional[ResourceType]:
-		return next( (rt for rt in self.resource_types() if rt.extension() == extension), None )
+		return next( (rt for rt in self.resource_types if rt.extension() == extension), None )
 
 	def resource_type_for_suffix( self, suffix: str ) -> Optional[ResourceType]:
 		# first round: prefer suffix in special part of type: 'gpx' matches 'application/xml+gpx'
-		for key, rt in self.resource_types():
+		for key, rt in self.resource_types:
 			if m := match( f'^(\w+)/(\w+)\+{suffix}$', key ):
 				return rt
 
 		# second round: suffix after slash: 'gpx' matches 'application/gpx'
-		for key, rt in self.resource_types():
+		for key, rt in self.resource_types:
 			if m := match( f'^(\w+)/{suffix}(\+([\w-]+))?$', key ):
 				return rt
 
 		return None
 
 	def summary_types( self ) -> List[ResourceType]:
-		return [ rt for rt in self.resource_types() if rt.summary ]
+		return [ rt for rt in self.resource_types if rt.summary ]
 
 	def summary_type_names( self ) -> List[str]:
 		return [ rt.name for rt in self.summary_types() ]
 
 	def recording_types( self ) -> List[ResourceType]:
-		return [rt for rt in self.resource_types() if rt.recording]
+		return [rt for rt in self.resource_types if rt.recording]
 
 	def recording_type_names( self ) -> List[str]:
 		return [rt.name for rt in self.recording_types()]
@@ -209,12 +219,6 @@ class Registry:
 	@property
 	def setups( self ) -> List[Callable]:
 		return [s for s in self._ddict( 'setup' ).values()]
-
-	# derived fields
-
-	@property
-	def derived_fields( self ) -> List[DerivedField]:
-		return [ df for df in self._ddict( 'derived_field' ).values() ]
 
 @define
 class PluginManager:

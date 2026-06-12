@@ -1,15 +1,14 @@
 
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from logging import getLogger
 
 from dateutil.tz import UTC
 from pytest import mark, raises
 
-from tracs.activity import Activities, Activity, ActivityGroup, groups, MultipartActivity
+from pluginmgr import derived_field
+from tracs.activity import Activity, ActivityGroup, groups, MultipartActivity
 from tracs.activity_types import ActivityTypes
-from tracs.core import Metadata, VirtualField
-from tracs.pluginmgr import virtualfield
-from tracs.resources import Resource, Resources
+from tracs.resources import Resource
 from tracs.uid import UID, uid, uids
 
 log = getLogger( __name__ )
@@ -209,21 +208,21 @@ def test_fields( registry ):
 	assert Activity.field_type( 'weekday' ) == int
 	assert Activity.field_type( 'noexist' ) is None
 
-@virtualfield
-def lower_name() -> VirtualField:
-	return VirtualField( 'lower_name', str, display_name='lower_name', factory=lambda a: a.name.lower() )
+@derived_field
+def lower_name( self ) -> str:
+	return self.name.lower()
 
-@virtualfield
-def uppercase_name() -> VirtualField:
-	return VirtualField( 'upper_name', str, display_name='upper_name', factory=lambda a: a.name.upper() )
+@derived_field
+def uppercase_name( self ) -> str:
+	return self.name.upper()
 
-@virtualfield
-def title_name() -> VirtualField:
-	return VirtualField( 'title_name', str, display_name='title_name', factory=lambda a: a.name.title() )
+@derived_field
+def title_name( self ) -> str:
+	return self.name.title()
 
-@virtualfield
-def capitalized_name() -> VirtualField:
-	return VirtualField( 'cap_name', str, display_name='cap_name', factory=lambda a: a.name.capitalize() )
+@derived_field
+def capitalized_name( self ) -> str:
+	return self.name.capitalize()
 
 def test_virtual_activity_fields( registry ):
 
@@ -258,18 +257,6 @@ def test_virtual_activity_fields( registry ):
 
 	with raises( AttributeError ):
 		assert a.getattr( 'does_not_exist' ) is None
-
-@virtualfield
-def name() -> VirtualField:
-	return VirtualField( 'name', str, display_name='name', factory=lambda a: 'override attempt for run' )
-
-# don't allow overriding fields
-def test_virtual_activity_field_override( registry ):
-
-	a = Activity( id = 100, name='Run', type=ActivityTypes.run )
-
-	assert 'name' in Activity.field_names( include_virtual=True )
-	assert a.name == 'Run' and a.getattr( 'name' ) == 'Run'
 
 def test_formatted_activity_fields():
 

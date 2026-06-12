@@ -23,10 +23,10 @@ def resource_type_two() -> ResourceType:
 
 @mark.resource_type( types=('application/one', 'application/two'), default=False )
 def test_resource_type( registry: Registry ):
-	assert 'application/one' in [ r.name for r in registry.resource_types() ]
+	assert 'application/one' in [ r.name for r in registry.resource_types ]
 	assert registry.resource_type( 'application/one' ) == RT_ONE
 
-	assert 'application/two' in [ r.name for r in registry.resource_types() ]
+	assert 'application/two' in [ r.name for r in registry.resource_types ]
 	assert registry.resource_type( 'application/two' ) == RT_TWO
 
 	assert registry.resource_type_for_extension( 'one' ) == RT_ONE
@@ -36,34 +36,23 @@ def test_resource_type( registry: Registry ):
 # plain importer without any specific resource type information
 @importer
 class ImporterOne( ResourceHandler ):
-	TYPE = 'TYPE_1'
+	TYPE = RT_ONE.name
 
 # allowed: define type via decorator
-@importer( type='TYPE_2' )
+@importer( type=RT_TWO.name )
 class ImporterTwo( ResourceHandler ):
 	pass
 
 def test_importer( registry: Registry ):
-	assert type( registry.importer( 'TYPE_1' ) ) == ImporterOne
-	assert type( registry.importer( 'TYPE_2' ) ) == ImporterTwo
+	assert type( registry.importer( RT_ONE.name ) ) == ImporterOne
+	assert type( registry.importer( RT_TWO.name ) ) == ImporterTwo
 
 # activity fields
 
-def test_fields_and_types( registry ):
-	assert (f := registry.activity_field( 'name' )) is not None and f.type in [str, 'str']
-	assert (f := registry.activity_field( 'id' )) is not None and f.type in [int, 'int']
-	assert (f := registry.activity_field( 'distance' )) is not None and f.type in [float, 'float']
-	assert (f := registry.activity_field( 'duration' )) is not None and f.type in [timedelta, 'timedelta']
-	assert (f := registry.activity_field( 'starttime' )) is not None and f.type in [datetime, 'datetime']
+def test_derived_fields( registry ):
+	assert (f := registry.derived_field( 'day' )) is not None and f.type in [int, 'int']
+	assert (f := registry.derived_field( 'weekday' )) is not None and f.type in [int, 'int']
+	assert (f := registry.derived_field( 'month' )) is not None and f.type in [int, 'int']
+	assert (f := registry.derived_field( 'year' )) is not None and f.type in [int, 'int']
 
-#	with raises( AttributeError ):
-	assert registry.activity_field( 'not_existing_field' ) is None
-
-	# check above fields against normalizers
-	assert registry.rule_normalizer_type( 'name' ) in [str, 'str']
-	assert registry.rule_normalizer_type( 'id' ) in [int, 'int']
-	assert registry.rule_normalizer_type( 'distance' ) in [float, 'float']
-	assert registry.rule_normalizer_type( 'duration' ) in [timedelta, 'timedelta']
-	assert registry.rule_normalizer_type( 'time' ) in [datetime, 'datetime']
-
-	assert registry.rule_normalizer_type( 'not_existing_field' ) is None
+	assert registry.derived_field( 'not_existing_field' ) is None

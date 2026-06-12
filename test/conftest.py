@@ -194,17 +194,12 @@ def ctx( request, fs: FS ) -> ApplicationContext:
 @fixture
 def plugin_mgr( request ) -> PluginManager:
 	# this needs to be made configurable
-	return PluginManager.inst().init( [], False )
+	PluginManager.instance().init( [], [] )
+	return PluginManager().instance()
 
 @fixture
 def registry( request, plugin_mgr: PluginManager, ctx: ApplicationContext ) -> Registry:
-	reg = plugin_mgr.registry()
-
-	# todo: make this configurable?
-#	for vf in reg.virtual_fields:
-#		Activity.VF().add( vf )
-
-	return reg
+	return plugin_mgr.registry
 
 @fixture
 def env( request, ctx: ApplicationContext, db: ActivityDb, registry: Registry ) -> Environment:

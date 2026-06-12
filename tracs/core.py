@@ -217,12 +217,12 @@ class DerivedField:
 	expose: bool = field( default=True )
 
 # noinspection PyShadowingNames
-def augment( cls: Type, field: DerivedField ):
-#		if hasattr( cls, "__slots__" ):
-#			raise RuntimeError( 'slotted classes do not support runtime property injection' )
-
+def augment( cls: Type, field: DerivedField, ignore_errors: bool = True ) -> Type:
 	if hasattr( cls, field.name ):
-		raise AttributeError( f'overwriting fields is not supported: field "{field.name}" already exists' )
+		if ignore_errors:
+			log.warning( f'overwriting Activity fields is not supported: field "{field.name}" already exists' )
+		else:
+			raise AttributeError( f'overwriting Activity fields is not supported: field "{field.name}" already exists' )
 
 	# augment provided class with property
 	setattr( cls, field.name, property( fget=field.fn ) )

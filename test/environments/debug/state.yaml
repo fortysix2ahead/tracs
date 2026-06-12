@@ -1,0 +1,14 @@
+services:
+  polar:
+    access_token: 11111111111111111111111111111111
+    client_code:  22222222222222222222222222222222
+    expires_at: 2089212691
+    expires_in: 315359999
+    state:      11111111111111111111
+    token_type: bearer
+    x_user_id: 1111111
+  strava:
+    access_token:  1111111111111111111111111111111111111111
+    expires_at: 2089212691
+    refresh_token: 1111111111111111111111111111111111111111
+  waze: {}

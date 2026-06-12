@@ -194,8 +194,8 @@ class ApplicationContext:
 			self.lib_fs = self.config.library
 
 	def update( self, configuration: Optional[str] = None, library: Optional[str] = None,
-	            verbose: Optional[bool] = False, debug: Optional[bool] = False, force: Optional[bool] = False,
-	            pretend: Optional[bool] = False, json: Optional[bool] = False, ) -> None:
+	            verbose: Optional[bool] = None, debug: Optional[bool] = None, force: Optional[bool] = None,
+	            pretend: Optional[bool] = None, json: Optional[bool] = None, ) -> None:
 
 		if configuration:
 			# attempt to load user-defined configuration file resp. from dir
@@ -224,10 +224,15 @@ class ApplicationContext:
 			# reconfigure config_fs if provided via parameter
 			config_dir = dirname( configuration ) if configuration.endswith('.yaml') else configuration
 			self.config_fs = OSFS( config_dir, create=True, expand_vars=True )
-			# self.lib_fs = OSFS( config_dir, create=True, expand_vars=True ) # put library inside config dir if provided
+			# self.lib_fs = OSFS( config_dir, create=True, expand_vars=True ) # put library inside config dir if provided?
 
+		# use library from config if provided
 		if self.config.library:
 			self.lib_fs = OSFS( self.config.library, create=True, expand_vars=True )
+
+		# use library from command line -> this wins over config file
+		if library:
+			self.lib_fs = OSFS( library, create=True, expand_vars=True )
 
 		self._setup_aux_fs( self.config_fs, self.lib_fs )
 

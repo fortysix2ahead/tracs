@@ -43,8 +43,8 @@ class Application:
 			self.init( **self.__kwargs__ )
 
 	def init( self, configuration: Optional[str] = None, library: Optional[str] = None,
-	          verbose: Optional[bool] = False, debug: Optional[bool] = False, force: Optional[bool] = False,
-	          pretend: Optional[bool] = False, json: Optional[bool] = False, ) -> None:
+	          verbose: Optional[bool] = None, debug: Optional[bool] = None, force: Optional[bool] = None,
+	          pretend: Optional[bool] = None, json: Optional[bool] = None, ) -> None:
 		"""
 		Initialize the application.
 		This is supposed to be called after the CLI has been set up because the parameters may have been provided as

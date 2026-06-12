@@ -1,0 +1,28 @@
+
+debug: true
+force: false
+json: false
+pretend: false
+verbose: true
+
+services:
+  polar:
+    classifier: polar
+    client_id: 00000000-0000-0000-0000-000000000000
+    client_secret: 11111111-1111-1111-1111-111111111111
+    display_name: Polar Flow (fortysix2ahead)
+    path: polar
+    takeout_path: polar
+    type: polar
+    user_id: fortysix2ahead@example.com
+  strava:
+    client_code: 2222222222222222222222222222222222222222
+    client_id: 33333
+    client_secret: 4444444444444444444444444444444444444444
+    display_name: Strava (fortysix2ahead)
+    path: strava
+    type: strava
+    user_id: fortysix2ahead@example.com
+  waze:
+    takeout_path: waze
+    type: waze

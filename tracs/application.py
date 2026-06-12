@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from logging import getLogger
-from typing import ClassVar, Optional, Tuple
+from typing import ClassVar, Dict, Optional
 
 from attrs import define, field
 from dynaconf import Dynaconf as Configuration
@@ -21,19 +21,26 @@ class Application:
 
 	_instance: ClassVar[Application|None] = None  # application singleton
 
-	_ctx: ApplicationContext = field( default=None, alias='_ctx' )
-	_log_manager: LogManager|None = field( default=LogManager.instance(), alias='_log_manager' )
+	ctx: ApplicationContext = field( factory=ApplicationContext )
+
+	# used for testing purposes only
+	__ctx__: ApplicationContext = field( default=None, alias='__ctx__' )
+	__kwargs__: Dict = field( factory=dict, alias='__kwargs__' )
 
 	@classmethod
 	def instance( cls, *args, **kwargs ):
 		if cls._instance is None:
-			cls._instance = Application( _log_manager=LogManager.instance() )
+			cls._instance = Application()
 		return cls._instance
 
 	def __attrs_post_init__( self ):
-		self._ctx = ApplicationContext()
 		self.ctx.plugin_mgr = PluginManager.instance()
 		self.ctx.log_mgr = LogManager.instance()
+
+		if self.__ctx__:
+			self.ctx = self.__ctx__
+		if self.__kwargs__:
+			self.init( **self.__kwargs__ )
 
 	def init( self, configuration: Optional[str] = None, library: Optional[str] = None,
 	          verbose: Optional[bool] = False, debug: Optional[bool] = False, force: Optional[bool] = False,
@@ -95,10 +102,6 @@ class Application:
 	# properties
 
 	@property
-	def ctx( self ) -> ApplicationContext:
-		return self._ctx
-
-	@property
 	def db( self ) -> ActivityDb:
 		return self.ctx.db
 
@@ -109,6 +112,10 @@ class Application:
 	@property
 	def plugin_mgr( self ) -> Optional[PluginManager]:
 		return self.ctx.plugin_mgr
+
+	@property
+	def log_mgr( self ) -> Optional[LogManager]:
+		return self.ctx.log_mgr
 
 	@property
 	def service_mgr( self ) -> Optional[ServiceManager]:
@@ -125,10 +132,3 @@ class Application:
 	@property
 	def state( self ) -> Configuration:
 		return self.ctx.state
-
-	@property
-	def as_tuple( self ) -> Tuple[ApplicationContext, ActivityDb]:
-		return self.ctx, self.ctx.db
-
-def _config_dir_file( configuration: Optional[str] ) -> Tuple[Optional[str], Optional[str]]:
-	return None, None

@@ -197,9 +197,9 @@ class ApplicationContext:
 	            verbose: Optional[bool] = False, debug: Optional[bool] = False, force: Optional[bool] = False,
 	            pretend: Optional[bool] = False, json: Optional[bool] = False, ) -> None:
 
-		# attempt to load user-defined configuration file
-		if configuration and self.root_fs.exists( configuration ):
-			if self.root_fs.isdir( configuration ):
+		if configuration:
+			# attempt to load user-defined configuration file resp. from dir
+			if self.root_fs.exists( configuration ) and self.root_fs.isdir( configuration ):
 				configuration = self.root_fs.getsyspath( f'{configuration}/{CONFIG_FILENAME}' )
 			self.config.load_file( configuration )
 
@@ -208,6 +208,7 @@ class ApplicationContext:
 			self.appstate.load_file( appstate )
 
 		else:
+			# load from default configuration area
 			self.config.load_file( self.config_fs.getsyspath( CONFIG_FILENAME ) )
 			self.appstate.load_file( self.config_fs.getsyspath( STATE_FILENAME ) )
 
@@ -219,11 +220,14 @@ class ApplicationContext:
 		self.log_mgr.set_console_log( self.config.verbose, self.config.debug, self.config.json )
 
 		# create config_fs, lib_fs and auxillary folders
-		if configuration and self.root_fs.exists( configuration ):
-			self.config_fs = OSFS( configuration if self.root_fs.isdir( configuration ) else dirname( configuration ) )
+		if configuration:
+			# reconfigure config_fs if provided via parameter
+			config_dir = dirname( configuration ) if configuration.endswith('.yaml') else configuration
+			self.config_fs = OSFS( config_dir, create=True, expand_vars=True )
+			# self.lib_fs = OSFS( config_dir, create=True, expand_vars=True ) # put library inside config dir if provided
 
 		if self.config.library:
-			self.lib_fs = OSFS( self.config.library )
+			self.lib_fs = OSFS( self.config.library, create=True, expand_vars=True )
 
 		self._setup_aux_fs( self.config_fs, self.lib_fs )
 

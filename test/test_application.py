@@ -2,14 +2,14 @@ from pathlib import Path
 from platform import system
 
 from fs.appfs import UserDataFS
-from pytest import mark
+from pytest import mark, fail
 
 from tracs.application import Application
 from tracs.constants import APPNAME
 from tracs.context import current_ctx
 
 def test_app_constructor():
-	app =  Application.__new__( Application, verbose=False, debug=False, force=False, json=False )
+	app =  Application()
 	home = Path.home()
 
 	if system() == 'Windows':
@@ -19,7 +19,7 @@ def test_app_constructor():
 	elif system() == 'Darwin':
 		cfg_dir = Path( home, 'Library', 'Application Support', APPNAME )
 	else:
-		return
+		fail( 'Unsupported operating system ...' )
 
 	assert app.ctx.config_dir == f'{str( cfg_dir )}/'
 	assert app.ctx.lib_dir == f'{str( cfg_dir )}/'
@@ -28,7 +28,7 @@ def test_app_constructor():
 def test_app_constructor_cfg_dir( ctx ):
 	cfg_dir = ctx.config_dir
 	cfg = f'{cfg_dir}/config.yaml'
-	app =  Application.__new__( Application, configuration=cfg, verbose=False, debug=False, force=False )
+	app =  Application( __kwargs__ = { 'configuration': cfg, 'verbose': False, 'debug': False, 'force': False } )
 
 	assert app.ctx.config_dir == f'{str( cfg_dir )}'
 	assert app.ctx.lib_dir == UserDataFS( 'tracs', create=True ).getsyspath( '' )

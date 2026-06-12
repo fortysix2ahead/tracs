@@ -15,10 +15,11 @@ from fs.osfs import OSFS
 from more_itertools.recipes import first_true
 
 from tracs.constants import PLUGINS_PKG, PLUGIN_PATH
-from tracs.core import Keyword, Normalizer
+from tracs.core import DerivedField, Keyword, Normalizer
 from tracs.protocols import Importer, VirtualField
 from tracs.resources import ResourceType
-from tracs.service import Service, ServiceManager
+from tracs.service import Service
+from tracs.servicemgr import ServiceManager
 
 log = getLogger( __name__ )
 
@@ -98,135 +99,184 @@ class Decorator:
 @define
 class Registry:
 
-	# important: the names of the fields match the names of the decorators below + an underscore
-	_importer: Dict[str, Importer] = field( factory=dict, alias='_importer' )
-	_keyword: Dict[str, Keyword] = field( factory=dict, alias='_keyword' )
-	_normalizer: Dict[str, Normalizer] = field( factory=dict, alias='_normalizer' )
-	_resourcetype: Dict[str, ResourceType] = field( factory=dict, alias='_resourcetype' )
-	_service: Dict[str, Type[Service]] = field( factory=dict, alias='_service' )
-	_setup: Dict[str, Callable] = field( factory=dict, alias='_setup' )
-	_virtualfield: Dict[str, VirtualField] = field( factory=dict, alias='_virtualfield' )
+	_decorators: List[Decorator] = field( factory=list, alias='decorators' )
+	_decorated_objs: Dict[str, Dict] = field( factory=dict, alias='_decorated_objs' )
 
-	@classmethod
-	def decorator_fields( cls ) -> List[str]:
-		return [ att for att in dir( cls ) if DECORATOR_TYPE.fullmatch( att ) ]
+	def __attrs_post_init__( self ):
+		for d in self._decorators:
+			match d.type:
+				case 'derived_field':
+					df = DerivedField( **d.kwargs, fn=d.fncls )
+					df.name = d.name or df.name
+					self._ddict( d.type )[d.name] = df
+				case 'importer':
+#					self._ddict( 'importer' )[d.name] = d.fncls( **d.kwargs ) # todo
+					self._ddict( d.type )[d.name] = d.fncls()
+				case 'keyword':
+					self._ddict( d.type )[d.name] = d.fncls()
+				case 'normalizer':
+					self._ddict( d.type )[d.name] = d.fncls()
+				case 'resourcetype':
+					_type = d.fncls()
+					if isinstance( _type := d.fncls(), list ):
+						for t in _type:
+							self._ddict( d.type )[t.name] = t
+					else:
+						self._ddict( d.type )[_type.name] = _type
+				case 'service':
+					self._ddict( d.type )[d.name] = d.fncls
+				case 'setup':
+					self._ddict( d.type )[d.name] = d.fncls
+				case 'virtualfield':
+					self._ddict( d.type )[d.name] = d.fncls()
+				case _:
+					pass
 
 	def is_initialized( self ) -> bool:
-		return any( [ len( getattr( self, att ) ) > 1 for att in self.__class__.decorator_fields() ] )
+		return any( [ len( d ) > 1 for d in self._decorated_objs.values() ] )
+
+	def _ddict( self, type: str ) -> Dict[str, Any]:
+		if not self._decorated_objs.get( type ):
+			self._decorated_objs[type] = dict()
+		return self._decorated_objs[type]
+
+	def register( self, name: str, type: str, fncls: Any ) -> None:
+		self._ddict( type=type )[name] = fncls
 
 	# importer
 
 	@property
 	def importers( self ) -> List[Importer]:
-		return list( self._importer.values() )
+		return list( self._ddict( 'importer' ).values() )
 
 	def importer( self, type: str ) -> Optional[Importer]:
-		return first_true( self.importers, lambda i: i.type == type )
+		return first_true( self.importers(), lambda i: i.type == type )
+
+	# keywords
 
 	@property
 	def keywords( self ) -> List[Keyword]:
-		return list( self._keyword.values() )
+		return list( self._ddict( 'keyword' ).values() )
+
+	# normalizers
 
 	@property
 	def normalizers( self ) -> List[Normalizer]:
-		return list( self._normalizer.values() )
+		return list( self._ddict( 'normalizer' ).values() )
+
+	# resource types
 
 	def resource_types( self ) -> List[ResourceType]:
-		return list( self._resourcetype.values() )
+		return list( self._ddict( 'resourcetype' ).values() )
 
 	def resource_type( self, name: str ) -> Optional[ResourceType]:
-		return first_true( self._resourcetype.values(), pred=lambda rt: rt.name == name )
+		return first_true( self.resource_types(), pred=lambda rt: rt.name == name )
 
 	def resource_type_for_extension( self, extension: str ) -> Optional[ResourceType]:
 		return next( (rt for rt in self.resource_types() if rt.extension() == extension), None )
 
 	def resource_type_for_suffix( self, suffix: str ) -> Optional[ResourceType]:
 		# first round: prefer suffix in special part of type: 'gpx' matches 'application/xml+gpx'
-		for key, rt in self._resourcetype.items():
+		for key, rt in self.resource_types():
 			if m := match( f'^(\w+)/(\w+)\+{suffix}$', key ):
 				return rt
 
 		# second round: suffix after slash: 'gpx' matches 'application/gpx'
-		for key, rt in self._resourcetype.items():
+		for key, rt in self.resource_types():
 			if m := match( f'^(\w+)/{suffix}(\+([\w-]+))?$', key ):
 				return rt
 
 		return None
 
 	def summary_types( self ) -> List[ResourceType]:
-		return [ rt for rt in self._resourcetype.values() if rt.summary ]
+		return [ rt for rt in self.resource_types() if rt.summary ]
 
 	def summary_type_names( self ) -> List[str]:
 		return [ rt.name for rt in self.summary_types() ]
 
 	def recording_types( self ) -> List[ResourceType]:
-		return [rt for rt in self._resourcetype.values() if rt.recording]
+		return [rt for rt in self.resource_types() if rt.recording]
 
 	def recording_type_names( self ) -> List[str]:
 		return [rt.name for rt in self.recording_types()]
 
+	# services
+
 	@property
 	def services( self ) -> List[Type[Service]]:
-		return [s for s in self._service.values()]
+		return [s for s in self._ddict( 'service' ).values()]
+
+	# setup functions
 
 	@property
 	def setups( self ) -> List[Callable]:
-		return [s for s in self._setup.values()]
+		return [s for s in self._ddict( 'setup' ).values()]
+
+	# derived fields
+
+	@property
+	def derived_fields( self ) -> List[DerivedField]:
+		return [ df for df in self._ddict( 'derived_field' ).values() ]
 
 	@property
 	def virtual_fields( self ) -> List[VirtualField]:
-		return [ vf for vf in self._virtualfield.values() ]
+		return [ vf for vf in self._ddict( 'virtualfield' ).values() ]
 
 @define
 class PluginManager:
 
 	_instance: ClassVar[PluginManager|None] = None
 
+	plugin_paths: List[str] = field( factory=list )
+	plugin_modules: List[str] = field( factory=list )
+	autoload: bool = field( default=False )
+
 	_modules: Dict[str, ModuleType] = field( factory=dict, alias='_modules' )
 	_decorators: List[Decorator] = field( factory=list, alias='_decorators' )
-	_registry: Registry = field( factory=Registry, alias='_registry' )
+	_registry: Registry = field( default=None, alias='_registry' )
 	_service_mgr: ServiceManager = field( factory=ServiceManager, alias='_service_mgr' )
 
-	_plugin_paths: List[str] = field( factory=list, alias='_plugin_paths' )
-	_plugin_modules: List[str] = field( factory=list, alias='_plugin_modules' )
-
-	@classmethod
-	def inst( cls ) -> PluginManager:
+	@staticmethod
+	def instance( *args, **kwargs ) -> PluginManager|None:
 		if not PluginManager._instance:
-			PluginManager._instance = PluginManager()
+			PluginManager._instance = PluginManager( *args, **kwargs )
 		return PluginManager._instance
 
-	def _load_modules( self, mods: List[str] ):
-		for m in mods:
+	def _load_modules( self, modules: List[str]|None ):
+		for m in modules or []:
 			try:
 				log.debug( f'attempting to load plugin module tracs.plugins.{m} ...' )
 				self._modules[m] = import_module( f'tracs.plugins.{m}' )
 			except ImportError:
 				log.error( f'failed to import module tracs.plugins.{m}', exc_info=True )
 
-	def init( self, paths: List[str], modules: List[str], reinit: bool = False ) -> PluginManager:
-		self._plugin_paths = paths
-		self._plugin_modules = modules
+	def init( self, plugin_paths: List[str]|None, plugin_names: List[str]|None ):
+		log.debug( f'loading factory plugins ...' )
+		self._load_modules( FACTORY_PLUGINS )
 
-		# this is just for debug/dev purposes
-		if reinit:
-			log.debug( f'clearing plugin manager content' )
-			self._modules.clear()
-			self._decorators.clear()
+		log.debug( f'loading user-defined plugins ...' )
+		if plugin_paths and plugin_names:
+			self.plugin_paths, self.plugin_modules = plugin_paths, plugin_names
+			self._load_extensions( self.plugin_paths, self.plugin_modules, False )
 
+		log.debug( f'initializing extension registry ...' )
+		self._init_registry()
+
+		log.debug( f'initializing service manager ...' )
+		self._init_service_manager()
+
+	def _load_extensions( self, plugin_paths: List[str]|None, plugin_names: List[str]|None, autoload: bool = False ) -> None:
 		# noinspection PyUnresolvedReferences
 		import tracs.plugins
 
-		# load factory plugins
-		self._load_modules( FACTORY_PLUGINS )
+		autoload = False  # autoload plugin modules, this is currently disabled
 
-		# extend plugin path and load additional, non-optional plugins
-		for p in self._plugin_paths or []:
+		# extend plugin path to load additional plugins
+		for p in plugin_paths or []:
 			plugin_path = OSFS( root_path=p, expand_vars=True ).getsyspath( PLUGIN_PATH )
 			tracs.plugins.__path__ = extend_path( [plugin_path], PLUGINS_PKG )
 			log.debug( f'adding {plugin_path} to list of plugin search paths' )
 
-		autoload = False # autoload plugin modules, disabled for now
 		if autoload:
 			for finder, name, ispkg in iter_modules( tracs.plugins.__path__ ):
 				try:
@@ -234,44 +284,61 @@ class PluginManager:
 				except ImportError:
 					log.error( f'failed to import module tracs.plugins.{name}', exc_info=True )
 					continue
+
 		else:
-			self._load_modules( self._plugin_modules )
+			self._load_modules( plugin_names )
 
-		return self # for convenience
+	def _init_registry( self ):
+		self._registry = Registry( self._decorators )
 
-	def registry( self ) -> Registry:
+	def _init_service_manager( self ):
+		self._service_mgr = ServiceManager()
+
+	def reinit( self ):
+		# only for development
+		log.debug( f'clearing plugin manager content' )
+		self._modules.clear()
+		self._decorators.clear()
+
+	def registry_( self ) -> Registry:
 		if not self._registry.is_initialized():
 			log.debug( f'registry is not yet initialized, evaluating {len( self._decorators )} decorators' )
 
-			decorator_types = [ f[1:] for f in Registry.decorator_fields() ]
-			for decorator_type in decorator_types:
-				for d in filter( lambda dec: dec.type == decorator_type, self._decorators ):
-					try:
-						match d.init:
-							case Decorator.Init.call:
-								if isinstance( inst := d(), list ):
-									for i in inst:
-										# todo: improve as we rely on i having a name attribute -> what to do if not?
-										getattr( self._registry, f'_{d.type}' )[i.name] = i
-										log.debug( f'registered {i} provided by decorated function/class {d.fncls}' )
-								else:
-									getattr( self._registry, f'_{d.type}' )[d.name] = inst
-									log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
-							case Decorator.Init.cls:
-								getattr( self._registry, f'_{d.type}' )[d.name] = d.fncls
-								log.debug( f'registered {d.type} class {d.fncls}' )
-							case Decorator.Init.fn:
-								getattr( self._registry, f'_{d.type}' )[d.name] = d.fncls
-								log.debug( f'registered {d.type} function {d.fncls}' )
-							case _:
-								log.warning( f'unknown descriptor type {d.type}' ) # should not happen
+			for d in self._decorators:
+				match d.init:
+					case Decorator.Init.call:
+						if isinstance( inst := d(), list ):
+							for i in inst:
+								# todo: improve as we rely on i having a name attribute -> what to do if not?
+								# getattr( self._registry, f'_{d.type}' )[i.name] = i
+								self._registry.register( d.name, d.type, i )
+								log.debug( f'registered {i} provided by decorated function/class {d.fncls}' )
 
-					except (AttributeError, TypeError): # need to be extended
-						log.error( f'error calling decorated object {d.fncls}', exc_info=True )
+						else:
+							self._registry.register( d.name, d.type, inst )
+							log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
+
+					case Decorator.Init.inst:
+						pass # todo: case not yet supported
+
+					case Decorator.Init.cls:
+						self._registry.register( d.name, d.type, d.fncls )
+						log.debug( f'registered {d.type} class {d.fncls}' )
+
+					case Decorator.Init.fn:
+						self._registry.register( d.name, d.type, d.fncls )
+						log.debug( f'registered {d.type} function {d.fncls}' )
+
+					case _:
+						log.warning( f'unknown descriptor type {d.type}' )  # should not happen
 
 		else:
 			log.debug( 'skipping registry initialization, decorators have already been evaluated' )
 
+		return self._registry
+
+	@property
+	def registry( self ) -> Registry:
 		return self._registry
 
 	@property
@@ -290,7 +357,7 @@ class PluginManager:
 			cls: Type = None,
 			init: Decorator.Init = Decorator.Init.call
 	) -> Decorator:
-		PluginManager.inst()._decorators.append( d := Decorator( fncls, args, kwargs, frame, cls, init ) )
+		PluginManager.instance()._decorators.append( d := Decorator( fncls, args, kwargs, frame, cls, init ) )
 		log.debug( f'registered decorator [green]{d.name}[/green] from {d.fncls} in module [green]{d.module}[/green]' )
 		return d
 
@@ -309,7 +376,7 @@ def _register( *args, **kwargs ) -> Callable:
 			return args[0]()
 
 	if args and not kwargs and callable( args[0] ):
-		PluginManager.register_decorator( args[0], (), {}, _frame, _class, _init )
+		PluginManager.instance().register_decorator( args[0], (), {}, _frame, _class, _init )
 		if isclass( args[0] ):
 			return args[0]
 
@@ -325,6 +392,9 @@ def normalizer( *args, **kwargs ):
 
 def virtualfield( *args, **kwargs ):
 	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.call } ) )
+
+def derived_field( *args, **kwargs ):
+	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.fn } ) )
 
 def importer( *args, **kwargs ):
 	return _register( *args, **(kwargs | {'_frame': currentframe(), '_init': Decorator.Init.cls } ) )

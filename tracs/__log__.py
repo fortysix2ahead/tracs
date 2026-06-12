@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import ClassVar, Optional
 
 from attrs import define, field
-from dateutil.tz import UTC
+from dateutil.tz import tzlocal, UTC
 from rich.logging import RichHandler
 from rich.text import Text
 
@@ -19,18 +19,21 @@ DISABLE = 100
 LOG_FILE_FORMAT = '[%(asctime)s] %(levelname)s: %(message)s'
 LOG_FILE_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-APP_TIME = datetime.now( tz=UTC )
-LAST_LOG_TIME = datetime.now( tz=UTC )
+APP_TIME = datetime.now( tzlocal() )
+LAST_LOG_TIME = APP_TIME
 
 def log_time_formatter( dt: str|datetime ) -> Text:
 	global LAST_LOG_TIME
 
+	dt = dt.replace( tzinfo=tzlocal() )
 	dt_str = dt.strftime( "%H:%M:%S.%f" )
 	delta = dt - LAST_LOG_TIME
 	delta_str = f'{delta.seconds}.{str( delta.microseconds ).rjust( 6, "0" )}'
 	LAST_LOG_TIME = dt
 
 	return Text( f'{dt_str} +{delta_str}' )
+
+# console handlers
 
 DEFAULT_HANDLER: RichHandler = RichHandler( level=WARNING, show_time=False, show_level=False, markup=True )
 VERBOSE_HANDLER: RichHandler = RichHandler( level=DISABLE, show_time=False, show_level=True, markup=True )
@@ -39,6 +42,9 @@ VERBOSE_DEBUG_HANDLER: RichHandler = RichHandler(
 	level=DISABLE, show_time=True, show_level=True, markup=True, omit_repeated_times=False,
 	log_time_format=log_time_formatter
 )
+
+# file handler
+
 FILE_HANDLER: Optional[FileHandler] = None
 
 @define

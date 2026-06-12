@@ -2,7 +2,17 @@ from datetime import datetime, timedelta
 from typing import List
 
 from tracs.core import VirtualField
-from tracs.pluginmgr import virtualfield
+from tracs.pluginmgr import derived_field, virtualfield
+
+# derived fields to extend Activity class
+
+@derived_field(
+	display_name='Classifiers',
+	description='list of classifiers of an activity',
+	type=List[str],
+)
+def clssifiers( self ) -> List[str]:
+	return [] # todo ...
 
 # virtual fields
 

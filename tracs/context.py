@@ -17,9 +17,11 @@ from fs.base import FS
 from fs.errors import NoSysPath, ResourceNotFound
 from fs.multifs import MultiFS
 from fs.osfs import OSFS
+from fs.path import dirname
 from fs.subfs import SubFS
 from yaml import safe_dump
 
+from __log__ import LogManager
 from tracs.constants import *
 from tracs.pluginmgr import PluginManager, Registry, ServiceManager
 from tracs.protocols import ActivityDb, RuleParser
@@ -78,10 +80,12 @@ class ApplicationContext:
 	state: Configuration = field( default=None )
 
 	# configuration fs
-	config_fs: FS = field( default=USER_CONFIG_FS, on_setattr=_set_config_fs )
+	# config_fs: FS = field( default=USER_CONFIG_FS, on_setattr=_set_config_fs )
+	config_fs: FS = field( default=USER_CONFIG_FS )
 
 	# library fs
-	lib_fs: FS = field( default=USER_DATA_FS, on_setattr=_set_lib_fs )
+	# lib_fs: FS = field( default=USER_DATA_FS, on_setattr=_set_lib_fs )
+	lib_fs: FS = field( default=USER_DATA_FS )
 
 	# database / fs
 	_db: ActivityDb = field( default=None, alias='_db' )
@@ -99,10 +103,11 @@ class ApplicationContext:
 	_imports_fs: FS = field( default=None, alias='_imports_fs' )
 
 	# plugin manager, registry, service manager
-	plugin_mgr: PluginManager = field( default=None )
-	registry: Registry = field( default=None )
-	service_mgr: ServiceManager = field( default=None )
-	parser: RuleParser = field( default=None )
+	plugin_mgr: Optional[PluginManager] = field( default=None )
+	log_mgr: Optional[LogManager] = field( default=LogManager.instance() )
+	registry: Optional[Registry] = field( default=None )
+	service_mgr: Optional[ServiceManager] = field( default=None )
+	parser: Optional[RuleParser] = field( default=None )
 
 	# internal fields
 
@@ -142,21 +147,36 @@ class ApplicationContext:
 		self.config = Configuration( settings_files=settings_files, merge_enabled=True )
 		self.state = Configuration( settings_files=appstate_files, merge_enabled=True )
 
-	def _setup_aux_fs( self, config_fs: FS = None, lib_fs: FS = None ) -> None:
-		if config_fs:
-			self._takeouts_fs = _subfs( config_fs, TAKEOUT_DIRNAME )
-			self._log_fs = _subfs( config_fs, LOG_DIRNAME )
-			self._var_fs = _subfs( config_fs, VAR_DIRNAME )
-			self._backup_fs = _subfs( config_fs, BACKUP_DIRNAME )
-			self._cache_fs = _subfs( config_fs, CACHE_DIRNAME )
-			self._tmp_fs = _subfs( self.var_fs, TMP_DIRNAME )
-			self._imports_fs = _subfs( self.var_fs, IMPORT_DIRNAME )
+	def _setup_aux_fs( self, config_fs: FS, lib_fs: FS ) -> None:
+		# relative to config fs
+		self._takeouts_fs = _subfs( config_fs, TAKEOUT_DIRNAME )
+		self._log_fs = _subfs( config_fs, LOG_DIRNAME )
+		self._var_fs = _subfs( config_fs, VAR_DIRNAME )
+		self._backup_fs = _subfs( config_fs, BACKUP_DIRNAME )
+		self._cache_fs = _subfs( config_fs, CACHE_DIRNAME )
+		self._tmp_fs = _subfs( self.var_fs, TMP_DIRNAME )
+		self._imports_fs = _subfs( self.var_fs, IMPORT_DIRNAME )
 
-		if lib_fs:
-			self._db_fs = _subfs( lib_fs, DB_DIRNAME )
-			self._overlay_fs = _subfs( lib_fs, OVERLAY_DIRNAME )
+		# relative to lib fs
+		self._db_fs = _subfs( lib_fs, DB_DIRNAME )
+		self._overlay_fs = _subfs( lib_fs, OVERLAY_DIRNAME )
 
 	def __attrs_post_init__( self ):
+		# load config/appstate from factory locations + environment variables
+		self.config = Configuration(
+			settings_files=[ f'{INSTALL_PATH}/{DEFAULT_CONFIG_FILENAME}' ],
+			merge_enabled=True,
+			envvar_prefix=APP_PKG_NAME.upper(),
+			load_dotenv=False,
+			environments=False,
+		)
+		self.state = Configuration( settings_files=[ f'{INSTALL_PATH}/{DEFAULT_STATE_FILENAME}' ], merge_enabled=True )
+
+		# update log manager to reflect configuration provided via environment variables
+		self.log_mgr.set_console_log( self.config.verbose, self.config.debug, self.config.json )
+
+		return
+
 		# create config fs
 		log.debug( f'config/library FS configured to {fs_to_str( self.config_fs )} / {fs_to_str( self.lib_fs )}' )
 
@@ -172,6 +192,37 @@ class ApplicationContext:
 		# apply library configuration + load library (actually there's nothing to load yet)
 		if self.config.library is not None:
 			self.lib_fs = self.config.library
+
+	def update( self, configuration: Optional[str] = None, library: Optional[str] = None,
+	            verbose: Optional[bool] = False, debug: Optional[bool] = False, force: Optional[bool] = False,
+	            pretend: Optional[bool] = False, json: Optional[bool] = False, ) -> None:
+
+		# attempt to load user-defined configuration file
+		if configuration and self.root_fs.exists( configuration ):
+			if self.root_fs.isdir( configuration ):
+				configuration = self.root_fs.getsyspath( f'{configuration}/{CONFIG_FILENAME}' )
+			self.config.load_file( configuration )
+		else:
+			self.config.load_file( self.config_fs.getsyspath( CONFIG_FILENAME ) )
+
+		# update configuration with command line args
+		cli_args = { k: v for k, v in { 'verbose': verbose, 'debug': debug, 'force': force, 'pretend': pretend, 'json': json }.items() if v is not None }
+		self.config.update( cli_args )
+
+		# update log manager with merged config values
+		self.log_mgr.set_console_log( self.config.verbose, self.config.debug, self.config.json )
+
+		# create config_fs, lib_fs and auxillary folders
+		if configuration and self.root_fs.exists( configuration ):
+			self.config_fs = OSFS( configuration if self.root_fs.isdir( configuration ) else dirname( configuration ) )
+
+		if self.config.library:
+			self.lib_fs = OSFS( self.config.library )
+
+		self._setup_aux_fs( self.config_fs, self.lib_fs )
+
+		# report how things are finally configured
+		log.debug( f'config/library FS configured to {fs_to_str( self.config_fs )} / {fs_to_str( self.lib_fs )}' )
 
 	# main properties
 

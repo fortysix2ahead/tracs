@@ -8,4 +8,4 @@ if __name__ == '__main__':
 	app = Application.instance()
 
 	from tracs.cli import cli
-	cli( obj=CLI_METADATA.make_context() )
+	cli()

@@ -6,18 +6,17 @@ from typing import ClassVar, Optional, Tuple
 from attrs import define, field
 from dynaconf import Dynaconf as Configuration
 
-from __log__ import LogManager
-from tracs.activity import Activity, configure_formatters as configure_activity_formatters
+from tracs.__log__ import LogManager
+from tracs.activity import Activity
 from tracs.context import ApplicationContext
 from tracs.core import augment
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager, Registry, ServiceManager
 from tracs.rules import RuleParser
-from tracs.utils import UCFG
 
 log = getLogger( __name__ )
 
-@define( init=False )
+@define
 class Application:
 
 	_instance: ClassVar[Application|None] = None  # application singleton
@@ -28,80 +27,66 @@ class Application:
 	@classmethod
 	def instance( cls, *args, **kwargs ):
 		if cls._instance is None:
-			cls._instance = Application.__new__( cls, *args, **kwargs )
+			cls._instance = Application( _log_manager=LogManager.instance() )
 		return cls._instance
 
-	# constructor
-	def __init__( self ):
-		raise RuntimeError( 'instance can only be created by using Application.instance( cls ) method' )
+	def __attrs_post_init__( self ):
+		self._ctx = ApplicationContext()
+		self.ctx.plugin_mgr = PluginManager.instance()
+		self.ctx.log_mgr = LogManager.instance()
 
-	@classmethod
-	def __new__( cls, *args, **kwargs ):
-		instance = super( Application, cls ).__new__( cls )
-		instance.__setup__( *args, **kwargs )
-		return instance
+	def init( self, configuration: Optional[str] = None, library: Optional[str] = None,
+	          verbose: Optional[bool] = False, debug: Optional[bool] = False, force: Optional[bool] = False,
+	          pretend: Optional[bool] = False, json: Optional[bool] = False, ) -> None:
+		"""
+		Initialize the application.
+		This is supposed to be called after the CLI has been set up because the parameters may have been provided as
+		CLI arguments.
+		"""
 
-	# 'None' as default value means value has not been provided from the outside (via command line switch)
-	def __setup__( self, *args, **kwargs ):
-		self._log_manager = LogManager.instance()
-
-		# console logging setup --
-#		from tracs.__log__ import LogManager
-#		LogManager.instance().set_console_log( kwargs.get( 'verbose', False ), kwargs.get( 'debug', False ), kwargs.get( 'json', False ) )
-
-		# log command line flags
-#		log.debug( f'parameters provided from command line: {kwargs}' )
-
-		# create context, based on cfg_dir
-		self._ctx = ApplicationContext( _cli_args=args, _cli_kwargs=kwargs )
+		# update application context with user-defined configuration
+		self.ctx.update( configuration=configuration, library=library, verbose=verbose, debug=debug, force=force, pretend=pretend, json=json )
 
 		# file logging setup after configuration has been loaded --
-#		LogManager.instance().set_file_log( self._ctx.config.verbose, self._ctx.config.debug, self._ctx.log_file_path )
+#		LogManager.instance().set_file_log( self.ctx.config.verbose, self.ctx.config.debug, self.ctx.log_file_path )
 
 		# print context configuration
-#		log.debug( f'using configuration from {self._ctx.config_dir} and library in {self._ctx.lib_dir}' )
+		log.debug( f'using configuration from {self.ctx.config_dir} and library in {self.ctx.lib_dir}' )
 
-		# init plugin manager
-		if self._ctx.config.plugins.paths:
-			plugin_paths = self._ctx.config.plugins.paths.split() if isinstance( self._ctx.config.plugins.paths, str ) else self._ctx.config.plugins.paths
+		# setup plugin manager
+		if self.ctx.config.plugins.paths:
+			plugin_paths = self.ctx.config.plugins.paths.split() if isinstance( self.ctx.config.plugins.paths, str ) else self.ctx.config.plugins.paths
 		else:
 			plugin_paths = []
-		if self._ctx.config.plugins.modules:
-			modules = self._ctx.config.plugins.modules.split() if isinstance( self._ctx.config.plugins.modules, str ) else self._ctx.config.plugins.modules
+		if self.ctx.config.plugins.modules:
+			modules = self.ctx.config.plugins.modules.split() if isinstance( self.ctx.config.plugins.modules, str ) else self.ctx.config.plugins.modules
 		else:
 			modules = []
 
-		self._ctx.plugin_mgr = PluginManager( plugin_paths=plugin_paths, plugin_modules=modules )
-		self._ctx.service_mgr = self._ctx.plugin_mgr.service_mgr
-		self._ctx.registry = self.registry
-
-		# init db from config_dir
-		self._db = ActivityDb(
-			path=self._ctx.db_dir_path,
-			read_only=self._ctx.pretend,
-			enable_index=self.ctx.config.db.index,
-			summary_types=self.registry.summary_type_names(),
-			recording_types=self.registry.recording_type_names()
-		)
-		self._ctx._db = self._db
+		self.ctx.plugin_mgr.init( plugin_paths=plugin_paths, plugin_names=modules )
+		self.ctx.registry = self.plugin_mgr.registry
+		self.ctx.service_mgr = self.plugin_mgr.service_mgr
 
 		# create rule parser
-		self._parser = RuleParser( keywords=self.registry.keywords, normalizers=self.registry.normalizers )
-		self._ctx.parser = self._parser
+		self.ctx.parser = RuleParser( keywords=self.registry.keywords, normalizers=self.registry.normalizers )
 
 		# augment Activity class with derived fields
 		for df in self.registry.derived_fields:
 			augment( Activity, df )
 
 		# init service manager
-		for s in self.registry.services:
-			self.service_mgr.add_class( s )
-		for name, cfg in self._ctx.config.services.items():
-			self.service_mgr.add_from( self._ctx, name, cfg )
+		[self.service_mgr.add_class( s ) for s in self.registry.services ]
+		for name, cfg in self.ctx.config.services.items():
+			self.service_mgr.add_from( self.ctx, name, cfg )
 
-		# ---- announce context/configuration to utils module + configure formatters ----
-		UCFG.reconfigure( self._ctx.config )
-		configure_activity_formatters( self._ctx.config.formats )
+		# init db from config_dir
+		self.ctx._db = ActivityDb(
+			path=self.ctx.db_dir_path,
+			read_only=self.ctx.pretend,
+			enable_index=self.ctx.config.db.index,
+			summary_types=self.registry.summary_type_names(),
+			recording_types=self.registry.recording_type_names()
+		)
 
 		# ---- register cleanup functions ----
 #		register_atexit( self._ctx.db.close )
@@ -115,22 +100,22 @@ class Application:
 
 	@property
 	def db( self ) -> ActivityDb:
-		return self._db
+		return self.ctx.db
 
 	@property
-	def registry( self ) -> Registry:
+	def registry( self ) -> Optional[Registry]:
 		return self.ctx.registry
 
 	@property
-	def plugin_mgr( self ) -> PluginManager:
+	def plugin_mgr( self ) -> Optional[PluginManager]:
 		return self.ctx.plugin_mgr
 
 	@property
-	def service_mgr( self ) -> ServiceManager:
+	def service_mgr( self ) -> Optional[ServiceManager]:
 		return self.ctx.service_mgr
 
 	@property
-	def parser( self ) -> RuleParser:
+	def parser( self ) -> Optional[RuleParser]:
 		return self.ctx.parser
 
 	@property

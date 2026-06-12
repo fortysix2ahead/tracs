@@ -7,7 +7,7 @@ from click import argument, Choice, Context as ClickContext, group, Group, optio
 from click_shell import make_click_shell
 from rule_engine import RuleSyntaxError
 
-from tracs import __version__
+from tracs.constants import __version__
 from tracs.activity import Activity
 from tracs.aio import export_activities, import_activities, open_activities, reimport_activities
 from tracs.application import Application
@@ -60,18 +60,16 @@ class ExtensionGroup( Group ):
 @option( '-p', '--pretend', is_flag=True, default=None, required=False, help='pretends to work, only simulates everything and does not persist any changes' )
 @pass_context
 def cli( ctx: ClickContext, configuration, library, force, verbose, pretend, debug, json ):
-
-	ctx.call_on_close( teardown_context )
-
-	ctx.obj = Application.instance(
+	Application.instance().init(
 		configuration=configuration,
 		library=library,
 		verbose=verbose,
 		debug=debug,
 		force=force,
 		pretend=pretend,
-		json=json
-	).ctx
+		json=json,
+	)
+	ctx.obj = Application.instance().ctx
 
 	# migrate_application( ctx.obj, None ) # check if migration is necessary
 

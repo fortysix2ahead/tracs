@@ -202,8 +202,14 @@ class ApplicationContext:
 			if self.root_fs.isdir( configuration ):
 				configuration = self.root_fs.getsyspath( f'{configuration}/{CONFIG_FILENAME}' )
 			self.config.load_file( configuration )
+
+			# load appstate
+			appstate = self.root_fs.getsyspath( f'{dirname( configuration )}/{STATE_FILENAME}' )
+			self.appstate.load_file( appstate )
+
 		else:
 			self.config.load_file( self.config_fs.getsyspath( CONFIG_FILENAME ) )
+			self.appstate.load_file( self.config_fs.getsyspath( STATE_FILENAME ) )
 
 		# update configuration with command line args
 		cli_args = { k: v for k, v in { 'verbose': verbose, 'debug': debug, 'force': force, 'pretend': pretend, 'json': json }.items() if v is not None }
@@ -243,6 +249,15 @@ class ApplicationContext:
 		:return: configuration object
 		"""
 		return self.config
+
+	@property
+	def appstate( self ) -> Configuration:
+		"""
+		Alias for self.state
+
+		:return: configuration object
+		"""
+		return self.state
 
 	@property
 	def debug( self ) -> bool:

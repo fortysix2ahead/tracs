@@ -9,7 +9,7 @@ from tracs.activity import Activity
 from tracs.constants import CFG_USER_ID
 from tracs.context import ApplicationContext
 from tracs.handlers import ResourceHandler
-from tracs.pluginmgr import importer, resourcetype, service
+from tracs.pluginmgr import importer, resource_type, service
 from tracs.plugins.gpx import GPX_TYPE
 from tracs.resources import Resource
 from tracs.service import Service
@@ -24,7 +24,7 @@ MINIMAL_GPX = \
 	r'<wpt lat="37.778259000" lon="-122.391386000"><time>2016-06-17T23:41:03Z</time></wpt>' \
 	r'</gpx>'
 
-@resourcetype( type=MOCK_TYPE, summary=True )
+@resource_type( type=MOCK_TYPE, summary=True )
 @define
 class MockActivity:
 

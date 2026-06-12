@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from pytest import mark
 
 from tracs.handlers import ResourceHandler
-from tracs.pluginmgr import importer, Registry, resourcetype
+from tracs.pluginmgr import importer, Registry, resource_type
 from tracs.resources import ResourceType
 
 # test cases
@@ -13,11 +13,11 @@ from tracs.resources import ResourceType
 RT_ONE = ResourceType( name='application/one', summary=True )
 RT_TWO = ResourceType( name='application/two', recording=True )
 
-@resourcetype
+@resource_type
 def resource_type_one() -> ResourceType:
 	return RT_ONE
 
-@resourcetype
+@resource_type
 def resource_type_two() -> ResourceType:
 	return RT_TWO
 

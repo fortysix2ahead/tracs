@@ -40,3 +40,6 @@ def fmt_timedelta( obj: timedelta, fmt: Optional[TIMEDELTA_FORMATS] = None, loca
 
 def style( *items: str, style: str ) -> List[str]:
 	return [f'[{style}]{i}[/{style}]' for i in items]
+
+def yellow( s: str ) -> str:
+	return f'[yellow]{s}[/yellow]'

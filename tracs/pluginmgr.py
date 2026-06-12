@@ -237,9 +237,10 @@ class PluginManager:
 	_service_mgr: ServiceManager = field( factory=ServiceManager, alias='_service_mgr' )
 
 	@staticmethod
-	def instance( *args, **kwargs ) -> PluginManager|None:
+	def instance( *args, **kwargs ) -> PluginManager:
 		if not PluginManager._instance:
 			PluginManager._instance = PluginManager( *args, **kwargs )
+		# noinspection PyTypeChecker
 		return PluginManager._instance
 
 	def _load_modules( self, modules: List[str]|None ):
@@ -300,42 +301,44 @@ class PluginManager:
 		self._modules.clear()
 		self._decorators.clear()
 
-	def registry_( self ) -> Registry:
-		if not self._registry.is_initialized():
-			log.debug( f'registry is not yet initialized, evaluating {len( self._decorators )} decorators' )
+	# unfortunately the code below for registry creation is not flexible enough ...
 
-			for d in self._decorators:
-				match d.init:
-					case Decorator.Init.call:
-						if isinstance( inst := d(), list ):
-							for i in inst:
-								# todo: improve as we rely on i having a name attribute -> what to do if not?
-								# getattr( self._registry, f'_{d.type}' )[i.name] = i
-								self._registry.register( d.name, d.type, i )
-								log.debug( f'registered {i} provided by decorated function/class {d.fncls}' )
-
-						else:
-							self._registry.register( d.name, d.type, inst )
-							log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
-
-					case Decorator.Init.inst:
-						pass # todo: case not yet supported
-
-					case Decorator.Init.cls:
-						self._registry.register( d.name, d.type, d.fncls )
-						log.debug( f'registered {d.type} class {d.fncls}' )
-
-					case Decorator.Init.fn:
-						self._registry.register( d.name, d.type, d.fncls )
-						log.debug( f'registered {d.type} function {d.fncls}' )
-
-					case _:
-						log.warning( f'unknown descriptor type {d.type}' )  # should not happen
-
-		else:
-			log.debug( 'skipping registry initialization, decorators have already been evaluated' )
-
-		return self._registry
+	# def registry_( self ) -> Registry:
+	# 	if not self._registry.is_initialized():
+	# 		log.debug( f'registry is not yet initialized, evaluating {len( self._decorators )} decorators' )
+	#
+	# 		for d in self._decorators:
+	# 			match d.init:
+	# 				case Decorator.Init.call:
+	# 					if isinstance( inst := d(), list ):
+	# 						for i in inst:
+	# 							# todo: improve as we rely on i having a name attribute -> what to do if not?
+	# 							# getattr( self._registry, f'_{d.type}' )[i.name] = i
+	# 							self._registry.register( d.name, d.type, i )
+	# 							log.debug( f'registered {i} provided by decorated function/class {d.fncls}' )
+	#
+	# 					else:
+	# 						self._registry.register( d.name, d.type, inst )
+	# 						log.debug( f'registered {inst} provided by decorated function/class {d.fncls}' )
+	#
+	# 				case Decorator.Init.inst:
+	# 					pass # todo: case not yet supported
+	#
+	# 				case Decorator.Init.cls:
+	# 					self._registry.register( d.name, d.type, d.fncls )
+	# 					log.debug( f'registered {d.type} class {d.fncls}' )
+	#
+	# 				case Decorator.Init.fn:
+	# 					self._registry.register( d.name, d.type, d.fncls )
+	# 					log.debug( f'registered {d.type} function {d.fncls}' )
+	#
+	# 				case _:
+	# 					log.warning( f'unknown descriptor type {d.type}' )  # should not happen
+	#
+	# 	else:
+	# 		log.debug( 'skipping registry initialization, decorators have already been evaluated' )
+	#
+	# 	return self._registry
 
 	@property
 	def registry( self ) -> Registry:
@@ -349,19 +352,21 @@ class PluginManager:
 	def service_mgr( self ) -> ServiceManager:
 		return self._service_mgr
 
-	@staticmethod
-	def register_decorator(
-			fncls: Callable | Type,
-			args: Tuple, kwargs: Dict,
-			frame: FrameInfo = None,
-			cls: Type = None,
-			init: Decorator.Init = Decorator.Init.call
-	) -> Decorator:
-		PluginManager.instance()._decorators.append( d := Decorator( fncls, args, kwargs, frame, cls, init ) )
-		log.debug( f'registered decorator [green]{d.name}[/green] from {d.fncls} in module [green]{d.module}[/green]' )
-		return d
+	def add_decorator( self, d: Decorator ) -> None:
+		self._decorators.append( d )
 
 # decorators
+
+def register(
+		fncls: Callable | Type,
+		args: Tuple, kwargs: Dict,
+		frame: FrameInfo,
+		cls: Type,
+		init: Decorator.Init = Decorator.Init.call
+) -> Decorator:
+	PluginManager.instance().add_decorator( d := Decorator( fncls, args, kwargs, frame, cls, init ) )
+	log.debug( f'registered decorator [green]{d.name}[/green] from {d.fncls} in module [green]{d.module}[/green]' )
+	return d
 
 def _register( *args, **kwargs ) -> Callable:
 	_class = kwargs.pop( '_class', None )
@@ -370,13 +375,13 @@ def _register( *args, **kwargs ) -> Callable:
 
 	def _inner( fncls ):
 		if fncls is not None:
-			PluginManager.register_decorator( fncls, args, kwargs, _frame, _class, _init )
+			register( fncls, args, kwargs, _frame, _class, _init )
 			return fncls
 		else:
 			return args[0]()
 
 	if args and not kwargs and callable( args[0] ):
-		PluginManager.instance().register_decorator( args[0], (), {}, _frame, _class, _init )
+		register( args[0], (), {}, _frame, _class, _init )
 		if isclass( args[0] ):
 			return args[0]
 

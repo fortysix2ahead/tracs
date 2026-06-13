@@ -45,8 +45,9 @@ def test_derived_field():
 
 	# fail to overwrite existing fields
 	df = DerivedField( name='name', type=str, fn=to_lower, expose=True )
+	augment( ClassWithDerivedFields, df, ignore_errors=True ) # no exception
 	with raises( AttributeError ):
-		augment( ClassWithDerivedFields, df )
+		augment( ClassWithDerivedFields, df, ignore_errors=False )
 
 	# helper functions
 

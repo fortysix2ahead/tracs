@@ -217,12 +217,13 @@ class DerivedField:
 	expose: bool = field( default=True )
 
 # noinspection PyShadowingNames
-def augment( cls: Type, field: DerivedField, ignore_errors: bool = True ) -> Type:
+def augment( cls: Type, field: DerivedField, ignore_errors: bool = True ) -> None:
 	if hasattr( cls, field.name ):
 		if ignore_errors:
 			log.warning( f'overwriting Activity fields is not supported: field "{field.name}" already exists' )
 		else:
 			raise AttributeError( f'overwriting Activity fields is not supported: field "{field.name}" already exists' )
+		return
 
 	# augment provided class with property
 	setattr( cls, field.name, property( fget=field.fn ) )

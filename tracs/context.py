@@ -55,7 +55,7 @@ def _set_config_fs( inst, att, val ):
 		value = UserConfigFS( APPNAME, create=True )
 
 	# noinspection PyProtectedMember
-	cast( ApplicationContext, inst )._setup_aux_fs( config_fs=value )
+	inst._setup_aux_fs( config_fs=value )
 
 	return value
 
@@ -68,7 +68,7 @@ def _set_lib_fs( inst, att, val ):
 		value: FS = UserDataFS( APPNAME, create=True )
 
 	# noinspection PyProtectedMember
-	cast( ApplicationContext, inst )._setup_aux_fs( lib_fs=value )
+	inst._setup_aux_fs( lib_fs=value )
 
 	return value
 
@@ -84,8 +84,7 @@ class ApplicationContext:
 	config_fs: FS = field( default=USER_CONFIG_FS )
 
 	# library fs
-	# lib_fs: FS = field( default=USER_DATA_FS, on_setattr=_set_lib_fs )
-	lib_fs: FS = field( default=USER_DATA_FS )
+	lib_fs: FS = field( default=USER_DATA_FS, on_setattr=_set_lib_fs )
 
 	# database / fs
 	_db: ActivityDb = field( default=None, alias='_db' )
@@ -147,19 +146,21 @@ class ApplicationContext:
 		self.config = Configuration( settings_files=settings_files, merge_enabled=True )
 		self.state = Configuration( settings_files=appstate_files, merge_enabled=True )
 
-	def _setup_aux_fs( self, config_fs: FS, lib_fs: FS ) -> None:
-		# relative to config fs
-		self._takeouts_fs = _subfs( config_fs, TAKEOUT_DIRNAME )
-		self._log_fs = _subfs( config_fs, LOG_DIRNAME )
-		self._var_fs = _subfs( config_fs, VAR_DIRNAME )
-		self._backup_fs = _subfs( config_fs, BACKUP_DIRNAME )
-		self._cache_fs = _subfs( config_fs, CACHE_DIRNAME )
-		self._tmp_fs = _subfs( self.var_fs, TMP_DIRNAME )
-		self._imports_fs = _subfs( self.var_fs, IMPORT_DIRNAME )
+	def _setup_aux_fs( self, config_fs: Optional[FS] = None, lib_fs: Optional[FS] = None ) -> None:
+		if config_fs:
+			# relative to config fs
+			self._takeouts_fs = _subfs( config_fs, TAKEOUT_DIRNAME )
+			self._log_fs = _subfs( config_fs, LOG_DIRNAME )
+			self._var_fs = _subfs( config_fs, VAR_DIRNAME )
+			self._backup_fs = _subfs( config_fs, BACKUP_DIRNAME )
+			self._cache_fs = _subfs( config_fs, CACHE_DIRNAME )
+			self._tmp_fs = _subfs( self.var_fs, TMP_DIRNAME )
+			self._imports_fs = _subfs( self.var_fs, IMPORT_DIRNAME )
 
-		# relative to lib fs
-		self._db_fs = _subfs( lib_fs, DB_DIRNAME )
-		self._overlay_fs = _subfs( lib_fs, OVERLAY_DIRNAME )
+		if lib_fs:
+			# relative to lib fs
+			self._db_fs = _subfs( lib_fs, DB_DIRNAME )
+			self._overlay_fs = _subfs( lib_fs, OVERLAY_DIRNAME )
 
 	def __attrs_post_init__( self ):
 		# load config/appstate from factory locations + environment variables

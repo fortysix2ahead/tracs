@@ -52,7 +52,7 @@ class Application:
 		"""
 
 		# update application context with user-defined configuration
-		self.ctx.update( configuration=configuration, library=library, verbose=verbose, debug=debug, force=force, pretend=pretend, json=json )
+		self.ctx.apply_config( configuration=configuration, library=library, verbose=verbose, debug=debug, force=force, pretend=pretend, json=json )
 
 		# file logging setup after configuration has been loaded --
 #		LogManager.instance().set_file_log( self.ctx.config.verbose, self.ctx.config.debug, self.ctx.log_file_path )

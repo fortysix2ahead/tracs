@@ -39,6 +39,8 @@ log = getLogger( __name__ )
 # UserCacheFS ~/Library/Caches/tracs/
 # UserLogFS ~/Library/Logs/tracs/
 
+ROOT_FS = OSFS( root_path='/', expand_vars=True )
+
 USER_CONFIG_FS: FS = UserConfigFS( APPNAME, create=True )
 USER_DATA_FS: FS = UserDataFS( APPNAME, create=True )
 USER_CACHE_FS: FS = UserCacheFS( APPNAME, create=True )
@@ -80,11 +82,12 @@ class ApplicationContext:
 	state: Configuration = field( default=None )
 
 	# configuration fs
-	# config_fs: FS = field( default=USER_CONFIG_FS, on_setattr=_set_config_fs )
+#	config_fs: FS = field( default=USER_CONFIG_FS, on_setattr=_set_config_fs )
 	config_fs: FS = field( default=USER_CONFIG_FS )
 
 	# library fs
-	lib_fs: FS = field( default=USER_DATA_FS, on_setattr=_set_lib_fs )
+#	lib_fs: FS = field( default=USER_DATA_FS, on_setattr=_set_lib_fs )
+	lib_fs: FS = field( default=USER_DATA_FS )
 
 	# database / fs
 	_db: ActivityDb = field( default=None, alias='_db' )
@@ -112,6 +115,10 @@ class ApplicationContext:
 
 	_cli_args: Tuple[Any, ...] = field( default=(), alias='_cli_args' )
 	_cli_kwargs: Dict[str, Any] = field( factory=dict, alias='_cli_kwargs' )
+
+	_init_with: Dict[str, Any] = field( factory=dict, alias='_init_with' )
+	_config_dir: str = field( default=USER_CONFIG_FS.getsyspath( '/' ), alias='_config_dir' )
+	_config_file: str = field( default=CONFIG_FILENAME, alias='_config_file' )
 
 	def _load_configuration( self ):
 		settings_files = [ f'{INSTALL_PATH}/{DEFAULT_CONFIG_FILENAME}' ]
@@ -164,17 +171,14 @@ class ApplicationContext:
 
 	def __attrs_post_init__( self ):
 		# load config/appstate from factory locations + environment variables
-		self.config = Configuration(
-			settings_files=[ f'{INSTALL_PATH}/{DEFAULT_CONFIG_FILENAME}' ],
-			merge_enabled=True,
-			envvar_prefix=APP_PKG_NAME.upper(),
-			load_dotenv=False,
-			environments=False,
-		)
-		self.state = Configuration( settings_files=[ f'{INSTALL_PATH}/{DEFAULT_STATE_FILENAME}' ], merge_enabled=True )
+		self._load_default_config()
 
 		# update log manager to reflect configuration provided via environment variables
 		self.log_mgr.set_console_log( self.config.verbose, self.config.debug, self.config.json )
+
+		# used only for testing
+		if self._init_with:
+			self.apply_config( **self._init_with )
 
 		return
 
@@ -188,16 +192,28 @@ class ApplicationContext:
 		if cli_config := self._cli_kwargs.pop( KEY_CONFIGURATION, None ):
 			self.config_fs = cli_config
 		self._load_configuration()
-		self.config.update( { k: v for k, v in self._cli_kwargs.items() if v is not None } )
+		self.config.apply_config( { k: v for k, v in self._cli_kwargs.items() if v is not None } )
 
 		# apply library configuration + load library (actually there's nothing to load yet)
 		if self.config.library is not None:
 			self.lib_fs = self.config.library
 
-	def update( self, configuration: Optional[str] = None, library: Optional[str] = None,
-	            verbose: Optional[bool] = None, debug: Optional[bool] = None, force: Optional[bool] = None,
-	            pretend: Optional[bool] = None, json: Optional[bool] = None, ) -> None:
+	def _load_default_config( self ) -> None:
+		self.config = Configuration(
+			settings_files=[ f'{INSTALL_PATH}/{DEFAULT_CONFIG_FILENAME}' ],
+			merge_enabled=True,
+			envvar_prefix=APP_PKG_NAME.upper(),
+			load_dotenv=False,
+			environments=False,
+		)
+		self.state = Configuration(
+			settings_files=[ f'{INSTALL_PATH}/{DEFAULT_STATE_FILENAME}' ],
+			merge_enabled=True,
+			load_dotenv = False,
+			environments = False,
+		)
 
+	def _load_user_config( self, configuration: Optional[str] = None ) -> None:
 		if configuration:
 			# attempt to load user-defined configuration file resp. from dir
 			if self.root_fs.exists( configuration ) and self.root_fs.isdir( configuration ):
@@ -213,12 +229,7 @@ class ApplicationContext:
 			self.config.load_file( self.config_fs.getsyspath( CONFIG_FILENAME ) )
 			self.appstate.load_file( self.config_fs.getsyspath( STATE_FILENAME ) )
 
-		# update configuration with command line args
-		cli_args = { k: v for k, v in { 'verbose': verbose, 'debug': debug, 'force': force, 'pretend': pretend, 'json': json }.items() if v is not None }
-		self.config.update( cli_args )
-
-		# update log manager with merged config values
-		self.log_mgr.set_console_log( self.config.verbose, self.config.debug, self.config.json )
+	def _create_config_fs( self, configuration: Optional[str] = None ) -> None:
 
 		# create config_fs, lib_fs and auxillary folders
 		if configuration:
@@ -226,19 +237,60 @@ class ApplicationContext:
 			config_dir = dirname( configuration ) if configuration.endswith('.yaml') else configuration
 			self.config_fs = OSFS( config_dir, create=True, expand_vars=True )
 			# self.lib_fs = OSFS( config_dir, create=True, expand_vars=True ) # put library inside config dir if provided?
+		else:
+			pass
 
+		# create dependent FS objects
+		self._takeouts_fs = _subfs( self.config_fs, TAKEOUT_DIRNAME )
+		self._log_fs = _subfs( self.config_fs, LOG_DIRNAME )
+		self._backup_fs = _subfs( self.config_fs, BACKUP_DIRNAME )
+		self._cache_fs = _subfs( self.config_fs, CACHE_DIRNAME )
+
+		self._var_fs = _subfs( self.config_fs, VAR_DIRNAME )
+		self._tmp_fs = _subfs( self.var_fs, TMP_DIRNAME )
+		self._imports_fs = _subfs( self.var_fs, IMPORT_DIRNAME )
+
+	def _create_lib_fs( self, library: Optional[str] = None ) -> None:
 		# use library from config if provided
-		if self.config.library:
-			self.lib_fs = OSFS( self.config.library, create=True, expand_vars=True )
-
-		# use library from command line -> this wins over config file
 		if library:
 			self.lib_fs = OSFS( library, create=True, expand_vars=True )
+		else:
+			self.lib_fs = self.config_fs # use config directory as library as default ? or user data?
 
-		self._setup_aux_fs( self.config_fs, self.lib_fs )
+		# create dependent FS objects
+		self._db_fs = _subfs( self.lib_fs, DB_DIRNAME )
+		self._overlay_fs = _subfs( self.lib_fs, OVERLAY_DIRNAME )
+
+	def apply_config( self, configuration: Optional[str] = None, library: Optional[str] = None,
+	                  verbose: Optional[bool] = None, debug: Optional[bool] = None, force: Optional[bool] = None,
+	                  pretend: Optional[bool] = None, json: Optional[bool] = None, ) -> None:
+
+		# load user config
+		self._load_user_config( configuration )
+
+		# update configuration with command line args
+		self.config.update(
+			{ k: v for k, v in { 'verbose': verbose, 'debug': debug, 'force': force, 'pretend': pretend, 'json': json, 'library': library }.items() if v is not None }
+		)
+
+		# update log manager with merged config values
+		self.log_mgr.set_console_log( self.config.verbose, self.config.debug, self.config.json )
+
+		# create internally used FS objects
+		self._create_config_fs( configuration )
+
+		# create library fs
+		self._create_lib_fs( library )
 
 		# report how things are finally configured
-		log.debug( f'config/library FS configured to {fs_to_str( self.config_fs )} / {fs_to_str( self.lib_fs )}' )
+		log.debug( f'using configuration area in {self.config_fs}' )
+		log.debug( f'using library data in {self.lib_fs}' )
+
+	# check if initialization was done
+
+	@property
+	def initialized( self ) -> bool:
+		return self.config_fs and self.lib_fs
 
 	# main properties
 

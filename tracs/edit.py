@@ -30,7 +30,7 @@ def modify_activities( activities: List[Activity], field: str, value: Any, **kwa
 	if ( f := Activity.field( field ) ) and ( not f.metadata.get( PROTECTED, False ) ):
 		for a in activities:
 			setattr( a, field, value )
-			ctx.db.update( a )
+			ctx.db.apply_config( a )
 	else:
 		log.error( f'unable to set {field} to {value}: field does not exist or is protected' )
 

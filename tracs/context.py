@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from logging import getLogger
-from os.path import abspath, expanduser, expandvars, split
 from pathlib import Path
 from typing import Any, cast, Dict, Optional, Tuple
 
@@ -25,7 +24,6 @@ from tracs.__log__ import LogManager
 from tracs.constants import *
 from tracs.pluginmgr import PluginManager, Registry, ServiceManager
 from tracs.protocols import ActivityDb, RuleParser
-from tracs.utils import fs_to_str
 
 log = getLogger( __name__ )
 
@@ -45,34 +43,6 @@ USER_CONFIG_FS: FS = UserConfigFS( APPNAME, create=True )
 USER_DATA_FS: FS = UserDataFS( APPNAME, create=True )
 USER_CACHE_FS: FS = UserCacheFS( APPNAME, create=True )
 USER_LOG_FS: FS = UserLogFS( APPNAME, create=True )
-
-def _set_config_fs( inst, att, val ):
-	if isinstance( val, FS ):
-		value = val
-	elif isinstance( val, str ):
-		path = abspath( expandvars( expanduser( val ) ) )
-		head, tail = split( path )
-		value = OSFS( root_path=head if tail == CONFIG_FILENAME else path, expand_vars=True, create=True )
-	else:
-		value = UserConfigFS( APPNAME, create=True )
-
-	# noinspection PyProtectedMember
-	inst._setup_aux_fs( config_fs=value )
-
-	return value
-
-def _set_lib_fs( inst, att, val ):
-	if isinstance( val, FS ):
-		value: FS = val
-	elif isinstance( val, str ):
-		value = OSFS( root_path=abspath( expandvars( expanduser( val ) ) ), expand_vars=True, create=True )
-	else:
-		value: FS = UserDataFS( APPNAME, create=True )
-
-	# noinspection PyProtectedMember
-	inst._setup_aux_fs( lib_fs=value )
-
-	return value
 
 @define
 class ApplicationContext:
@@ -113,61 +83,7 @@ class ApplicationContext:
 
 	# internal fields
 
-	_cli_args: Tuple[Any, ...] = field( default=(), alias='_cli_args' )
-	_cli_kwargs: Dict[str, Any] = field( factory=dict, alias='_cli_kwargs' )
-
 	_init_with: Dict[str, Any] = field( factory=dict, alias='_init_with' )
-	_config_dir: str = field( default=USER_CONFIG_FS.getsyspath( '/' ), alias='_config_dir' )
-	_config_file: str = field( default=CONFIG_FILENAME, alias='_config_file' )
-
-	def _load_configuration( self ):
-		settings_files = [ f'{INSTALL_PATH}/{DEFAULT_CONFIG_FILENAME}' ]
-		appstate_files = [ f'{INSTALL_PATH}/{DEFAULT_STATE_FILENAME}' ]
-
-		try:
-			settings_files.append( self.config_fs.getsyspath( CONFIG_FILENAME ) )
-		except (ResourceNotFound, NoSysPath):
-			# only for testing: config fs might be a multi fs with test data in underlay
-			# therefore use the underlay fs to read configuration data
-			# todo: check if this code can be removed in favour of a better solution, don't want test-specific code in here
-			try:
-				underlay = self.config_fs.get_fs( 'underlay' )
-				settings_files.append( underlay.getsyspath( CONFIG_FILENAME ) )
-				log.info( f'using configuration file found in FS {fs_to_str( underlay )}' )
-			except AttributeError:
-				pass
-			log.warning( f'no configuration file found in FS {fs_to_str( self.config_fs )}' )
-
-		# same procedure for state file
-		try:
-			appstate_files.append( self.config_fs.getsyspath( STATE_FILENAME ) )
-		except (ResourceNotFound, NoSysPath):
-			try:
-				underlay = self.config_fs.get_fs( 'underlay' )
-				appstate_files.append( underlay.getsyspath( STATE_FILENAME ) )
-				log.info( f'using state file found in FS {fs_to_str( underlay )}' )
-			except AttributeError:
-				pass
-			log.warning( f'no appstate file found in FS {fs_to_str( self.config_fs )}' )
-
-		self.config = Configuration( settings_files=settings_files, merge_enabled=True )
-		self.state = Configuration( settings_files=appstate_files, merge_enabled=True )
-
-	def _setup_aux_fs( self, config_fs: Optional[FS] = None, lib_fs: Optional[FS] = None ) -> None:
-		if config_fs:
-			# relative to config fs
-			self._takeouts_fs = _subfs( config_fs, TAKEOUT_DIRNAME )
-			self._log_fs = _subfs( config_fs, LOG_DIRNAME )
-			self._var_fs = _subfs( config_fs, VAR_DIRNAME )
-			self._backup_fs = _subfs( config_fs, BACKUP_DIRNAME )
-			self._cache_fs = _subfs( config_fs, CACHE_DIRNAME )
-			self._tmp_fs = _subfs( self.var_fs, TMP_DIRNAME )
-			self._imports_fs = _subfs( self.var_fs, IMPORT_DIRNAME )
-
-		if lib_fs:
-			# relative to lib fs
-			self._db_fs = _subfs( lib_fs, DB_DIRNAME )
-			self._overlay_fs = _subfs( lib_fs, OVERLAY_DIRNAME )
 
 	def __attrs_post_init__( self ):
 		# load config/appstate from factory locations + environment variables
@@ -176,27 +92,9 @@ class ApplicationContext:
 		# update log manager to reflect configuration provided via environment variables
 		self.log_mgr.set_console_log( self.config.verbose, self.config.debug, self.config.json )
 
-		# used only for testing
+		# do immediate init, this is used only for testing
 		if self._init_with:
 			self.apply_config( **self._init_with )
-
-		return
-
-		# create config fs
-		log.debug( f'config/library FS configured to {fs_to_str( self.config_fs )} / {fs_to_str( self.lib_fs )}' )
-
-		# setup auxillary fs which depend on config + lib fs
-		self._setup_aux_fs( self.config_fs, self.lib_fs )
-
-		# load configuration/appstate + apply command line args to configuration
-		if cli_config := self._cli_kwargs.pop( KEY_CONFIGURATION, None ):
-			self.config_fs = cli_config
-		self._load_configuration()
-		self.config.apply_config( { k: v for k, v in self._cli_kwargs.items() if v is not None } )
-
-		# apply library configuration + load library (actually there's nothing to load yet)
-		if self.config.library is not None:
-			self.lib_fs = self.config.library
 
 	def _load_default_config( self ) -> None:
 		self.config = Configuration(
@@ -285,12 +183,6 @@ class ApplicationContext:
 		# report how things are finally configured
 		log.debug( f'using configuration area in {self.config_fs}' )
 		log.debug( f'using library data in {self.lib_fs}' )
-
-	# check if initialization was done
-
-	@property
-	def initialized( self ) -> bool:
-		return self.config_fs and self.lib_fs
 
 	# main properties
 

@@ -187,9 +187,10 @@ def db( request, fs: FS ) -> ActivityDb:
 @fixture
 def ctx( request, fs: FS ) -> ApplicationContext:
 	flag_keys = ['verbose', 'debug', 'json', 'force' ]
-	flags = { k: marker( request, 'context', k, False ) for k in flag_keys }
-
-	return set_current_ctx( ApplicationContext( config_fs=fs, lib_fs=fs, _cli_args=(), _cli_kwargs=flags ) )
+	init_params = { k: marker( request, 'context', k, False ) for k in flag_keys }
+	init_params['configuration'] = fs.getsyspath( '/' )
+	return ApplicationContext( fs, _init_with=init_params )
+	#return set_current_ctx( ApplicationContext( config_fs=fs, lib_fs=fs, _cli_args=(), _cli_kwargs=flags ) )
 
 @fixture
 def plugin_mgr( request ) -> PluginManager:

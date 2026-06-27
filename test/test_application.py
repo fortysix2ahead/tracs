@@ -28,10 +28,10 @@ def test_app_constructor():
 def test_app_constructor_cfg_dir( ctx ):
 	cfg_dir = ctx.config_dir
 	cfg = f'{cfg_dir}/config.yaml'
-	app =  Application( __kwargs__ = { 'configuration': cfg, 'verbose': False, 'debug': False, 'force': False } )
+	app =  Application( __kwargs__ = { 'configuration': cfg_dir, 'verbose': False, 'debug': False, 'force': False } )
 
 	assert app.ctx.config_dir == f'{str( cfg_dir )}'
-	assert app.ctx.lib_dir == UserDataFS( 'tracs', create=True ).getsyspath( '' )
+	assert app.ctx.lib_dir == f'{str( cfg_dir )}'
 
 @mark.context( env='empty', persist='clone', cleanup=True )
 def test_app_constructor_lib_dir( ctx ):
@@ -69,7 +69,6 @@ def test_debug_environment( ctx ):
 @mark.context( env='debug', persist='clone', cleanup=True )
 def test_parameterized_environment( ctx ):
 	# override configuration loaded from file to simulate command line parameters
-	cfg_file = f'{ctx.config_dir}/config.yaml'
 	app =  Application()
 	app.init( configuration=ctx.config_dir, force=True )
 	assert app.ctx.debug == True

@@ -198,12 +198,14 @@ class ActivityDb:
 
 	def get( self, id: Optional[int] = None, uid: Optional[str] = None ) -> Optional[Activity|List[Activity]]:
 		"""
-		Convenience get. Intendend to be used with one kwarg.
+		Convenience get. Intended to be used with one kwarg.
 		"""
 		if id:
 			return self.get_by_id( id )
 		elif uid:
 			return self.get_by_uid( uid )
+		else:
+			return None
 
 	def get_by_id( self, id: int ) -> Optional[Activity]:
 		"""Returns the (first and only) activity with the provided id.

@@ -1,18 +1,13 @@
 
 from __future__ import annotations
 
-from itertools import chain, groupby
+from itertools import chain
 from logging import getLogger
-from pathlib import Path
-from typing import cast, Dict, List, Mapping, Optional, Tuple, Union
+from typing import ClassVar, Dict, Iterable, List, Mapping, Optional
 
+from attrs import define, field
+from click import Tuple
 from fs.base import FS
-from fs.copy import copy_file, copy_file_if
-from fs.errors import ResourceNotFound
-from fs.memoryfs import MemoryFS
-from fs.multifs import MultiFS
-from fs.osfs import OSFS
-from fs.path import basename
 from fs.wrap import read_only
 from more_itertools import first_true, unique
 from orjson import dumps
@@ -23,11 +18,12 @@ from rule_engine import Rule
 
 from tracs.activity import Activities, Activity
 from tracs.constants import *
-from tracs.protocols import ApplicationContext
-from tracs.fsio import load_activities, load_schema, Schema, write_activities
+from tracs.fsio import load_activities, load_schema, write_activities
 from tracs.migrate import migrate_db, migrate_db_functions
+from tracs.protocols import ApplicationContext
 from tracs.resources import Resource, Resources
 from tracs.uid import UID
+from tracs.utils import ResolvingOSFS
 
 log = getLogger( __name__ )
 
@@ -38,132 +34,71 @@ DB_FILES = {
 	SCHEMA_NAME: dumps( { "version": SCHEMA_VERSION } )
 }
 
-class ActivityDbIndex:
-
-	UID_TO_ACTIVITY: Dict[str, Activity] = {}
-	UID_TO_RESOURCE: Dict[str, List[Resource]] = {}
-	UID_PATH_TO_RESOURCE: Dict[Tuple[str,str], Resource] = {}
-
-	def __init__( self, activity_map: Dict[int, Activity], resource_map: Dict[int, Resource] ):
-		self.__class__.UID_TO_ACTIVITY = { uid: a for a in activity_map.values() for uid in a.uids }
-		self.__class__.UID_TO_RESOURCE = { uid: list( it ) for uid, it in groupby( resource_map.values(), key=lambda r: r.uid ) }
-		self.__class__.UID_PATH_TO_RESOURCE = { (r.uid, r.path) for r in resource_map.values() }
-
-		self._relate_activities()
-
-	def _relate_activities( self ):
-		for uid, activity in self.UID_TO_ACTIVITY.items():
-			activity.__resources__ = self.UID_TO_RESOURCE.get( uid, [] )
-			for r in activity.__resources__:
-				r.__parent_activity__ = activity
-
+@define
 class ActivityDb:
 
-	def __init__( self, path: Optional[Union[Path, str]] = None, fs: Optional[FS] = None, read_only: bool = False, enable_index: bool = False, **kwargs ):
-		"""
-		Creates an activity db, consisting of tiny db instances (meta + activities + resources + schema).
+	summary_types: ClassVar[List[str]] = []
+	recording_types: ClassVar[List[str]] = []
 
-		:param path: directory containing db files, may be a Path or a string, will be ignored if fs is provided
-		:param fs: instead of providing a path, it's also possible to provide the internally used filesystem object
-		:param read_only: read-only mode - does not allow write operations
-		:param enable_index: experimental, not used at the moment
-		"""
+	fs: FS = field( default=None )
 
-		self._path = path
-		self._fs = fs
-		self._read_only = read_only
+	path: str = field( default=None, kw_only=True )
+	read_only: bool = field( default=False, kw_only=True )
+	schema: int = field( default=SCHEMA_VERSION, kw_only=True )
+	activities: Activities = field( default=None, kw_only=True )
 
+	def __attrs_post_init__( self ):
 		# initialize db file system(s)
-		self._init_fs()
+		self._init_db()
 
 		# load content from disk
 		self._load_db()
 
-		# sets of types in order to classify resources
-		self._summary_types, self._recording_types = set(), set()
-		self.register_summary_types( *( kwargs.get( 'summary_types' ) or set() ) )
-		self.register_recording_types( *( kwargs.get( 'recording_types') or set() ) )
-
-		# experimental: create index and setup relations between resources and activities, turned off for now
-		if enable_index:
-			pass
-			# log.debug( f'creating db index' )
-			# self._index = ActivityDbIndex( self.activity_map, self.resource_map )
-
-	def _init_fs( self ):
-		log.debug( f'initializing db file system from path = {self._path} and ready_only = {self._read_only}' )
-		log.debug( f'expected db schema version is {SCHEMA_VERSION}' )
-
-		# create OS FS if path is provided
-		if self._path and not self._fs:
-			self._fs = OSFS( root_path=str( self._path ), create=True, expand_vars=True )
+	def _init_db( self ):
+		# create OSFS if path is provided
+		if self.path and not self.fs:
+			self.fs = ResolvingOSFS( self.path )
 
 		# init FS if not yet done
 		for file, content in DB_FILES.items():
-			if not self._fs.exists( f'/{file}' ):
-				self._fs.writebytes( f'/{file}', content )
+			if not self.fs.exists( f'/{file}' ):
+				self.fs.writebytes( f'/{file}', content )
 
 		# create read-only FS if needed
-		if self._read_only:
-			self._fs = read_only( self._fs )
+		if self.read_only:
+			self.fs = read_only( self.fs )
+
+		log.debug( f'initializing db file system in {self.fs}' )
+		log.debug( f'expected db schema version is {SCHEMA_VERSION}' )
 
 	def _load_db( self ):
-		self._schema = load_schema( self._fs )
-		self._activities: Activities = load_activities( self._fs )
+		self.schema = load_schema( self.fs ).version
+		self.activities = load_activities( self.fs )
 
-	def register_summary_types( self, *types: str ):
-		[ self._summary_types.add( t ) for t in types ]
+	@staticmethod
+	def register_summary_types( *types: str ):
+		[ ActivityDb.summary_types.append( t ) for t in types ]
 
-	def register_recording_types( self, *types: str ):
-		[ self._recording_types.add( t ) for t in types ]
+	@staticmethod
+	def register_recording_types( *types: str ):
+		[ ActivityDb.recording_types.append( t ) for t in types ]
 
 	def save( self ):
-		write_activities( self._activities, self._fs )
-
-	def close( self ):
-		self.save()
-
-	# ---- FS Properties ----
-
-	@property
-	def fs( self ) -> FS:
-		return self._fs
-
-	@property
-	def underlay_fs( self ) -> FS:
-		if isinstance( self.fs, MultiFS ):
-			return cast( MultiFS, self.fs ).get_fs( UNDERLAY )
-		else:
-			return self._fs
-
-	@property
-	def overlay_fs( self ) -> FS:
-		if isinstance( self.fs, MultiFS ):
-			return cast( MultiFS, self.fs ).get_fs( OVERLAY )
-		else:
-			return self._fs
-
-	@property
-	def schema( self ) -> Schema:
-		return self._schema
+		write_activities( self.activities, self.fs )
 
 	# properties for content access
 
 	@property
 	def activity_map( self ) -> Mapping[int, Activity]:
-		return self._activities.id_map()
-
-	@property
-	def activities( self ) -> List[Activity]:
-		return list( self._activities.all() )
+		return self.activities.id_map()
 
 	@property
 	def activity_keys( self ) -> List[int]:
-		return sorted( list( self._activities.ids() ) )
+		return sorted( list( self.activities.ids() ) )
 
 	@property
 	def activity_ids( self ) -> List[int]:
-		return sorted( list( self._activities.id_keys() ) )
+		return sorted( list( self.activities.id_keys() ) )
 
 	@property
 	def resources( self ) -> Resources:
@@ -178,19 +113,13 @@ class ActivityDb:
 
 	# insert/upsert activities
 
-	def insert( self, *activities ) -> List[int]:
-		return self._activities.add( *activities )
+	def insert( self, activity: Activity ) -> int:
+		return self.activities.add( activity )
 
-	def insert_activity( self, activity: Activity ) -> int:
-		return self.insert( activity )[0]
+	def insert_all( self, activities: Iterable[Activity] ) -> List[int]:
+		return [ self.insert( a ) for a in activities ]
 
-	def insert_activities( self, activities: List[Activity] ) -> List[int]:
-		return [ self.insert_activity( a ) for a in activities ]
-
-	def upsert( self, *activities ) -> int|List[int]:
-		return l[0] if len( l := [self.upsert_activity( a ) for a in activities] ) == 1 else l
-
-	def upsert_activity( self, activity: Activity ) -> int:
+	def upsert( self, activity: Activity ) -> int:
 		if existing := self.get_by_uid( activity.uid ):
 			if existing.group:
 				Activity.group_of( existing, activity, target=existing )
@@ -198,10 +127,10 @@ class ActivityDb:
 				Activity.union( activity, target=existing, force=True )
 			return existing.id
 		else:
-			return self.insert_activity( activity )
+			return self.insert( activity )
 
-	def upsert_activities( self, activities: List[Activity] ) -> List[int]:
-		return [ self.upsert_activity( a ) for a in activities ]
+	def upsert_all( self, activities: Iterable[Activity] ) -> List[int]:
+		return [ self.upsert( a ) for a in activities ]
 
 	# def replace_activity( self, new: Activity, old: Activity = None, id: int = None, uid = None ) -> None:
 	# 	self._activities.replace( new, old, id, uid )
@@ -209,7 +138,7 @@ class ActivityDb:
 	# remove items
 
 	def remove_activity( self, a: Activity ) -> None:
-		self._activities.remove( a.id )
+		self.activities.remove( a.id )
 
 	def remove_activities( self, activities: List[Activity], auto_commit: bool = False ) -> None:
 		[self.remove_activity( a ) for a in activities]
@@ -224,7 +153,7 @@ class ActivityDb:
 		:return: all summaries
 		"""
 		# return [r for r in self.resources if (rt := cast( ResourceType, Registry.instance().resource_types.get( r.type ) )) and rt.summary]
-		return [r for r in self.resources if r.type in self._summary_types ]
+		return [r for r in self.resources if r.type in ActivityDb.summary_types ]
 
 	@property
 	def recordings( self ) -> List[Resource]:
@@ -232,7 +161,7 @@ class ActivityDb:
 		Returns all resources of type recording.
 		:return: all recordings
 		"""
-		return [r for r in self.resources if r.type in self._recording_types]
+		return [r for r in self.resources if r.type in ActivityDb.recording_types]
 
 	@property
 	def uids( self, classifier: str = None ) -> List[str]:
@@ -246,8 +175,7 @@ class ActivityDb:
 			return list( set( [r.uid for r in self.resources] ) )
 
 	def contains( self, uid: UID|str ) -> bool:
-		uid = uid if isinstance( uid, UID ) else UID.from_str( uid )
-		if uid.denotes_activity():
+		if (uid := UID.of( uid )).denotes_activity():
 			return self.contains_activity( uid )
 		elif uid.denotes_resource():
 			return self.contains_resource( uid, None )
@@ -255,17 +183,16 @@ class ActivityDb:
 			return False
 
 	def contains_activity( self, uid: UID|str ) -> bool:
-		# old version without index
-		# uid = uid if isinstance( uid, UID ) else UID.from_str( uid )
-		# return any( u == uid for u in self._activities.iter_uids() )
-		return uid in self._activities
+		return UID.of( uid ) in self.activities
 
 	def contains_resource( self, uid: UID|str, path: Optional[str] ) -> bool:
-		if isinstance( uid, UID ):
-			uid = UID( uid.classifier, uid.local_id, path or uid.path )
-		else:
-			uid = UID( uid, path=path if path else None )
-		return any( (u == uid or u.base == uid.base) for u in self._activities.iter_resource_uids() )
+#		if isinstance( uid, UID ):
+#			uid = UID( uid.classifier, uid.local_id, path or uid.path )
+#		else:
+#			uid = UID( uid, path=path if path else None )
+		# return any( (u == uid or u.base == uid.base) for u in self.activities.iter_resource_uids() )
+		uid = UID.of( uid, path )
+		return any( u.base == uid.base for u in self.activities.iter_resource_uids() )
 
 	# get methods
 
@@ -279,19 +206,21 @@ class ActivityDb:
 			return self.get_by_uid( uid )
 
 	def get_by_id( self, id: int ) -> Optional[Activity]:
-		"""
-		Returns the (first and only) activity with the provided id.
+		"""Returns the (first and only) activity with the provided id.
 		There should never be two activities with the same id.
 		:param id: id of the activity
+		:return: activity or None if not found
 		"""
-		return first_true( self.activities, pred=lambda a: a.id == id )
+		# return first_true( self.activities, pred=lambda a: a.id == id )
+		return self.activities.get_by_id( id )
 
 	def get_by_uid( self, uid: UID|str ) -> Optional[Activity]:
 		"""Returns the activity with the uid equal to the provided uid.
 
 		:param uid: uid of the activity
+		:return: activity or None if not found
 		"""
-		return self._activities.get( uid )
+		return self.activities.get_by_uid( uid )
 
 	def get_for_uid( self, uid: UID|str ) -> Optional[Activity]:
 		"""
@@ -301,16 +230,16 @@ class ActivityDb:
 		:param uid:
 		:return:
 		"""
-		return first_true( self._activities, pred=lambda a: uid in [ a.uid, *a.metadata.members ] )
+		return first_true( self.activities, pred=lambda a: uid in [ a.uid, *a.metadata.members ] )
 
-	def get_group_for_uid( self, uid: UID|str ) -> Optional[Activity]:
+	def get_group_for( self, uid: UID|str ) -> Optional[Activity]:
 		"""
-		Returns the first group where the given uid appears as member.
+		Returns the group where the given uid appears as member.
 		This does not include activities with the uid equal to the provided.
 		:param uid:
 		:return:
 		"""
-		return first_true( self._activities, pred=lambda a: uid in a.metadata.members )
+		return first_true( self.activities, pred=lambda a: uid in a.metadata.members )
 
 	def get_resource_by_uid_path( self, uid: UID|str, path: str ) -> Optional[Resource]:
 		"""
@@ -333,21 +262,20 @@ class ActivityDb:
 		return list( all_activities )
 
 	def find_by_id( self, ids: List[int] ) -> List[Activity]:
+		"""Returns all activities with ids contained in the provided list of ids
+
+		:param ids: list of ids
+		:return: list of activities with ids contained in the provided list of ids
 		"""
-		Returns all activities with ids contained in the provided list of ids
-		:param ids:
-		:return:
-		"""
-		return [ a for a in self._activities if a.id in ( ids or [] ) ]
+		return [ a for a in self.activities if a.id in ( ids or [] ) ]
 
 	def find_by_uid( self, uids: List[str] ) -> List[Activity]:
+		"""Returns all activities with uids contained in the provided list of uids
+
+		:param uids: list of uids
+		:return: list of activities with a uid contained in the provided list of uids
 		"""
-		Returns all activities with uids contained in the provided list of uids
-		This method does not treat any uids which appear as group members.
-		:param uids:
-		:return:
-		"""
-		return [ a for a in self._activities if a.uid in ( uids or [] ) ]
+		return [ a for a in self.activities if a.uid in ( uids or [] ) ]
 
 	def find_for_uid( self, uid: UID|str ) -> List[Activity]:
 		"""
@@ -357,22 +285,21 @@ class ActivityDb:
 		:param uid:
 		:return:
 		"""
-		return [ a for a in self._activities if ( uid in [ a.uid, *a.metadata.members ] ) ] if uid else []
+		return [ a for a in self.activities if ( uid in [ a.uid, *a.metadata.members ] ) ] if uid else []
 
-	def find_groups_for_uid( self, uid: Optional[str] ) -> List[Activity]:
+	def find_groups_for( self, uid: UID|str ) -> List[Activity]:
+		"""Returns all groups with members with the given uid.
+
+		:param uid: uid of a member
+		:return: list of groups with members with uid equal to the provided uid
 		"""
-		Returns all groups for the given uid.
-		This includes does not include activities with the uid equal to the provided.
-		:param uid:
-		:return:
-		"""
-		return [a for a in self._activities if uid in a.metadata.members ] if uid else []
+		return [a for a in self.activities if uid in a.metadata.members ] if uid else []
 
 	def find_by_classifier( self, classifier: str ) -> List[Activity]:
 		"""
 		Finds all activities, which have a certain classifier (originate from a certain service, i.e. polar).
 		"""
-		return [a for a in self._activities if any( uid.startswith( classifier ) for uid in a.iter_uid_heads )]
+		return [a for a in self.activities if any( uid.startswith( classifier ) for uid in a.iter_uid_heads )]
 
 	def find_first( self, classifier: Optional[str] = None ) -> Optional[Activity]:
 		"""
@@ -424,7 +351,7 @@ class ActivityDb:
 		"""
 		Finds all resources of the given type.
 		"""
-		return Resources( *[r for r in self._activities.iter_resources() if r.type in types] )
+		return Resources( *[r for r in self.activities.iter_resources() if r.type in types] )
 
 	def find_resources_for( self, uid: UID|str ) -> Resources:
 		"""
@@ -438,14 +365,14 @@ class ActivityDb:
 		"""
 		Finds all recording resources. Optinally restricts the result to the provided UIDs.
 		"""
-		resources = Resources( *chain( *[self.find_resources_for( uid ) for uid in uids] ) ) if uids else self._activities.iter_resources()
+		resources = Resources( *chain( *[self.find_resources_for( uid ) for uid in uids] ) ) if uids else self.activities.iter_resources()
 		return Resources( *[r for r in resources if r.type in self._recording_types] )
 
 	def find_summaries( self, *uids: Optional[UID|str] ) -> Resources:
 		"""
 		Finds all summary resources. Optinally restricts the result to the provided UIDs.
 		"""
-		resources = Resources( *chain( *[self.find_resources_for( uid ) for uid in uids] ) ) if uids else self._activities.iter_resources()
+		resources = Resources( *chain( *[self.find_resources_for( uid ) for uid in uids] ) ) if uids else self.activities.iter_resources()
 		return Resources( *[r for r in resources if r.type in self._summary_types] )
 
 # ---- DB Operations ----

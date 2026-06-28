@@ -154,16 +154,8 @@ def dbfs( request, fs: FS ) -> FS:
 	return SubFS( fs, DB_DIRNAME )
 
 @fixture
-def db_path( request, fs: FS ) -> Path:
-	if isinstance( fs, OSFS ):
-		path = Path( fs.getsyspath( DB_DIRNAME ) )
-		path.mkdir( parents=True, exist_ok=True )
-		return path
-	else:
-		raise ValueError
-	#env = marker( request, 'context', 'env', 'empty' )
-	#with pkgpath( 'test', '__init__.py' ) as test_pkg_path:
-	#	yield Path( test_pkg_path.parent, f'environments/{env}/db' )
+def db_path( request, fs: FS ) -> str:
+	return fs.getsyspath( DB_DIRNAME )
 
 @fixture
 def db( request, fs: FS ) -> ActivityDb:
@@ -180,9 +172,7 @@ def db( request, fs: FS ) -> ActivityDb:
 	summary_types = marker( request, 'db', 'summary_types', [] )
 	recording_types = marker( request, 'db', 'recording_types', [] )
 
-	return ActivityDb( fs=db_fs, summary_types=summary_types, recording_types=recording_types )
-	#db_path = Path( env_fs.getsyspath( '/' ), DB_DIRNAME )
-	#yield ActivityDb( path=db_path, read_only=False )
+	return ActivityDb( fs=db_fs )
 
 @fixture
 def ctx( request, fs: FS ) -> ApplicationContext:

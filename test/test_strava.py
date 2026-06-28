@@ -1,7 +1,5 @@
 
-from datetime import datetime, timedelta
-from datetime import time
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 
 from dateutil.tz import tzlocal
 from pytest import mark
@@ -12,31 +10,32 @@ from tracs.activity_types import ActivityTypes
 from tracs.plugins.strava import Strava
 from tracs.plugins.strava.io import StravaHandler
 
-@mark.file( 'environments/default/db/strava/2/0/0/200002/200002.json' )
+importer = StravaHandler( activity_cls=StravaActivity )
+
+@mark.file( 'environments/default/db/strava/7/9/7/7973155107/7973155107.json' )
 def test_init_from_raw( path ):
-	importer = StravaHandler( activity_cls=StravaActivity )
 	resource = importer.load( path )
 	sa = importer.as_activity( resource )
 
 	assert sa.id is None
 	assert sa.classifiers == ['strava']
-	assert sa.uid == 'strava:200002'
-	assert sa.type == ActivityTypes.run
-	assert sa.starttime == datetime( 2018, 12, 16, 13, 15, 12, tzinfo=timezone.utc )
-	assert sa.starttime_local == datetime( 2018, 12, 16, 14, 15, 12, tzinfo=tzlocal() )
-	assert sa.distance == 8533.7
-	assert sa.speed == 2.353
-	assert sa.speed_max == 3.1
-	assert sa.ascent == 81.0
-	assert sa.descent == 81.0
-	assert sa.elevation_max == 260.5
-	assert sa.elevation_min == 202.4
-	assert sa.duration == timedelta( hours=0, minutes=36, seconds=25 )
-	assert sa.duration_moving == timedelta( hours=0, minutes=33, seconds=29 )
-	assert sa.heartrate == 149
+	assert sa.uid == 'strava:7973155107'
+	assert sa.type == ActivityTypes.hiking
+	assert sa.starttime == datetime( 2022, 10, 16, 12, 23, 40, tzinfo=timezone.utc )
+	assert sa.starttime_local == datetime( 2022, 10, 16, 14, 23, 40, tzinfo=tzlocal() )
+	assert sa.distance == 1150.3
+	assert sa.speed == 0.653
+	assert sa.speed_max == 2.486
+	assert sa.ascent == 2.8
+	assert sa.descent == 2.8
+	assert sa.elevation_max == 235.2
+	assert sa.elevation_min == 227.5
+	assert sa.duration == timedelta( hours=3, minutes=13, seconds=1 )
+	assert sa.duration_moving == timedelta( hours=0, minutes=29, seconds=22 )
+	assert sa.heartrate == 0
 	assert sa.heartrate_min is None
-	assert sa.heartrate_max == 171
-	assert sa.location_country == 'Germany'
+	assert sa.heartrate_max == 0
+	assert sa.location_country is None
 
 @skip_live
 @mark.context( env='live', cleanup=False )

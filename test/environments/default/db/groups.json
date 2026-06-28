@@ -1,2 +1,15 @@
 [
+  {
+    "id": 30,
+    "metadata": {
+      "members": [
+        "polar:7505780534",
+        "strava:7973155107"
+      ]
+    },
+    "starttime": "2022-10-16T12:23:40+00:00",
+    "starttime_local": "2022-10-16T14:23:40+02:00",
+    "type": "hiking",
+    "uid": "group:221016"
+  }
 ]

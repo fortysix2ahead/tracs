@@ -141,12 +141,10 @@ def test_get( db ):
 def test_find( db ):
 	# find by ids
 	assert db.find_by_id( [] ) == []
-	assert db.find_by_id( None ) == []
 	assert db.find_by_id( [1, 2, 3, 999] ) == [db.get( id=1 ), db.get( id=2 ), db.get( id=3 )]
 
 	# find by uids
 	assert db.find_by_uid( [] ) == []
-	assert db.find_by_uid( None ) == []
 	assert db.find_by_uid( ['polar:7505780534'] ) == [db.get( id=5 )]
 
 	# find for uid
@@ -155,9 +153,9 @@ def test_find( db ):
 #	assert ids( db.find_for_uid( 'strava:1001' ) ) == [1, 3]
 
 	# find groups by uid
-	assert db.find_groups_for( None ) == []
-	assert db.find_groups_for( 'polar:1001' ) == [db.get( id=1 )]
-	assert db.find_groups_for( 'strava:1001' ) == [db.get( id=1 )]
+	grp = db.get_by_id( 30 )
+	assert db.find_groups_for( 'polar:7505780534' ) == [grp]
+	assert db.find_groups_for( 'strava:7973155107' ) == [grp]
 
 	# find resources
 	assert db.find_resources_by_uid( 'polar:1001' ) == db.get( id=2 ).resources

@@ -88,11 +88,11 @@ def load_activities( fs: FS ) -> Activities:
 	_activities = Activities()
 
 	# load regular activities
-	_activities.add( lst=_load_activities( fs, ACTIVITIES_PATH, List[Activity] ), skip_checks=True )
+	_activities.add_all( _load_activities( fs, ACTIVITIES_PATH, List[Activity] ), skip_checks=True )
 	# load groups
-	_activities.add( lst=_load_activities( fs, GROUPS_PATH, List[ActivityGroup] ), skip_checks=True )
+	_activities.add_all( _load_activities( fs, GROUPS_PATH, List[ActivityGroup] ), skip_checks=True )
 	# load multiparts
-	_activities.add( lst=_load_activities( fs, MULTIPARTS_PATH, List[MultipartActivity] ), skip_checks=True )
+	_activities.add_all( _load_activities( fs, MULTIPARTS_PATH, List[MultipartActivity] ), skip_checks=True )
 
 	return _activities
 

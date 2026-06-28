@@ -22,8 +22,8 @@ class UID:
 	"""Part number of an activity. Example: uid = polar:101#2, part = 2."""
 
 	@classmethod
-	def of( cls, uid: str, path: str = None ) -> UID:
-		return from_str( uid, path )
+	def of( cls, uid: UID|str, path: Optional[str] = None ) -> UID:
+		return from_str( uid, path ) if isinstance( uid, str ) else uid
 
 	@classmethod
 	def from_str( cls, uid: str ) -> UID:

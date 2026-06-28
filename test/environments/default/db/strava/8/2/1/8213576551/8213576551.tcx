@@ -1,904 +1,752 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+<TrainingCenterDatabase xmlns:py="http://codespeak.net/lxml/objectify/pytype" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" py:pytype="TREE">
   <Activities>
-    <Activity Sport="Other">
-      <Id>2022-12-06T08:43:05.014Z</Id>
-      <Lap StartTime="2022-12-06T08:43:05.014Z">
-        <TotalTimeSeconds>124.0</TotalTimeSeconds>
-        <DistanceMeters>0.0</DistanceMeters>
+    <Activity>
+      <Id>2022-12-06T09:43:06Z</Id>
+      <Lap StartTime="2022-12-06T08:43:06Z">
+        <TotalTimeSeconds>121</TotalTimeSeconds>
         <Calories>7</Calories>
         <AverageHeartRateBpm>
-          <Value>73</Value>
+          <Value>73.1</Value>
         </AverageHeartRateBpm>
         <MaximumHeartRateBpm>
           <Value>84</Value>
         </MaximumHeartRateBpm>
         <Intensity>Active</Intensity>
-        <TriggerMethod>Manual</TriggerMethod>
         <Track>
           <Trackpoint>
-            <Time>2022-12-06T08:43:06.014Z</Time>
+            <Time>2022-12-06T08:43:06Z</Time>
             <HeartRateBpm>
               <Value>63</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:07.014Z</Time>
+            <Time>2022-12-06T08:43:07Z</Time>
             <HeartRateBpm>
               <Value>64</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:08.014Z</Time>
+            <Time>2022-12-06T08:43:08Z</Time>
             <HeartRateBpm>
               <Value>64</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:09.014Z</Time>
+            <Time>2022-12-06T08:43:09Z</Time>
             <HeartRateBpm>
               <Value>64</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:10.014Z</Time>
+            <Time>2022-12-06T08:43:10Z</Time>
             <HeartRateBpm>
               <Value>64</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:11.014Z</Time>
+            <Time>2022-12-06T08:43:11Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:12.014Z</Time>
+            <Time>2022-12-06T08:43:12Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:13.014Z</Time>
+            <Time>2022-12-06T08:43:13Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:14.014Z</Time>
+            <Time>2022-12-06T08:43:14Z</Time>
             <HeartRateBpm>
               <Value>68</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:15.014Z</Time>
+            <Time>2022-12-06T08:43:15Z</Time>
             <HeartRateBpm>
               <Value>69</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:16.014Z</Time>
+            <Time>2022-12-06T08:43:16Z</Time>
             <HeartRateBpm>
               <Value>68</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:17.014Z</Time>
+            <Time>2022-12-06T08:43:17Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:18.014Z</Time>
+            <Time>2022-12-06T08:43:18Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:19.014Z</Time>
+            <Time>2022-12-06T08:43:19Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:20.014Z</Time>
+            <Time>2022-12-06T08:43:20Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:21.014Z</Time>
+            <Time>2022-12-06T08:43:21Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:22.014Z</Time>
+            <Time>2022-12-06T08:43:22Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:23.014Z</Time>
+            <Time>2022-12-06T08:43:23Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:24.014Z</Time>
+            <Time>2022-12-06T08:43:24Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:25.014Z</Time>
+            <Time>2022-12-06T08:43:25Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:26.014Z</Time>
+            <Time>2022-12-06T08:43:26Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:27.014Z</Time>
+            <Time>2022-12-06T08:43:27Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:28.014Z</Time>
+            <Time>2022-12-06T08:43:28Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:29.014Z</Time>
+            <Time>2022-12-06T08:43:29Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:30.014Z</Time>
+            <Time>2022-12-06T08:43:30Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:31.014Z</Time>
+            <Time>2022-12-06T08:43:31Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:32.014Z</Time>
+            <Time>2022-12-06T08:43:32Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:33.014Z</Time>
+            <Time>2022-12-06T08:43:33Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:34.014Z</Time>
+            <Time>2022-12-06T08:43:34Z</Time>
             <HeartRateBpm>
               <Value>68</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:35.014Z</Time>
+            <Time>2022-12-06T08:43:35Z</Time>
             <HeartRateBpm>
               <Value>68</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:36.014Z</Time>
+            <Time>2022-12-06T08:43:36Z</Time>
             <HeartRateBpm>
               <Value>68</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:37.014Z</Time>
+            <Time>2022-12-06T08:43:37Z</Time>
             <HeartRateBpm>
               <Value>69</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:38.014Z</Time>
+            <Time>2022-12-06T08:43:38Z</Time>
             <HeartRateBpm>
               <Value>70</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:39.014Z</Time>
+            <Time>2022-12-06T08:43:39Z</Time>
             <HeartRateBpm>
               <Value>70</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:40.014Z</Time>
+            <Time>2022-12-06T08:43:40Z</Time>
             <HeartRateBpm>
               <Value>70</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:41.014Z</Time>
+            <Time>2022-12-06T08:43:41Z</Time>
             <HeartRateBpm>
               <Value>71</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:42.014Z</Time>
+            <Time>2022-12-06T08:43:42Z</Time>
             <HeartRateBpm>
               <Value>71</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:43.014Z</Time>
+            <Time>2022-12-06T08:43:43Z</Time>
             <HeartRateBpm>
               <Value>71</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:44.014Z</Time>
+            <Time>2022-12-06T08:43:44Z</Time>
             <HeartRateBpm>
               <Value>72</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:45.014Z</Time>
+            <Time>2022-12-06T08:43:45Z</Time>
             <HeartRateBpm>
               <Value>72</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:46.014Z</Time>
+            <Time>2022-12-06T08:43:46Z</Time>
             <HeartRateBpm>
               <Value>73</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:47.014Z</Time>
+            <Time>2022-12-06T08:43:47Z</Time>
             <HeartRateBpm>
               <Value>73</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:48.014Z</Time>
+            <Time>2022-12-06T08:43:48Z</Time>
             <HeartRateBpm>
               <Value>73</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:49.014Z</Time>
+            <Time>2022-12-06T08:43:49Z</Time>
             <HeartRateBpm>
               <Value>74</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:50.014Z</Time>
+            <Time>2022-12-06T08:43:50Z</Time>
             <HeartRateBpm>
               <Value>75</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:51.014Z</Time>
+            <Time>2022-12-06T08:43:51Z</Time>
             <HeartRateBpm>
               <Value>76</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:52.014Z</Time>
+            <Time>2022-12-06T08:43:52Z</Time>
             <HeartRateBpm>
               <Value>77</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:53.014Z</Time>
+            <Time>2022-12-06T08:43:53Z</Time>
             <HeartRateBpm>
               <Value>78</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:54.014Z</Time>
+            <Time>2022-12-06T08:43:54Z</Time>
             <HeartRateBpm>
               <Value>78</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:55.014Z</Time>
+            <Time>2022-12-06T08:43:55Z</Time>
             <HeartRateBpm>
               <Value>78</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:56.014Z</Time>
+            <Time>2022-12-06T08:43:56Z</Time>
             <HeartRateBpm>
               <Value>79</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:57.014Z</Time>
+            <Time>2022-12-06T08:43:57Z</Time>
             <HeartRateBpm>
               <Value>80</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:58.014Z</Time>
+            <Time>2022-12-06T08:43:58Z</Time>
             <HeartRateBpm>
               <Value>82</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:43:59.014Z</Time>
+            <Time>2022-12-06T08:43:59Z</Time>
             <HeartRateBpm>
               <Value>83</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:00.014Z</Time>
+            <Time>2022-12-06T08:44:00Z</Time>
             <HeartRateBpm>
               <Value>84</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:01.014Z</Time>
+            <Time>2022-12-06T08:44:01Z</Time>
             <HeartRateBpm>
               <Value>84</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:02.014Z</Time>
+            <Time>2022-12-06T08:44:02Z</Time>
             <HeartRateBpm>
               <Value>84</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:03.014Z</Time>
+            <Time>2022-12-06T08:44:03Z</Time>
             <HeartRateBpm>
               <Value>84</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:04.014Z</Time>
+            <Time>2022-12-06T08:44:04Z</Time>
             <HeartRateBpm>
               <Value>84</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:05.014Z</Time>
+            <Time>2022-12-06T08:44:05Z</Time>
             <HeartRateBpm>
               <Value>84</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:06.014Z</Time>
+            <Time>2022-12-06T08:44:06Z</Time>
             <HeartRateBpm>
               <Value>84</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:07.014Z</Time>
+            <Time>2022-12-06T08:44:07Z</Time>
             <HeartRateBpm>
               <Value>84</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:08.014Z</Time>
+            <Time>2022-12-06T08:44:08Z</Time>
             <HeartRateBpm>
               <Value>83</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:09.014Z</Time>
+            <Time>2022-12-06T08:44:09Z</Time>
             <HeartRateBpm>
               <Value>82</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:10.014Z</Time>
+            <Time>2022-12-06T08:44:10Z</Time>
             <HeartRateBpm>
               <Value>81</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:11.014Z</Time>
+            <Time>2022-12-06T08:44:11Z</Time>
             <HeartRateBpm>
               <Value>80</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:12.014Z</Time>
+            <Time>2022-12-06T08:44:12Z</Time>
             <HeartRateBpm>
               <Value>80</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:13.014Z</Time>
+            <Time>2022-12-06T08:44:13Z</Time>
             <HeartRateBpm>
               <Value>79</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:14.014Z</Time>
+            <Time>2022-12-06T08:44:14Z</Time>
             <HeartRateBpm>
               <Value>79</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:15.014Z</Time>
+            <Time>2022-12-06T08:44:15Z</Time>
             <HeartRateBpm>
               <Value>80</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:16.014Z</Time>
+            <Time>2022-12-06T08:44:16Z</Time>
             <HeartRateBpm>
               <Value>80</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:17.014Z</Time>
+            <Time>2022-12-06T08:44:17Z</Time>
             <HeartRateBpm>
               <Value>80</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:18.014Z</Time>
+            <Time>2022-12-06T08:44:18Z</Time>
             <HeartRateBpm>
               <Value>81</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:19.014Z</Time>
+            <Time>2022-12-06T08:44:19Z</Time>
             <HeartRateBpm>
               <Value>81</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:20.014Z</Time>
+            <Time>2022-12-06T08:44:20Z</Time>
             <HeartRateBpm>
               <Value>81</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:21.014Z</Time>
+            <Time>2022-12-06T08:44:21Z</Time>
             <HeartRateBpm>
               <Value>81</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:22.014Z</Time>
+            <Time>2022-12-06T08:44:22Z</Time>
             <HeartRateBpm>
               <Value>80</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:23.014Z</Time>
+            <Time>2022-12-06T08:44:23Z</Time>
             <HeartRateBpm>
               <Value>80</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:24.014Z</Time>
+            <Time>2022-12-06T08:44:24Z</Time>
             <HeartRateBpm>
               <Value>80</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:25.014Z</Time>
+            <Time>2022-12-06T08:44:25Z</Time>
             <HeartRateBpm>
               <Value>80</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:26.014Z</Time>
+            <Time>2022-12-06T08:44:26Z</Time>
             <HeartRateBpm>
               <Value>79</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:27.014Z</Time>
+            <Time>2022-12-06T08:44:27Z</Time>
             <HeartRateBpm>
               <Value>78</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:28.014Z</Time>
+            <Time>2022-12-06T08:44:28Z</Time>
             <HeartRateBpm>
               <Value>77</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:29.014Z</Time>
+            <Time>2022-12-06T08:44:29Z</Time>
             <HeartRateBpm>
               <Value>76</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:30.014Z</Time>
+            <Time>2022-12-06T08:44:30Z</Time>
             <HeartRateBpm>
               <Value>76</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:31.014Z</Time>
+            <Time>2022-12-06T08:44:31Z</Time>
             <HeartRateBpm>
               <Value>76</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:32.014Z</Time>
+            <Time>2022-12-06T08:44:32Z</Time>
             <HeartRateBpm>
               <Value>76</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:33.014Z</Time>
+            <Time>2022-12-06T08:44:33Z</Time>
             <HeartRateBpm>
               <Value>77</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:34.014Z</Time>
+            <Time>2022-12-06T08:44:34Z</Time>
             <HeartRateBpm>
               <Value>76</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:35.014Z</Time>
+            <Time>2022-12-06T08:44:35Z</Time>
             <HeartRateBpm>
               <Value>76</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:36.014Z</Time>
+            <Time>2022-12-06T08:44:36Z</Time>
             <HeartRateBpm>
               <Value>76</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:37.014Z</Time>
+            <Time>2022-12-06T08:44:37Z</Time>
             <HeartRateBpm>
               <Value>76</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:38.014Z</Time>
+            <Time>2022-12-06T08:44:38Z</Time>
             <HeartRateBpm>
               <Value>77</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:39.014Z</Time>
+            <Time>2022-12-06T08:44:39Z</Time>
             <HeartRateBpm>
               <Value>77</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:40.014Z</Time>
+            <Time>2022-12-06T08:44:40Z</Time>
             <HeartRateBpm>
               <Value>77</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:41.014Z</Time>
+            <Time>2022-12-06T08:44:41Z</Time>
             <HeartRateBpm>
               <Value>76</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:42.014Z</Time>
+            <Time>2022-12-06T08:44:42Z</Time>
             <HeartRateBpm>
               <Value>75</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:43.014Z</Time>
+            <Time>2022-12-06T08:44:43Z</Time>
             <HeartRateBpm>
               <Value>74</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:44.014Z</Time>
+            <Time>2022-12-06T08:44:44Z</Time>
             <HeartRateBpm>
               <Value>73</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:45.014Z</Time>
+            <Time>2022-12-06T08:44:45Z</Time>
             <HeartRateBpm>
               <Value>72</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:46.014Z</Time>
+            <Time>2022-12-06T08:44:46Z</Time>
             <HeartRateBpm>
               <Value>71</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:47.014Z</Time>
+            <Time>2022-12-06T08:44:47Z</Time>
             <HeartRateBpm>
               <Value>71</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:48.014Z</Time>
+            <Time>2022-12-06T08:44:48Z</Time>
             <HeartRateBpm>
               <Value>70</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:49.014Z</Time>
+            <Time>2022-12-06T08:44:49Z</Time>
             <HeartRateBpm>
               <Value>70</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:50.014Z</Time>
+            <Time>2022-12-06T08:44:50Z</Time>
             <HeartRateBpm>
               <Value>70</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:51.014Z</Time>
+            <Time>2022-12-06T08:44:51Z</Time>
             <HeartRateBpm>
               <Value>70</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:52.014Z</Time>
+            <Time>2022-12-06T08:44:52Z</Time>
             <HeartRateBpm>
               <Value>69</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:53.014Z</Time>
+            <Time>2022-12-06T08:44:53Z</Time>
             <HeartRateBpm>
               <Value>69</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:54.014Z</Time>
+            <Time>2022-12-06T08:44:54Z</Time>
             <HeartRateBpm>
               <Value>68</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:55.014Z</Time>
+            <Time>2022-12-06T08:44:55Z</Time>
             <HeartRateBpm>
               <Value>68</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:56.014Z</Time>
+            <Time>2022-12-06T08:44:56Z</Time>
             <HeartRateBpm>
               <Value>68</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:57.014Z</Time>
+            <Time>2022-12-06T08:44:57Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:58.014Z</Time>
+            <Time>2022-12-06T08:44:58Z</Time>
             <HeartRateBpm>
               <Value>67</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:44:59.014Z</Time>
+            <Time>2022-12-06T08:44:59Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:45:00.014Z</Time>
+            <Time>2022-12-06T08:45:00Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:45:01.014Z</Time>
+            <Time>2022-12-06T08:45:01Z</Time>
             <HeartRateBpm>
               <Value>65</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:45:02.014Z</Time>
+            <Time>2022-12-06T08:45:02Z</Time>
             <HeartRateBpm>
               <Value>65</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:45:03.014Z</Time>
+            <Time>2022-12-06T08:45:03Z</Time>
             <HeartRateBpm>
               <Value>65</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:45:04.014Z</Time>
+            <Time>2022-12-06T08:45:04Z</Time>
             <HeartRateBpm>
               <Value>65</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:45:05.014Z</Time>
+            <Time>2022-12-06T08:45:05Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:45:06.014Z</Time>
+            <Time>2022-12-06T08:45:06Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
           <Trackpoint>
-            <Time>2022-12-06T08:45:07.014Z</Time>
+            <Time>2022-12-06T08:45:07Z</Time>
             <HeartRateBpm>
               <Value>66</Value>
             </HeartRateBpm>
-            <SensorState>Present</SensorState>
           </Trackpoint>
         </Track>
       </Lap>
-      <Training VirtualPartner="false">
-        <Plan Type="Workout" IntervalWorkout="false">
-          <Extensions></Extensions>
-        </Plan>
-      </Training>
-      <Creator xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="Device_t">
-        <Name>Polar Vantage V</Name>
-        <UnitId>0</UnitId>
-        <ProductID>203</ProductID>
-        <Version>
-          <VersionMajor>5</VersionMajor>
-          <VersionMinor>2</VersionMinor>
-          <BuildMajor>0</BuildMajor>
-          <BuildMinor>0</BuildMinor>
-        </Version>
-      </Creator>
     </Activity>
   </Activities>
-  <Author xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="Application_t">
-    <Name>Polar Flow Mobile Viewer</Name>
-    <Build>
-      <Version>
-        <VersionMajor>0</VersionMajor>
-        <VersionMinor>0</VersionMinor>
-      </Version>
-    </Build>
-    <LangID>EN</LangID>
-    <PartNumber>XXX-XXXXX-XX</PartNumber>
-  </Author>
 </TrainingCenterDatabase>

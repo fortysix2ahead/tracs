@@ -292,5 +292,261 @@
     "starttime_local": "2022-12-06T09:43:05+01:00",
     "timezone_offset": 60,
     "uid": "polar:7563345422"
+  },
+  {
+    "ascent": 0.0,
+    "descent": 0.0,
+    "distance": 0.0,
+    "duration": "00:02:01",
+    "duration_moving": "00:02:01",
+    "elevation_max": 0.0,
+    "elevation_min": 0.0,
+    "heartrate": 73,
+    "heartrate_max": 84,
+    "id": 11,
+    "name": "Morning Weight Training",
+    "resources": [
+      {
+        "name": "8213576551.json",
+        "path": "strava/8/2/1/8213576551/8213576551.json",
+        "source": "None/activities/8213576551",
+        "type": "application/vnd.strava+json"
+      },
+      {
+        "name": "8213576551.tcx",
+        "path": "strava/8/2/1/8213576551/8213576551.tcx",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed": 0.0,
+    "speed_max": 0.0,
+    "starttime": "2022-12-06T08:43:06+00:00",
+    "starttime_local": "2022-12-06T09:43:06+01:00",
+    "timezone": "(GMT+01:00) Europe/Berlin",
+    "type": "gym",
+    "uid": "strava:8213576551"
+  },
+  {
+    "ascent": 0.0,
+    "descent": 0.0,
+    "distance": 0.0,
+    "duration": "00:07:17",
+    "duration_moving": "00:07:17",
+    "elevation_max": 0.0,
+    "elevation_min": 0.0,
+    "heartrate": 65,
+    "heartrate_max": 76,
+    "id": 12,
+    "name": "Morning Ride",
+    "resources": [
+      {
+        "name": "8213576554.json",
+        "path": "strava/8/2/1/8213576554/8213576554.json",
+        "source": "None/activities/8213576554",
+        "type": "application/vnd.strava+json"
+      },
+      {
+        "name": "8213576554.tcx",
+        "path": "strava/8/2/1/8213576554/8213576554.tcx",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed": 0.0,
+    "speed_max": 0.0,
+    "starttime": "2022-12-06T08:31:10+00:00",
+    "starttime_local": "2022-12-06T09:31:10+01:00",
+    "timezone": "(GMT+01:00) Europe/Berlin",
+    "type": "bike_ergo",
+    "uid": "strava:8213576554"
+  },
+  {
+    "ascent": 0.0,
+    "descent": 0.0,
+    "distance": 42.1,
+    "duration": "00:09:19",
+    "duration_moving": "00:09:19",
+    "elevation_max": 0.0,
+    "elevation_min": 0.0,
+    "heartrate": 65,
+    "heartrate_max": 82,
+    "id": 13,
+    "name": "Morning Run",
+    "resources": [
+      {
+        "name": "8213576563.json",
+        "path": "strava/8/2/1/8213576563/8213576563.json",
+        "source": "None/activities/8213576563",
+        "type": "application/vnd.strava+json"
+      },
+      {
+        "name": "8213576563.tcx",
+        "path": "strava/8/2/1/8213576563/8213576563.tcx",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed": 0.075,
+    "speed_max": 1.32,
+    "starttime": "2022-12-06T08:21:41+00:00",
+    "starttime_local": "2022-12-06T09:21:41+01:00",
+    "timezone": "(GMT+01:00) Europe/Berlin",
+    "type": "run",
+    "uid": "strava:8213576563"
+  },
+  {
+    "ascent": 0.0,
+    "descent": 0.0,
+    "distance": 0.0,
+    "duration": "00:28:07",
+    "duration_moving": "00:28:07",
+    "elevation_max": 0.0,
+    "elevation_min": 0.0,
+    "heartrate": 66,
+    "heartrate_max": 86,
+    "id": 14,
+    "name": "Morning Weight Training",
+    "resources": [
+      {
+        "name": "8213576615.json",
+        "path": "strava/8/2/1/8213576615/8213576615.json",
+        "source": "None/activities/8213576615",
+        "type": "application/vnd.strava+json"
+      },
+      {
+        "name": "8213576615.tcx",
+        "path": "strava/8/2/1/8213576615/8213576615.tcx",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed": 0.0,
+    "speed_max": 0.0,
+    "starttime": "2022-12-06T07:53:06+00:00",
+    "starttime_local": "2022-12-06T08:53:06+01:00",
+    "timezone": "(GMT+01:00) Europe/Berlin",
+    "type": "gym",
+    "uid": "strava:8213576615"
+  },
+  {
+    "ascent": 2.8,
+    "descent": 2.8,
+    "distance": 1150.3,
+    "duration": "03:13:01",
+    "duration_moving": "00:29:22",
+    "elevation_max": 235.2,
+    "elevation_min": 227.5,
+    "heartrate": 0,
+    "heartrate_max": 0,
+    "id": 15,
+    "name": "Afternoon Hike",
+    "resources": [
+      {
+        "name": "7973155107.json",
+        "path": "strava/7/9/7/7973155107/7973155107.json",
+        "source": "None/activities/7973155107",
+        "type": "application/vnd.strava+json"
+      },
+      {
+        "name": "7973155107.tcx",
+        "path": "strava/7/9/7/7973155107/7973155107.gpx",
+        "type": "application/gpx+xml"
+      },
+      {
+        "name": "7973155107.tcx",
+        "path": "strava/7/9/7/7973155107/7973155107.tcx",
+        "type": "application/tcx+xml"
+      },
+      {
+        "name": "7973155107.1.jpg",
+        "path": "strava/7/9/7/7973155107/7973155107.1.jpg",
+        "type": "image/jpeg"
+      },
+      {
+        "name": "7973155107.2.jpg",
+        "path": "strava/7/9/7/7973155107/7973155107.2.jpg",
+        "type": "image/jpeg"
+      }
+    ],
+    "speed": 0.653,
+    "speed_max": 2.486,
+    "starttime": "2022-10-16T12:23:40+00:00",
+    "starttime_local": "2022-10-16T14:23:40+02:00",
+    "timezone": "(GMT+01:00) Europe/Berlin",
+    "type": "hiking",
+    "uid": "strava:7973155107"
+  },
+  {
+    "ascent": 217.3,
+    "descent": 217.3,
+    "distance": 15056.3,
+    "duration": "01:04:42",
+    "duration_moving": "01:02:34",
+    "elevation_max": 1135.7,
+    "elevation_min": 1050.7,
+    "heartrate": 161,
+    "heartrate_max": 173,
+    "id": 16,
+    "name": "Afternoon Ski",
+    "resources": [
+      {
+        "name": "7956459613.json",
+        "path": "strava/7/9/5/7956459613/7956459613.json",
+        "source": "None/activities/7956459613",
+        "type": "application/vnd.strava+json"
+      },
+      {
+        "name": "7956459613.tcx",
+        "path": "strava/7/9/5/7956459613/7956459613.gpx",
+        "type": "application/gpx+xml"
+      },
+      {
+        "name": "7956459613.tcx",
+        "path": "strava/7/9/5/7956459613/7956459613.tcx",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed": 4.011,
+    "speed_max": 9.52,
+    "starttime": "2020-01-02T12:31:48+00:00",
+    "starttime_local": "2020-01-02T13:31:48+01:00",
+    "timezone": "(GMT+01:00) Europe/Berlin",
+    "type": "xcski",
+    "uid": "strava:7956459613"
+  },
+  {
+    "ascent": 274.1,
+    "descent": 274.1,
+    "distance": 20009.5,
+    "duration": "01:51:41",
+    "duration_moving": "01:32:45",
+    "elevation_max": 1133.9,
+    "elevation_min": 1019.9,
+    "heartrate": 145,
+    "heartrate_max": 173,
+    "id": 17,
+    "name": "Nordic Ski",
+    "resources": [
+      {
+        "name": "7956459639.json",
+        "path": "strava/7/9/5/7956459639/7956459639.json",
+        "source": "None/activities/7956459639",
+        "type": "application/vnd.strava+json"
+      },
+      {
+        "name": "7956459639.tcx",
+        "path": "strava/7/9/5/7956459639/7956459639.gpx",
+        "type": "application/gpx+xml"
+      },
+      {
+        "name": "7956459639.tcx",
+        "path": "strava/7/9/5/7956459639/7956459639.tcx",
+        "type": "application/tcx+xml"
+      }
+    ],
+    "speed": 3.596,
+    "speed_max": 10.96,
+    "starttime": "2020-01-02T10:12:25+00:00",
+    "starttime_local": "2020-01-02T11:12:25+01:00",
+    "timezone": "(GMT+01:00) Europe/Berlin",
+    "type": "xcski",
+    "uid": "strava:7956459639"
   }
 ]

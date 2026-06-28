@@ -1,0 +1,1548 @@
+{
+  "achievement_count": 10,
+  "athlete": {
+    "id": 85218504,
+    "resource_state": 1
+  },
+  "athlete_count": 2,
+  "average_heartrate": 145.6,
+  "average_speed": 3.596,
+  "calories": 1251.0,
+  "comment_count": 0,
+  "commute": false,
+  "description": "",
+  "device_name": "Polar Vantage V",
+  "distance": 20009.5,
+  "elapsed_time": 6701,
+  "elev_high": 1133.9,
+  "elev_low": 1019.9,
+  "embed_token": "94d8f2551d15f9d0c2a1ccaceda46536897ab153",
+  "end_latlng": [
+    47.46138,
+    10.120542
+  ],
+  "external_id": "cc1.tcx",
+  "flagged": false,
+  "from_accepted_tag": false,
+  "has_heartrate": true,
+  "has_kudoed": false,
+  "hide_from_home": false,
+  "id": 7956459639,
+  "kudos_count": 0,
+  "laps": [
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 130.6,
+      "average_speed": 4.27,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 244,
+      "end_index": 243,
+      "id": 26570394039,
+      "lap_index": 1,
+      "max_heartrate": 150.0,
+      "max_speed": 8.58,
+      "moving_time": 234,
+      "name": "Lap 1",
+      "split": 1,
+      "start_date": "2020-01-02T10:12:25Z",
+      "start_date_local": "2020-01-02T11:12:25",
+      "start_index": 0,
+      "total_elevation_gain": 10.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 137.7,
+      "average_speed": 4.2,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 246,
+      "end_index": 489,
+      "id": 26570394042,
+      "lap_index": 2,
+      "max_heartrate": 154.0,
+      "max_speed": 8.28,
+      "moving_time": 238,
+      "name": "Lap 2",
+      "split": 2,
+      "start_date": "2020-01-02T10:16:29Z",
+      "start_date_local": "2020-01-02T11:16:29",
+      "start_index": 244,
+      "total_elevation_gain": 11.9
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 145.7,
+      "average_speed": 3.6,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 279,
+      "end_index": 768,
+      "id": 26570394046,
+      "lap_index": 3,
+      "max_heartrate": 159.0,
+      "max_speed": 7.58,
+      "moving_time": 278,
+      "name": "Lap 3",
+      "split": 3,
+      "start_date": "2020-01-02T10:20:35Z",
+      "start_date_local": "2020-01-02T11:20:35",
+      "start_index": 490,
+      "total_elevation_gain": 19.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 150.6,
+      "average_speed": 3.23,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 315,
+      "end_index": 1083,
+      "id": 26570394048,
+      "lap_index": 4,
+      "max_heartrate": 165.0,
+      "max_speed": 6.4,
+      "moving_time": 310,
+      "name": "Lap 4",
+      "split": 4,
+      "start_date": "2020-01-02T10:25:14Z",
+      "start_date_local": "2020-01-02T11:25:14",
+      "start_index": 769,
+      "total_elevation_gain": 24.1
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 151.4,
+      "average_speed": 3.42,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 293,
+      "end_index": 1376,
+      "id": 26570394052,
+      "lap_index": 5,
+      "max_heartrate": 163.0,
+      "max_speed": 8.72,
+      "moving_time": 292,
+      "name": "Lap 5",
+      "split": 5,
+      "start_date": "2020-01-02T10:30:29Z",
+      "start_date_local": "2020-01-02T11:30:29",
+      "start_index": 1084,
+      "total_elevation_gain": 14.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 150.5,
+      "average_speed": 2.89,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 358,
+      "end_index": 1734,
+      "id": 26570394055,
+      "lap_index": 6,
+      "max_heartrate": 165.0,
+      "max_speed": 6.64,
+      "moving_time": 346,
+      "name": "Lap 6",
+      "split": 6,
+      "start_date": "2020-01-02T10:35:22Z",
+      "start_date_local": "2020-01-02T11:35:22",
+      "start_index": 1377,
+      "total_elevation_gain": 21.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 153.1,
+      "average_speed": 3.36,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 299,
+      "end_index": 2033,
+      "id": 26570394060,
+      "lap_index": 7,
+      "max_heartrate": 168.0,
+      "max_speed": 5.86,
+      "moving_time": 298,
+      "name": "Lap 7",
+      "split": 7,
+      "start_date": "2020-01-02T10:42:34Z",
+      "start_date_local": "2020-01-02T11:42:34",
+      "start_index": 1735,
+      "total_elevation_gain": 20.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 157.1,
+      "average_speed": 3.73,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 275,
+      "end_index": 2308,
+      "id": 26570394064,
+      "lap_index": 8,
+      "max_heartrate": 173.0,
+      "max_speed": 10.96,
+      "moving_time": 268,
+      "name": "Lap 8",
+      "split": 8,
+      "start_date": "2020-01-02T10:47:33Z",
+      "start_date_local": "2020-01-02T11:47:33",
+      "start_index": 2034,
+      "total_elevation_gain": 27.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 151.8,
+      "average_speed": 4.85,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 207,
+      "end_index": 2515,
+      "id": 26570394067,
+      "lap_index": 9,
+      "max_heartrate": 169.0,
+      "max_speed": 9.62,
+      "moving_time": 206,
+      "name": "Lap 9",
+      "split": 9,
+      "start_date": "2020-01-02T10:52:08Z",
+      "start_date_local": "2020-01-02T11:52:08",
+      "start_index": 2309,
+      "total_elevation_gain": 13.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 138.9,
+      "average_speed": 4.74,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 212,
+      "end_index": 2727,
+      "id": 26570394069,
+      "lap_index": 10,
+      "max_heartrate": 150.0,
+      "max_speed": 7.08,
+      "moving_time": 211,
+      "name": "Lap 10",
+      "split": 10,
+      "start_date": "2020-01-02T10:55:35Z",
+      "start_date_local": "2020-01-02T11:55:35",
+      "start_index": 2516,
+      "total_elevation_gain": 2.2
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 143.5,
+      "average_speed": 4.61,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 218,
+      "end_index": 2945,
+      "id": 26570394071,
+      "lap_index": 11,
+      "max_heartrate": 157.0,
+      "max_speed": 9.78,
+      "moving_time": 217,
+      "name": "Lap 11",
+      "split": 11,
+      "start_date": "2020-01-02T10:59:07Z",
+      "start_date_local": "2020-01-02T11:59:07",
+      "start_index": 2728,
+      "total_elevation_gain": 2.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 137.5,
+      "average_speed": 4.2,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 251,
+      "end_index": 3196,
+      "id": 26570394074,
+      "lap_index": 12,
+      "max_heartrate": 158.0,
+      "max_speed": 8.22,
+      "moving_time": 238,
+      "name": "Lap 12",
+      "split": 12,
+      "start_date": "2020-01-02T11:02:45Z",
+      "start_date_local": "2020-01-02T12:02:45",
+      "start_index": 2946,
+      "total_elevation_gain": 8.1
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 144.6,
+      "average_speed": 4.61,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 218,
+      "end_index": 3414,
+      "id": 26570394077,
+      "lap_index": 13,
+      "max_heartrate": 154.0,
+      "max_speed": 6.84,
+      "moving_time": 217,
+      "name": "Lap 13",
+      "split": 13,
+      "start_date": "2020-01-02T11:06:56Z",
+      "start_date_local": "2020-01-02T12:06:56",
+      "start_index": 3197,
+      "total_elevation_gain": 2.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 139.2,
+      "average_speed": 4.02,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 423,
+      "end_index": 3837,
+      "id": 26570394078,
+      "lap_index": 14,
+      "max_heartrate": 152.0,
+      "max_speed": 8.4,
+      "moving_time": 249,
+      "name": "Lap 14",
+      "split": 14,
+      "start_date": "2020-01-02T11:10:34Z",
+      "start_date_local": "2020-01-02T12:10:34",
+      "start_index": 3415,
+      "total_elevation_gain": 2.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 146.4,
+      "average_speed": 2.82,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 389,
+      "end_index": 4226,
+      "id": 26570394079,
+      "lap_index": 15,
+      "max_heartrate": 159.0,
+      "max_speed": 5.24,
+      "moving_time": 355,
+      "name": "Lap 15",
+      "split": 15,
+      "start_date": "2020-01-02T11:17:37Z",
+      "start_date_local": "2020-01-02T12:17:37",
+      "start_index": 3838,
+      "total_elevation_gain": 21.9
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 139.5,
+      "average_speed": 2.87,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 474,
+      "end_index": 4700,
+      "id": 26570394083,
+      "lap_index": 16,
+      "max_heartrate": 151.0,
+      "max_speed": 5.64,
+      "moving_time": 349,
+      "name": "Lap 16",
+      "split": 16,
+      "start_date": "2020-01-02T11:25:17Z",
+      "start_date_local": "2020-01-02T12:25:17",
+      "start_index": 4227,
+      "total_elevation_gain": 18.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 154.7,
+      "average_speed": 2.99,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 343,
+      "end_index": 5043,
+      "id": 26570394084,
+      "lap_index": 17,
+      "max_heartrate": 162.0,
+      "max_speed": 6.78,
+      "moving_time": 334,
+      "name": "Lap 17",
+      "split": 17,
+      "start_date": "2020-01-02T11:33:11Z",
+      "start_date_local": "2020-01-02T12:33:11",
+      "start_index": 4701,
+      "total_elevation_gain": 24.1
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 149.9,
+      "average_speed": 3.98,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 252,
+      "end_index": 5295,
+      "id": 26570394087,
+      "lap_index": 18,
+      "max_heartrate": 163.0,
+      "max_speed": 7.54,
+      "moving_time": 251,
+      "name": "Lap 18",
+      "split": 18,
+      "start_date": "2020-01-02T11:38:54Z",
+      "start_date_local": "2020-01-02T12:38:54",
+      "start_index": 5044,
+      "total_elevation_gain": 11.0
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 134.0,
+      "average_speed": 4.42,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 237,
+      "end_index": 5532,
+      "id": 26570394090,
+      "lap_index": 19,
+      "max_heartrate": 148.0,
+      "max_speed": 7.52,
+      "moving_time": 226,
+      "name": "Lap 19",
+      "split": 19,
+      "start_date": "2020-01-02T11:43:06Z",
+      "start_date_local": "2020-01-02T12:43:06",
+      "start_index": 5296,
+      "total_elevation_gain": 3.9
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 145.9,
+      "average_speed": 3.23,
+      "device_watts": false,
+      "distance": 1000.0,
+      "elapsed_time": 318,
+      "end_index": 5850,
+      "id": 26570394095,
+      "lap_index": 20,
+      "max_heartrate": 157.0,
+      "max_speed": 8.9,
+      "moving_time": 310,
+      "name": "Lap 20",
+      "split": 20,
+      "start_date": "2020-01-02T11:58:44Z",
+      "start_date_local": "2020-01-02T12:58:44",
+      "start_index": 5533,
+      "total_elevation_gain": 16.9
+    },
+    {
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 131.5,
+      "average_speed": 2.92,
+      "device_watts": false,
+      "distance": 11.6992,
+      "elapsed_time": 5,
+      "end_index": 5855,
+      "id": 26570394097,
+      "lap_index": 21,
+      "max_heartrate": 133.0,
+      "max_speed": 2.48,
+      "moving_time": 4,
+      "name": "Lap 21",
+      "split": 21,
+      "start_date": "2020-01-02T12:04:02Z",
+      "start_date_local": "2020-01-02T13:04:02",
+      "start_index": 5851,
+      "total_elevation_gain": 0.0
+    }
+  ],
+  "manual": false,
+  "map": {
+    "id": "a7956459639",
+    "polyline": "oxt`Hisw|@PXJ\\F\\B~@C`CGt@GVWp@Wb@cBvC[b@IHWHa@?k@FWR_@n@Of@o@rCk@~D[lASzAO`BKl@Sh@]n@k@v@Un@Gf@KtBS`B[dBQl@UlAk@nEe@vCWvBMjAMdE@@FMDe@LaADgAFc@N[d@o@f@c@bDyAz@g@V]Lg@Fk@HUFGRM|@It@MHEFQBaBCWHy@FeBHgAHg@T_ALeA\\kBJ{AAu@Ko@MUe@a@_@S[Y_@m@y@}AWaA?k@TsABc@Na@X{A\\u@Za@TQ\\Gn@@TITQvAgCPUP]Te@DUTq@Dc@@g@@m@EoASoA[{@Cu@@k@D_@T}@DcA?o@Hm@l@cAVw@RiA^m@F[?YMsB?w@D]HQPQVOREb@?\\GZAr@Gx@@VFRTLTr@jB\\b@LDZAPKLODIHi@Vs@d@i@~@g@JK@ONQP]X{@F{@?UJw@IuA?QFW@YA[G[Ek@?g@Gy@@kABoAFYNWb@YfBq@z@UlAMrBF\\Rj@v@NHf@f@NFVCJENI^_@Te@DOT]HWj@w@p@sAf@q@ZUxB_Ax@W`@Y\\Y\\Qr@i@f@YfD_DPY\\_@HQh@g@h@Up@QZMbAw@`@g@TQj@[f@OVMpA[t@@l@RV@\\Kr@]XEb@Sl@MTKZG`Aa@PE|@KRIPOnAq@Z]z@wARq@Tc@z@_ANGDBG?dAa@~A_AjBu@NMl@_AJMTMP?JCBEJAX^ZPh@d@V`@R`@X^lAn@TNTRPTFJNh@Jj@Ld@FLLNXNb@HP@PC\\]n@iATuA?i@C]MY]e@w@e@u@Q_@SKKMi@?KLs@d@eAf@w@^w@Vq@H]\\]RILAXLVN`@NP@V?^FTPNRBJ\\n@V\\HDHHHBN?LEn@i@HQRoALuAJc@Na@NOPWVUp@Wn@Od@WCC@CfAoATi@D[Pi@HUHIVQd@IZANHD`@CVi@fAc@v@yBnCw@|@}@tA}AvBs@n@YZS\\Sp@EZAj@Bf@?r@Hr@NZHHVJNDLHRRNXLh@Rb@Nh@@VIRKHU@IAk@[c@GeAHo@LWBWCQMSUq@sAOSQOSGS@]NOPOX_@tAMn@GLC\\@`@Z`AXXd@X`@Lh@D^JF@JJFNGf@O^WTMDM?aAu@s@[{AW_@M[S{A_Bk@]o@OgBS[M[SO[CQ?_@B[TcA\\u@Ts@D[?SMi@KK_@Ys@s@SKWBQHONu@dAi@VyAf@_@T}@t@i@TSNMn@EnAKl@UlAQ^GFa@Jc@T_An@q@NU?qAZg@\\{@lAIF[Ny@Ri@^k@Tw@DUA[Iu@]{@I]G[?c@LID]Zg@T{@l@a@FeA`@]P[VWXOJW\\i@xA{@`AeAf@i@Zm@IMEI?OZAF?rAC\\On@Sb@m@f@i@ZeA\\eAx@k@^YNQD]PQZI\\CJ?hAIn@GNQTOH[Bg@NOPK^QVQHSA]Sc@OWQKKUe@Sw@O_@]a@]KOBONa@fASL{@N_@TU\\Sd@SlAK^Ud@K`@D|AAh@[zCUf@]\\I^GFg@jBw@hDWnBs@tDOb@_@zAm@vAi@lCw@fBMRUx@G`@Al@Dp@Jl@Ax@EVYh@Mv@OfBIzAIz@Wj@c@f@MR}@bASx@Cj@FnBFf@Nl@@hAHRTZ@JD|@?XGXaAvCWb@g@d@IN_@jAs@dAGPAJ?n@Hn@?^E`BBd@\\zAD`@B|@BVLXTPBF?TMX@JAd@StBGRGHe@ZgAb@[ZIPGVQ`BEpBG~@On@Fn@V^DPCd@ETBXAPc@bAYzAKP@d@o@rCCv@WfAAN@ZF\\HXHPV`@P\\j@n@\\hAFT@h@TxBLTBTHTjA~ATp@\\j@\\~@?BGFF?GBEJEBD??IB?NPE?@@EEAG_A_BQi@Yo@]e@e@_AK_@?MIq@?QIc@GgAEU[_Ac@q@KWWe@YeA?GXuCL]TgB?OBWAEBg@He@Te@?QFc@b@iAHa@Gm@O[BBGSG{@RgAA}ABe@?}@HaAJc@V[ZUbAYPKRUHQ?o@DIDUFIAe@BKAA?IRY?OCM_@YQ]K}AYsAOc@?]FSFe@GYGKHABH@A?B@EDDDKMeAAe@CS@[Ne@LQNa@DYNSFSXWPUROACD@?CPc@FUZo@Fc@?SBi@IUC_@Ma@MQAIHw@B??GF@C@FDBMCO@QCBAAOo@C_@CsBBs@BON[j@w@Xc@x@w@N[NgACk@Be@BiBJa@Zq@DS?o@Ei@EKAG@MAa@BMAYBa@F[HUd@_@\\w@RUFQ?YJUB_@DGJ[f@q@BIVsAFQDYDOHq@FU@QJYHw@\\kBB_@Ro@Hg@VcADYLa@L_ARg@CIAREL_@f@MJITYXEVSt@KJMDg@?SGSKOQOWQk@i@aA_@e@KE}@Bk@HiAHm@RUVCFI`@Af@Ax@BrAE`AUf@Q|@]z@GRm@dACVCtAKr@MXE\\BxABT\\~@Lh@H`BAj@OtAc@fBM\\CPMXk@p@MVOJWd@IH[P_@DSAWDGCWD_@f@a@hACNI`AYzAC|@Ed@KTMt@YfAWtCMz@Sx@]|@y@bAEHIXOt@OlBe@vCi@vBWfB[tC_@fCe@tEMdBAnAI@?BHe@F{@L_AF_ADO`@m@|@u@t@[\\KnAu@\\KVWHIFMNsADOLS^QfAKVEJMBMHe@J}B@m@RuBBi@bAcGL}BGo@MWc@m@w@k@GMo@aAWi@OMQc@GSIMCQ\\gCP_@X}APk@NWT[VMHCr@@ZAJEXUTYbAkBXc@n@}AFYFm@@qBIkBCSOm@Qc@",
+    "summary_polyline": "oxt`Hisw|@\\v@J|AC`COlAoDpGoBZw@bAgChMo@jFsB`Eg@~FcA`FiB~M[pGj@_Ft@kAfGeDV]f@qBfCe@PW?yBZgFjAyGHqCYeAaBoAyAkCWaA?k@XwBfAsDp@s@lAEj@[zB{Dp@mBBiEo@kCAaBZ}ANaDl@cAj@aCf@iAMmCDuAfAy@jEOj@\\~AdDh@B^[f@gBpB}A|@{BRiCIuAKuIBoAVq@jCkAhCc@rBF`C|Br@An@i@`EiHnEmBxDiCjGsGvBu@zBqBjBy@pA[zBVtKcD|B_BdBmDz@_A~G{C~AiBl@K~AvAdAbBxBrAxAzD`BVlAgBTuACgAk@_AmCkAYaALs@nCeG~@i@rAl@hAH~A~Bz@Lx@{@|@kFx@}@fC_AdAwAhAwChAWZPAr@mA~BmIzKmAjAg@nAGfALnCnA`Ab@l@p@vBGj@a@JyAe@eDVgBkCe@Wq@P_@j@u@rCA~@t@zAdDfA?v@g@t@[DuBqA{Be@cDqCwCc@w@a@Sm@B{@hAmDDo@Mi@_ByAk@GwA~AcC~@{CpB_@lDUlAYf@eCpAyCj@mBrBkDxAmABkDy@_ALkCdBaDrA_AbAi@xA{@`AoBbAeAOQb@CpBc@rAyIbF[x@CtAQ~@a@^cARm@hAe@FyAu@eAiC{@m@_@Ra@fAoA\\u@r@uAzEBfC[zCeAlB_BtGkAdH}AvEi@lC{AtDInANxCm@xBc@~FgCjDSx@BzCVtA@hA`@z@DvAiApDiAxA}AnDFfG\\zALvBb@j@B\\i@tEuBhAm@dA_@rGOn@Fn@\\p@GfBiApD@d@kArGPbB~A`C\\hA^xDZ`A~B|D\\~@S^HIJRwDmHm@sFcBoDYmA|@{GDuAtAmFc@uCRgAJcGb@_AdCqA\\kB?}@RYC]q@w@K}Ai@wBNwAOe@\\AQ{CjA{CbA_A|@qCB}@k@sBHw@RK[oB?gDRk@nCoDNgAB{Dl@gBM}CLeB`BcCVaB|@_BvBgMjBcI}A~BYlAYP_Be@kAeCk@k@sDVm@RY^OxGmAtDm@dAGlB_@jBFnBj@hBH`BQ`CcApDaBzBe@ZkBJaApBq@pGs@rCe@pEq@vB_AlAYnAOlBgBvJaBrNOtDIDf@aFf@}@vGwDt@oC~Bc@N[n@qJbAcGL}BUgA{AyA_BgCg@wA\\gClAaEl@i@xACd@[rBiDn@}ANgA@qBM_Ca@qA"
+  },
+  "max_heartrate": 173,
+  "max_speed": 10.96,
+  "moving_time": 5565,
+  "name": "Nordic Ski",
+  "photo_count": 0,
+  "photos": {
+    "count": 0
+  },
+  "pr_count": 3,
+  "private": true,
+  "private_note": "",
+  "segment_efforts": [
+    {
+      "achievements": [
+        {
+          "rank": 3,
+          "type": "pr",
+          "type_id": 3
+        }
+      ],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 138.3,
+      "device_watts": false,
+      "distance": 1665.1,
+      "elapsed_time": 411,
+      "end_index": 568,
+      "hidden": false,
+      "id": 3015610073567015474,
+      "max_heartrate": 158.0,
+      "moving_time": 404,
+      "name": "Dorfrunde Balderschwang",
+      "pr_rank": 3,
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": -0.0,
+        "city": "Balderschwang",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 1665.1,
+        "elevation_high": 1068.6,
+        "elevation_low": 1049.8,
+        "end_latlng": [
+          47.463483,
+          10.115031
+        ],
+        "id": 11257799,
+        "maximum_grade": 22.4,
+        "name": "Dorfrunde Balderschwang",
+        "private": false,
+        "start_latlng": [
+          47.4635,
+          10.115072
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T10:15:02Z",
+      "start_date_local": "2020-01-02T11:15:02",
+      "start_index": 157
+    },
+    {
+      "achievements": [
+        {
+          "rank": 2,
+          "type": "pr",
+          "type_id": 3
+        }
+      ],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 149.9,
+      "device_watts": false,
+      "distance": 3583.2,
+      "elapsed_time": 1155,
+      "end_index": 1656,
+      "hidden": false,
+      "id": 3015610073568065074,
+      "max_heartrate": 165.0,
+      "moving_time": 1062,
+      "name": "Baderschwang up",
+      "pr_rank": 2,
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": 0.8,
+        "city": "Balderschwang",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 3583.2,
+        "elevation_high": 1091.0,
+        "elevation_low": 1048.0,
+        "end_latlng": [
+          47.441408,
+          10.138525
+        ],
+        "id": 11138224,
+        "maximum_grade": 33.1,
+        "name": "Baderschwang up",
+        "private": false,
+        "start_latlng": [
+          47.463424,
+          10.11526
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T10:22:00Z",
+      "start_date_local": "2020-01-02T11:22:00",
+      "start_index": 575
+    },
+    {
+      "achievements": [
+        {
+          "rank": 2,
+          "type": "pr",
+          "type_id": 3
+        }
+      ],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 145.3,
+      "device_watts": false,
+      "distance": 1523.9,
+      "elapsed_time": 437,
+      "end_index": 1032,
+      "hidden": false,
+      "id": 3015610073566667314,
+      "max_heartrate": 165.0,
+      "moving_time": 430,
+      "name": "Brücke bis Schwabenhof",
+      "pr_rank": 2,
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": -0.5,
+        "city": "Balderschwang",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 1523.9,
+        "elevation_high": 1070.9,
+        "elevation_low": 1052.6,
+        "end_latlng": [
+          47.457008,
+          10.128862
+        ],
+        "id": 22520037,
+        "maximum_grade": 15.1,
+        "name": "Brücke bis Schwabenhof",
+        "private": false,
+        "start_latlng": [
+          47.463253,
+          10.116145
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T10:22:20Z",
+      "start_date_local": "2020-01-02T11:22:20",
+      "start_index": 595
+    },
+    {
+      "achievements": [
+        {
+          "rank": 2,
+          "type": "pr",
+          "type_id": 3
+        }
+      ],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 154.9,
+      "device_watts": false,
+      "distance": 214.1,
+      "elapsed_time": 106,
+      "end_index": 1029,
+      "hidden": false,
+      "id": 3015610073568668210,
+      "max_heartrate": 165.0,
+      "moving_time": 103,
+      "name": "SpeedClimb",
+      "pr_rank": 2,
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": 2.2,
+        "city": "Balderschwang",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 214.1,
+        "elevation_high": 1060.8,
+        "elevation_low": 1055.9,
+        "end_latlng": [
+          47.457027,
+          10.128734
+        ],
+        "id": 11601107,
+        "maximum_grade": 7.7,
+        "name": "SpeedClimb",
+        "private": false,
+        "start_latlng": [
+          47.45702,
+          10.12593
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T10:27:48Z",
+      "start_date_local": "2020-01-02T11:27:48",
+      "start_index": 923
+    },
+    {
+      "achievements": [
+        {
+          "rank": 2,
+          "type": "pr",
+          "type_id": 3
+        }
+      ],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 154.4,
+      "device_watts": false,
+      "distance": 1695.7,
+      "elapsed_time": 519,
+      "end_index": 1586,
+      "hidden": false,
+      "id": 3015610073568015922,
+      "max_heartrate": 165.0,
+      "moving_time": 518,
+      "name": "Schwabenhof bis Brücke",
+      "pr_rank": 2,
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": 1.6,
+        "city": "Balderschwang",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 1695.7,
+        "elevation_high": 1092.5,
+        "elevation_low": 1063.0,
+        "end_latlng": [
+          47.443195,
+          10.137283
+        ],
+        "id": 12205447,
+        "maximum_grade": 11.1,
+        "name": "Schwabenhof bis Brücke",
+        "private": false,
+        "start_latlng": [
+          47.456418,
+          10.129854
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T10:30:12Z",
+      "start_date_local": "2020-01-02T11:30:12",
+      "start_index": 1067
+    },
+    {
+      "achievements": [],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 152.3,
+      "device_watts": false,
+      "distance": 1663.5,
+      "elapsed_time": 482,
+      "end_index": 2328,
+      "hidden": false,
+      "id": 3015610073567527474,
+      "max_heartrate": 173.0,
+      "moving_time": 476,
+      "name": "Bolgenach_Sprint",
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": 0.3,
+        "city": "Obermaiselstein",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 1663.5,
+        "elevation_high": 1110.8,
+        "elevation_low": 1083.8,
+        "end_latlng": [
+          47.437353,
+          10.136844
+        ],
+        "id": 16878566,
+        "maximum_grade": 18.0,
+        "name": "Bolgenach_Sprint",
+        "private": false,
+        "start_latlng": [
+          47.438145,
+          10.138308
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T10:44:25Z",
+      "start_date_local": "2020-01-02T11:44:25",
+      "start_index": 1846
+    },
+    {
+      "achievements": [],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 143.4,
+      "device_watts": false,
+      "distance": 321.2,
+      "elapsed_time": 44,
+      "end_index": 2211,
+      "hidden": false,
+      "id": 3015610073567191602,
+      "max_heartrate": 168.0,
+      "moving_time": 44,
+      "name": "Skitest Scheuenloipe KT",
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": -5.3,
+        "city": "Balderschwang",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 321.2,
+        "elevation_high": 1126.7,
+        "elevation_low": 1109.6,
+        "end_latlng": [
+          47.436302,
+          10.13927
+        ],
+        "id": 22520130,
+        "maximum_grade": -2.4,
+        "name": "Skitest Scheuenloipe KT",
+        "private": false,
+        "start_latlng": [
+          47.434103,
+          10.14201
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T10:49:46Z",
+      "start_date_local": "2020-01-02T11:49:46",
+      "start_index": 2167
+    },
+    {
+      "achievements": [
+        {
+          "rank": 2,
+          "type": "pr",
+          "type_id": 3
+        }
+      ],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 141.3,
+      "device_watts": false,
+      "distance": 319.6,
+      "elapsed_time": 63,
+      "end_index": 2355,
+      "hidden": false,
+      "id": 3015610073569505842,
+      "max_heartrate": 158.0,
+      "moving_time": 63,
+      "name": "Skitest Scheuenloipe I",
+      "pr_rank": 2,
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": -5.9,
+        "city": "Obermaiselstein",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 319.6,
+        "elevation_high": 1125.6,
+        "elevation_low": 1106.6,
+        "end_latlng": [
+          47.438358,
+          10.136673
+        ],
+        "id": 17210262,
+        "maximum_grade": 1.5,
+        "name": "Skitest Scheuenloipe I",
+        "private": false,
+        "start_latlng": [
+          47.435753,
+          10.136359
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T10:51:51Z",
+      "start_date_local": "2020-01-02T11:51:51",
+      "start_index": 2292
+    },
+    {
+      "achievements": [
+        {
+          "rank": 1,
+          "type": "pr",
+          "type_id": 3
+        }
+      ],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 153.9,
+      "device_watts": false,
+      "distance": 478.5,
+      "elapsed_time": 71,
+      "end_index": 2525,
+      "hidden": false,
+      "id": 3015610073566190130,
+      "max_heartrate": 169.0,
+      "moving_time": 71,
+      "name": "Skitest Scheuenloipe II",
+      "pr_rank": 1,
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": -5.8,
+        "city": "Obermaiselstein",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 478.5,
+        "elevation_high": 1126.7,
+        "elevation_low": 1098.3,
+        "end_latlng": [
+          47.44052,
+          10.137633
+        ],
+        "id": 17210285,
+        "maximum_grade": 2.5,
+        "name": "Skitest Scheuenloipe II",
+        "private": false,
+        "start_latlng": [
+          47.437733,
+          10.134534
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T10:54:33Z",
+      "start_date_local": "2020-01-02T11:54:33",
+      "start_index": 2454
+    },
+    {
+      "achievements": [],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 142.0,
+      "device_watts": false,
+      "distance": 1935.6,
+      "elapsed_time": 429,
+      "end_index": 3034,
+      "hidden": false,
+      "id": 3015610073567967794,
+      "max_heartrate": 158.0,
+      "moving_time": 429,
+      "name": "Bolgenach abwärts",
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": -1.3,
+        "city": "Obermaiselstein",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 1935.6,
+        "elevation_high": 1096.6,
+        "elevation_low": 1065.8,
+        "end_latlng": [
+          47.456889,
+          10.127635
+        ],
+        "id": 27221833,
+        "maximum_grade": 7.2,
+        "name": "Bolgenach abwärts",
+        "private": false,
+        "start_latlng": [
+          47.443188,
+          10.137172
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T10:57:04Z",
+      "start_date_local": "2020-01-02T11:57:04",
+      "start_index": 2605
+    },
+    {
+      "achievements": [],
+      "activity": {
+        "id": 7956459639
+      },
+      "athlete": {
+        "id": 85218504,
+        "resource_state": 1
+      },
+      "average_heartrate": 142.5,
+      "device_watts": false,
+      "distance": 1665.1,
+      "elapsed_time": 1167,
+      "end_index": 5718,
+      "hidden": false,
+      "id": 3015610073569289778,
+      "max_heartrate": 157.0,
+      "moving_time": 452,
+      "name": "Dorfrunde Balderschwang",
+      "segment": {
+        "activity_type": "NordicSki",
+        "average_grade": -0.0,
+        "city": "Balderschwang",
+        "climb_category": 0,
+        "country": "Germany",
+        "distance": 1665.1,
+        "elevation_high": 1068.6,
+        "elevation_low": 1049.8,
+        "end_latlng": [
+          47.463483,
+          10.115031
+        ],
+        "id": 11257799,
+        "maximum_grade": 22.4,
+        "name": "Dorfrunde Balderschwang",
+        "private": false,
+        "start_latlng": [
+          47.4635,
+          10.115072
+        ],
+        "state": "Bayern"
+      },
+      "start_date": "2020-01-02T11:42:22Z",
+      "start_date_local": "2020-01-02T12:42:22",
+      "start_index": 5252
+    }
+  ],
+  "splits_metric": [
+    {
+      "average_grade_adjusted_speed": 4.25,
+      "average_heartrate": 130.61702127659575,
+      "average_speed": 4.1,
+      "distance": 1001.6,
+      "elapsed_time": 244,
+      "elevation_difference": -2.0,
+      "moving_time": 244,
+      "pace_zone": 0,
+      "split": 1
+    },
+    {
+      "average_grade_adjusted_speed": 4.19,
+      "average_heartrate": 137.8089430894309,
+      "average_speed": 4.07,
+      "distance": 1000.5,
+      "elapsed_time": 246,
+      "elevation_difference": -1.1,
+      "moving_time": 246,
+      "pace_zone": 0,
+      "split": 2
+    },
+    {
+      "average_grade_adjusted_speed": 3.87,
+      "average_heartrate": 145.70250896057348,
+      "average_speed": 3.58,
+      "distance": 999.5,
+      "elapsed_time": 279,
+      "elevation_difference": 9.0,
+      "moving_time": 279,
+      "pace_zone": 0,
+      "split": 3
+    },
+    {
+      "average_grade_adjusted_speed": 3.46,
+      "average_heartrate": 150.55948553054662,
+      "average_speed": 3.17,
+      "distance": 998.7,
+      "elapsed_time": 315,
+      "elevation_difference": 6.1,
+      "moving_time": 315,
+      "pace_zone": 0,
+      "split": 4
+    },
+    {
+      "average_grade_adjusted_speed": 3.62,
+      "average_heartrate": 151.41296928327645,
+      "average_speed": 3.41,
+      "distance": 1000.4,
+      "elapsed_time": 293,
+      "elevation_difference": 11.0,
+      "moving_time": 293,
+      "pace_zone": 0,
+      "split": 5
+    },
+    {
+      "average_grade_adjusted_speed": 3.13,
+      "average_heartrate": 150.5214899713467,
+      "average_speed": 2.87,
+      "distance": 1001.3,
+      "elapsed_time": 433,
+      "elevation_difference": 19.0,
+      "moving_time": 349,
+      "pace_zone": 0,
+      "split": 6
+    },
+    {
+      "average_grade_adjusted_speed": 3.6,
+      "average_heartrate": 153.08389261744966,
+      "average_speed": 3.35,
+      "distance": 998.1,
+      "elapsed_time": 298,
+      "elevation_difference": 11.0,
+      "moving_time": 298,
+      "pace_zone": 0,
+      "split": 7
+    },
+    {
+      "average_grade_adjusted_speed": 4.01,
+      "average_heartrate": 157.07063197026022,
+      "average_speed": 3.64,
+      "distance": 1001.2,
+      "elapsed_time": 275,
+      "elevation_difference": 7.9,
+      "moving_time": 275,
+      "pace_zone": 0,
+      "split": 8
+    },
+    {
+      "average_grade_adjusted_speed": 4.91,
+      "average_heartrate": 151.7487922705314,
+      "average_speed": 4.84,
+      "distance": 1002.3,
+      "elapsed_time": 207,
+      "elevation_difference": -18.0,
+      "moving_time": 207,
+      "pace_zone": 0,
+      "split": 9
+    },
+    {
+      "average_grade_adjusted_speed": 4.58,
+      "average_heartrate": 138.89150943396226,
+      "average_speed": 4.72,
+      "distance": 999.9,
+      "elapsed_time": 212,
+      "elevation_difference": -19.9,
+      "moving_time": 212,
+      "pace_zone": 0,
+      "split": 10
+    },
+    {
+      "average_grade_adjusted_speed": 4.56,
+      "average_heartrate": 143.54128440366972,
+      "average_speed": 4.58,
+      "distance": 997.8,
+      "elapsed_time": 218,
+      "elevation_difference": -10.1,
+      "moving_time": 218,
+      "pace_zone": 0,
+      "split": 11
+    },
+    {
+      "average_grade_adjusted_speed": 4.05,
+      "average_heartrate": 137.46153846153845,
+      "average_speed": 4.0,
+      "distance": 1002.8,
+      "elapsed_time": 251,
+      "elevation_difference": -21.9,
+      "moving_time": 251,
+      "pace_zone": 0,
+      "split": 12
+    },
+    {
+      "average_grade_adjusted_speed": 4.53,
+      "average_heartrate": 144.6082949308756,
+      "average_speed": 4.59,
+      "distance": 995.9,
+      "elapsed_time": 217,
+      "elevation_difference": -13.0,
+      "moving_time": 217,
+      "pace_zone": 0,
+      "split": 13
+    },
+    {
+      "average_grade_adjusted_speed": 3.64,
+      "average_heartrate": 139.08778625954199,
+      "average_speed": 3.73,
+      "distance": 1003.0,
+      "elapsed_time": 424,
+      "elevation_difference": -19.0,
+      "moving_time": 269,
+      "pace_zone": 0,
+      "split": 14
+    },
+    {
+      "average_grade_adjusted_speed": 2.89,
+      "average_heartrate": 146.4478021978022,
+      "average_speed": 2.62,
+      "distance": 999.1,
+      "elapsed_time": 459,
+      "elevation_difference": 19.9,
+      "moving_time": 382,
+      "pace_zone": 0,
+      "split": 15
+    },
+    {
+      "average_grade_adjusted_speed": 2.97,
+      "average_heartrate": 139.48870056497177,
+      "average_speed": 2.75,
+      "distance": 998.5,
+      "elapsed_time": 473,
+      "elevation_difference": 16.0,
+      "moving_time": 363,
+      "pace_zone": 0,
+      "split": 16
+    },
+    {
+      "average_grade_adjusted_speed": 3.21,
+      "average_heartrate": 154.66964285714286,
+      "average_speed": 2.92,
+      "distance": 1005.6,
+      "elapsed_time": 344,
+      "elevation_difference": 19.1,
+      "moving_time": 344,
+      "pace_zone": 0,
+      "split": 17
+    },
+    {
+      "average_grade_adjusted_speed": 4.08,
+      "average_heartrate": 149.79365079365078,
+      "average_speed": 3.96,
+      "distance": 997.8,
+      "elapsed_time": 252,
+      "elevation_difference": 0.0,
+      "moving_time": 252,
+      "pace_zone": 0,
+      "split": 18
+    },
+    {
+      "average_grade_adjusted_speed": 4.33,
+      "average_heartrate": 134.03508771929825,
+      "average_speed": 4.37,
+      "distance": 996.7,
+      "elapsed_time": 938,
+      "elevation_difference": -12.0,
+      "moving_time": 228,
+      "pace_zone": 0,
+      "split": 19
+    },
+    {
+      "average_grade_adjusted_speed": 3.35,
+      "average_heartrate": 145.87025316455697,
+      "average_speed": 3.15,
+      "distance": 1001.1,
+      "elapsed_time": 318,
+      "elevation_difference": 8.9,
+      "moving_time": 318,
+      "pace_zone": 0,
+      "split": 20
+    },
+    {
+      "average_grade_adjusted_speed": 3.08,
+      "average_heartrate": 131.8,
+      "average_speed": 1.68,
+      "distance": 8.4,
+      "elapsed_time": 5,
+      "elevation_difference": 1.1,
+      "moving_time": 5,
+      "pace_zone": 0,
+      "split": 21
+    }
+  ],
+  "splits_standard": [
+    {
+      "average_grade_adjusted_speed": 4.45,
+      "average_heartrate": 130.2722222222222,
+      "average_speed": 4.36,
+      "distance": 1609.6,
+      "elapsed_time": 369,
+      "elevation_difference": -10.1,
+      "moving_time": 369,
+      "pace_zone": 0,
+      "split": 1
+    },
+    {
+      "average_grade_adjusted_speed": 3.72,
+      "average_heartrate": 147.62686567164178,
+      "average_speed": 3.44,
+      "distance": 1613.1,
+      "elapsed_time": 469,
+      "elevation_difference": 21.0,
+      "moving_time": 469,
+      "pace_zone": 0,
+      "split": 2
+    },
+    {
+      "average_grade_adjusted_speed": 3.51,
+      "average_heartrate": 149.6900826446281,
+      "average_speed": 3.29,
+      "distance": 1606.3,
+      "elapsed_time": 488,
+      "elevation_difference": 8.1,
+      "moving_time": 488,
+      "pace_zone": 0,
+      "split": 3
+    },
+    {
+      "average_grade_adjusted_speed": 3.31,
+      "average_heartrate": 153.2157598499062,
+      "average_speed": 3.02,
+      "distance": 1609.8,
+      "elapsed_time": 617,
+      "elevation_difference": 27.9,
+      "moving_time": 533,
+      "pace_zone": 0,
+      "split": 4
+    },
+    {
+      "average_grade_adjusted_speed": 3.9,
+      "average_heartrate": 153.2607709750567,
+      "average_speed": 3.6,
+      "distance": 1610.1,
+      "elapsed_time": 447,
+      "elevation_difference": 12.0,
+      "moving_time": 447,
+      "pace_zone": 0,
+      "split": 5
+    },
+    {
+      "average_grade_adjusted_speed": 4.62,
+      "average_heartrate": 147.17528735632183,
+      "average_speed": 4.62,
+      "distance": 1609.0,
+      "elapsed_time": 348,
+      "elevation_difference": -30.0,
+      "moving_time": 348,
+      "pace_zone": 0,
+      "split": 6
+    },
+    {
+      "average_grade_adjusted_speed": 4.48,
+      "average_heartrate": 142.10555555555555,
+      "average_speed": 4.48,
+      "distance": 1611.5,
+      "elapsed_time": 360,
+      "elevation_difference": -16.0,
+      "moving_time": 360,
+      "pace_zone": 0,
+      "split": 7
+    },
+    {
+      "average_grade_adjusted_speed": 4.41,
+      "average_heartrate": 140.1232492997199,
+      "average_speed": 4.45,
+      "distance": 1605.6,
+      "elapsed_time": 361,
+      "elevation_difference": -32.9,
+      "moving_time": 361,
+      "pace_zone": 0,
+      "split": 8
+    },
+    {
+      "average_grade_adjusted_speed": 3.6,
+      "average_heartrate": 141.98853211009174,
+      "average_speed": 3.57,
+      "distance": 1610.8,
+      "elapsed_time": 606,
+      "elevation_difference": -12.0,
+      "moving_time": 451,
+      "pace_zone": 0,
+      "split": 9
+    },
+    {
+      "average_grade_adjusted_speed": 2.85,
+      "average_heartrate": 142.4109816971714,
+      "average_speed": 2.59,
+      "distance": 1608.8,
+      "elapsed_time": 807,
+      "elevation_difference": 28.9,
+      "moving_time": 620,
+      "pace_zone": 0,
+      "split": 10
+    },
+    {
+      "average_grade_adjusted_speed": 3.47,
+      "average_heartrate": 152.5659229208925,
+      "average_speed": 3.22,
+      "distance": 1612.4,
+      "elapsed_time": 501,
+      "elevation_difference": 21.1,
+      "moving_time": 501,
+      "pace_zone": 0,
+      "split": 11
+    },
+    {
+      "average_grade_adjusted_speed": 3.94,
+      "average_heartrate": 141.15533980582524,
+      "average_speed": 3.9,
+      "distance": 1605.5,
+      "elapsed_time": 1122,
+      "elevation_difference": -8.0,
+      "moving_time": 412,
+      "pace_zone": 0,
+      "split": 12
+    },
+    {
+      "average_grade_adjusted_speed": 3.58,
+      "average_heartrate": 143.9950980392157,
+      "average_speed": 3.39,
+      "distance": 697.7,
+      "elapsed_time": 206,
+      "elevation_difference": 2.0,
+      "moving_time": 206,
+      "pace_zone": 0,
+      "split": 13
+    }
+  ],
+  "sport_type": "NordicSki",
+  "start_date": "2020-01-02T10:12:25Z",
+  "start_date_local": "2020-01-02T11:12:25",
+  "start_latlng": [
+    47.46136,
+    10.120377
+  ],
+  "timezone": "(GMT+01:00) Europe/Berlin",
+  "total_elevation_gain": 274.1,
+  "total_photo_count": 0,
+  "trainer": false,
+  "type": "NordicSki",
+  "upload_id": 8508287072,
+  "upload_id_str": "8508287072",
+  "utc_offset": 3600.0,
+  "visibility": "only_me"
+}

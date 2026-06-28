@@ -15,12 +15,13 @@ def test_activities():
 	activities = Activities()
 	a1, a2 = activity( 1 ), activity( 2 )
 	a34 = [ activity( 3 ), activity( 4 ) ]
-	assert activities.add( a1, a2 ) == [1, 2]
-	assert activities.add( lst=a34 ) == [3, 4]
+	assert activities.add( a1 ) == 1
+	assert activities.add( a2 ) == 2
+	assert activities.add_all( a34 ) == [3, 4]
 	assert len( activities ) == 4
 
 	# convenience constructor
-	activities = Activities( a1, a2, lst=a34 )
+	activities = Activities( a1, a2, *a34 )
 	assert len( activities ) == 4
 
 	# re-adding will fail

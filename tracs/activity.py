@@ -7,7 +7,7 @@ from inspect import isfunction
 from itertools import chain, pairwise
 from logging import getLogger
 from types import MappingProxyType
-from typing import Any, Callable, ClassVar, Dict, List, Literal, Mapping, Optional, Tuple, TypeVar, Union
+from typing import Any, Callable, ClassVar, Dict, Iterable, List, Literal, Mapping, Optional, Tuple, TypeVar, Union
 
 from attrs import define, Factory, field, fields
 from dateutil.tz import UTC
@@ -360,12 +360,12 @@ class Activities( UserList[Activity] ):
 	Extended list of activities.
 	"""
 
-	def __init__( self, *activities: Activity, lst: Optional[List[Activity]] = None, skip_checks: bool = False ):
+	def __init__( self, *activities: Activity, skip_checks: bool = False ):
 		super().__init__()
 
 		self._id_idx: Dict[int, Activity] = dict()
 		self._uid_idx: Dict[UID, Activity] = dict()
-		self.add( *activities, lst=lst, skip_checks=skip_checks )
+		self.add_all( activities, skip_checks=skip_checks )
 
 	# calculation of next id
 	def __next_id__( self ) -> int:
@@ -414,24 +414,24 @@ class Activities( UserList[Activity] ):
 	# 		new.id = old_obj.id
 	# 		self.data.append( new )
 
-	def add( self, *activities: Activity, lst: Optional[List[Activity]] = None, skip_checks: bool = False ) -> List[int]:
-		activities = [ *activities, *(lst if lst else []) ]
+	def add( self, activity: Activity, skip_checks: bool = False ) -> int:
+		if not skip_checks:
+			if activity.uid is None:
+				raise KeyError( f'activity must have a valid UID to be added (UID = {activity.uid})' )
+			if self.__contains_uid__( activity.uid ):
+				raise KeyError( f'activity with UID {activity.uid} already contained in activities' )
 
-		for a in activities:
-			if not skip_checks:
-				if a.uid is None:
-					raise KeyError( f'activity must have a valid UID to be added (UID = {a.uid})' )
-				if self.__contains_uid__( a.uid ):
-					raise KeyError( f'activity with UID {a.uid} already contained in activities' )
+			activity.id = self.__next_id_2__()
 
-				a.id = self.__next_id_2__()
+		self._id_idx[activity.id] = activity
+		self._uid_idx[activity.uid] = activity
 
-			self._id_idx[a.id] = a
-			self._uid_idx[a.uid] = a
+		self.data.append( activity )
 
-		self.data.extend( activities )
+		return activity.id
 
-		return [a.id for a in activities]
+	def add_all( self, activities: Iterable[Activity], skip_checks: bool = False ) -> List[int]:
+		return [ self.add( a, skip_checks ) for a in activities ]
 
 	def remove( self, item: UID|str|Activity ):
 		if isinstance( item, Activity ) and item in self.data:

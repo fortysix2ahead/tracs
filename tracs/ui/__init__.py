@@ -3,6 +3,7 @@ from platform import system
 from sys import exit as sysexit
 from typing import Any, Dict, List, Optional, TextIO, Tuple
 
+from rich.box import MINIMAL
 from rich.console import Console
 from rich.pretty import pprint as pretty_print, Pretty
 from rich.prompt import Confirm, DefaultType, Prompt, PromptType
@@ -32,6 +33,32 @@ def pprint( obj: Any ) -> None:
 	pretty_print( obj, console=CONSOLE )
 
 #
+
+def print_kvtable(
+		data: List[Tuple[str, Any]],
+		header: Optional[str] = None,
+		footer: Optional[str] = None,
+		title: Optional[str] = None,
+		sort_entries: bool = False ) -> None:
+
+	table = Table(
+		box=MINIMAL,
+		show_header=True if header else False,
+		show_footer=True if footer else False,
+		title=title,
+		title_justify='left',
+	)
+
+	table.add_column( justify='left', no_wrap=True )
+	table.add_column( justify='left', no_wrap=True )
+
+	for row in data:
+		table.add_row( *row )
+
+	c.print( table )
+
+def print_dict( d:dict ) -> None:
+	c.print( dict_table( d ) )
 
 def dict_table( d: Dict, header: Tuple[str, str] = None, sort_entries: bool = False ) -> Table:
 	table = Table( box=None, show_header=True, show_footer=False )

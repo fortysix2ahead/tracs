@@ -12,7 +12,7 @@ from rich.table import Table
 from tracs.activity import Activity
 from tracs.context import ApplicationContext
 from tracs.core import fields_of
-from tracs.ui import CONSOLE as console
+from tracs.ui import CONSOLE as console, print_kvtable
 from tracs.ui.tables import create_table
 from tracs.ui.utils import yellow
 from tracs.utils import red
@@ -82,23 +82,23 @@ def show_fields():
 	console.print( table )
 
 def show_config( ctx: ApplicationContext ):
-	table = Table( box=box.MINIMAL, show_header=False, show_footer=False )
-	table.add_column( justify='left', no_wrap=True )
-	table.add_column( justify='left', no_wrap=True )
+	print_kvtable(
+		[
+			( 'configuration area', ctx.config_dir ),
+			( 'configuration file', ctx.config_file ),
+			( 'appstate file', ctx.state_file ),
+			( 'library', ctx.lib_dir ),
+			( 'database', ctx.db_dir ),
+			( 'takeouts', ctx.takeouts_dir ),
+			( 'overlay', ctx.overlay_dir ),
+			( 'var', ctx.var_dir ),
+			( 'backups', ctx.backup_dir ),
+			( 'temp', ctx.tmp_fs.getsyspath( '/' ) ),
+		],
+		title='Working directories:',
+	)
 
-	table.add_row( 'configuration dir', ctx.config_dir )
-	table.add_row( 'configuration file', pp( ctx.config_file ) )
-	table.add_row( 'state file', pp( ctx.state_file ) )
-
-	table.add_row( 'library', pp( ctx.lib_dir ) )
-	table.add_row( 'database dir', pp( ctx.db_dir ) )
-
-	#table.add_row( 'plugins dir', pp( ctx.plugins_dir ) )
-	#table.add_row( 'overlay dir', pp( ctx.overlay_dir ) )
-
-	console.print( 'Locations:', style='bold' )
-	console.print( table )
-
+	#print_dict( dict( inspect_settings( ctx.config ).get( 'current' ) ) )
 	console.print( 'Configuration:', style='bold' )
 	console.print( Pretty( inspect_settings( ctx.config ).get( 'current' ), max_string=40, overflow='ellipsis' ) )
 

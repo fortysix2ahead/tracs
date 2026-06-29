@@ -136,7 +136,7 @@ class ApplicationContext:
 			self.config_fs = OSFS( config_dir, create=True, expand_vars=True )
 			# self.lib_fs = OSFS( config_dir, create=True, expand_vars=True ) # put library inside config dir if provided?
 		else:
-			pass
+			self.config_fs = OSFS( self.config.configuration, create=True, expand_vars=True )
 
 		# create dependent FS objects
 		self._takeouts_fs = _subfs( self.config_fs, TAKEOUT_DIRNAME )

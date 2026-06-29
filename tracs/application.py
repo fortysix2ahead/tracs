@@ -87,13 +87,7 @@ class Application:
 			self.service_mgr.add_from( self.ctx, name, cfg )
 
 		# init db from config_dir
-		self.ctx._db = ActivityDb(
-			path=self.ctx.db_dir_path,
-			read_only=self.ctx.pretend,
-			enable_index=self.ctx.config.db.index,
-			summary_types=self.registry.summary_type_names(),
-			recording_types=self.registry.recording_type_names()
-		)
+		self.ctx._db = ActivityDb( fs=self.ctx.db_fs, read_only=self.ctx.pretend )
 
 		# ---- register cleanup functions ----
 #		register_atexit( self._ctx.db.close )

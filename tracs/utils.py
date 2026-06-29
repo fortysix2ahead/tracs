@@ -6,9 +6,10 @@ from functools import wraps
 from gzip import open as open_gzip
 from io import BytesIO
 from itertools import chain
-from os.path import abspath as abs_path, expanduser, expandvars, normpath
+from logging import getLogger
+from os.path import abspath as abs_path, expanduser, expandvars, isdir, normpath
 from pathlib import Path
-from re import compile as rxcompile, match
+from re import compile, match
 from time import gmtime, perf_counter
 from typing import Any, BinaryIO, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Type, TypeVar, Union
 from urllib.parse import ParseResult, ParseResultBytes, urlparse as urllibparse
@@ -35,23 +36,25 @@ from typing_extensions import deprecated
 
 from tracs.activity_types import ActivityTypes
 
+log = getLogger(__name__)
+
 T = TypeVar('T')
 
 FsPath = namedtuple( 'FsPath', 'fs path' )
 
-INT_COLON = rxcompile( '\d:.+' )
-TIMEDELTA = rxcompile( '((?P<days>\d\d):)?(?P<hours>\d\d):(?P<minutes>\d\d):(?P<seconds>\d\d)(\.(?P<fraction>\d{1,6}))?' )
+INT_COLON = compile( r'\d:.+' )
+TIMEDELTA = compile( r'((?P<days>\d\d):)?(?P<hours>\d\d):(?P<minutes>\d\d):(?P<seconds>\d\d)(\.(?P<fraction>\d{1,6}))?' )
 
 TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second' ]
 
-YEAR = rxcompile( '^(?P<year>[12]\d\d\d)$' )
-YEAR_MONTH = rxcompile( '^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)$' )
-YEAR_MONTH_DAY = rxcompile( '^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)-(?P<day>[0-3]\d)$' )
-HOUR = rxcompile( '^(?P<hour>[0-1]\d|2[0-4])$' )
-HOUR_MINUTE = rxcompile( '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d)$' )
-HOUR_MINUTE_SECOND = rxcompile( '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d):(?P<second>[0-5]\d)$' )
+YEAR = compile( r'^(?P<year>[12]\d\d\d)$' )
+YEAR_MONTH = compile( r'^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)$' )
+YEAR_MONTH_DAY = compile( r'^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)-(?P<day>[0-3]\d)$' )
+HOUR = compile( r'^(?P<hour>[0-1]\d|2[0-4])$' )
+HOUR_MINUTE = compile( r'^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d)$' )
+HOUR_MINUTE_SECOND = compile( r'^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d):(?P<second>[0-5]\d)$' )
 
-ZIP_FS = rxcompile( r'<zipfs \'(.+)\'>' )
+ZIP_FS = compile( r'<zipfs \'(.+)\'>' )
 
 @define
 class UtilityConfiguration:
@@ -89,9 +92,9 @@ def fmt( value, locale = None ) -> str:
 		_r_val = ''
 
 	if isinstance( value, str ):
-		if match( '^\d+$', value ): # format integer
+		if match( r'^\d+$', value ): # format integer
 			value = int( value )
-		elif match( '^\d+\.\d+$', value ): # format float
+		elif match( r'^\d+\.\d+$', value ): # format float
 			value = float( value )
 		elif match( _DTISO, value ): # iso datetime
 			value = datetime.fromisoformat( value )
@@ -454,6 +457,12 @@ class ReadGzipFS( FS ):
 
 	def geturl( self, path, purpose="download" ):
 		return "gzip://{}!/{}".format( self._file, self._name() )
+
+class ResolvingOSFS( OSFS ):
+
+	def __init__( self, root_path: str ):
+		super().__init__( root_path=(p := abspath( root_path )), create=True, expand_vars=True )
+		log.debug( f'resolved root path {root_path} to {p}' )
 
 def abspath( path: Path|str ) -> str:
 	return normpath( abs_path( expanduser( expandvars( str( path ) ) ) ) )

@@ -1,11 +1,14 @@
 from datetime import datetime, time
 from logging import getLogger
 from re import match
-from typing import cast
+from typing import cast, List
 
+from attrs import asdict, define, field
 from dateutil.tz import tzlocal, UTC
 from pytest import mark, raises
-from rule_engine import Context, EvaluationError, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
+from rule_engine import Context, DataType, EvaluationError, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
+from rule_engine import __version__ as rule_engine_version
+from rule_engine.builtins import Builtins
 
 from tracs.activity import Activity
 from tracs.activity_types import ActivityTypes
@@ -51,41 +54,98 @@ a2 = Activity(
 	)
 )
 
+@define
+class SampleEquipment:
+
+	equipment: List[str] = field( default=[ 'shoes' ] )
+
+@define
+class SampleActivity:
+
+	equipment: SampleEquipment = field( factory=SampleEquipment )
+	id: int = field( default=0 )
+	heartrate: int = field( default=180 )
+	heartrate_max: int = field( default=220 )
+	heartrate_str: str = field( default='180' )
+	name: str = field( default='sample' )
+	tags: List[str] = field( default=[ 'tired' ] )
+
+# don't know yet what to do with the schema
+
+SampleActivitySchema = DataType.OBJECT( 'SampleActivity',attributes={
+		'id': DataType.FLOAT,
+		'name': DataType.STRING,
+	},
+)
+
+# only works with dataclasses
+# SampleActivityType = DataType.OBJECT.from_dataclass( 'SampleActivity', SampleActivity )
+
+#
+class CustomBuiltinsContext( Context ):
+
+	def __init__( self, *args, **kwargs ):
+		# call the parent class's __init__ method first to set the default_timezone attribute
+		super( CustomBuiltinsContext, self ).__init__( default_value=None, resolver=resolve_attribute )
+
+		self.builtins = Builtins.from_defaults({
+			'uppr': lambda v: v.upper(),
+			'version': rule_engine_version },
+			timezone=self.default_timezone,
+      )
+
 @mark.unit
 def test_rule_engine():
+	# sample instance
+	a = SampleActivity()
+
 	# plain case does not work with classes, only with dictionaries
 	with raises( SymbolResolutionError ):
-		assert Rule( 'heartrate == 180' ).matches( a2 )
-	assert Rule( 'heartrate == 180' ).matches( d2 )
-	assert Rule( 'heartrate == 180', context=ATTRIBUTE_CONTEXT ).matches( a2 )
-	assert not Rule( 'heartrate_max == 180', context=ATTRIBUTE_CONTEXT ).matches( a2 )
+		assert Rule( 'heartrate == 180' ).matches( a )
+	assert Rule( 'heartrate == 180' ).matches( asdict( a ) )
+
+	# apply custom context to make it work with dataclasses
+	assert Rule( 'heartrate == 180', context=ATTRIBUTE_CONTEXT ).matches( a )
+	assert not Rule( 'heartrate_max == 180', context=ATTRIBUTE_CONTEXT ).matches( a )
 
 	# how to get around a SymbolResolutionError:
 	context = Context( default_value=None )
 	rule = Rule( 'year == 2023', context=context )
-	assert not rule.matches( a2 )
+	assert not rule.matches( a )
 
 	# how to use a custom resolver
 	def resolve_year( thing, name ):
 		if name == 'year':
-			return cast( Activity, thing ).starttime.year
-		elif name == 'classifiers' and type( thing ) is tuple:
-			return list( map( lambda s: s.split( ':', 1 )[0], thing ) )
+			return 2023
 		else:
 			return resolve_attribute( thing, name )
 
 	context = Context( default_value=None, resolver=resolve_year )
-	assert Rule( 'heartrate == 180', context=context ).matches( a2 )
-	assert Rule( 'year == 2023', context=context ).matches( a2 )
-	assert Rule( 'heartrate == 180 and year == 2023', context=context ).matches( a2 )
-	assert not Rule( 'heartrate == 170 and year == 2023', context=context ).matches( a2 )
+	assert Rule( 'heartrate == 180', context=context ).matches( a )
+	assert Rule( 'year == 2023', context=context ).matches( a )
+	assert Rule( 'heartrate == 180 and year == 2023', context=context ).matches( a )
+	assert not Rule( 'heartrate == 170 and year == 2023', context=context ).matches( a )
 
-	assert Rule( '"tired" in tags', context=context ).matches( a2 )
-	assert not Rule( '"evening" in tags', context=context ).matches( a2 )
+	# testing functions
+	# this fails as heartrate_str is a string and cannot be compared to a number
+	with raises( EvaluationError ):
+		assert Rule( 'heartrate_str >= 180', context=context ).matches( a )
+	# string comparison works
+	assert Rule( 'heartrate_str == "180"', context=context ).matches( a )
+	# conversion to float and compare to value, note that the preceding $ is necessary
+	assert Rule( '$parse_float( heartrate_str ) >= 180', context=context ).matches( a )
 
-	assert Rule( '"polar:1234" in uids', context=context ).matches( a2 )
-	assert not Rule( '"polar" in uids', context=context ).matches( a2 )
-	assert Rule( '"polar" in uids.classifiers', context=context ).matches( a2 )
+	assert Rule( '"tired" in tags', context=context ).matches( a )
+	assert not Rule( '"evening" in tags', context=context ).matches( a )
+
+	# access sub objects via dot notation
+	assert Rule( '"shoes" in equipment.equipment', context=context ).matches( a )
+
+	# test custom context with extended builtins
+	context = CustomBuiltinsContext( default_value=None )
+	assert Rule( 'heartrate == 180', context=context ).matches( a )
+	assert Rule( '$version == "5.0.0"', context=context ).matches( a )
+	assert Rule( '$uppr( name ) == "SAMPLE"', context=context ).matches( a )
 
 @mark.unit
 def test_rule_pattern():

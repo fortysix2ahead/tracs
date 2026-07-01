@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+
+from datetime import date as pydate, datetime, time as pytime, timedelta
 
 from tracs.pluginmgr import derived_field
 
@@ -72,6 +73,16 @@ def time( self ) -> timedelta:
 	return timedelta( hours=self.starttime_local.hour, minutes=self.starttime_local.minute, seconds=self.starttime_local.second )
 
 @derived_field(
+	display_name='Local Date',
+	description='Local date without time',
+	type=pydate,
+	expose=False,
+)
+def _date( self ) -> pydate:
+	# rules does not care about timezones -> that's why we need to return time without tz information
+	return pydate( self.starttime_local.year, self.starttime_local.month, self.starttime_local.day )
+
+@derived_field(
 	display_name='Local Time',
 	description='Local time without date and tz',
 	type=datetime,
@@ -80,3 +91,4 @@ def time( self ) -> timedelta:
 def _time( self ) -> datetime:
 	# rules does not care about timezones -> that's why we need to return time without tz information
 	return datetime( 1, 1, 1, self.starttime_local.hour, self.starttime_local.minute, self.starttime_local.second )
+	# return pytime( self.starttime_local.hour, self.starttime_local.minute, self.starttime_local.second )

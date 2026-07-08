@@ -12,6 +12,7 @@ from attr import AttrsInstance
 from attrs import Attribute, define, field, fields, NOTHING
 from attrs.setters import NO_OP
 from dateutil.tz import UTC
+from more_itertools.recipes import first_true
 
 from tracs.uid import UID
 
@@ -251,6 +252,9 @@ def augment( cls: Type, field: DerivedField, ignore_errors: bool = True ) -> Non
 	)
 
 	cls.__attrs_attrs__ = cls.__attrs_attrs__ + (derived_attr,)
+
+def get_field( obj: Type[AttrsInstance]|AttrsInstance, name: str ) -> Attribute|None:
+	return first_true( fields_of( obj, True, True ), pred=lambda f: f.name == name )
 
 def fields_of( obj: Type[AttrsInstance]|AttrsInstance, include_internal: bool = False, include_unexposed: bool = False ) -> List[Attribute]:
 	_fields = fields( obj )

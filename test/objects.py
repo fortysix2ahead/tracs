@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from dateutil.tz import tzoffset, UTC
+from dateutil.tz import tzlocal, tzoffset, UTC
 
+from plugins.tcx import TCX_TYPE
 from tracs.activity import Activities, Activity, MultipartActivity
 from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata
@@ -267,30 +268,66 @@ ACTIVITIES_OBJ_DUMP = \
 '''
 
 COMPLETE_ACTIVITY = Activity(
+	ascent = 2.8,
+	descent = 2.8,
+	description='Afternoon Hike in Berlin',
+	distance = 1150.3,
+	duration=timedelta( hours=3, minutes=13, seconds=1 ),
+	duration_moving=timedelta( hours=0, minutes=29, seconds=22 ),
+	elevation_max = 235.2,
+	elevation_min = 227.5,
+	heartrate = 100,
+	heartrate_max = 120,
 	id=1,
-	uid='polar:101',
-	starttime=datetime( 2024, 1, 3, 10, 0, 0, tzinfo=UTC ),
-	duration=timedelta( hours=2 ),
-	type=ActivityTypes.walk,
 	location_country='de',
+	location_city='Berlin',
+	name = "Afternoon Hike",
+	speed = 0.653,
+	speed_max = 2.486,
+	starttime=datetime( 2022, 10, 16, 12, 23, 40, tzinfo=UTC ),
+	starttime_local=datetime( 2022, 10, 16, 14, 23, 40, tzinfo=tzlocal() ),
+	tags=[ 'berlin', 'Afternoon', 'Hiking' ],
+	timezone = "(GMT+01:00) Europe/Berlin",
+	type=ActivityTypes.walk,
+	uid='polar:101',
+
 	metadata=Metadata(
 		created=datetime( 2024, 1, 4, 10, 0, 0, tzinfo=UTC ),
 		modified=datetime( 2024, 1, 4, 11, 0, 0, tzinfo=UTC ),
 		favourite=True,
-		members=[UID( 'polar:101' ), UID( 'strava:101' )],
 	),
-#	parts=[
-#		ActivityPart( uid=UID.from_str( 'polar:222#1' ), gap=timedelta( minutes=20 ) ),
-#		ActivityPart( uid=UID.from_str( 'polar:222#2' ), gap=timedelta( minutes=20 ) )
-#	],
+
 	resources=Resources(
 		Resource(
-			name='recording.gpx',
+			name='7973155107.json',
+			path='strava/7/9/7/7973155107/7973155107.json',
+			type='application/vnd.strava+json',
+			uid=UID.of( 'strava:7973155107' ),
+		),
+		Resource(
+			name='7973155107.gpx',
+			path='strava/7/9/7/7973155107/7973155107.gpx',
 			type=GPX_TYPE,
-			path='polar/1/2/3/1234/1234.gpx',
-			source='https://polar.com/1234/1234.gpx',
-			uid='polar:1234',
-		)
+			uid=UID.of( 'strava:7973155107' ),
+		),
+		Resource(
+			name='7973155107.tcx',
+			path='strava/7/9/7/7973155107/7973155107.tcx',
+			type=TCX_TYPE,
+			uid=UID.of( 'strava:7973155107' ),
+		),
+		Resource(
+			name='7973155107.1.jpg',
+			path='strava/7/9/7/7973155107/7973155107.1.jpg',
+			type='image/jpeg',
+			uid=UID.of( 'strava:7973155107' ),
+		),
+		Resource(
+			name='7973155107.2.jpg',
+			path='strava/7/9/7/7973155107/7973155107.2.jpg',
+			type='image/jpeg',
+			uid=UID.of( 'strava:7973155107' ),
+		),
 	)
 )
 

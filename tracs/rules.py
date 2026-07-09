@@ -4,57 +4,159 @@ from __future__ import annotations
 from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 from logging import getLogger
-from re import compile as rx_compile, match
+from re import compile, match, VERBOSE
 from sys import maxsize
-from typing import Any, Dict, List, Literal, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, Iterable, Iterator, List, Literal, Tuple, Type, Union
 
 from arrow import Arrow, get as getarrow
 from attrs import define, field
 from dateutil.tz import UTC
 from more_itertools.recipes import first_true
-from rule_engine import Context, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
+from rule_engine import Context as RuleContext, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
+from rule_engine.builtins import Builtins
 
 from tracs.activity import Activity
-from tracs.core import Keyword, Normalizer
+from tracs.core import get_field, Keyword, Normalizer
 from tracs.utils import floor_ceil_from
 
 log = getLogger( __name__ )
 
 TIME_FRAMES = Literal[ 'year', 'quarter', 'month', 'week', 'day', 'hour' ]
 
-TRUE_FALSE = rx_compile( r'^(true|false)$' )
+# simple items
 
-INT_PATTERN = rx_compile( '^(?P<value>\d+)$' )
-INT_LIST = rx_compile( '^\d+(,\d+)*$' )
-INT_RANGE_PATTERN = rx_compile( '^(?P<range_from>\d+)?\.\.(?P<range_to>\d+)?$' )
+TRUE_FALSE = compile( r'^(true|false)$' )
+BOOL = compile( r'(?P<bool>true|false)' )
+INT = compile( r'(?P<int>\d+)' )
+NUMBER = compile( r'(?P<number>\d+(\.\d+)?)' )
+QUOTED_STRING = compile( r'"(?P<string>.*)"' )
+KEYWORD = compile( r'[a-zA-Z][\w_-]*' )
 
-NUMBER_PATTERN = '^(?P<value>\d+(\.\d+)?)$'
+# lists
 
-QUOTED_STRING_PATTERN = '^"(?P<value>.*)"$'
+INT_LIST = compile( r"""
+	(?P<list>
+	(\d+),(\d+)
+	(?:,(\d+))*
+	)
+""", VERBOSE )
 
-KEYWORD_PATTERN = '^[a-zA-Z][\w-]*$'
+LIST = compile( r"""
+	(?P<list>
+	(\w+),(\w+)
+	(?:,(\w+))*
+	)
+""", VERBOSE )
 
-LIST_PATTERN = '^(\w+)(,(\w+))+$'
-RANGE_PATTERN = '^(?P<range_from>\d[\d\.\:-]+)?(\.\.)(?P<range_to>\d[\d\.\:-]+)?$'
+# ranges
 
-DATE_PATTERN = '^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)-(?P<day>[0-3]\d)$'
-DATE_YEAR_PATTERN = '^(?P<year>[12]\d\d\d)$'
-DATE_YEAR_MONTH_PATTERN = '^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)$'
-DATE_YEAR_MONTH_DAY_PATTERN = DATE_PATTERN
-FUZZY_DATE_PATTERN = '^(?P<year>[12]\d\d\d)(-(?P<month>[01]\d))?(-(?P<day>[0-3]\d))?$'
+INT_RANGE = compile( r"""
+	(\d+)?
+	\.\.
+	(\d+)?
+""", VERBOSE )
 
-DATE_RANGE_PATTERN = rx_compile(
-	'^((?P<year_from>[12]\d\d\d)(-(?P<month_from>[01]\d))?(-(?P<day_from>[0-3]\d))?)?\.\.((?P<year_to>[12]\d\d\d)(-(?P<month_to>[01]\d))?(-(?P<day_to>[0-3]\d))?)?$'
+RANGE = compile( r"""
+	(?P<range_from>\d[\d.:-]*)?
+	\.\.
+	(?P<range_to>\d[\d.:-]*)?
+""", VERBOSE )
+
+DATE_RANGE = compile( r"""
+	(?:
+		(?P<year_from>[12]\d\d\d)
+		(?:
+			-(?P<month_from>[01]\d)
+		)?
+		(?:
+			-(?P<day_from>[0-3]\d)
+		)?
+	)?
+	\.\.
+	(?:
+		(?P<year_to>[12]\d\d\d)
+		(?:
+			-(?P<month_to>[01]\d)
+		)?
+		(?:
+			-(?P<day_to>[0-3]\d)
+		)?
+	)?
+""", VERBOSE )
+
+
+TIME_RANGE = compile( r"""
+	(?:
+		(?P<hour_from>[0-2]\d)
+		(?:
+			:(?P<min_from>[0-5]\d)
+		)?
+		(?:
+			:(?P<sec_from>[0-5]\d)
+		)?
+	)?
+	\.\.
+	(?:
+		(?P<hour_to>[0-2]\d)
+		(?:
+			:(?P<min_to>[0-5]\d)
+		)?
+		(?:
+			:(?P<sec_to>[0-5]\d)
+		)?
+	)?
+""", VERBOSE )
+
+DATE = compile( r"""
+	(?P<year>[12]\d\d\d)
+	-
+	(?P<month>[01]\d)
+	-
+	(?P<day>[0-3]\d)
+""", VERBOSE )
+
+FUZZY_DATE = compile( r"""
+	(?P<year>[12]\d\d\d)
+	(?:-(?P<month>[01]\d))?
+	(?:-(?P<day>[0-3]\d))?
+""", VERBOSE )
+
+TIME = compile( r"""
+	(?P<hour>[0-1]\d|2[0-4])
+	:
+	(?P<minute>[0-5]\d)
+	:
+	(?P<second>[0-5]\d)
+""", VERBOSE )
+
+FUZZY_TIME = compile( r"""
+	(?P<hour>[0-1]\d|2[0-4])
+	(?:
+		:(?P<minute>[0-5]\d)
+	)?
+	(?:
+		:(?P<second>[0-5]\d)
+	)?
+""", VERBOSE )
+
+RULE = compile( r"""
+	(\^)?
+	(\w+)
+	(==|!=|=~|!~|>=|<=|>|<|=|:)
+	([\w\\.,-_:]+|".*")?
+""", VERBOSE )
+
+DATE_YEAR_PATTERN = compile( r'^(?P<year>[12]\d\d\d)$' )
+DATE_YEAR_MONTH_PATTERN = compile( r'^(?P<year>[12]\d\d\d)-(?P<month>[01]\d)$' )
+DATE_YEAR_MONTH_DAY_PATTERN = DATE
+FUZZY_DATE_PATTERN = compile( r'^(?P<year>[12]\d\d\d)(-(?P<month>[01]\d))?(-(?P<day>[0-3]\d))?$' )
+
+TIME_RANGE_PATTERN = compile(
+	r'^((?P<hour_from>[0-2]\d)(:(?P<min_from>[0-5]\d))?(:(?P<sec_from>[0-5]\d))?)?\.\.((?P<hour_to>[0-2]\d)(:(?P<min_to>[0-5]\d))?(:(?P<sec_to>[0-5]\d))?)?$'
 )
-TIME_RANGE_PATTERN = rx_compile(
-	'^((?P<hour_from>[0-2]\d)(:(?P<min_from>[0-5]\d))?(:(?P<sec_from>[0-5]\d))?)?\.\.((?P<hour_to>[0-2]\d)(:(?P<min_to>[0-5]\d))?(:(?P<sec_to>[0-5]\d))?)?$'
-)
 
-TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4]):(?P<minute>[0-5]\d):(?P<second>[0-5]\d)$'
-FUZZY_TIME_PATTERN = '^(?P<hour>[0-1]\d|2[0-4])(:(?P<minute>[0-5]\d)(:(?P<second>[0-5]\d))?)?$'
-
-SHORT_RULE_PATTERN = r'^(\w+)(:|=)([\w\"\.].+)$' # short version: id=10 or id:10 for convenience, value must begin with alphanum or "
-RULE_PATTERN = '^(\w+)(==|!=|=~|!~|>=|<=|>|<|=|:)([\w\"\.].+)*$'
+SHORT_RULE_PATTERN = compile( r'^(\w+)(:|=)([\w\"\.].+)$' ) # short version: id=10 or id:10 for convenience, value must begin with alphanum or "
+RULE_PATTERN = compile( r'^(\^?)(\w+)(==|!=|=~|!~|>=|<=|>|<|=|:)([\w\"\\.,-]+)?$' )
 
 # type hints to be able to parse certain string correctly (i.e. 2022 as date, not as int)
 RESOLVER_TYPES: Dict[str, Type] = {
@@ -79,13 +181,39 @@ def resolve_custom_attribute_2( thing: Any, name: str ) -> Any:
 		raise SymbolResolutionError( thing=thing, symbol_name=name )
 
 # CONTEXT = Context( default_value=None, resolver=resolve_custom_attribute )
-CONTEXT = Context( resolver=resolve_custom_attribute )
+# CONTEXT = Context( resolver=resolve_custom_attribute )
+
+
+class ResolvingContext( RuleContext ):
+
+	def __init__( self, *args, **kwargs ):
+		super( ResolvingContext, self ).__init__( default_value=None, resolver=ResolvingContext.resolve_attr )
+
+		# prepare for extending builtins table
+		self.builtins = Builtins.from_defaults( {
+			'contains': ResolvingContext.contains,
+#			'version': rule_engine_version },
+		} )
+
+	@staticmethod
+	def resolve_attr( thing: Any, name: str ) -> Any:
+		try:
+			return getattr( thing, name )
+		except (AttributeError, TypeError):
+			raise SymbolResolutionError( thing=thing, symbol_name=name )
+
+	@staticmethod
+	def contains( obj_value, rule_value, type ) -> bool:
+		return True if obj_value is not None and rule_value in obj_value.lower() else False
+
+CONTEXT = ResolvingContext()
 
 # rules parser
 
 @define
 class RuleParser:
 
+	context: RuleContext = field( default=ResolvingContext() )
 	keywords: List[Keyword] = field( factory=list )
 	normalizers: List[Normalizer] = field( factory=list )
 
@@ -104,6 +232,22 @@ class RuleParser:
 	def _rule_normalizer_type( self, name: str ) -> Any:
 		return n.type if ( n := self._normalizer( name ) ) else Activity.field_type( name )
 
+	def type_of( self, attr: str ) -> str:
+		return 'None'
+
+	def evaluate( self, rule: str, obj: Any ) -> Any:
+		return self.parse_rule( rule ).evaluate( obj )
+
+	# this is mainly for testing
+	def evaluate_normalized( self, rule: str, obj: Any ) -> Any:
+		return self.process( rule ).evaluate( obj )
+
+	def filter( self, rule: str, objs: Iterable[Any] ) -> Iterator[Any]:
+		return self.parse_rule( rule ).filter( objs )
+
+	def matches( self, rule: str, obj: Any ) -> bool:
+		return self.parse_rule( rule ).matches( obj )
+
 	def parse_rules( self, *rules: str ) -> List[Rule]:
 		return [self.parse_rule( r ) for r in rules]
 
@@ -118,12 +262,13 @@ class RuleParser:
 
 	def normalize( self, rule: str ) -> str:
 
-		left, op, right, normalized_rule = None, None, None, None
+		neg, left, op, right = None, None, None, None
+		normalized_rule = None
 
-		if INT_PATTERN.fullmatch( rule ): # integer number only
+		if INT.fullmatch( rule ): # integer number only
 			left, right, normalized_rule = 'id', rule, f'id == {rule}'
 
-		elif m := INT_RANGE_PATTERN.fullmatch( rule ):
+		elif m := INT_RANGE.fullmatch( rule ):
 			left, right = 'id', rule
 			range_from, range_to = m.groups()
 			if range_from and not range_to:
@@ -136,22 +281,28 @@ class RuleParser:
 		elif INT_LIST.fullmatch( rule ):
 			left, right, normalized_rule = 'id', rule, f'id in [{rule}]'
 
-		elif match( KEYWORD_PATTERN, rule ):  # keywords
+		elif KEYWORD.fullmatch( rule ):  # keywords
 			if rule in self._keys():
 				right, normalized_rule = rule, self._keyword( rule )( rule )
 			else:
 				raise RuleSyntaxError( f'syntax error: unsupported keyword "{rule}"' )
 
-		elif m := match( RULE_PATTERN, rule ): #
-			left, op, right = m.groups()
-			if op == '=':
-				if match( NUMBER_PATTERN, right ) or match( QUOTED_STRING_PATTERN, right ):
+		elif m := RULE.fullmatch( rule ): #
+
+			neg, left, op, right = m.groups()
+
+			# if a normalizer for the left side of the expression exists, let the normalizer do the work
+			if n := self._normalizer( left ):
+				normalized_rule = n( left, op, right )
+
+			elif op == '=':
+				if NUMBER.fullmatch( right ) or QUOTED_STRING.fullmatch( right ):
 					normalized_rule = f'{left} == {right}'
-				elif match( DATE_PATTERN, right ) and RESOLVER_TYPES.get( left ) is datetime:
+				elif DATE.fullmatch( right ) and RESOLVER_TYPES.get( left ) is datetime:
 					normalized_rule = f'{left} == d"{right}"'
-				elif match( TIME_PATTERN, right ) and RESOLVER_TYPES.get( left ) is time:
+				elif TIME.fullmatch( right ) and RESOLVER_TYPES.get( left ) is time:
 					normalized_rule = f'{left} == t"{right}"'
-				elif TRUE_FALSE.match( right ):
+				elif BOOL.fullmatch( right ):
 					normalized_rule = f'{left} == {right}'
 				else:
 					normalized_rule = f'{left} == "{right}"'
@@ -160,38 +311,47 @@ class RuleParser:
 				if right is None:
 					normalized_rule = f'{left} == null'
 
-				elif match( NUMBER_PATTERN, right ):
+				elif NUMBER.fullmatch( right ):
 					normalized_rule = f'{left} == {right}'
 
-				elif TRUE_FALSE.match( right ):
+				elif BOOL.fullmatch( right ):
 					normalized_rule = f'{left} == {right}'
 
-				elif match (QUOTED_STRING_PATTERN, right):
-					normalized_rule = f'{left} != null and {right.lower()} in {left}.as_lower'
+				elif QUOTED_STRING.fullmatch( right):
+					# normalized_rule = f'{left} != null and {right.lower()} in {left}.as_lower'
+					# normalized_rule = f'{left} != null and {right} in {left}'
+					normalized_rule = f'{right} in {left} ?? ""'
 
-				elif match( FUZZY_DATE_PATTERN, right ) and self._rule_normalizer_type( left ) in [datetime, 'datetime', 'Optional[datetime]']:
+				elif FUZZY_DATE.fullmatch( right ) and self._rule_normalizer_type( left ) in [datetime, 'datetime', 'Optional[datetime]']:
 					normalized_rule = f'{left} >= d"{parse_floor_str( right )}" and {left} <= d"{parse_ceil_str( right )}"'
 
-				elif DATE_RANGE_PATTERN.fullmatch( right ) and self._rule_normalizer_type( left ) is datetime:
+				elif DATE_RANGE.fullmatch( right ) and self._rule_normalizer_type( left ) is datetime:
 					range_from, range_to = parse_date_range_as_str( right )
 					normalized_rule = f'{left} >= d"{range_from}" and {left} <= d"{range_to}"'
 
-				elif TIME_RANGE_PATTERN.fullmatch( right ) and self._rule_normalizer_type( left ) is datetime:
+				elif TIME_RANGE.fullmatch( right ) and self._rule_normalizer_type( left ) is datetime:
 					normalized_rule = '{0} >= d"{1}" and {0} <= d"{2}"'.format( left, *parse_time_range( right, as_str=True ) )
 
-				elif match( RANGE_PATTERN, right ):
+				elif m2 := RANGE.fullmatch( right ):
 					range_from, range_to = parse_number_range( right )
 					normalized_rule = f'{left} >= {range_from} and {left} <= {range_to}'
 
 				else:
-					normalized_rule = f'{left} != null and "{right.lower()}" in {left}.as_lower'
+					# normalized_rule = f'{left} != null and "{right.lower()}" in {left}.as_lower'
+					# normalized_rule = f'$contains( {left}, "{right}", "{self.type_of( left )}" )'
+					field = get_field( Activity, left )
+					match str( field.type ):
+						case 'str':
+							normalized_rule = f'"{right}".as_lower in {left}&.as_lower'
+						case _:
+							# raise RuleSyntaxError( f'unknown field type for "{left}"' )
+							pass
 
 			else:
 				normalized_rule = f'{left} {op} {right}'
 
-		# apply normalizer, if a normalizer for the left side of the expression exists
-		if left in self._normalizer_names():
-			normalized_rule = self._normalizer( left )( left, op, right, normalized_rule )  # pass the already normalized rule, just in case a normalizer is interested
+		if neg:
+			normalized_rule = f'not {normalized_rule}'
 
 		# log rule
 		log.debug( f'normalized rule {rule} to {normalized_rule}' )
@@ -225,7 +385,7 @@ class RuleParser:
 		:param rule: rule string to use for rule creation
 		:return: newly created rule
 		"""
-		return Rule( rule, CONTEXT )
+		return Rule( rule, self.context )
 
 	# noinspection PyMethodMayBeStatic
 	def postprocess( self, rule: Rule ) -> Rule:

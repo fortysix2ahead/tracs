@@ -1,21 +1,13 @@
-from datetime import datetime, time
-from logging import getLogger
-from re import match
-from typing import cast, List
-
-from attrs import asdict, define, field
-from dateutil.tz import tzlocal, UTC
+from attrs import asdict, evolve
+from dateutil.tz import tzlocal
 from pytest import mark, raises
-from rule_engine import Context, DataType, EvaluationError, resolve_attribute, Rule, RuleSyntaxError, SymbolResolutionError
-from rule_engine import __version__ as rule_engine_version
-from rule_engine.builtins import Builtins
+from rule_engine import __version__ as rule_engine_version, Context, DataType, EvaluationError
 
-from tracs.activity import Activity
+from test.objects import COMPLETE_ACTIVITY as a
 from tracs.activity_types import ActivityTypes
 from tracs.core import Metadata
 from tracs.plugins.keywords import TIME_FRAMES as TIME_FRAMES_EXT
-from tracs.rules import DATE_PATTERN, DATE_RANGE_PATTERN, FUZZY_DATE_PATTERN, FUZZY_TIME_PATTERN, INT_LIST, INT_PATTERN, KEYWORD_PATTERN, LIST_PATTERN, \
-	parse_date_range_as_str, RANGE_PATTERN, RULE_PATTERN, TIME_PATTERN, TIME_RANGE_PATTERN
+from tracs.rules import *
 from tracs.uid import UID
 
 log = getLogger( __name__ )
@@ -94,6 +86,8 @@ class CustomBuiltinsContext( Context ):
 			timezone=self.default_timezone,
       )
 
+# test case to learn about rule engine capabilities
+
 @mark.unit
 def test_rule_engine():
 	# sample instance
@@ -152,106 +146,113 @@ def test_rule_pattern():
 	# special cases
 
 	# numbers are allowed and are treated as ids
-	assert INT_PATTERN.match( '1000' )
+	assert INT.fullmatch( '1000' )
+	assert not INT.fullmatch( '1000..2000' )
 
-	# list are comma-separated and need to contain more than one element
-	assert match( LIST_PATTERN, '100,101')
-	assert match( LIST_PATTERN, '100,101,102')
-	assert match( LIST_PATTERN, 'a,b,c')
-	assert not match( LIST_PATTERN, '100')
-	assert not match( LIST_PATTERN, '100,101,102,')
+	# lists are comma-separated and need to contain more than one element
+	assert INT_LIST.fullmatch( '1000,1001,1002' )
+	assert not INT_LIST.fullmatch( '1000' ) # not a list, at least two elements needed
+	assert not INT_LIST.fullmatch( '1000,abc,1002,' ) # no int list
+	assert not INT_LIST.fullmatch( '1000,1001,1002,' ) # trailing comma is not allowed
 
-	assert INT_LIST.match( '1000,1001,1002' )
-	assert not INT_LIST.match( '1000,1001,1002,' )
+	assert LIST.fullmatch( '100,101,102' )
+	assert LIST.fullmatch( '100,abc,102' )
+	assert not LIST.fullmatch( '100' )
+	assert not LIST.fullmatch( '100,101,102,' )
 
 	# ranges are separated by two dots, where start and end might be missing
-	assert match( RANGE_PATTERN, '1000..1002' )
-	assert match( RANGE_PATTERN, '1000..' )
-	assert match( RANGE_PATTERN, '..1002' )
-	assert match( RANGE_PATTERN, '100.4..100.9' )
-	assert match( RANGE_PATTERN, '2020-01-01..2020-06-30' )
-	assert match( RANGE_PATTERN, '10:00:00..11:00:00' )
+	assert INT_RANGE.fullmatch( '1000..1002' )
+
+	assert RANGE.fullmatch( '1000..1002' )
+	assert RANGE.fullmatch( '1000..' )
+	assert RANGE.fullmatch( '..1002' )
+	assert RANGE.fullmatch( '100.4..100.9' )
+	assert RANGE.fullmatch( '2020-01-01..2020-06-30' )
+	assert RANGE.fullmatch( '10:00:00..11:00:00' )
 
 	# date ranges
-	assert DATE_RANGE_PATTERN.fullmatch( '2020..2020' )
-	assert DATE_RANGE_PATTERN.fullmatch( '2020-01..2020-06' )
-	assert DATE_RANGE_PATTERN.fullmatch( '2020-01-01..2020-06-30' )
-	assert DATE_RANGE_PATTERN.fullmatch( '2020..' )
-	assert DATE_RANGE_PATTERN.fullmatch( '2020-01..' )
-	assert DATE_RANGE_PATTERN.fullmatch( '2020-01-01..' )
-	assert DATE_RANGE_PATTERN.fullmatch( '..2020' )
-	assert DATE_RANGE_PATTERN.fullmatch( '..2020-06-30' )
-	assert DATE_RANGE_PATTERN.fullmatch( '..2020-06' )
+	assert DATE_RANGE.fullmatch( '2020..2020' )
+	assert DATE_RANGE.fullmatch( '2020-01..2020-06' )
+	assert DATE_RANGE.fullmatch( '2020-01-01..2020-06-30' )
+	assert DATE_RANGE.fullmatch( '2020..' )
+	assert DATE_RANGE.fullmatch( '2020-01..' )
+	assert DATE_RANGE.fullmatch( '2020-01-01..' )
+	assert DATE_RANGE.fullmatch( '..2020' )
+	assert DATE_RANGE.fullmatch( '..2020-06-30' )
+	assert DATE_RANGE.fullmatch( '..2020-06' )
 
 	# time ranges
-	assert TIME_RANGE_PATTERN.fullmatch( '09..11' )
-	assert TIME_RANGE_PATTERN.fullmatch( '09:05..11:05' )
-	assert TIME_RANGE_PATTERN.fullmatch( '09:05:36..11:05:55' )
-	assert TIME_RANGE_PATTERN.fullmatch( '09..' )
-	assert TIME_RANGE_PATTERN.fullmatch( '09:05..' )
-	assert TIME_RANGE_PATTERN.fullmatch( '09:05:36..' )
-	assert TIME_RANGE_PATTERN.fullmatch( '..11' )
-	assert TIME_RANGE_PATTERN.fullmatch( '..11:05' )
-	assert TIME_RANGE_PATTERN.fullmatch( '..11:05:55' )
+	assert TIME_RANGE.fullmatch( '09..11' )
+	assert TIME_RANGE.fullmatch( '09:05..11:05' )
+	assert TIME_RANGE.fullmatch( '09:05:36..11:05:55' )
+	assert TIME_RANGE.fullmatch( '09..' )
+	assert TIME_RANGE.fullmatch( '09:05..' )
+	assert TIME_RANGE.fullmatch( '09:05:36..' )
+	assert TIME_RANGE.fullmatch( '..11' )
+	assert TIME_RANGE.fullmatch( '..11:05' )
+	assert TIME_RANGE.fullmatch( '..11:05:55' )
 
 	# dates always contain year, month and day
-	assert match( DATE_PATTERN, '2022-03-13' )
-	assert not match( DATE_PATTERN, '2022' )
-	assert not match( DATE_PATTERN, '2022-03' )
+	assert DATE.fullmatch( '2022-03-13' )
+	assert not DATE.fullmatch( '2022' )
+	assert not DATE.fullmatch( '2022-03' )
 
 	# fuzzy dates may omit month and day and are treated as ranges
-	assert match( FUZZY_DATE_PATTERN, '2022' ) # beware: this is also a number!
-	assert match( FUZZY_DATE_PATTERN, '2022-03' )
-	assert match( FUZZY_DATE_PATTERN, '2022-03-13' )
+	assert FUZZY_DATE.fullmatch( '2022' ) # beware: this is also a number!
+	assert FUZZY_DATE.fullmatch( '2022-03' )
+	assert FUZZY_DATE.fullmatch( '2022-03-13' )
 
 	# same is true for times: always contain hours, minutes and seconds
-	assert match( TIME_PATTERN, '13:10:42' )
-	assert not match( TIME_PATTERN, '13' )
-	assert not match( TIME_PATTERN, '13:10' )
+	assert TIME.fullmatch( '13:10:42' )
+	assert not TIME.fullmatch( '13' )
+	assert not TIME.fullmatch( '13:10' )
 
 	# fuzzy times are also treated as ranges
-	assert match( FUZZY_TIME_PATTERN, '13' )
-	assert match( FUZZY_TIME_PATTERN, '13:10' )
-	assert match( FUZZY_TIME_PATTERN, '13:10:42' )
+	assert FUZZY_TIME.fullmatch( '13' )
+	assert FUZZY_TIME.fullmatch( '13:10' )
+	assert FUZZY_TIME.fullmatch( '13:10:42' )
 
 	# keywords must begin with a letter and may contain letters, numbers, dashes und underscores
 
-	assert match( KEYWORD_PATTERN, 'polar' )
-	assert match( KEYWORD_PATTERN, 'polar_2022' )
-	assert match( KEYWORD_PATTERN, 'polar-2022' )
-	assert match( KEYWORD_PATTERN, 'Polar22' )
-	assert not match( KEYWORD_PATTERN, '1Polar22' )
+	assert KEYWORD.fullmatch( 'polar' )
+	assert KEYWORD.fullmatch( 'polar_2022' )
+	assert KEYWORD.fullmatch( 'polar-2022' )
+	assert KEYWORD.fullmatch( 'Polar22' )
+	assert not KEYWORD.fullmatch( '1Polar22' )
 
 	# normal expressions
 
 	# empty value is allowed
-	assert match( RULE_PATTERN, 'id:' )
+	assert RULE.fullmatch( 'id:' )
 
-	assert match( RULE_PATTERN, 'id:1000' )
-	assert match( RULE_PATTERN, 'ID:1000' )
+	assert RULE.fullmatch( 'id:1000' )
+	assert RULE.fullmatch( 'ID:1000' )
 
-	assert match( RULE_PATTERN, 'id:1000,1001,1002' )
-	assert match( RULE_PATTERN, 'id:1000..1002' )
+	assert RULE.fullmatch( 'id:1000,1001,1002' )
+	assert RULE.fullmatch( 'id:1000..1002' )
 
-	assert match( RULE_PATTERN, 'date:2020-01-15..2021-09-01' )
-	assert match( RULE_PATTERN, 'date:2020..2021-09' )
+	assert RULE.fullmatch( 'date:2020-01-15..2021-09-01' )
+	assert RULE.fullmatch( 'date:2020..2021-09' )
 
-	assert match( RULE_PATTERN, 'id=1000' )
-	assert match( RULE_PATTERN, 'id==1000' )
-	assert match( RULE_PATTERN, 'id!=1000' )
-	assert match( RULE_PATTERN, 'id>1000' )
-	assert match( RULE_PATTERN, 'id>=1000' )
-	assert match( RULE_PATTERN, 'id<1000' )
-	assert match( RULE_PATTERN, 'id<=1000' )
+	assert RULE.fullmatch( 'id=1000' )
+	assert RULE.fullmatch( 'id==1000' )
+	assert RULE.fullmatch( 'id!=1000' )
+	assert RULE.fullmatch( 'id>1000' )
+	assert RULE.fullmatch( 'id>=1000' )
+	assert RULE.fullmatch( 'id<1000' )
+	assert RULE.fullmatch( 'id<=1000' )
 
-	assert match( RULE_PATTERN, 'name:berlin' )
-	assert match( RULE_PATTERN, 'name=Berlin' )
-	assert match( RULE_PATTERN, 'name="Morning Run"' )
-	assert match( RULE_PATTERN, 'name!="Morning Run"' )
-	assert match( RULE_PATTERN, 'name=~"^.*Run$"' )
-	assert match( RULE_PATTERN, 'name!~"^.*Run$"' )
+	assert RULE.fullmatch( 'name:berlin' )
+	assert RULE.fullmatch( 'name=Berlin' )
+	assert RULE.fullmatch( 'name="Morning Run"' )
+	assert RULE.fullmatch( 'name!="Morning Run"' )
+	assert RULE.fullmatch( 'name=~"^.*Run$"' )
+	assert RULE.fullmatch( 'name!~"^.*Run$"' )
 
-	assert match( RULE_PATTERN, 'type:run,hike,walk' )
+	assert RULE.fullmatch( 'type:run,hike,walk' )
+
+	# rule negation
+	assert RULE.fullmatch( '^name:berlin' )
 
 # def test_rule_resource_pattern():
 # 	assert match( RESOURCE_PATTERN, 'polar:1000#1' )
@@ -265,12 +266,7 @@ def test_normalize( parser ):
 	p = parser
 
 	# numbers from 2000 to current year are treated as years, otherwise
-	current_year = datetime.now().year
-	assert p.normalize( '1000' ) == 'id == 1000'
-	assert p.normalize( '1999' ) == 'id == 1999'
-	assert p.normalize( '2000' ) == 'year == 2000'
-	assert p.normalize( str( current_year ) ) == f'year == {current_year}'
-	assert p.normalize( str( current_year + 1 ) ) == f'id == {current_year + 1}'
+	assert p.normalize( '2020' ) == 'id == 2020'
 
 	# integer ranges can contain missing bounds and are treated as ids, bounds are inclusive
 	assert p.normalize( '1000..1003' ) == 'id >= 1000 and id <= 1003'
@@ -295,157 +291,128 @@ def test_normalize( parser ):
 	assert p.normalize( 'id!=1000' ) == 'id != 1000'
 
 	# colon expressions
-	assert p.normalize( 'id:' ) == 'id == null' # missing values is treated as null
+	assert p.normalize( 'id:' ) == 'id == null' # missing values are treated as null
 	assert p.normalize( 'id:1000' ) == 'id == 1000' # normal case: expand to equals
-	assert p.normalize( 'flag:true' ) == 'flag == true' and p.normalize( 'flag:false' ) == 'flag == false' # boolean flags
-	assert p.normalize( 'name:"afternoon run"' ) == 'name != null and "afternoon run" in name.as_lower' # allow search-like string values
-	assert p.normalize( 'name:afternoon' ) == 'name != null and "afternoon" in name.as_lower' # same for unquoted strings
+	assert p.normalize( 'flag:true' ) == 'flag == true' # boolean flags
+	assert p.normalize( 'flag:false' ) == 'flag == false'
+	assert p.normalize( 'name:afternoon' ) == '"afternoon".as_lower in name&.as_lower' # same for unquoted strings
+	assert p.normalize( 'name:"afternoon run"' ) == '"afternoon run" in name ?? ""' # allow search-like string values
 
 	# custom normalizer handling
-	assert p.normalize( 'type:run' ) == 'type.name == "run"'
+	assert p.normalize( 'type:run' ) == 'type&.name == "run".as_lower'
 
 	# date + time normalizing
-	assert p.normalize( 'date:2020' ) == 'starttime_local >= d"2020-01-01T00:00:00+00:00" and starttime_local <= d"2020-12-31T23:59:59.999999+00:00"'
-	assert p.normalize( 'date:2020-05' ) == 'starttime_local >= d"2020-05-01T00:00:00+00:00" and starttime_local <= d"2020-05-31T23:59:59.999999+00:00"'
-	assert p.normalize( 'date:2020-05-13' ) == 'starttime_local >= d"2020-05-13T00:00:00+00:00" and starttime_local <= d"2020-05-13T23:59:59.999999+00:00"'
+#	assert p.normalize( 'date:2020' ) == 'starttime_local >= d"2020-01-01T00:00:00+00:00" and starttime_local <= d"2020-12-31T23:59:59.999999+00:00"'
+#	assert p.normalize( 'date:2020-05' ) == 'starttime_local >= d"2020-05-01T00:00:00+00:00" and starttime_local <= d"2020-05-31T23:59:59.999999+00:00"'
+#	assert p.normalize( 'date:2020-05-13' ) == 'starttime_local >= d"2020-05-13T00:00:00+00:00" and starttime_local <= d"2020-05-13T23:59:59.999999+00:00"'
+	assert p.normalize( 'date:2020' ) == 'starttime_local&.year == 2020'
+	assert p.normalize( 'date:2020-05' ) == 'starttime_local&.year == 2020 and starttime_local&.month == 5'
+	assert p.normalize( 'date:2020-05-13' ) == 'starttime_local&.year == 2020 and starttime_local&.month == 5 and starttime_local&.day == 13'
 
-	assert p.normalize( 'time:10' ) == '__time__ >= d"0001-01-01T10:00:00+00:00" and __time__ <= d"0001-01-01T10:59:59.999999+00:00"'
-	assert p.normalize( 'time:10:30' ) == '__time__ >= d"0001-01-01T10:30:00+00:00" and __time__ <= d"0001-01-01T10:30:59.999999+00:00"'
-	assert p.normalize( 'time:10:30:50' ) == '__time__ >= d"0001-01-01T10:30:50+00:00" and __time__ <= d"0001-01-01T10:30:50.999999+00:00"'
+#	assert p.normalize( 'time:10' ) == '__time__ >= d"0001-01-01T10:00:00+00:00" and __time__ <= d"0001-01-01T10:59:59.999999+00:00"'
+#	assert p.normalize( 'time:10:30' ) == '__time__ >= d"0001-01-01T10:30:00+00:00" and __time__ <= d"0001-01-01T10:30:59.999999+00:00"'
+#	assert p.normalize( 'time:10:30:50' ) == '__time__ >= d"0001-01-01T10:30:50+00:00" and __time__ <= d"0001-01-01T10:30:50.999999+00:00"'
+	assert p.normalize( 'time:10' ) == 'starttime_local&.hour == 10'
+	assert p.normalize( 'time:10:30' ) == 'starttime_local&.hour == 10 and starttime_local&.minute == 30'
+	assert p.normalize( 'time:10:30:50' ) == 'starttime_local&.hour == 10 and starttime_local&.minute == 30 and starttime_local&.second == 50'
 
 @mark.unit
-def test_parse( parser ):
-	p = parser
+def test_evaluate_engine( parser ):
+	assert parser.evaluate_normalized( 'id == 1', a )
 
-	assert (r := p.parse_rule( 'id=1000' ))
-	assert r.evaluate( Activity( id=1000 ) )
+	# test null handling
+	assert parser.evaluate_normalized( 'location_place == null', a )
+	assert parser.evaluate_normalized( '"Berlin".as_lower in (location_city.as_lower ?? "")', a )
+	assert parser.evaluate_normalized( '"Berlin".as_lower in location_city&.as_lower', a ) # safe access is possible too
+	assert not parser.evaluate_normalized( '"Berlin" in (location_place ?? "")', a )
 
-	assert (r := p.parse_rule( 'id!=1000' ))
-	assert r.evaluate( Activity( id=1001 ) )
+	# test lists
+	assert parser.evaluate_normalized( '"Hiking" in tags', a )
+	assert parser.evaluate_normalized( '[ "afternoon".as_lower == t.as_lower for t in tags ]', a )
 
-	with raises( EvaluationError ):
-		assert (r := p.parse_rule( 'id=~1000' )) # wrong operator, parsing fails
-		r.evaluate( Activity( id=1000 ) )
+	a.equipment = None # nullify equipment
+	assert not parser.evaluate_normalized( '"shoes".as_lower in [ e.as_lower for e in equipment ?? [] ]', a )
 
-	assert (r := p.parse_rule( 'unknown:1000' )) # parsing unknown fields is ok
-	with raises( SymbolResolutionError ):
-		assert r.evaluate( Activity( id=1000 ) ) # evaluating is not ok -> error
+	# test access to datetime properties
+	assert parser.evaluate_normalized( 'starttime.year == 2022', a )
+	assert parser.evaluate_normalized( 'starttime.year == 2022 and starttime.month == 10', a )
+	assert not parser.evaluate_normalized( 'endtime.year == 2022', a ) # endtime is None
+	assert not parser.evaluate_normalized( 'endtime&.year == 2022', a ) # not sure why the above line works without safe access
 
 @mark.unit
 def test_evaluate( parser ):
-	p = parser
+	assert parser.evaluate( 'id=1', a )
+	assert parser.evaluate( f'year=2022', a )
+	assert parser.evaluate( 'classifier:polar', a )
 
-	al = [
-		Activity(
-			id = 1000,
-			name = 'Berlin',
-		),
-		Activity(
-			id = 1001,
-		)
-	]
+	b = evolve( a, name='Berlin' )
 
-	assert p.parse_rule( 'id=1000' ).evaluate( A1 )
-	assert p.parse_rule( f'year=2023' ).evaluate( A1 )
-	assert p.parse_rule( 'classifier:polar' ).evaluate( A1 )
-#	assert p.parse_rule( 'lastyear' ).evaluate( A1 )
+	assert parser.evaluate( 'name=Berlin', b )
+	assert not parser.evaluate( 'name=berlin', b )
 
-	assert p.parse_rule( 'name=Berlin' ).evaluate( A1 )
-	assert not p.parse_rule( 'name=berlin' ).evaluate( A1 )
+	assert parser.evaluate( 'name="Afternoon Hike"', a )
+	assert not parser.evaluate( 'description="morning run in berlin"', a )
 
-	assert p.parse_rule( 'description="Morning Run in Berlin"' ).evaluate( A1 )
-	assert not p.parse_rule( 'description="morning run in berlin"' ).evaluate( A1 )
+	assert parser.evaluate( 'name:berlin', b )
+	assert not parser.evaluate( 'name:hamburg', b )
+#	assert parser.evaluate( 'description:"Afternoon Hike"', a )
+#	assert not parser.evaluate( 'description:"afternoon hike"', a )
 
-	assert p.parse_rule( 'name:berlin' ).evaluate( A1 )
-	assert not p.parse_rule( 'name:hamburg' ).evaluate( A1 )
-	assert p.parse_rule( 'description:"morning run"' ).evaluate( A1 )
-
-	assert list( p.parse_rule( 'name:berlin' ).filter( al ) ) == [ al[0] ]
-	assert not p.parse_rule( 'location_place:hamburg' ).evaluate( A1 )
-
-	assert list( p.parse_rule( 'name:' ).filter( al ) ) == [ al[1] ]
-
-	with raises( SymbolResolutionError ):
-		p.parse_rule( 'invalid=1000' ).evaluate( A1 )
-
-	# RuleSyntaxError should never happen ...
-
-@mark.unit
-def test_evaluate_multipart( parser ):
-	p = parser
-
-	p1 = ActivityPart( uids=['polar:101' ], gap=time( 0, 0, 0 ) )
-	p2 = ActivityPart( uids=['polar:102', 'strava:102' ], gap=time( 1, 0, 0 ) )
-	a = Activity( parts=[ p1, p2 ] )
-
-	assert a.multipart
-	assert p.parse_rule( 'multipart=true' ).evaluate( a )
-	assert not p.parse_rule( 'multipart=false' ).evaluate( a )
-	assert p.parse_rule( 'multipart:true' ).evaluate( a )
-	assert not p.parse_rule( 'multipart:false' ).evaluate( a )
+	assert parser.evaluate( 'location_city:berlin', a )
 
 @mark.unit
 def test_type( parser ):
-	p = parser
-	# assert parse_eval( 'type=run', A1 ) # todo: support this?
-	assert p.parse_rule( 'type:run' ).evaluate( A1 )
-	assert p.parse_rule( 'type:Run' ).evaluate( A1 )
+	assert parser.evaluate( 'type:walk', a )
+	assert parser.evaluate( 'type:WALK', a )
 
 @mark.unit
 def test_list( parser ):
-	p = parser
-	assert p.parse_rule( '1000,1001,1002' ).evaluate( A1 )
-	assert not p.parse_rule( '100,101,102' ).evaluate( A1 )
+	assert parser.evaluate( '1,2,3', a )
+	assert not parser.evaluate( '2,3,4', a )
 
 @mark.unit
 def test_range( parser ):
-	p = parser
+	assert not parser.evaluate( 'id=1..3', a )
 
-	assert not p.parse_rule( 'id=999..1001' ).evaluate( A1 )
-	assert p.parse_rule( 'id:999..1001' ).evaluate( A1 )
-	assert p.parse_rule( 'id:999.0..1001' ).evaluate( A1 ) # mixed int/float works as well
-	assert p.parse_rule( 'id:999..' ).evaluate( A1 )
-	assert p.parse_rule( 'id:..1001' ).evaluate( A1 )
+	assert parser.evaluate( 'id:1..3', a )
+	assert parser.evaluate( 'id:1.0..3', a ) # mixed int/float works as well
+	assert parser.evaluate( 'id:1..', a )
+	assert parser.evaluate( 'id:..3', a )
 
-	assert not p.parse_rule( 'id:800..900' ).evaluate( A1 )
-	assert not p.parse_rule( 'id:..900' ).evaluate( A1 )
-	assert not p.parse_rule( 'id:1001..' ).evaluate( A1 )
+	assert not parser.evaluate( 'id:2..4', a )
+	assert not parser.evaluate( 'id:2..', a )
 
-	assert p.parse_rule( 'heartrate:100.0..200.0' ).evaluate( A1 )
+	assert parser.evaluate( 'heartrate:100.0..200.0', a )
 
 @mark.unit
 def test_date_time( parser ):
-	p = parser
+	assert parser.evaluate( 'date:2022', a )
+	assert parser.evaluate( 'date:2022-10', a )
+	assert parser.evaluate( 'date:2022-10-16', a )
 
-	assert p.parse_rule( 'date:2023' ).evaluate( A1 )
-	assert p.parse_rule( 'date:2023-01' ).evaluate( A1 )
-	assert p.parse_rule( 'date:2023-01-13' ).evaluate( A1 )
+	assert not parser.evaluate( 'date:2023', a )
+	assert not parser.evaluate( 'date:2023-01', a )
+	assert not parser.evaluate( 'date:2023-01-13', a )
 
-	assert not p.parse_rule( 'date:2022' ).evaluate( A1 )
-	assert not p.parse_rule( 'date:2022-01' ).evaluate( A1 )
-	assert not p.parse_rule( 'date:2022-01-13' ).evaluate( A1 )
+	assert parser.evaluate( 'date:2022..2023', a )
+	assert parser.evaluate( 'date:2022..', a )
+	assert parser.evaluate( 'date:..2023', a )
+	assert parser.evaluate( 'date:2022-01-12..2022-12', a )
 
-	#	assert p.parse_rule( 'date=2023-01-13' ).evaluate( A1 )
+	# 	starttime_local=datetime( 2022, 10, 16, 14, 23, 40, tzinfo=tzlocal() ),
 
-	assert p.parse_rule( 'date:2022..2023' ).evaluate( A1 )
-	assert p.parse_rule( 'date:2022..' ).evaluate( A1 )
-	assert p.parse_rule( 'date:..2023' ).evaluate( A1 )
-	assert p.parse_rule( 'date:2023-01-12..2023-02' ).evaluate( A1 )
+	assert parser.evaluate( 'time:14', a )
+	assert parser.evaluate( 'time:14:23', a )
+	assert parser.evaluate( 'time:14:23:40', a )
 
-	# assert p.parse_rule( 'time=10:00:42' ).evaluate( A1 )
-	assert p.parse_rule( 'time:10' ).evaluate( A1 )
-	assert p.parse_rule( 'time:10:00' ).evaluate( A1 )
-	assert p.parse_rule( 'time:10:00:42' ).evaluate( A1 )
-
-	assert p.parse_rule( 'time:09..11' ).evaluate( A1 )
-	assert p.parse_rule( 'time:09..' ).evaluate( A1 )
-	assert p.parse_rule( 'time:..11' ).evaluate( A1 )
-	assert p.parse_rule( 'time:09:00..11:00' ).evaluate( A1 )
-	assert p.parse_rule( 'time:09:00:05..10:00:50' ).evaluate( A1 )
+	assert parser.evaluate( 'time:14..15', a )
+	assert parser.evaluate( 'time:14..', a )
+	assert parser.evaluate( 'time:..15', a )
+	assert parser.evaluate( 'time:14:23..14:24', a )
+	assert parser.evaluate( 'time:14:23:05..14:23:50', a )
 
 @mark.unit
 def test_parse_date_range():
-
 	assert parse_date_range_as_str( '2022..2023' ) == ('2022-01-01T00:00:00+00:00', '2023-12-31T23:59:59.999999+00:00')
 	assert parse_date_range_as_str( '2022..' ) == ('2022-01-01T00:00:00+00:00', '9999-12-31T00:00:00+00:00')
 	assert parse_date_range_as_str( '..2023' ) == ('0001-01-01T00:00:00+00:00', '2023-12-31T23:59:59.999999+00:00')

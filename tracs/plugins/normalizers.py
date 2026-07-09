@@ -3,10 +3,9 @@ from datetime import datetime, timedelta
 from arrow import Arrow, get
 from dateutil.tz import UTC
 
-from rules import DATE_RANGE, TIME_RANGE
 from tracs.core import Normalizer
 from tracs.pluginmgr import normalizer
-from tracs.rules import FUZZY_DATE, FUZZY_TIME
+from tracs.rules import DATE_RANGE, FUZZY_DATE, FUZZY_TIME, TIME_RANGE
 from tracs.utils import timedelta_to_iso8601
 
 YEAR_RANGE = range( 2000, datetime.now( UTC ).year + 1 )

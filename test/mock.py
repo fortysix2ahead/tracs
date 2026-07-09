@@ -24,7 +24,7 @@ MINIMAL_GPX = \
 	r'<wpt lat="37.778259000" lon="-122.391386000"><time>2016-06-17T23:41:03Z</time></wpt>' \
 	r'</gpx>'
 
-@resource_type( type=MOCK_TYPE, summary=True )
+# @resource_type( type=MOCK_TYPE, summary=True )
 @define
 class MockActivity:
 

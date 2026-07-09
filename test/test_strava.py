@@ -5,7 +5,6 @@ from dateutil.tz import tzlocal
 from pytest import mark
 from stravalib.model import DetailedActivity as StravaActivity
 
-from test.helpers import skip_live
 from tracs.activity_types import ActivityTypes
 from tracs.plugins.strava import Strava
 from tracs.plugins.strava.io import StravaHandler
@@ -37,7 +36,7 @@ def test_init_from_raw( path ):
 	assert sa.heartrate_max == 0
 	assert sa.location_country is None
 
-@skip_live
+@mark.skip( 'API access to Strava is a paid feature as of 26-07-01 - this test will never succeed' )
 @mark.context( env='live', cleanup=False )
 @mark.service( cls=Strava, init=True, register=True )
 def test_import( service ):

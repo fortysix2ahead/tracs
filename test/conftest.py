@@ -18,6 +18,7 @@ from pytest import fixture
 from tracs.activity import Activity
 from tracs.constants import CFG_CTX, CFG_FS, DB_DIRNAME
 from tracs.context import ApplicationContext, set_current_ctx
+from tracs.core import augment
 from tracs.db import ActivityDb
 from tracs.pluginmgr import PluginManager, Registry
 from tracs.rules import RuleParser
@@ -190,7 +191,12 @@ def plugin_mgr( request ) -> PluginManager:
 
 @fixture
 def registry( request, plugin_mgr: PluginManager, ctx: ApplicationContext ) -> Registry:
-	return plugin_mgr.registry
+	registry = plugin_mgr.registry
+
+	for df in registry.derived_fields:
+		augment( Activity, df )
+
+	return registry
 
 @fixture
 def env( request, ctx: ApplicationContext, db: ActivityDb, registry: Registry ) -> Environment:

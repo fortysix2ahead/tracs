@@ -17,9 +17,12 @@ from fs import open_fs
 from fs.base import FS
 from fs.errors import CreateFailed
 from fs.zipfs import ReadZipFS
+from more_itertools import first
+from orjson import loads
 from requests_cache import CachedSession
 from rich.prompt import Prompt
 
+from errors import ImportException
 from tracs.activity import Activities, Activity
 from tracs.activity_types import ActivityTypes
 from tracs.aio import load_resource
@@ -249,9 +252,12 @@ class Polar( Service ):
 		return any ( [ f for f in fs.walk.files( '/', filter=[ ACCOUNT_PROFILE_GLOB ] ) ] )
 
 	def import_from_fs( self, src_fs: FS, dest_fs: FS, **kwargs ) -> Activities:
-		log.debug( f'fetching {self.name} activities from {src_fs}' )
+		log.info( f'fetching activities for service {self.name} from {src_fs}' )
+
 		imported_activities = Activities()
 		classifier = self._cfg.get( CFG_CLASSIFIER ) or self.name
+
+		log.info( f'using "{classifier}" as classifier for new activities' )
 
 		session_files = sorted( [ f for f in src_fs.walk.files( '/', filter=[ TRAINING_SESSION_GLOB ] ) ] )
 		log.debug( f'found {len( session_files )} activity files in {src_fs}' )
@@ -260,18 +266,26 @@ class Polar( Service ):
 			log.debug( f'checking db for already existing activities ...' )
 
 			for af, ex in zip_longest( session_files, existing := [] ):
-				# old version, not valid any longer from 2026-03 onwards
-				if m := RX_TRAINING_SESSION_V1.fullmatch( af ):
-					_uid = uid_( f'{classifier}:{m.groupdict().get( "nid")}' )
-
 				# new version, old exercises before 2026-03
-				elif m := RX_TRAINING_SESSION_V2A.fullmatch( af ):
-					_uid = uid_( f'{classifier}:{m.groupdict().get( "nid")}' )
+				if m := TRAINING_SESSION_V2A.fullmatch( af ):
+					_date, _id, _uuid = m.groups()
+					_uid = uid_( f'{classifier}:{_id}' )
 
 				# new version, new exercises after 2026-03
-				elif m := RX_TRAINING_SESSION_V2B.fullmatch( af ):
+				elif m := TRAINING_SESSION_V2B.fullmatch( af ):
 					# this is more complicated: we cannot derive the id from the filename :-(
-					_uid = None
+					# todo: check if there is any other faster way than reading the json
+					_date, _id, _uuid = m.groups()
+					try:
+						_json = loads( src_fs.readbytes( af ) )
+						_uuid = _json['identifier']['id']
+						_id = first( _json['exercises'] )['identifier']['id']
+						_uid = uid_( f'{classifier}:{_id}' )
+					except Exception as e:
+						raise e
+
+				else:
+					raise ImportException( f'unable to identify activity in file {af}' )
 
 				if not self.db.contains_activity( _uid ):
 					existing.append( af )

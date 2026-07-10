@@ -1,5 +1,5 @@
 
-from re import compile
+from re import compile, VERBOSE
 
 from tracs.activity_types import ActivityTypes as Types
 
@@ -21,8 +21,8 @@ POLAR_ZIP_TCX_TYPE = 'application/vnd.polar.tcx+zip'
 # file globs
 
 ACCOUNT_DATA_GLOB = 'account-data-*.json'
-ACCOUNT_PROFILE_GLOB = 'account-profile-*.json'
-TRAINING_SESSION_GLOB = 'training-session-*.json'
+ACCOUNT_PROFILE_GLOB = 'account-profile*.json'
+TRAINING_SESSION_GLOB = 'training-session*.json'
 
 rx_uuid = r'(?P<uuid>[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12})'
 rx_uuid2 = r'(?P<uuid2>[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12})' # need to double up ;-)
@@ -31,9 +31,32 @@ rx_time = r'(?P<time>\d{2}:\d{2}:\d{2})'
 rx_nid = r'(?P<nid>\d+)'
 rx_anid = r'(?P<anid>[a-f\d]+)'
 
-RX_TRAINING_SESSION_V1 = compile( rf'^/?training-session-{rx_ymd}-{rx_nid}(-{rx_uuid})?\.json$' )
-RX_TRAINING_SESSION_V2A = compile( rf'^/?training-session-{rx_ymd}T{rx_time}-{rx_nid}(-{rx_uuid})?\.json$' )
-RX_TRAINING_SESSION_V2B = compile( rf'^/?training-session-{rx_ymd}T{rx_time}-{rx_uuid}(-{rx_uuid2})?\.json$' )
+# old naming, not used any longer ...
+TRAINING_SESSION_V1 = compile( rf'^/?training-session-{rx_ymd}-{rx_nid}(-{rx_uuid})?\.json$', VERBOSE )
+# new naming for training session before 2026-03
+# '/training-session_2011-04-28T17-48-10_1659739940.json'
+TRAINING_SESSION_V2A = compile( r"""
+	^/?training-session_
+	(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})
+	_
+	(\d+)
+	(?:-
+		([\da-f-]{36})
+	)?
+	\.json$
+""", VERBOSE )
+
+TRAINING_SESSION_V2B = compile( r"""
+	^/?training-session_
+	(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})
+	_
+	([\da-f-]{8})
+	(
+		-
+		[\da-f-]{27}-[\da-f-]{36}
+	)?
+	\.json
+""", VERBOSE )
 
 # icon ids
 

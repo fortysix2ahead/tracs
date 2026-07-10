@@ -186,8 +186,15 @@ class PolarTrainingSessionImporter( DataclassFactoryHandler ):
 
 	@staticmethod
 	def _uid_from_session( s: TrainingSession ) -> UID:
-		# todo: will this fail for newer activities?
-		return UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
+		try:
+			return UID( classifier=CLASSIFIER, local_id=int( s.identifier.id ) )
+		except ValueError:
+			# todo: will this fail for newer multi-part activities
+			# those activities have an id, but this does not appear anywhere in the takeout data, only a uuid is available
+			# without this id the url in flow.polar.com cannot be calculated
+			log.warning( f'unable to determine correct id for Polar training session {s.identifier.id}, using timestamp instead' )
+			_time = datetime.fromisoformat( s.startTime )
+			return UID( classifier=CLASSIFIER, local_id=_time.strftime( '%y%m%d%H%M%S' ) ) # todo: this is only a workaround and may cause collisions
 
 	@staticmethod
 	def _uid_from_exercise( s: TrainingSession, e: Exercise, force_sid: bool = False ) -> Tuple[UID, Tuple[str, str]]:

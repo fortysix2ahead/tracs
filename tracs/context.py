@@ -24,6 +24,7 @@ from tracs.__log__ import LogManager
 from tracs.constants import *
 from tracs.pluginmgr import PluginManager, Registry, ServiceManager
 from tracs.protocols import ActivityDb, RuleParser
+from tracs.utils import abspath
 
 log = getLogger( __name__ )
 
@@ -114,6 +115,7 @@ class ApplicationContext:
 	def _load_user_config( self, configuration: Optional[str] = None ) -> None:
 		if configuration:
 			# attempt to load user-defined configuration file resp. from dir
+			configuration = abspath( configuration )
 			if self.root_fs.exists( configuration ) and self.root_fs.isdir( configuration ):
 				configuration = self.root_fs.getsyspath( f'{configuration}/{CONFIG_FILENAME}' )
 			self.config.load_file( configuration )
@@ -164,7 +166,7 @@ class ApplicationContext:
 	                  pretend: Optional[bool] = None, json: Optional[bool] = None, ) -> None:
 
 		# load user config
-		self._load_user_config( configuration )
+		self._load_user_config( configuration or self.config.get( 'configuration' ) )
 
 		# update configuration with command line args
 		self.config.update(

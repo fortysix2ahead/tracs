@@ -22,11 +22,11 @@ from orjson import loads
 from requests_cache import CachedSession
 from rich.prompt import Prompt
 
-from errors import ImportException
 from tracs.activity import Activities, Activity
 from tracs.activity_types import ActivityTypes
 from tracs.aio import load_resource
 from tracs.constants import APPNAME, CFG_CLASSIFIER
+from tracs.errors import ImportException
 from tracs.pluginmgr import importer, resource_type, service, setup
 from tracs.plugins.gpx import GPX_TYPE, GPXImporter
 from tracs.plugins.json import DataclassFactoryHandler, JSONHandler

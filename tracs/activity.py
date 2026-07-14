@@ -17,7 +17,7 @@ from tzlocal import get_localzone_name
 from tracs.activity_types import ActivityTypes
 from tracs.core import FieldFormatters, Metadata
 from tracs.resources import Resource, Resources
-from tracs.uid import UID, uid
+from tracs.uid import uid, UID
 
 log = getLogger( __name__ )
 
@@ -376,13 +376,13 @@ class Activities( UserList[Activity] ):
 	def __next_id_2__( self ) -> int:
 		return max( self._id_idx.keys() ) + 1 if self._id_idx else 1
 
-	def __contains__( self, item: Activity|UID ) -> bool:
-		if isinstance( item, Activity ):
-			return super().__contains__( item )
-		elif isinstance( item, UID ):
+	def __contains__( self, item: Activity|UID|str ) -> bool:
+		if type( item ) is str:
+			return self.__contains_uid__( UID.of( item ) )
+		elif type( item ) is UID:
 			return self.__contains_uid__( item )
 		else:
-			return False
+			return super().__contains__( item )
 
 	def __delitem__( self, i: int ):
 		self.remove( self.data[i] )
@@ -488,11 +488,19 @@ class Activities( UserList[Activity] ):
 	def iter_multiparts( self ):
 		return filter( lambda a: a.multipart, self.data.__iter__() )
 
+	def iter_classifier( self, classifier: str ):
+		return filter( lambda a: a.uid.classifier == classifier, self.data.__iter__() )
+
+	# todo: find a better name than unique!
+	def iter_unique( self ):
+		return filter( lambda a: (not a.group and not a.multipart and not a.metadata.member_of) or a.group, self.data.__iter__() )
+
 	def iter_resources( self ) -> Resources:
 		return Resources( *chain( *[ a.resources for a in self ] ) )
 
 	def iter_uids( self ):
-		return chain( *[ [ a.uid, *a.metadata.members ] for a in self ] )
+		# return chain( *[ [ a.uid, *a.metadata.members ] for a in self ] )
+		return [ a.uid for a in self ]
 
 	def iter_resource_uids( self ):
 		return chain( *[ [ r.as_uid if r.uid else UID( *a.uid.as_tuple, r.path ) for r in a.resources ] for a in self ] )

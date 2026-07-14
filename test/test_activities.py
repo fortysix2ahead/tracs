@@ -2,10 +2,10 @@ from logging import getLogger
 
 from pytest import mark, raises
 
+from activity import ActivityGroup, MultipartActivity
 from test.objects import activity
 from tracs.activity import Activities, Activity
 from tracs.core import Metadata
-from tracs.resources import Resource, Resources
 from tracs.uid import UID, uid, uids
 
 log = getLogger( __name__ )
@@ -43,7 +43,8 @@ def test_activities():
 
 	# contains
 	assert a1 in activities
-	assert uid( 'activity:1' ) in activities
+	assert UID.of( 'activity:1' ) in activities
+	assert 'activity:1' in activities
 	assert not 'something' in activities
 
 	#
@@ -92,29 +93,54 @@ def test_activities():
 
 @mark.unit
 def test_iter_activities():
-	activities = Activities()
-	a1 = Activity(
-		name='a1', uid='a:1',
-		resources = Resources( Resource( uid='a:1', path='a1.gpx' ), Resource( uid='a:1', path='a1.json' ) )
-	)
-	a2 = Activity(
-		name='a2', uid='a:2',
-		resources = Resources( Resource( uid='a:2', path='a2.gpx' ), Resource( path='a2.json' ) ) # no uid in a2.json!!
-	)
-	g1 = Activity(
-		name='g34', uid='g:34',
-		metadata = Metadata( members = [ UID( 'a:3' ), UID( 'a:4' ) ] ),
-		resources = Resources( Resource( uid='a:3', path='a3.gpx' ), Resource( uid='a:4', path='a4.gpx' ) )
-	)
+	activities = Activities(
+		a1 := Activity(
+			name='activity_1', uid=UID.of( 'act:1' ), id=1,
+			metadata = Metadata( member_of=UID.of( 'group:1' ) ),
+		),
+		a2 := Activity(
+			name='activity_2', uid=UID.of( 'act:2' ), id=2,
+			metadata = Metadata( member_of=UID.of( 'group:1' ) ),
+		),
+		a3 := Activity(
+			name='activity_3', uid=UID.of( 'act:3' ), id=3,
+			metadata=Metadata( part_of=[ UID.of( 'multipart:1' ) ] ),
+		),
+		a4 := Activity(
+			name='activity_4', uid=UID.of( 'act:4' ), id=4,
+			metadata = Metadata( part_of=[UID.of( 'multipart:1' )] ),
+		),
+		g1 := ActivityGroup(
+			name='group_1', uid='group:1', id=10,
+			metadata = Metadata( members = [ UID.of( 'act:1' ), UID.of( 'act:2' ) ] ),
+		),
+		mp11 := MultipartActivity(
+			name='multi_1', uid='multi:1', id=20,
+			metadata=Metadata( parts=[UID.of( 'act:3' ), UID.of( 'act:4' )] ),
+		)
+	, skip_checks = True )
 
-	activities.add( a1 )
-	activities.add( a2 )
-	activities.add( g1 )
+	# normal iter()
+	assert [ it.uid for it in iter( activities ) ] == ['act:1', 'act:2', 'act:3', 'act:4', 'group:1', 'multi:1']
+	assert [ it.uid for it in activities.iter() ] == ['act:1', 'act:2', 'act:3', 'act:4', 'group:1', 'multi:1']
 
-	assert [ it.uid for it in iter( activities ) ] == [ 'a:1', 'a:2', 'g:34' ]
-	assert [ it.uid for it in activities.iter() ] == [ 'a:1', 'a:2', 'g:34' ]
-	assert [ it.path for it in activities.iter_resources() ] == ['a1.gpx', 'a1.json', 'a2.gpx', 'a2.json', 'a3.gpx', 'a4.gpx']
-	assert [ uid.uid for uid in activities.iter_uids() ] == [ 'a:1', 'a:2', 'g:34', 'a:3', 'a:4' ]
-	assert [ uid.uid for uid in activities.iter_resource_uids() ] == [
-		'a:1/a1.gpx', 'a:1/a1.json', 'a:2/a2.gpx', 'a:2/a2.json', 'a:3/a3.gpx', 'a:4/a4.gpx'
-	]
+	# restrict to regular activities
+	assert [ it.uid for it in activities.iter_regular() ] == ['act:1', 'act:2', 'act:3', 'act:4']
+
+	# restrict to groups
+	assert [ it.uid for it in activities.iter_groups() ] == ['group:1']
+
+	# restrict to multiparts
+	assert [ it.uid for it in activities.iter_multiparts() ] == ['multi:1']
+
+	# restrict to non-groups
+	assert [ it.uid for it in activities.iter_non_groups() ] == ['act:1', 'act:2', 'act:3', 'act:4', 'multi:1']
+
+	# iterator for classifier
+	assert [ it.uid for it in activities.iter_classifier( 'act' ) ] == ['act:1', 'act:2', 'act:3', 'act:4']
+
+	# iterator for 'regular' unique activities
+	assert [ it.uid for it in activities.iter_unique() ] == ['act:3', 'act:4', 'group:1']
+
+	# iterate uids
+	assert list( activities.iter_uids() ) == [ UID.of( u ) for u in [ 'act:1', 'act:2', 'act:3', 'act:4', 'group:1', 'multi:1' ] ]
